@@ -1,0 +1,135 @@
+/* Apply dark theme styles to the Markdown editor */
+//.wmde-markdown {
+//  background-color: #333;
+//  color: #ddd;
+//}
+//
+//.wmde-markdown textarea {
+//  background-color: #1e1e1e;
+//  color: #d4d4d4;
+//}
+//
+//.wmde-toolbar {
+//  background-color: #555;
+//  border-color: #444;
+//}
+.w-md-editor-content .w-md-editor-area .w-md-editor-text-input {
+  -webkit-text-fill-color: var(--bs-heading-color);
+  color: var(--bs-heading-color);
+  //color: red;
+  //-webkit-text-fill-color: red;
+}
+.w-md-editor-content .w-md-editor-area .wmde-markdown-color {
+  opacity: 0;
+  zoom: .96;
+}
+.wmde-markdown-var {
+  background: var(--bs-secondary-bg)!important;
+}
+.wmde-markdown blockquote {
+  color: var(--bs-card-color)!important;
+  opacity: .75;
+}
+.wmde-markdown h1, .wmde-markdown h2, .wmde-markdown h3, .wmde-markdown h4, .wmde-markdown h5 {
+  //border-bottom: 1px dashed var(--bs-card-color)!important;
+  border-bottom: 1px dashed var(--bs-card-color)!important;
+}
+
+
+.wmde-markdown-var.w-md-editor.w-md-editor-show-live {
+  background: transparent;
+  border: none;
+}
+.wmde-markdown pre:not([class^="language-"]) {
+  background: var(--bs-body-bg)!important;
+}
+.w-md-editor-toolbar {
+  background: transparent;
+}
+.wmde-markdown-var.w-md-editor.w-md-editor-show-live {
+  box-shadow: none;
+  border: 1px solid rgba(125, 125, 125, 0.2) !important;
+
+}
+.wmde-markdown-var.w-md-editor.w-md-editor-show-live > .w-md-editor-toolbar  {
+  border: none!important;
+}
+
+.wmde-markdown-var.w-md-editor.w-md-editor-show-live > *, .w-md-editor-toolbar,
+.wmde-markdown-var.w-md-editor.w-md-editor-show-preview,
+.wmde-markdown-var.w-md-editor.w-md-editor-show-edit {
+  //border: 1px solid var(--bs-card-color)!important;
+  border: 1px solid rgba(125, 125, 125, 0.2) !important;
+  box-shadow: none;
+}
+
+.wmde-markdown-color code[class*=language-], .wmde-markdown-color pre[class*=language-]:not(.language-markdown) {
+  color: var(--bs-body-color)!important;
+  text-shadow: none!important;
+}
+.wmde-markdown.wmde-markdown-color {
+  color: var(--bs-body-color)!important;
+}
+.w-md-editor-preview {
+  box-shadow: none;
+  border-left: 1px solid rgba(125, 125, 125, 0.2) !important;
+}
+
+.w-md-editor-toolbar li > button:hover {
+  color: var(--c1)!important;
+}
+.w-md-editor-toolbar li > button {
+  color: var(--bs-body-color)!important;
+}
+
+.wmde-markdown pre .copied:hover {
+  background: var(--c1)!important
+}
+.wmde-markdown pre .copied {
+  background: rgb(15, 20, 17)!important;
+  color: rgb(251, 252, 253)!important;
+}
+
+
+.vertChild .wmde-markdown > * {
+  text-align: left;
+}
+.vertChild .wmde-markdown {
+  //zoom: .85;
+}
+.regex-source, .regex-delimiter, .regex-flags {
+  background: var(--bs-body-bg)!important;
+
+}
+ [data-bs-theme="light"] pre[class*=language-]:not(.language-markdown) {
+  background: var(--bs-body-bg);
+}
+[data-bs-theme="light"] .wmde-markdown .code-line{
+  color: var(--bs-text)
+}
+[data-bs-theme="light"] .wmde-markdown .punctuation {
+  color: #4893bf;
+}
+[data-bs-theme="light"] .wmde-markdown .keyword {
+}
+[data-bs-theme="light"] .wmde-markdown .function {
+  color: #0fc5ac;
+}
+[data-bs-theme="light"] .wmde-markdown .string {
+  color: #39c019;
+}
+[data-bs-theme="light"] .wmde-markdown .operator {
+}
+.wmde-markdown code{
+  max-width: 1500px;
+}
+.wmde-markdown {
+  color: var(--bs-card-color)!important;
+  box-sizing: border-box;
+  width: 100%!important;
+  max-width: 900px;
+}
+
+.w-md-editor textarea {
+  color: var(--bs-text-muted)
+}

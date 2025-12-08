@@ -1,0 +1,22 @@
+/*:root {*/
+/*  --perc-background: #f4e6ff;*/
+/*  --perc-value: --active-text-color;*/
+/*}*/
+
+/*.percWrap {*/
+/*  background: var(--perc-background);*/
+/*  width: 100%;*/
+/*  position: relative;*/
+/*  border-radius: 5px;*/
+/*}*/
+
+/*.percValue {*/
+/*  position: absolute;*/
+/*  min-width: 2px;*/
+/*  background: var(--perc-value);*/
+/*  border-radius: 5px;*/
+/*  height: 100%;*/
+/*  z-index: 1;*/
+/*  transition: all 0.4s ease;*/
+/*  width: 0;*/
+/*}*/

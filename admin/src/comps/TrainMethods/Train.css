@@ -1,0 +1,40 @@
+.timerWrap {
+    width: 100%;
+    position: relative;
+    height: 8px;
+    background: #f1f1f1;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    opacity: .7;
+}
+
+.timerProgress {
+    transition: all .5s linear;
+    background: var(--c1);
+    position: absolute;
+    min-width: 5px;
+    left: 0;
+    top: 0;
+    height: 100%;
+    border-radius: 5px;
+}
+.fastTimer {
+    transition: all .5s ease!important;
+}
+.timerError {
+    background: #e77272;
+}
+.timerErrorWrap .timerProgress {
+    background: #e77272;
+}
+.timerErrorWrap .svgContainer .svg-box{
+    box-shadow: 0px 0px 8px 2px #e77272;
+}
+.timerErrorWrap .svgContainer img {
+    opacity: .8;
+}
+.timerErrorWrap .svgContainer .circle{
+    background: #e77272;
+}

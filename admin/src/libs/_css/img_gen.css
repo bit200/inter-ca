@@ -1,0 +1,660 @@
+
+.preview {
+    /*background: radial-gradient(#00890a94, #188f1d);*/
+    /**/
+    padding: 10px;
+    position: relative;
+    display: inline-block;
+    padding-top: 10px;
+    padding-left: 10px;
+}
+
+.iphone {
+    position: absolute;
+    top: -7px;
+    left: -11px;
+    width: calc(100% + 103px);
+    height: calc(100% + 90px);
+    z-index: 3 !important;
+    max-width: 200%;
+    max-height: 200%;
+}
+
+.inpf[drop-active=true] {
+    box-shadow: inset 0px 0px 0px 2px #00C;
+}
+
+.inpf {
+    border: 1px dashed lightgrey !important;
+    padding: 30px !important;
+    height: 90px;
+    background-size: cover !important;
+    color: transparent;
+}
+
+.mb20 {
+    margin-bottom: 20px !important;
+}
+
+.mb15 {
+    margin-bottom: 15px !important;
+}
+
+.mb10 {
+    margin-bottom: 10px !important;
+}
+
+.mb5 {
+    margin-bottom: 5px !important;
+}
+
+.mt20 {
+    margin-top: 20px !important;
+}
+
+.mt15 {
+    margin-top: 15px !important;
+}
+
+.mt10 {
+    margin-top: 10px !important;
+}
+
+.mt5 {
+    margin-top: 5px !important;
+}
+
+.ish, .pp, .iphone_wrap {
+    padding: 0 7px;
+}
+
+.iphone_wrap div {
+    position: relative;
+}
+
+.iphone_wrap2 {
+    display: inline-block;
+    position: relative;
+}
+
+.iw .row {
+    margin-left: -3px;
+    margin-right: -3px;
+}
+
+.iw .col-xs-12, .iw .col-xs-6 {
+    padding: 5px;
+}
+
+.iw .col-xs-12.full {
+    margin: -5px;
+    width: calc(100% + 10px);
+}
+
+.ifull {
+    margin: -7px;
+}
+
+.ish, .sh, .sh1, .sh2 {
+    box-shadow: 3px 4px 5px 0px #0000000d;
+    border-radius: 3px;
+}
+
+.sh, .sh1, .sh2 {
+    padding: 10px;
+}
+
+.sh9 {
+    box-shadow: 2px 4px 8px 8px #0000000d;
+}
+
+.preview .ftop {
+    height: 150px;
+    padding-top: 30px !important;
+}
+
+/*.preview::after {*/
+/*    content: ' ';*/
+/*    background: url(/imgs/iphonexxx.png);*/
+/*    position: absolute;*/
+/*    width: 100%;*/
+/*    height: 100%;*/
+/*    left: 0;*/
+/*    top: 0;*/
+/*    background-repeat: no-repeat;*/
+/*    background-size: 100% 100%;*/
+/*}*/
+.cart_item1 img {
+    width: 100%;
+}
+
+.arrow_back {
+    margin-top: -2px;
+    margin-left: 5px;
+}
+
+.nm {
+    margin: 0 -15px !important;
+}
+
+.cart_title {
+    text-align: center;
+    font-size: 19px;
+    padding-top: 40px !important;
+    padding-bottom: 0 !important;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.cart_price {
+    padding-left: 15px;
+}
+
+.white {
+    color: white;
+    font-weight: bold;
+}
+.login_icons .icon {
+    width: 40px;
+    margin-top: 20px;
+    text-align: center;
+}
+.login_icons svg {
+    height: 20px!important;
+
+}
+.for_blur {
+    overflow: hidden;
+}
+
+.blur, .blur5 {
+    filter: blur(3px);
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    margin: -10px;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    overflow: hidden;
+}
+.fw100 b, .fw200 b {
+    font-weight: 500;
+}
+.fw100 {
+    font-weight: 100
+}
+.fw200 {
+    font-weight: 200
+}
+.blur5 {
+    filter: blur(5px);
+}
+
+.greyf::before {
+    content: ' ';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(114, 114, 114, 0.35);
+
+
+}
+
+.cov {
+    background-size: cover;
+}
+
+.iphone_wrap {
+    font-weight: bold;
+    border: 1px solid transparent;
+    width: 280px;
+    overflow: hidden;
+    height: 590px;
+    background: white;
+    border-radius: 40px;
+    margin: 0;
+    /*box-shadow: 8px 7px 20px #a5a5a5;*/
+    box-shadow: 6px 7px 10px 0 #0000004d;
+    position: relative;
+}
+.prod_address {
+    color: white;
+    font-weight: 200;
+    margin-top: 8px;
+}
+.prod_address_line2 {
+    font-weight: 400;
+}
+.prod_input, .inp {
+    margin-top: 20px;
+    border: 0.5px solid white;
+    padding: 5px 12px;
+    width: 80%;
+    color: white;
+    font-weight: 200;
+    border-radius: 5px;
+}
+.inp {
+    width: 100%;
+    padding: 10px;
+    text-align: left;
+}
+.abs {
+    position: absolute!important;
+}
+.google_map .prod_border {
+    border: 20px;
+}
+.prod_border {
+    background: white;
+    border-radius: 15px 15px 0 0;
+    margin-top: -20px;
+    height: 1000px;
+
+}
+.google_map {
+    margin: 0 -10px;
+}
+.prod_bcg::after {
+    content: ' ';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: linear-gradient(180deg,rgba(0, 0, 0, 0.6) 0% , rgba(0, 0, 0, 0.2) 30% , transparent 100% );
+}
+.to_white::after {
+    content: ' ';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: linear-gradient(180deg,rgba(255, 255, 255, .6) 0% , rgba(255, 255, 255, 0.1) 40% , transparent 100% );
+}
+
+.prod-price {
+    font-size: 12px;
+}
+.prod-desc {
+    margin: -8px 0 0 0;
+    overflow: hidden;
+    height: 22px;
+    font-weight: 100;
+    font-size: 12px;
+    padding: 0 10px;
+}
+
+.favoritable {
+    margin-top: -20px;
+}
+.favoritable img {
+    width: 100%;
+}
+
+.tl {
+    text-align: left;
+}
+
+.tr, .favoritable .price_el {
+    text-align: right;
+}
+
+.plus, .plus_value {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.plus {
+    background: #7a6fbe;
+    color: white;
+}
+
+.plus_value {
+}
+
+.price_total .col-xs-4 {
+    text-align: right
+}
+
+.price_big {
+    font-size: 18px
+}
+
+.sep2 {
+    border-top: 1px solid #f7f7f7;
+}
+
+.sep {
+    border-top: 1px solid #eeeeee;
+    width: calc(100% + 2000px);
+    margin: 10px -10px;
+}
+
+.product_heart {
+    position: absolute !important;
+    right: 10px;
+    top: 10px;
+}
+
+.tit1 {
+    font-size: 15px;
+}
+
+.card_preview1 {
+    height: 65px;
+    width: 100%;
+}
+.charger1 svg {
+    width: 8px;
+    height: 9px;
+}
+
+.tit0 {
+    font-size: 20px;
+    text-align: center;
+}
+.im0 {
+    padding: 10px 55px 40px 50px!important;
+}
+.gen_img.im1 {
+    padding-bottom: 100px;
+    padding-right: 194px;
+    padding-left: 35px;
+}
+
+.im1 .preview:nth-child(2) {
+    position: absolute;
+    left: 175px;
+    top: 71px;
+
+}
+.logo_imggg {
+    width: 50px;
+    height: 50px;
+
+}
+/*.gen_img > div {*/
+/*    padding: 10px;*/
+/*}*/
+
+
+.gen_img.im2 {
+    padding-bottom: 130px;
+    padding-left: 200px;
+    padding-top: 0;
+    width: 735px;
+}
+
+.im2 .preview:nth-child(1) {
+    position: absolute;
+    float: left;
+    left: 35px;
+    top: 88px;
+    z-index: 0;
+
+}
+.main_logo_site path {
+    fill: red!important;
+}
+.im2 .preview:nth-child(3) {
+    position: absolute;
+    left: 387px;
+    top: 88px;
+    z-index: 0;
+}
+.im1 .preview:nth-child(1),
+.im2 .preview:nth-child(2) {
+    z-index: 10000;
+}
+
+
+.icard, .icard2, .icard3, .icard1 {
+    display: inline-block;
+    border: 1px solid green;
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
+}
+
+.icard {
+    width: 100%;
+}
+
+.icard2 > div {
+    width: 50%;
+    display: inline-block;
+}
+
+.foot_menu {
+    border-top: 1px solid #eeeeee;
+    position: absolute !important;
+    background: white;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    font-size: 27px;
+    color: black;
+    padding: 7px;
+    padding-bottom: 17px;
+}
+.main_logo_site {
+    filter: invert(100%);
+    opacity: .85;
+}
+.foot_menu .icon {
+    /*height: 30px;*/
+    width: 18%;
+    box-sizing: border-box;
+    padding: 0 1%;
+}
+.desctop .iphone_wrap, .desctop iframe{
+    width: 1400px;
+    height: 1000px;
+    padding: 0;
+    border-radius: 0;
+}
+
+.desctop {
+    border: 1px solid blue;
+    padding: 0;
+
+}
+.foot_menu svg {
+    height: 20px;
+    margin: 0 auto;
+}
+
+.foot_menu .act path {
+    fill: red;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.icon.act {
+    background: none;
+}
+
+.charger2 {
+    position: absolute !important;
+    right: 15px;
+    top: 10px;
+    display: inline-block;
+    z-index: 1000;
+}
+
+.charger2 .icon {
+    width: 15px;
+    height: 15px;
+    margin-left: 4px;
+}
+
+.charger2 .icon:last-child svg {
+    height: 11px;
+}
+.charger2 svg {
+    height: 9px;
+}
+.charger1 {
+    font-size: 11px;
+    position: absolute !important;
+    top: 10px;
+    left: 21px;
+    z-index: 1000;
+}
+
+.fav_title {
+
+    z-index: 100;
+    background: white;
+}
+
+.np {
+    padding: 0 !important;
+}
+
+.icard1 > div {
+    width: 100%;
+    padding: 10px;
+    /*margin: 10px;*/
+}
+
+.mt--5 {
+    margin-top: -5px !important;
+}
+
+.mt--15 {
+    margin-top: -15px !important;
+}
+
+.mt--20 {
+    margin-top: -20px !important;
+}
+
+.mt--25 {
+    margin-top: -25px !important;
+}
+
+.mt--10 {
+    margin-top: -10px !important;
+}
+
+.prod_desc {
+    font-size: 10px;
+    padding-left: 15px !important;
+}
+
+.prod_title {
+    font-size: 1.25em;
+}
+
+.first_product .white {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    padding-left: 10px;
+    padding-bottom: 10px;
+}
+
+.first_product .cov {
+    height: 85px !important;
+    position: relative;
+}
+
+
+.preview_item {
+    z-index: 10;
+    background: white;
+    border-radius: 15px;
+    display: inline-block;
+    margin: 10px;
+    box-shadow: 3px 4px 9px 0px #00000047;
+    padding: 10px;
+    font-size: 40px;
+    word-break: break-word;
+    vertical-align: top;
+    position: relative;
+}
+
+.preiview_title {
+    font-weight: bold;
+    font-family: mont-bold;
+    padding: 10px;
+    font-size: 60px;
+    text-align: center;
+    background: rgba(144, 238, 144, 0.47);
+}
+
+.col2 {
+    color: #7a6fbe;
+}
+
+
+button {
+    font-size: 15px;
+    background: #7a6fbe;
+    border: 1px solid #7a6fbe;
+    outline: none;
+    padding: 7px 15px;
+    color: white;
+}
+.price_product {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+button.col2 {
+    color: #7a6fbe;
+    border: 1px solid #7a6fbe;
+    background: white;
+}
+
+.col2 {
+    color: #7a6fbe;
+}
+
+.card_value {
+    background: #7a6fbe;
+    color: white;
+    border-radius: 50%;
+    font-size: 8px;
+    font-weight: bold;
+    width: 12px;
+    height: 12px;
+    text-align: center;
+    top: -8px;
+    right: -5px;
+    position: absolute!important;
+}
+.prod_title {
+    font-size: 18px;
+}
+
+.col2 path {
+    fill: #7a6fbe;
+}
+
+.col1_circle {
+    width: 30px;
+    height: 30px;
+    background: #7a6fbe;
+    border-radius: 50%;
+}
+
+.col1 path {
+    fill: white;
+}
+
+.signal {
+    width: 12px !important;
+    height: 12px !important;
+    margin-top: -5px;
+}

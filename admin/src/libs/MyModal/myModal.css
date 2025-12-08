@@ -1,0 +1,113 @@
+.modal-size-small {
+    max-width: 450px!important;
+    margin-top: 20px!important;
+}
+.modal-size-full {
+    max-width: 1450px!important;
+    margin-top: 20px!important;
+}
+.modal-size-lg {
+    max-width: 1000px!important;
+    margin-top: 20px!important;
+}
+.ReactModal__Body--open .hide-with-modal{
+    display: none;
+}
+.ReactModal__Body--open {
+    overflow: hidden;
+}
+
+.ReactModal__Content {
+    max-width: 700px;
+    overflow-x: hidden!important;
+    position: relative !important;
+    top: 10px !important;
+    margin: 0 auto;
+}
+
+.mh-50 {
+    min-height: 50px;
+}
+
+.ReactModal__Overlay {
+    overflow-y: auto;
+    padding: 40px 0;
+    z-index: 10000000000;
+    background-color: rgba(55, 55, 55, 0.75) !important;
+}
+
+i.margin-i-modal {
+    margin-top: -10px;
+}
+
+div.padding-button-modal {
+    padding-top: 10px;
+}
+
+div.padding-button-modal > button:first-child {
+    margin-right: 0;
+}
+
+.status-modal:active {
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+.print-modal-buttons {
+    padding: 0;
+}
+
+.small-modal {
+    max-width: 345px;
+    left: 40px;
+    right: 40px;
+    bottom: 40px;
+    border: 1px solid rgb(204, 204, 204);
+    background: rgb(255, 255, 255);
+    overflow: auto;
+    border-radius: 4px;
+    outline: none;
+    padding: 20px;
+}
+
+.Password_modal {
+    top: 25px !important;
+    max-width: 545px;
+    left: 40px;
+    right: 40px;
+    bottom: 40px;
+    border: 1px solid rgb(204, 204, 204);
+    background: rgb(255, 255, 255);
+    overflow: auto;
+    border-radius: 4px;
+    outline: none;
+    padding: 20px;
+}
+
+.ReactModal__Content.ReactModal__Content--after-open {
+    position: absolute;
+    top: 40px;
+    left: 0px!important;
+    right: 0px!important;
+    bottom: 0px;
+    /*border: 1px solid rgb(204, 204, 204);*/
+    background: var(--bs-body-bg);
+    border-radius: 10px!important;
+    overflow: auto;
+    /*border-radius: 4px;*/
+    outline: none;
+    padding: 0px;
+    width: calc(100% - 100px);
+}
+
+.ReactModal__Overlay .hide-without-modal {
+    display: inline-block;
+}
+
+.hide-without-modal {
+    display: none;
+}
+
+/*.ReactModal__Overlay .fa.pull-right {*/
+    /*margin-top: -20px;*/
+/*}*/

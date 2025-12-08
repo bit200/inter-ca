@@ -1,0 +1,7 @@
+.codeReview .active {
+    background: rgba(70, 0, 128, 0.16);
+}
+.fileTab {
+    cursor: pointer;
+    padding: 2px 5px;
+}

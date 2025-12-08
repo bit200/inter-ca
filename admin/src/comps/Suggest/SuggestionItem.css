@@ -1,0 +1,63 @@
+/*.preview-only-md .w-md-editor-toolbar  {*/
+/*  position: absolute;*/
+/*  right: 0;*/
+/*  z-index: 1;*/
+/*  opacity: .3;*/
+/*  transition: all .4s ease;*/
+/*}*/
+/*.error-quiz {*/
+/*  background: #fcf3f3;*/
+/*}*/
+/*.p15-0 {*/
+/*  padding: 15px 0;*/
+/*}*/
+/*.error-quiz .error-quiz {*/
+/*  padding: 0;*/
+/*}*/
+/*.error-quiz .w-md-editor, .error-quiz .w-md-editor-toolbar  {*/
+/*  background: transparent;*/
+/*}*/
+/*.md-answer .w-md-editor {*/
+/*  height: 400px!important;*/
+/*}*/
+/*li {*/
+/*  list-style: none;*/
+/*}*/
+/*.w-md-editor-preview li, .wmde-markdown li {*/
+/*  list-style: initial;*/
+/*}*/
+/*.preview-only-md .w-md-editor {*/
+/*  border: 1px solid rgb(231, 231, 231);*/
+/*  box-shadow: none!important;*/
+/*}*/
+/*.preview-read-only-wrap .tags-add,*/
+/*.preview-read-only-wrap .fa-close,*/
+/*.preview-read-only-wrap .fa-bars*/
+/*!* .preview-read-only-wrap .btn *!*/
+/* {*/
+/*  display: none!important;*/
+/*}*/
+/*.preview-read-only-wrap input {*/
+/*  !* disabled: true *!*/
+/*}*/
+
+/*.preview-only-md .w-md-editor-toolbar:hover  {*/
+/*  opacity: 1;*/
+/*}*/
+/*.diff-it {*/
+/*  position: relative;*/
+/*  border-top: 1px solid rgb(200, 200, 200);*/
+/*  padding-top: 10px;*/
+/*  margin-top: 10px;*/
+/*}*/
+/*.diffWrapper small {*/
+/*  font-weight: bold;*/
+/*  padding: 2px 0;*/
+/*}*/
+
+/*.diff-it small {*/
+/*  !* position: absolute; *!*/
+/*  background: white;*/
+/*  top: 0;*/
+/*  z-index: 10;*/
+/*}*/

@@ -1,0 +1,12 @@
+# These are some examples of commonly ignored file patterns.
+# You should customize this list as applicable to your project.
+# Learn more about .gitignore:
+#     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
+
+server/node_modules
+admin/node_modules
+node_modules
+up
+api/data
+api/conv/node_modules
+api/conv/task_remainder/node_modules

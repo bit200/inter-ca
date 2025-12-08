@@ -1,0 +1,22 @@
+/*.loading {*/
+/*    transition: all .6s ease!important;*/
+/*    animation: none!important;*/
+/*}*/
+/*.opacity-loading {*/
+/*    opacity: .4;*/
+/*}*/
+/*.loading-wrapper {*/
+/*    min-height: 18px;*/
+/*}*/
+/*.loading-spinner small{*/
+/*    color: #aaaaaa;*/
+/*}*/
+/*.loading-spinner {*/
+
+/*    position: absolute;*/
+/*    width: 100%;*/
+/*    height: 100%;*/
+/*    text-align: center;*/
+/*    top: 30%;*/
+/*    z-index: 100000;*/
+/*}*/

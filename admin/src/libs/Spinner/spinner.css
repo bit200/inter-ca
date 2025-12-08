@@ -1,0 +1,27 @@
+
+.overlay-loader {
+    -webkit-animation: ourFadeIn 0.5s ease;
+    animation: ourFadeIn 0.5s ease;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    background-color: rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    margin: 0;
+    overflow-y: scroll;
+}
+
+.overlay-loader i {
+    position: absolute;
+    font-size: 55px;
+    width: 55px;
+    height: 55px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+    z-index: 10001;
+}

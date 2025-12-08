@@ -1,0 +1,49 @@
+
+.img_preview {
+    text-align: center;
+}
+
+.drop_text {
+    padding: 15px;
+    font-size: 16px;
+    overflow: hidden;
+}
+.afade.small {
+    max-width: 220px;
+    position: relative;
+}
+.uploadWrap img {
+    border-radius: 50%;
+}
+.photoWrap{
+    background: red;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    left: 0;
+    top: 0;
+}
+.uploadWrap {
+    width: 200px;
+    height: 200px;
+    border: 1px dashed var(--bs-border-color);
+    border-radius: 50%;
+}
+.uploadWrap:hover {
+    color: var(--c1);
+    cursor: pointer;
+    transition: all .4s ease;
+}
+
+.uploadWrap .thumb-md {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+}
+.uploadWrap .profile-circle {
+    width: 200px;
+    height: 200px;
+}

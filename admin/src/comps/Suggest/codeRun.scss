@@ -1,0 +1,286 @@
+
+.codeRunWrap {
+    display: flex;
+    height: calc(100vh -  var(--bs-topbar-height) - 90px);
+    min-height: 300px;
+    /* box-shadow: 0px -9px 9px 0px #ededed; */
+    margin: 0;
+    padding: 0!important;
+    width: 100%;
+}
+[data-url^="/quiz/"].mainCont {
+    border-radius: 0!important;
+}
+[data-url="/run"].mainCont {
+    ax-width: 100%;
+    padding: 0;
+    margin: 20px 15px;
+    border-radius: 0!important;
+}
+
+.filesWrap {
+    height: 22px;
+    padding-left: 8px;
+
+}
+
+.filesItem {
+    float: left;
+    margin-right: 5px;
+    padding: 1px 10px;
+    cursor: pointer;
+}
+
+.item2 {
+}
+
+.cases-wrap {
+    padding-bottom: 5px;
+    /*position: absolute;*/
+    /*width: 100%;*/
+    /*background: white;*/
+    /*margin-top: -2px;*/
+    /*padding: 3px 0;*/
+}
+
+.code-run-tab-wrap {
+    margin-bottom: 0;
+    padding-bottom: 10px;
+    //border-bottom: 1px solid var(--bs-border-color);
+    background: var(--bs-body);
+}
+.selectedFile {
+    background: rgba(150, 150, 150, 0.5) !important
+}
+.code-run-tab:hover {
+    color: var(--c1)
+}
+.code-run-tab.active {
+    text-decoration: underline;
+    color: var(--c1)
+}
+
+.code-run-tab {
+    font-size: 12px;
+    /* margin-top: 10px; */
+    padding-top: 7px;
+    color: var(--bs-text);
+    padding-right: 10px;
+    padding-left: 5px;
+    display: inline-block;
+    //margin-bottom: -26px;
+    transition: all .4s ease;
+}
+
+.item {
+    /*width: 100%;*/
+    /*height: 100%;*/
+    /*height: 20000px;*/
+}
+
+.btn-reset {
+    position: absolute;
+    right: 0;
+    z-index: 1;
+}
+
+.crTop {
+    height: 36%;
+    position: relative;
+}
+
+.vertChild {
+    height: 100%;
+    overflow: auto;
+    padding: 10px;
+    background: var(--bs-secondary-bg);
+}
+.hiddenBlock {
+    opacity: 0;
+    /*visibility: hidden;*/
+    pointer-events: none;
+    display: none;
+}
+.crLeft {
+    flex: 1;
+    position: relative;
+}
+
+.crRight {
+    position: relative;
+    width: 60%;
+    padding: 0;
+    padding-top: 0;
+    background: var(--bs-secondary-bg)!important;
+height:  calc(100% - 6px);
+
+
+}
+.myEditorWrap {
+    /*background: rgba(0, 128, 0, 0.48);*/
+    width: 100%;
+    right: 0;
+    height: calc(100% - 10px);
+    position: absolute;
+}
+.dragging1, .dragging2 {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
+.dragging1 .resizeH, .dragging2 .resizeV, .resizeH:hover, .resizeV:hover {
+    background:  var(--c1)!important;
+}
+
+.resizeH, .resizeV {
+    background: var(--bs-body-bg);
+    position: absolute;
+    z-index: 1;
+    transition: all .4s ease;
+
+}
+.conditionWrap  {
+    padding-top: 15px;
+}
+.conditionWrap .octicon-link {
+    display: none;
+}
+.conditionWrap h1, .conditionWrap h2, .conditionWrap h3, .conditionWrap h4 {
+    font-size: 16px;
+}
+
+.mainTasksWrap {
+    width: calc(100% + 20px);
+    height: auto!important;
+    z-index: 100;
+    padding-top: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: -10px;
+    margin-top: -10px;
+    background: var(--bs-secondary-bg);
+    top: -10px;
+    box-shadow: 0 3px 4px rgba(142, 134, 171, 0.1);
+}
+.dragging1 .logsRunWraps, .dragging2 .logsRunWraps {
+    display: none;
+}
+[data-tab="logs"] {
+    //margin-top: -10px;
+    //padding-top: 0;
+    //padding-bottom: 0;
+    //height: calc(100% + 10px);
+}
+.logsRunWraps {
+    position: absolute;
+    left: 0;
+    height: 100%;
+    overflow: hidden;
+    width: 100%;
+}
+
+.codeRunWrap iframe {
+    border: 0;
+    height: calc(100%)!important;
+/**/
+}
+
+.logsRader {
+    height: calc(100%);
+}
+
+.resizeH {
+    height: 10px;
+    width: 100%;
+    left: 0;
+    bottom: -10px;
+
+}
+
+.dragging1, .resizeH {
+    cursor: ns-resize !important;
+}
+
+.dragging2, .resizeV {
+    cursor: ew-resize !important;
+}
+
+.resizeV {
+    width: 10px;
+    height: calc(100% + 4px);
+    right: -10px;
+    top: 0;
+    cursor: ew-resize;
+}
+
+.casesChild {
+    /*height: calc(100% - 70px);*/
+    padding-bottom: 10px;
+    margin-top: 5px;
+}
+
+[status='ok'] .run-circle {
+    background: green;
+}
+
+[status='error'] .run-circle {
+    background: red;
+}
+
+.run-circle {
+    width: 7px;
+    height: 7px;
+    background: lightgrey;
+    display: inline-block;
+    border-radius: 5px;
+    margin-top: 7px;
+    margin-left: -3px;
+    margin-right: 5px;
+    float: left;
+}
+
+.logs-preview > span:first-child::before {
+    content: '';
+}
+
+.logs-preview > span::before {
+    content: ', ';
+
+}
+
+.case-title {
+    margin-right: 5px;
+    padding: 3px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+
+}
+
+[status="error"].active-case {
+    border: 1px solid var(--c404) !important;
+}
+.active-case {
+    border: 1px solid var(--c1) !important;
+}
+
+.crVertWrap {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+}
+
+.crBot {
+    flex: 1
+}
+
+.buttonsRun {
+    position: absolute;
+    bottom: 0;
+    padding: 10px;
+    width: 100%;
+    background: lightgrey;
+    text-align: right;
+}
+
+

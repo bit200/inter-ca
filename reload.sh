@@ -1,0 +1,1 @@
+git pull; cd ../itk-platform; pm2 restart prod.ecosystem.config.js; cd ../inter-ca

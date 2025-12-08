@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebM Audio Recorder</title>
+</head>
+<body>
+<button id="startBtn">Start Recording</button>
+<button id="stopBtn" disabled>Stop Recording</button>
+<audio id="playback" controls></audio>
+<div id="status"></div>
+
+<script>
+    // DOM elements
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const playback = document.getElementById('playback');
+    const statusDiv = document.getElementById('status');
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // Check for browser support
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+        statusDiv.textContent = 'MediaRecorder API not supported in this browser';
+        startBtn.disabled = true;
+    }
+
+    // Start recording
+    startBtn.addEventListener('click', async () => {
+        try {
+            statusDiv.textContent = 'Getting microphone access...';
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            statusDiv.textContent = 'Recording...';
+
+            // Get the best supported mimeType
+            const mimeType = getSupportedMimeType();
+            console.log('Using mimeType:', mimeType);
+
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: mimeType,
+                audioBitsPerSecond: 32000 // 128 kbps
+            });
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                playback.src = audioUrl;
+
+                // Optional: Download the recording
+                const a = document.createElement('a');
+                a.href = audioUrl;
+                a.download = `recording-${new Date().toISOString()}.${mimeType.includes('webm') ? 'webm' : 'ogg'}`;
+                a.click();
+
+                statusDiv.textContent = 'Recording complete! Click play to listen.';
+                audioChunks = [];
+            };
+
+            mediaRecorder.start(1000); // Collect data every 1 second
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        } catch (error) {
+            console.error('Error:', error);
+            statusDiv.textContent = `Error: ${error.message}`;
+        }
+    });
+
+    // Stop recording
+    stopBtn.addEventListener('click', () => {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    });
+
+    // Check for supported mimeTypes
+    function getSupportedMimeType() {
+        const types = [
+            'audio/webm;codecs=opus', // Best quality, smallest size
+            'audio/webm',            // Fallback WebM
+            'audio/ogg;codecs=opus', // Firefox preferred
+            'audio/mp4',              // Safari fallback
+            'audio/wav'               // Last resort
+        ];
+
+        for (let type of types) {
+            if (MediaRecorder.isTypeSupported(type)) {
+                return type;
+            }
+        }
+
+        return 'audio/webm'; // Default if none explicitly supported
+    }
+</script>
+</body>
+</html>

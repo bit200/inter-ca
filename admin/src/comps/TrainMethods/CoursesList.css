@@ -1,0 +1,106 @@
+/*:root {*/
+/*  --text-color: #1b1c26;*/
+/*}*/
+.qlist {
+  padding: 3px 0;
+}
+
+:root {
+  --angle: 90deg;
+}
+
+
+
+.sc-gauge {
+  cursor: default;
+  width: 200px;
+  height: auto;
+  margin: 20px auto;
+}
+
+.sc-background {
+  position: relative;
+  height: 100px;
+  margin-bottom: 10px;
+  background-color: var(--b0);
+  border-radius: 150px 150px 0 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.sc-mask {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  left: 20px;
+  height: 80px;
+  background-color: var(--bs-secondary-bg);
+  border-radius: 150px 150px 0 0;
+}
+
+.sc-percentage {
+  position: absolute;
+  top: 100px;
+  left: -200%;
+  width: 400%;
+  height: 400%;
+  margin-left: 100px;
+  background-color: var(--c1);
+}
+
+.sc-percentage {
+  transform: rotate(var(--angle));
+  transform-origin: top center;
+}
+
+.sc-min {
+  float: left;
+}
+
+.sc-max {
+  float: right;
+}
+
+.sc-value {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  width: 100%;
+  font-size: 48px;
+  font-weight: 700
+}
+
+.ProgressCircle > .MuiCircularProgress-root::before {
+  content: ' ';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border: 5px solid rgba(128, 128, 128, 0.35);
+  border-radius: 50%;
+  box-sizing: border-box;
+  z-index: -1;
+}
+.ProgressCircle small {
+  margin-bottom: 3px;
+  font-size: 10px;
+}
+.ProgressCircle {
+  text-align: center;
+  position: relative;
+
+}
+.hashTitle small {
+  font-size: 12px;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+  display: block;
+}
+.hashTitle {
+  /*border: 1px solid grey;*/
+  margin: 0;
+  padding: 0;
+  rotate: -45deg;
+}

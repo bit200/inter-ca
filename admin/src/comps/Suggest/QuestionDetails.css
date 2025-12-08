@@ -1,0 +1,101 @@
+/*.list-md-title {*/
+/*    font-weight: bold;*/
+/*    font-size: 25px;*/
+/*    margin-bottom: 10px;*/
+/*    margin-top: 30px;*/
+/*}*/
+
+/*.youtubePreview .fa-play {*/
+/*    color: white;*/
+/*    position: absolute;*/
+/*    top: calc(50% - 15px);*/
+/*    left: calc(50% - 15px);*/
+/*    font-size: 30px;*/
+/*    !*background: grey;*!*/
+/*}*/
+
+/*.youtubePreview span {*/
+/*    padding: 15px;*/
+/*    color: white;*/
+/*    font-size: 12px;*/
+/*    vertical-align: bottom;*/
+
+/*}*/
+
+/*.video-preview-modal .modalPreview {*/
+/*    height: calc(100vh - 100px) !important;*/
+/*}*/
+
+/*.video-preview-modal iframe {*/
+/*    border: none;*/
+/*}*/
+/*.video-preview-modal {*/
+/*    padding: 0 !important;*/
+/*    overflow: hidden !important;*/
+/*    background: black !important;*/
+/*    border: none !important;*/
+/*    !*width: calc(100% - 50px)!important;*!*/
+/*    width: calc(100% - 100px) !important;*/
+/*    max-width: calc(100% - 100px) !important;*/
+/*    margin-top: 0 !important;*/
+/*    box-shadow: 4px 9px 20px 7px rgb(55 55 55 / 40%);*/
+/*    border-radius: 5px;*/
+/*}*/
+/*.questionInList .fa {*/
+/*    padding: 0 8px;*/
+/*    height: 100%;*/
+/*}*/
+/*.questionInList {*/
+/*    position: relative;*/
+/*    padding: 7px 5px;*/
+/*    display: inline-block;*/
+/*    width: 100%;*/
+/*}*/
+/*.questionTitle {*/
+/*    font-size: 20px;*/
+/*    font-weight: bold;*/
+/*}*/
+/*.video-preview-modal .fa {*/
+/*    display: none;*/
+/*}*/
+/*.questions-wrap {*/
+/*    max-height: 600px;*/
+/*    overflow: auto;*/
+/*    width: 100%;*/
+/*}*/
+
+/*.youtubePreview::after {*/
+/*    content: ' ';*/
+/*    position: absolute;*/
+/*    left: 0;*/
+/*    top: 0;*/
+/*    width: 100%;*/
+/*    height: 100%;*/
+/*}*/
+
+/*!*.youtubePreview > div {*!*/
+/*!*    background: black;*!*/
+/*!*    display: block;*!*/
+/*!*    width: 100%;*!*/
+/*!*    height: 100%;*!*/
+/*!*}*!*/
+
+/*.youtubePreview iframe {*/
+/*    border: none;*/
+
+/*}*/
+
+/*.videos-wrapper {*/
+/*    padding: 15px 0;*/
+/*}*/
+
+/*.youtubePreview {*/
+/*    box-sizing: border-box;*/
+/*    margin-right: 8px;*/
+/*    border: none;*/
+/*    position: relative;*/
+/*    display: block;*/
+/*    color: white;*/
+/*    background: black;*/
+/*    overflow: hidden!important;*/
+/*}*/

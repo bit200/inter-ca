@@ -1,0 +1,39 @@
+<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <style>
+            .icon {
+            fill: #b3b3b3;
+            opacity: 0.3;
+            }
+        </style>
+    </defs>
+
+    <!-- Laptop Icon -->
+    <g transform="translate(50,50) rotate(15)">
+        <rect x="0" y="0" width="60" height="40" class="icon" rx="5" ry="5"/>
+        <rect x="5" y="5" width="50" height="25" fill="#fff" opacity="0.1"/>
+    </g>
+
+    <!-- Code Brackets Icon -->
+    <g transform="translate(150,120) rotate(-25)">
+        <text x="0" y="0" font-size="40" font-family="monospace" class="icon">{}</text>
+    </g>
+
+    <!-- Terminal Icon -->
+    <g transform="translate(250,200) rotate(10)">
+        <rect x="0" y="0" width="70" height="40" class="icon" rx="3" ry="3"/>
+        <text x="10" y="25" font-size="20" font-family="monospace" fill="#fff" opacity="0.2">_</text>
+    </g>
+
+    <!-- Gear Icon -->
+    <g transform="translate(100,300) rotate(-15)">
+        <circle cx="20" cy="20" r="15" class="icon"/>
+        <circle cx="20" cy="20" r="8" fill="#fff" opacity="0.1"/>
+    </g>
+
+    <!-- Coffee Mug Icon -->
+    <g transform="translate(300,70) rotate(20)">
+        <rect x="0" y="0" width="40" height="30" class="icon" rx="5" ry="5"/>
+        <rect x="35" y="5" width="5" height="20" fill="#fff" opacity="0.1"/>
+    </g>
+</svg>

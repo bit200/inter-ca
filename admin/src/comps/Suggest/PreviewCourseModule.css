@@ -1,0 +1,90 @@
+.cmModulesWrap {
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - 80px);
+}
+/* .blocksWrap {
+    max-height: 300px;
+    overflow: auto;
+} */
+.blocksWrap span {
+  border-bottom: 2px solid transparent;
+  transition: all 0.4s ease;
+}
+.blocksWrap span:hover {
+  border-color: rgba(56, 88, 152, 0.47);
+}
+.activeBlock span {
+  border-color: #385898 !important;
+}
+/* .cmModulesList { */
+/* width: 25%;
+    padding: 15px;
+    padding-right: 0; */
+/* } */
+.cmModulesCont {
+  /* box-shadow: -4px 5px 20px 0px #eeeded; */
+  width: 100%;
+  padding: 35px;
+  margin: 0 auto;
+}
+
+.scroll550 {
+  max-height: 550px;
+  overflow: auto;
+}
+.cmMainCont {
+  /*background: #f6f6f6;*/
+  padding: 10px;
+}
+.quiz-result-title {
+  font-size: 25px;
+}
+.cmMainBlocks h2.cmTitle {
+  font-size: 32px;
+  margin-top: 15px;
+  padding: 10px 0;
+}
+.cmMainBlocks h3 {
+  font-size: 30px;
+  padding: 30px 0 25px 0;
+}
+
+.ho2:hover {
+  opacity: 0.7 !important;
+}
+.ho2 {
+  opacity: 0.2;
+  transition: all 0.4s ease;
+}
+
+.moduleSelector {
+  padding: 10px 10px;
+  cursor: pointer;
+  margin: 0 -10px;
+}
+
+.moduleSelector .fa {
+  width: 20px;
+  opacity: 0.8;
+}
+.emptyModule {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 500;
+  padding: 60px 10px;
+}
+.playing .mainCont {
+  margin-bottom: 110px;
+}
+[data-url^="/courses/"].mainCont {
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.check-background {
+  height: 24px;
+  width: 24px;
+  background-color: #9300fc;
+  border-radius: 100px;
+}

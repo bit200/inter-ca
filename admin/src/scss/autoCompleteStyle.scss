@@ -1,0 +1,26 @@
+fieldset {
+  border: 1px solid var(--bs-border-color)!important;
+  color: red!important;
+}
+
+.MuiInputBase-input {
+  border: 1px solid var(--bs-border-color)!important;
+  font-size: 12px!important;
+  color: var(--bs-body-color)!important;
+}
+.MuiChip-label {
+  color: var(--bs-body-color)!important;
+}
+
+.MuiButtonBase-root.MuiChip-root {
+  //background: red;
+  border-radius: 5px;
+}
+
+.react-datepicker-ignore-onclickoutside , .react-datepicker__input-container input {
+  padding: 7px;
+  width: 100%;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-text);
+
+}

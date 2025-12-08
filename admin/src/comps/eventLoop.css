@@ -1,0 +1,61 @@
+/*body,*/
+/*#root,*/
+/*.editorWrapper {*/
+/*    height: 100%;*/
+/*    width: 100%;*/
+/*}*/
+/*.code-run  {*/
+/*    !* overflow-y: auto; *!*/
+/*}*/
+/*.code-run-top > div, .code-run-bot > div, .code-run-right > div{*/
+/*    overflow-y: auto;*/
+/*    max-height: 100%;*/
+/*    position: relative;*/
+/*}*/
+/*.code-run-top {*/
+/*    !* display: block; *!*/
+/*    !* background: orange; *!*/
+/*    height: 50%;*/
+/*    position: relative;*/
+/*}*/
+/*.code-run-bot {*/
+/*    !* flex: 1; *!*/
+/*    background: red;*/
+/*}*/
+/*.code-run-right {*/
+/*    flex: 1;*/
+/*}*/
+/*.code-run {*/
+/*    height: 100%;*/
+/*    display: flex;*/
+/*}*/
+/*.runCodeWrap {*/
+/*    height: 90vh;*/
+/*    width: 90%;*/
+/*    background: green;*/
+/*}*/
+
+
+/*.code-run-left-drag, .code-run-top-drag {*/
+/*    position: absolute;*/
+/*    z-index: 1000000;*/
+/*    background: blue;*/
+/*}*/
+/*.for-drag {*/
+/*    position: relative;*/
+/*}*/
+/*.code-run-top-drag {*/
+/*    bottom: -10px;*/
+/*    right: 50%;*/
+/*    width: 40px;*/
+/*    height: 20px;*/
+/*    cursor: ns-resize;*/
+/*}*/
+
+/*.code-run-left-drag {*/
+/*    right: -10px;*/
+/*    height: 40px;*/
+/*    width: 20px;*/
+/*    bottom: 50%;*/
+/*    cursor: ew-resize;*/
+/*}*/

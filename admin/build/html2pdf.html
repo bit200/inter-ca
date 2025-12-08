@@ -1,0 +1,203 @@
+<!--index.html-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>HTML-to-PDF PDFMake Example</title>
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1"
+    />
+    <!-- pdfmake CDN link -->
+    <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.72/pdfmake.min.js"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+    ></script>
+    <!--vfs_fonts.js is essential for embedding fonts into PDF documents created with pdfmake-->
+    <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.72/vfs_fonts.js"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+    ></script>
+</head>
+<body>
+<button onclick="generatePDF()">Generate Invoice PDF</button>
+
+<script>
+    const button = document.getElementById('download-button');
+
+    function generatePDF() {
+        const docDefinition = {
+            content: [
+                {
+                    columns: [
+                        {
+                            text: '&',
+                            style: 'logo',
+                        },
+                        {
+                            stack: [
+                                { text: 'Company', style: 'companyName' },
+                                {
+                                    text: '[COMPANY INFO]',
+                                    style: 'companyInfo',
+                                },
+                            ],
+                            alignment: 'right',
+                        },
+                    ],
+                    margin: [0, 20, 0, 30],
+                },
+                {
+                    canvas: [
+                        {
+                            type: 'line',
+                            x1: 0,
+                            y1: 5,
+                            x2: 515,
+                            y2: 5,
+                            lineWidth: 2.5,
+                            lineColor: 'black',
+                        },
+                    ],
+                    margin: [0, 10, 0, 20],
+                },
+                {
+                    columns: [
+                        {
+                            text: [
+                                {
+                                    text: 'Billed To:\n',
+                                    style: 'billedToLabel',
+                                },
+                                {
+                                    text: 'Company Ltd.\n',
+                                    style: 'billedTo',
+                                },
+                                {
+                                    text:
+                                        'Address\nCountry\nVAT ID: ATU12345678\n',
+                                    style: 'billedTo',
+                                },
+                            ],
+                            width: '60%',
+                        },
+                        {
+                            text: [
+                                {
+                                    text: 'Invoice #\n',
+                                    style: 'invoiceLabel',
+                                },
+                                {
+                                    text: '123456\n',
+                                    style: 'invoiceNumber',
+                                },
+                                {
+                                    text: 'Payment Date:\n',
+                                    style: 'invoiceLabel',
+                                },
+                                {
+                                    text: 'November 22nd 2021\n',
+                                    style: 'invoiceDate',
+                                },
+                                {
+                                    text: 'Payment Method:\n',
+                                    style: 'invoiceLabel',
+                                },
+                                {
+                                    text: 'Bank Transfer',
+                                    style: 'paymentMethod',
+                                },
+                            ],
+                            alignment: 'right',
+                            width: '40%',
+                        },
+                    ],
+                    margin: [0, 10, 0, 20],
+                },
+                {
+                    style: 'itemsTable',
+                    table: {
+                        widths: ['*', 75, 100, 100],
+                        headerRows: 1,
+                        body: [
+                            [
+                                {
+                                    text: 'Description',
+                                    style: 'tableHeader',
+                                },
+                                { text: 'QTY', style: 'tableHeader' },
+                                {
+                                    text: 'Unit Price',
+                                    style: 'tableHeader',
+                                },
+                                { text: 'Total', style: 'tableHeader' },
+                            ],
+                            ['Product 1', '2', '$10.00', '$20.00'],
+                            ['Product 2', '5', '$15.00', '$75.00'],
+                            ['Product 3', '1', '$25.00', '$25.00'],
+                            [
+                                {
+                                    text: 'Total',
+                                    colSpan: 3,
+                                    alignment: 'right',
+                                    style: 'totalLabel',
+                                },
+                                {},
+                                {},
+                                '$120.00',
+                            ],
+                        ],
+                    },
+                    layout: 'lightHorizontalLines',
+                },
+            ],
+            styles: {
+                logo: { fontSize: 30, bold: true, color: '#4736e7' },
+                companyName: {
+                    fontSize: 16,
+                    bold: true,
+                    color: '#333333',
+                },
+                companyInfo: { fontSize: 10, color: '#555555' },
+                billedToLabel: {
+                    bold: true,
+                    fontSize: 12,
+                    color: '#333333',
+                },
+                billedTo: {
+                    fontSize: 10,
+                    color: '#555555',
+                    lineHeight: 1.5,
+                },
+                invoiceLabel: {
+                    fontSize: 10,
+                    bold: true,
+                    color: '#333333',
+                },
+                invoiceNumber: { fontSize: 10, color: '#555555' },
+                invoiceDate: { fontSize: 10, color: '#555555' },
+                paymentMethod: { fontSize: 10, color: '#555555' },
+                tableHeader: {
+                    bold: true,
+                    fontSize: 10,
+                    color: 'black',
+                },
+                totalLabel: { bold: true, fontSize: 10 },
+            },
+            defaultStyle: {
+                columnGap: 20,
+            },
+        };
+
+        pdfMake
+            .createPdf(docDefinition)
+            .download('styled-invoice.pdf');
+    }
+
+    button.addEventListener('click', generatePDF);
+</script>
+</body>
+</html>

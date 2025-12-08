@@ -1,0 +1,40 @@
+/*.auto_compl [autocorrect] {*/
+/*    height: 24px !important;*/
+/*}*/
+
+/*.auto_compl > div, .auto_compl > div > div {*/
+/*    min-height: 34px;*/
+/*}*/
+
+/*.auto_compl > div > div > div:first-child {*/
+/*    padding-top: .5px;*/
+/*    padding-bottom: .5px;*/
+/*}*/
+
+/*.auto_compl > div > div > div:nth-child(2) > div {*/
+/*    padding: 5px;*/
+/*}*/
+
+/*.auto_compl {*/
+/*    display: inline;*/
+/*}*/
+
+/*.w100 {*/
+/*    width: 100%;*/
+/*}*/
+
+
+/*.css-12jo7m5, .css-1uccc91-singleValue {*/
+/*    white-space: inherit !important;*/
+/*    overflow: auto !important;*/
+/*    text-overflow: inherit !important;*/
+/*    word-break: break-all !important;*/
+
+/*}*/
+/*.o_fa_btn {*/
+/*    opacity: .5;*/
+/*}*/
+
+/*.css-1rhbuit-multiValue {*/
+/*    background: hsl(222, 33%, 95%) !important;*/
+/*}*/

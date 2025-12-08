@@ -1,0 +1,46 @@
+.skeleton-second {
+    width: calc(100% - 5%);
+}
+.skeleton-third {
+    width: calc(100% - 10%);
+}
+
+.skeleton {
+    background: lightgrey;
+    border-radius: 5px;
+    height: 20px;
+    margin: 2px;
+
+    /*cursor: progress;*/
+    background: linear-gradient(0.25turn, transparent, rgba(255, 255, 255, 0.58), transparent),
+    linear-gradient(#eee, #eee),
+    radial-gradient(38px circle at 19px 19px, #eee 50%, transparent 51%),
+    linear-gradient(#eee, #eee);
+    background-repeat: no-repeat;
+    /*background-size: 315px 250px, 315px 180px, 100px 100px, 225px 30px;*/
+    background-position: -200% 0, 0 0, 0px 200%, 50px 210%;
+
+    animation: loading 3s infinite;
+
+}
+
+.skeleton-wrap small {
+    position: absolute;
+    padding: 3px;
+    margin-top: 3px;
+    margin-left: 3px;
+    background: white;
+    font-weight: bold;
+}
+
+.skeleton-wrap {
+    padding: 4px;
+    background: white;
+
+}
+
+@keyframes loading {
+    to {
+        background-position: 200% 0, 0 0, 0 100%, 50px 100%;
+    }
+}

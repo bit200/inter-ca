@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webcam Capture, Resize, Compress, and Get Size</title>
+</head>
+<body>
+<video id="webcam" autoplay width="300" height="300"></video>
+<canvas id="canvas" style="display: none;"></canvas>
+<button id="captureButton">Capture and Process</button>
+<p>Compressed Image Size: <span id="sizeDisplay"></span> bytes</p>
+<img src="" id="capture" />
+
+<script>
+    let videoWidth = 640;
+    let videoHeight = videoWidth * 0.8;
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('captureButton');
+    const sizeDisplay = document.getElementById('sizeDisplay');
+
+    // Initialize webcam stream
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(error => {
+            console.error('Error accessing webcam:', error);
+        });
+
+    captureButton.addEventListener('click', () => {
+        // Capture a frame from the webcam and draw it on the canvas
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Get the captured image as a data URL
+        const capturedDataUrl = canvas.toDataURL('image/jpeg', 0.6); // JPEG format with 80% quality
+
+        // Display the compressed image size
+        const capturedData = atob(capturedDataUrl.split(',')[1]);
+        const sizeBytes = capturedData.length;
+        sizeDisplay.textContent = Math.round(sizeBytes / 1000) + ' Kb';
+        document.querySelector('#capture').setAttribute('src', capturedDataUrl)
+
+        // You can now send 'capturedData' to a server or perform further processing as needed.
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+.listBlockCh:not(.activeBlock) {
+    /*color: var(--c1);*/
+    color: var(--bs-card-color);
+}

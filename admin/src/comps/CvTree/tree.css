@@ -1,0 +1,73 @@
+/*.breadcrump a {*/
+/*    margin: 0 10px 0 0;*/
+/*}*/
+
+/*.breadcrump .label-default {*/
+/*    color: black!important;*/
+/*}*/
+/*.descNo {*/
+/*    color: rgba(0, 0, 0, 0.85)!important;*/
+/*    text-decoration: none!important;*/
+/*    !* opacity: .5; *!*/
+/*}*/
+/*!* .breadcrump a::before {*/
+/*    content: ' > '*/
+/*} *!*/
+
+/*.activeDuplicate {*/
+/*    background: lightgrey;*/
+/*}*/
+
+/*.child-wrap .wmde-markdown p {*/
+/*    font-size: 20px; !* Set the desired font size *!*/
+/*    line-height: 25px;*/
+/*  }*/
+/*  .breadcrumb-item:hover {*/
+/*    box-shadow: 3px 3px 3px lightgrey;*/
+/*  }*/
+/*  .breadcrumb-item {*/
+/*    margin-top: 3px;*/
+/*    padding: 5px;*/
+/*    transition: all .4s ease;*/
+/*    border: 1px solid rgba(128, 128, 128, 0.09);*/
+/*  }*/
+
+/*  .child-wrap {*/
+/*    width: 100%;*/
+/*    !* background: red; *!*/
+/*  }*/
+/*  .tree-input {*/
+/*    !*position: fixed;*!*/
+/*    width: calc(100% + 40px);*/
+/*    top: -50px;*/
+/*    background: white;*/
+/*    margin-top: -50px;*/
+/*    margin-left: -20px;*/
+/*    margin-right: -20px;*/
+/*    left: 15px;*/
+/*    position: sticky;*/
+/*    padding-left: 20px;*/
+/*    padding-right: 20px;*/
+/*    padding-top: 40px;*/
+/*    padding-bottom: 10px;*/
+/*  }*/
+/*  .tree-wrap, .info-wrap {*/
+/*    padding: 20px;*/
+/*    margin-top: 20px;*/
+/*    background: white;*/
+/*  }*/
+/*  .tree-wrap {*/
+/*    padding-top: 25px;*/
+/*    width: calc(50% - 30px);*/
+/*    right: 50%;*/
+/*    !* background: green; *!*/
+/*  }*/
+/*  .info-wrap {*/
+/*    left: 50%;*/
+/*    top: 0;*/
+/*    position: fixed;*/
+/*    width: calc(50% - 30px);*/
+/*    height: calc(100vh - 50px);*/
+/*    overflow: auto;*/
+/*    box-shadow: 3px 3px 7px 1px #ded7d7;*/
+/*  }*/

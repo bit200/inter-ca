@@ -1,0 +1,223 @@
+/*@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");*/
+
+:root {
+  --root-color: rgba(240, 239, 255, 0.48);
+  --text-color: #1b1c26;
+  --active-text-color: #7a72bc;
+  --active-background: rgba(226, 223, 255, 0.85);
+  --perc-background: #f4e6ff;
+  --perc-value: #7a72bc;
+  --quiz-background: rgba(106, 96, 183, 0.23);
+}
+a {
+  color: #6a5fac;
+}
+a:hover {
+  color: #6155ab;
+}
+
+#root,
+body,
+html {
+  /*background: var(--root-color);*/
+  background: white;
+}
+#root {
+
+}
+#root {
+  display: flex;
+  background: linear-gradient(45deg, rgba(131, 104, 233, 0.1), rgba(131, 104, 233, 0.05));
+  width: 100%;
+  margin: 0 auto;
+  height: auto;
+  min-height: 100%;
+  /* transition: all 0.4s ease; */
+}
+
+.headerCont {
+  box-shadow: 4px 0px 8px 0px rgba(77, 80, 99, 0.07);
+}
+.cardPadd {
+  padding: 50px;
+}
+
+.CoursesMenu .menuLinks {
+  width: 100%;
+  padding-left: 30px;
+}
+.headerCont,
+.fixcont {
+  width: 300px;
+  padding: 0px;
+  margin-right: 20px;
+}
+.fixcont {
+  background: white;
+  position: fixed;
+  padding: 20px;
+  height: calc(100vh);
+  overflow: auto;
+  /* top: 15px; */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+.headerCont a {
+  display: block !important;
+}
+
+
+.mainContBtn {
+  display: flex;
+  width: 183px;
+  height: 44px;
+  padding: 12px 24px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  border-radius: 8px;
+  background: #9300fc;
+}
+
+.loginPage {
+  width: 100%;
+}
+.mainLogo {
+  /* padding-top: 20px; */
+  width: 100%;
+  margin-bottom: 30px!important;
+  float: none;
+  color: #1B1C26!important;
+}
+.mainLogo:hover {
+  color: #1B1C26!important;
+}
+
+body {
+  padding: 0;
+}
+.cmModulesList {
+  width: 100%;
+}
+
+#topicsList .blocksWrap {
+  max-height: auto !important;
+}
+
+.examMenu > button,
+.examMenu > div {
+  width: 100%;
+}
+
+.cmMainCont {
+  background: transparent;
+  max-width: 265px;
+}
+
+.exit {
+  position: absolute;
+  bottom: 20px;
+}
+
+.isNotOk.selectedModule,
+.listBlockCh.activeBlock {
+  background: var(--active-background)
+}
+.menuLinks a {
+  padding: 10px;
+  margin: 0 -10px;
+  color: var(--text-color);
+}
+
+.menuLinks a:hover {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cmMainBlocks {
+  margin-top: -20px;
+}
+.custom-table-reverse {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: center;
+}
+.tabsTitle {
+  font-family: "Open Sans", sans-serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  padding: 0 0 30px 0;
+  color: var(--text-color);
+}
+
+[data-page-url^="/quiz/"] #root,
+[data-page-url^="/table"] #root,
+[data-page-url^="/run"] #root {
+  max-width: 100%;
+}
+
+.examCount small {
+  padding-top: 8px;
+  display: inline-block;
+  font-weight: bold;
+}
+.examMenu button {
+  height: 40px;
+}
+.activeMenu, .activeBlock, .questionRunExam.active, .activeMenu .menuIconWrapper path {
+  color: var(--active-text-color)!important;
+  stroke: var(--active-text-color)!important;
+  fill: transparent!important;
+}
+.activeMenu {
+  background: var(--active-background);
+  /*font-weight: bold;*/
+  display: flex;
+  padding: 12px 24px;
+  align-items: center;
+  gap: 12px;
+  align-self: stretch;
+  border-radius: 8px;
+}
+
+.activeMenuIcon {
+  height: 100%;
+  text-align: center;
+}
+
+.menuItemWrapper {
+  display: flex;
+}
+
+.menuIconWrapper path {
+  fill: none;
+  stroke: black;
+}
+.menuIconWrapper {
+  margin-top: 2px;
+  margin-right: 12px;
+}
+
+.exitIconWrapper {
+  margin-top: 1px;
+  margin-right: 12px;
+}
+
+.ratingList > div {
+  padding: 5px 10px;
+}
+
+.ratingList div {
+  cursor: pointer;
+}
+.liked {
+  color: darkblue;
+  /* font-weight: bold; */
+}

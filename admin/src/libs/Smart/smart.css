@@ -1,0 +1,67 @@
+.arr-item .fa.fa-close {
+    position: absolute;
+    right: 0;
+    margin-top: 8px;
+}
+.nothing-found {
+    padding: 5px;
+}
+.video-list-parent button {
+    margin-top: 25px;
+}
+.arr-item {
+    position: relative;
+    padding-right: 0px;
+    padding-left: 15px;
+    font-size: 16px;
+    padding-top: 10px;
+    cursor: pointer;
+}
+.arr-child > span:last-child::after {
+    content: '';
+}
+.arr-child > span::after {
+    content: ','
+}
+.arr-child {
+    font-size: 13px;
+    color: grey;
+
+}
+
+.draggable-cont .drag-handle {
+    display: block;
+    margin-top: 8px;
+}
+
+.draggable-cont .arr-item {
+    padding-left: 20px;
+}
+
+.drag-handle {
+    display: none;
+
+    z-index: 10;
+    position: absolute;
+    left: 0;
+    top: 4px;
+}
+
+.hov-item {
+    opacity: .2;
+    transition: all .4s ease;
+}
+.hov-item:hover {
+    opacity: 1;
+}
+.rem-icon {
+    position: absolute;
+    left: 0;
+    top: 40px;
+    cursor: pointer;
+}
+.notFoundField {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+}

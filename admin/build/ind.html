@@ -1,0 +1,39 @@
+
+<link rel="stylesheet" href="./richtexteditor/rte_theme_default.css" />
+<script type="text/javascript" src="./richtexteditor/rte.js"></script>
+<script type="text/javascript" src='./richtexteditor/plugins/all_plugins.js'></script>
+<div id="div_editor1"></div>
+
+<script>
+  var editor1cfg = {}
+  // editor1cfg.toolbar = "mytoolbar";
+  // editor1cfg.toolbar_mytoolbar = "insertCode|{bold,italic}|{fontname,fontsize}|{forecolor,backcolor}|removeformat"
+  //   + "#{undo,redo,fullscreenenter,fullscreenexit,togglemore}";
+
+  var editor1 = new RichTextEditor("#div_editor1", editor1cfg);
+
+  editor1.attachEvent("change", function () {
+    var textCount = editor1.getPlainText().trim().length;
+    document.title = "textCount:" + textCount;
+  });
+
+  editor1.setHTMLCode(`<div class="dp-highlighter"><div class="bar"></div><ol start="1" class="dp-c"><li class="alt"><span><span>.dp-highlighter&nbsp;{&nbsp;&nbsp;</span></span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;color:&nbsp;#f8f8f2;&nbsp;&nbsp;</span></li><li class="alt"><span>&nbsp;&nbsp;&nbsp;&nbsp;background-color:&nbsp;#282a36;&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;padding:&nbsp;10px;&nbsp;&nbsp;</span></li><li class="alt"><span>&nbsp;&nbsp;&nbsp;&nbsp;border-radius:&nbsp;4px;&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;font-family:&nbsp;<span class="string">'Courier&nbsp;New'</span><span>,&nbsp;Courier,&nbsp;monospace;&nbsp;&nbsp;</span></span></li><li class="alt"><span>}&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;</span></li><li class="alt" __rte_selected_block=""><span>.dp-highlighter&nbsp;.keyword&nbsp;{&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;color:&nbsp;#f1fa8c;&nbsp;&nbsp;</span></li><li class="alt"><span>}&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;</span></li><li class="alt"><span>.dp-highlighter&nbsp;.string&nbsp;{&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;color:&nbsp;#f1fa8c;&nbsp;&nbsp;</span></li><li class="alt"><span>}&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;</span></li><li class="alt"><span>.dp-highlighter&nbsp;.comment&nbsp;{&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;color:&nbsp;#6272a4;&nbsp;&nbsp;</span></li><li class="alt"><span>}&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;</span></li><li class="alt"><span>.dp-highlighter&nbsp;.number&nbsp;{&nbsp;&nbsp;</span></li><li class=""><span>&nbsp;&nbsp;&nbsp;&nbsp;color:&nbsp;#bd93f9;&nbsp;&nbsp;</span></li><li class="alt"><span>}&nbsp;&nbsp;</span></li></ol></div>" +
+    "Hello World</p>`);
+
+  function btnInsertHTMLCode_1() {
+    editor1.insertHTML("Time is" + new Date().toLocaleTimeString())
+    editor1.collapse(false);
+    editor1.focus();
+  }
+  function btnInsertHTMLCode_2() {
+    editor1.selectDoc(false);//collapse to document end
+    editor1.insertHTML("<p>Insert a new paragraph " + new Date().toLocaleTimeString() + "</p>")
+    editor1.collapse(false);
+    editor1.focus();
+  }
+</script>
+
+<div class="mt-4">
+  <button class="btn btn-sm btn-outline-primary btn-pill transition-3d-hover px-5" onclick="btnInsertHTMLCode_1();return false;">insertHTML at a specified position</button>
+  <button class="btn btn-sm btn-primary btn-pill transition-3d-hover px-5" onclick="btnInsertHTMLCode_2();return false;">insertHTML at the end of this document</button>
+</div>

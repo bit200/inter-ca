@@ -1,0 +1,83 @@
+/*.mainCont[data-url^="/temp/"] {*/
+/*    padding: 0!important;*/
+/*    margin-top: 50px;*/
+/*}*/
+
+/*.mainCont[data-url^="/temp/"], .v1, .v2 {*/
+
+/*    max-height: calc(100vh - 70px);*/
+
+/*}*/
+/*.list-integration {*/
+/*    position: absolute;*/
+/*    left: 0;*/
+/*    top: -50px;*/
+/*}*/
+/*.cf {*/
+/*    display: flex;*/
+/*    height: 100vh; !* Adjust this as needed *!*/
+/*}*/
+
+/*.v1 {*/
+/*    flex: 0 0 auto; !* Fixed width for left column *!*/
+/*    width: 30%;   !* Adjust this as needed *!*/
+/*    padding: 20px;*/
+/*    position: sticky;*/
+/*    top: 0;*/
+/*    overflow-y: auto;*/
+/*}*/
+
+/*.v2 {*/
+/*    flex: 1; !* Let the right column take remaining space *!*/
+/*    background-color: white;*/
+/*    overflow-y: auto; !* Enable vertical scrolling *!*/
+/*    width: auto;*/
+/*    padding: 20px 30px;*/
+/*}*/
+
+/*.title {*/
+/*    font-size: 30px;*/
+/*    font-weight: bold;*/
+/*}*/
+/*.title2 {*/
+/*    font-size: 20px;*/
+/*    font-weight: bold;*/
+/*}*/
+/*.projects-list > div {*/
+/*    cursor: pointer;*/
+/*}*/
+/*.projects-list .active {*/
+/*    background: var(--active-background);*/
+/*}*/
+
+/*.card {*/
+/*    background: white;*/
+/*    padding: 15px;*/
+/*    box-shadow: 3px 3px 3px rgba(128, 128, 128, 0.25);*/
+/*}*/
+
+/*.child-wrap2 ul {*/
+/*    padding-left: 40px;*/
+/*}*/
+/*.child-wrap2 li {*/
+/*    list-style: auto;*/
+/*}*/
+/*.ul-wrap li {*/
+/*    margin: 3px 0;*/
+/*}*/
+/*.ul-wrap {*/
+/*    margin: 8px 0;*/
+/*}*/
+/*.list-integration {*/
+/*    margin: 10px -10px 20px -10px;*/
+/*}*/
+/*.list-integration a, .list-integration div {*/
+/*    padding: 5px 10px;*/
+/*    display: inline-block;*/
+/*}*/
+
+/*.tc.w100.loading {*/
+/*    width: 100%;*/
+/*    text-align: center;*/
+/*    padding: 40px;*/
+/*}*/

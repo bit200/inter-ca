@@ -1,0 +1,37 @@
+.interviewIndicator.adminRated {
+    opacity: 1;
+}
+.interviewIndicator {
+    /*display: inline-block;*/
+    opacity: .4;
+    margin-left: 5px;
+    margin-top: 1px;
+    width: 12px;
+    height: 12px;
+    background: rgba(128, 128, 128, 0.41);
+    border-radius: 50%;
+    box-sizing: border-box;
+    border: 0 solid white;
+}
+
+.interviewIndicator.mainErr {
+    background: rgba(169, 0, 0, 0.5);
+}
+.interviewIndicator.mainOk {
+    background: rgba(0, 178, 0, 0.41);
+
+}
+.interviewIndicator.mainMid {
+    background: rgba(211, 182, 0, 0.68);
+
+
+}
+.interviewIndicator.adminErr {
+    border-color: #8c0c0c;
+}
+.interviewIndicator.adminOk {
+    border-color: #0e650e;
+}
+.interviewIndicator.adminMid {
+    background: rgba(211, 182, 0, 0.68);
+}

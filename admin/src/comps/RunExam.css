@@ -1,0 +1,74 @@
+/*.btncheck0 {*/
+/*    margin: -5px 0;*/
+/*    margin-top: -8px;*/
+/*}*/
+/*.btncheck {*/
+/*    margin: -3px 0;*/
+/*    margin-bottom: -8px;*/
+/*}*/
+/*.countdown {*/
+/*    padding: 5px;*/
+/*    font-size: 20px;*/
+/*}*/
+
+.questionRunExam {
+    /*padding: 10px;*/
+    /*cursor: pointer;*/
+    display: block;
+}
+/*.questionRunExam.active {*/
+/*    background: var(--active-background);*/
+/*}*/
+/*.btns-check-wrap .btn {*/
+/*    height: 40px;*/
+/*}*/
+.codeRunExamWrap {
+    background: red;
+}
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: .25;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+.countdots {
+    animation: pulse 2s infinite;
+}
+
+/*.taskProgress {*/
+/*    width: calc(100% - 20px);*/
+/*    height: 5px;*/
+/*    background: #969696;*/
+/*    position: absolute;*/
+/*    border-radius: 5px;*/
+/*    overflow: hidden;*/
+/*}*/
+
+/*.taskProgressValue {*/
+/*    height: 100%;*/
+/*    background: #6b6b6b;*/
+/*    min-width: 5px;*/
+/*    position: absolute;*/
+/*    top: 0;*/
+/*    left: 0;*/
+/*}*/
+/*.taskProgressValue.error {*/
+/*    background: red!important;*/
+/*}*/
+/*.taskProgressValue.norm {*/
+/*    background: orange;*/
+/*}*/
+/*.taskProgressValue.good {*/
+/*    background: green;*/
+/*}*/
+
+/*[data-url^="/quiz/"] {*/
+/*    width: 100%;*/
+/*    max-width: 100%!important;*/
+/*    padding: 0!important;*/
+/*}*/

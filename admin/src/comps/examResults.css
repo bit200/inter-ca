@@ -1,0 +1,24 @@
+.activeBlock {
+    color: var(--c1)
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.bcg.ok {
+    background: var(--c1);
+    color: white;
+}
+.bcg {
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 3px;
+}
+.bcg.err {
+    background: var(--c404);
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 3px;
+    color: white;
+}

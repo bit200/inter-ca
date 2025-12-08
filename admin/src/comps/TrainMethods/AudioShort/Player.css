@@ -1,0 +1,69 @@
+.player {
+    position: fixed;
+    width: 100%;
+    background: white;
+    bottom: 0;
+    left: 0;
+    z-index: 100000000000000001;
+    box-shadow: 0px -6px 11px 0px rgba(207, 205, 205, 0.3);
+    background: var(--bs-body-bg);
+    transform: translateY(400px);
+    transition: all 1s ease;
+    /*height: 200px;*/
+}
+.player-close:hover {
+    opacity: 1;
+    cursor: pointer;
+}
+.player-close {
+    position: absolute;
+    z-index: 1000;
+    background: transparent;
+    right: 0;
+    top: 0;
+    padding: 5px;
+    padding-right: 0;
+    padding-top: 2px;
+    transition: all .4s ease;
+    opacity: .4;
+}
+.player.opened {
+    transform: translateY(0);
+}
+.player-flex {
+    width: 100%;
+    display: inline-flex;
+    justify-content: space-between;
+}
+.player-flex > div {
+    padding: 5px;
+}
+
+.player-flex .speed {
+    width: 60px;
+}
+.player-flex .buttons {
+    width: 45px;
+}
+
+.timers {
+    border: 1px solid grey;
+    width: 200px;
+}
+.scroll {
+    width: 100%;
+}
+
+
+.rhap_container {
+    zoom: .75;
+    background: var(--bs-body-bg);
+    box-shadow: none;
+}
+.rhap_current-time, .rhap_time {
+    color: var(--bs-text-muted)
+}
+.rhap_volume-bar-area {
+    opacity: .8;
+    background: var(--bs-secondary-bg);
+}
