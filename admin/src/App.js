@@ -4,7 +4,7 @@ import React, {lazy, useEffect, useState, Suspense} from "react";
 import _ from "underscore";
 import env from "./admin_env";
 import nFn from "./comps/i18/NameFn";
-import './main.css'
+
 import Skeleton from "./libs/Skeleton";
 import Login from "./libs/Login/Login";
 import DefOne from "./libs/DefOne";
@@ -72,12 +72,13 @@ export const stopAnyPlay = (key) => {
     }
 }
 window.textToVoice = (params, cb, delay = 5) => {
+    console.log("qqqqq text to voice", );
     let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
     let speed = params.textToVoiceSpeedMSPerSymbolLimit || 100
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');
 
-    console.log("qqqqq delaydelaydelay text to voice", delay, params);
+    console.log("qqqqq delaydelaydelay", delay);
     timeout = setTimeout(() => {
         stopAnyPlay('textToVoice');
         cb && cb();
@@ -170,7 +171,7 @@ global.CONFIG = {
         {name: "dashboard", url: "main", icon: 'iconoir-home-simple'},
         {name: "courses", url: "courses", icon: 'iconoir-view-grid'},
         {name: "requests", url: "requests", icon: 'iconoir-chat-bubble-check'},
-        {name: "exams", url: "exam", icon: 'iconoir-peace-hand'},
+        {name: "exams", url: "quiz", icon: 'iconoir-peace-hand'},
 
         isDemo ? null : {name: "interviews", url: "interviews", icon: 'iconoir-strategy'},
         {
@@ -265,15 +266,15 @@ global.CONFIG = {
                 {size: '12', type: 'HR'},
 
                 {size: 12, Component: () => {
-                    return <>
-                    <small>{nameFn('warnMsg1')}<a href={`mailto:${nameFn('contactEmailValue')}`}>{nameFn('contactEmailValue')}</a></small>
-                        <div></div>
-                        <small>{nameFn('warnMsg3')}</small>
-                    </>
+                        return <>
+                            <small>{nameFn('warnMsg1')}<a href={`mailto:${nameFn('contactEmailValue')}`}>{nameFn('contactEmailValue')}</a></small>
+                            <div></div>
+                            <small>{nameFn('warnMsg3')}</small>
+                        </>
                     }
-                    },
+                },
                 {size: '12', type: 'HR'},
-                
+
             ],
             top_filters: [
                 {
@@ -329,6 +330,7 @@ global.CONFIG = {
             autoSave: 200,
             url: "/my-interview",
             top_filters: [
+
                 {
                     key: "status",
                     def_name: "All",
@@ -340,6 +342,15 @@ global.CONFIG = {
                         {name: "Не прошли", value: "bad"},
                     ],
                 },
+                // {
+                //     key: "type",
+                //     def_name: "All",
+                //     def_value: "",
+                //     arr: [
+                //         {name: "HR", value: "HR"},
+                //         {name: "Тех", value: "tech"},
+                //     ],
+                // },
             ],
             tabsTitle: "myInterviews",
             create: [
@@ -350,7 +361,6 @@ global.CONFIG = {
                 {
                     path: "Interview/Interview",
                     size: 12,
-                    opts: {asdfasdf: 222}
                 },
             ],
             tabs: [
@@ -384,43 +394,7 @@ global.CONFIG = {
             woAdd: true,
             edit: [
                 {
-                    path: "RunExam/RunExam",
-                    size: 12,
-                },
-            ],
-            tabs: [
-                {name: "Название", key: "name"},
-                // {name: '%', key: 'perc'},
-                // {name: 'Теор Квиз %', key: 'quizPerc'},
-                {name: "Статус", key: "status",},
-                {name: "Старт", key: "startCd", type: "date"},
-                {name: "Сабмит", key: "submitCd", type: "date"},
-                // {name: 'Дата', key: 'date'},
-            ],
-        },
-        exam: {
-            woModal: true,
-            modalSize: "small",
-            autoSave: 200,
-            url: "/my-exam",
-            tabsTitle: "myExams",
-            top_filters: [
-                {
-                    key: "status",
-                    def_name: "All",
-                    def_value: "",
-                    arr: [
-                        {name: "Ожидают", value: "waiting"},
-                        {name: "Начались", value: "started"},
-                        {name: "Закончились", value: "submitted"},
-                    ],
-                },
-            ],
-            woAdd: true,
-            woDetailedButtons: true,
-            edit: [
-                {
-                    path: "ExamNew/ExamNew",
+                    path: "RunExam",
                     size: 12,
                 },
             ],
@@ -476,9 +450,6 @@ const router = createBrowserRouter([
             {
                 path: "quiz/:id",
                 element: Loader("RunExam")(),
-            },   {
-                path: "admin-session-test",
-                element: Loader("AdminSessionTest")(),
             },
             {
                 path: "courses/:id",
@@ -556,7 +527,7 @@ function TempEl () {
         </div>
 
         <>
-        <Outlet></Outlet>
+            <Outlet></Outlet>
         </>
     </>
 }
