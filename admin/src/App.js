@@ -71,6 +71,9 @@ export const stopAnyPlay = (key) => {
 
     }
 }
+
+window.lngVoice = 'en-EN' //'ru-RU'
+window.lngRecognize = 'en-EN' //'ru-EN'
 window.textToVoice = (params, cb, delay = 5) => {
     console.log("qqqqq text to voice", );
     let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
@@ -92,7 +95,7 @@ window.textToVoice = (params, cb, delay = 5) => {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.0; // Speech rate (1.0 is the default)
         utterance.pitch = 1.0; // Speech pitch (1.0 is the default)
-        utterance.lang = lng;
+        utterance.lang = lngVoice;
         utterance.onend = () => {
             clearTimeout(timeout)
             setTimeout(() => {

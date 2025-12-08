@@ -879,7 +879,7 @@ export function recognitionStart(startCb, completeCb,) {
 export function recognitionInit(cb) {
     recognition = new webkitSpeechRecognition(); // Create a SpeechRecognition object
 
-    recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    recognition.lang = lngRecognize; // Set the language for recognition (e.g., 'en-US' for English)
     recognition.interimResults = true; // Enable interim results
     recognition.continuous = true;
 
