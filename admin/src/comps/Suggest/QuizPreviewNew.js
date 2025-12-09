@@ -30,27 +30,23 @@ let Layout2 = forwardRef((props, ref) => {
         setChosen({...chosen || {}})
         setIsSubmit(false)
         setIsCorrect(false)
-        console.log("qqqqq qqq ON LOCAL STARTTTTTTTTTTTTTTTTTT", props.activeInd, isSubmit, chosen, hist);
+        console.log("qqqqq qqq ON LOCAL STARTTTTTTTTTTTTTTTTTT", props.activeInd, isSubmit, chosen);
 
         if (chosen || isSubmit) {
             setIsSubmit(true)
             return;
         }
-        setTimeout(() => {
-            props.onStart && props.onStart({}, props.quizId)
-        })
+        props.onStart && props.onStart({}, props.activeInd)
         // setChosen({2: true})
         // setAttempts(props.getStartAudioAttempt ? props.getStartAudioAttempt(props.activeInd) : 0)
         // playAndStart(info)
-    }, [props.quizId])
-    console.log("qqqqq onNextQuizTimer!!!!", props.onNextQuizTimer);
+    }, [props.activeInd])
 
     function _onSubmit(chosen, _opts) {
-        console.log("qqqqq onNextTimer onSubmit",);
+        console.log("qqqqq onNextTimer onSubmit", );
         let {variations = []} = quiz || {};
         _opts.correctAnswer = pubName(variations.find(it => it.isCorrect))
         _opts.selectedAnswer = pubName(variations[Object.keys(chosen).filter(it => chosen[it])[0]])
-        _opts.selectedInd = Object.keys(chosen)[0];
 
         let isCorrect = _opts?.isCorrect;
 
@@ -62,20 +58,11 @@ let Layout2 = forwardRef((props, ref) => {
         setDisabledMS(time)
         setIsCorrect(isCorrect)
 
-        if ((isCorrect || isExam) && props.onNextQuizTimer && !_opts.isTimeout) {
-            let _quiz_id = props.quizId
-            setTimeout(() => {
-                if (_quiz_id != props.quizId) {
-                    return;
-                }
-                props.onNext && props.onNext()
-            }, props.onNextQuizTimer)
-        }
-        // onNextTimer = time && setTimeout(() => {
-        //     console.log("qqqqq onNextTimer COMPLETEEEEE",);
-        //     // props.onNext && props.onNext(isExam ? null : {onFinal: !isCorrect});
-        // }, time)
-        // console.log("qqqqq ON SonNextTimer", onNextTimer, time);
+        onNextTimer = time && setTimeout(() => {
+            console.log("qqqqq onNextTimer COMPLETEEEEE", );
+            props.onNext && props.onNext(isExam ? null : {onFinal: !isCorrect});
+        }, time)
+        console.log("qqqqq ON SonNextTimer", onNextTimer, time);
 
         props.onSubmit && props.onSubmit({data: _opts, chosen, time});
 
@@ -113,7 +100,6 @@ let Layout2 = forwardRef((props, ref) => {
     let isAdminMode = !isExam && localStorage.getItem("adminMode") == "1";
     let {preventOnNext} = opts || {};
     let isTimeout = hist?.data?.isTimeout;
-    console.log("qqqqq aaaaaasdfasdfasdf",{preventOnNext ,skipBottomOpenText ,isSubmit, isCorrect, isExam} );
     console.log("qqqqq IS SUBMIT", hist, isSubmit, opts.canResubmitQuiz);
     return (<div
             className={
@@ -175,26 +161,23 @@ let Layout2 = forwardRef((props, ref) => {
             {/*        props.onNext && props.onNext()*/}
             {/*    }}>Идти дальше</Button>*/}
             {/*</>}*/}
-            {!preventOnNext && !skipBottomOpenText && isSubmit && <div>
+            {!preventOnNext && !skipBottomOpenText && isSubmit && disabledMs && <div>
                 <hr/>
-                {/*{t('nextQuizOpenAfter')} {Math.round(disabledMs / 1000)}{t('secondsShort')}.*/}
-                {(isCorrect || isExam) && <Button
+                {t('nextQuizOpenAfter')} {Math.round(disabledMs / 1000)}{t('secondsShort')}.
+                {(isCorrect || isExam) && <a
+                style={{marginLeft: '5px'}}
+                    onClick={() => {
+                    clearTimeout(onNextTimer)
+                    props.onNext && props.onNext();
+                }}>{t('openNow')}</a>}
+                {!isExam && !isCorrect && <a
                     style={{marginLeft: '5px'}}
-                    onClick={(scb) => {
-                        scb && scb()
-                        clearTimeout(onNextTimer)
-                        props.onNext && props.onNext();
-                    }}>{t('openNowNew')}333</Button>}
-                {!isExam && !isCorrect && <Button
-                    style={{marginLeft: '5px'}}
-                    onClick={(scb) => {
-                        scb && scb()
-                        console.log("qqqqq onNextTimer", onNextTimer);
-                        clearTimeout(onNextTimer)
-                        props.onNext && props.onNext({onFinal: true});
-                    }}>{t('openNowNew')}</Button>}
+                    onClick={() => {
+                    console.log("qqqqq onNextTimer", onNextTimer);
+                    clearTimeout(onNextTimer)
+                    props.onNext && props.onNext({onFinal: true});
+                }}>{t('openNow')}</a>}
             </div>}
-
             {/*{cdPerc} {disabledMs}*/}
             {/*{disabledMs && <CountDownSecs*/}
             {/*    onChange={(time, perc) => {*/}

@@ -515,12 +515,7 @@ const m = {
     return false;
   }
   ,
-  to_odb(cd) {
-    cd = new Date(cd || new Date())
 
-    return [ pub(cd.getFullYear()), pub(cd.getMonth() + 1),pub(cd.getDate())].join('-')
-
-  },
   set_height() {
     let el = document.querySelector('.page-inner');
     let el2 = document.querySelector('.page-sidebar');

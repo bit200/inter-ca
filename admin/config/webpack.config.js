@@ -188,9 +188,6 @@ module.exports = function (webpackEnv) {
 
   return {
     target: ['browserslist'],
-    watchOptions: {
-      ignored: /node_modules|public/,
-    },
     // Webpack noise constrained to errors and warnings
     stats: 'errors-warnings',
     mode: isEnvProduction ? 'production' : isEnvDevelopment && 'development',

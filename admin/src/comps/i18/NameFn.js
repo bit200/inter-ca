@@ -51,8 +51,8 @@ global.T = global.nameFn;
 
 const isHttps = window.location.href.indexOf('https://') > -1
 const flngValue = getParameterByName('flng');
-let isITKEDU = window.location.href.indexOf('itk.academy') < 0;
-window.lngs = isITKEDU ? ['en', 'es', 'fr', 'de', 'ru'] : ['ru', 'en', 'es', 'fr', 'de']
+let isITKEDU = window.location.href.indexOf('itkedu.com') > -1;
+window.lngs = isITKEDU ? ['en', 'es', 'fr', 'de'] : ['ru', 'en', 'es', 'fr', 'de']
 setLng(flngValue || Storage.get('lng') || lngs[0])
 
 

@@ -1,4 +1,6 @@
-global.is_local = /localhost|127\.0\.|192\.168\./.test(window.location.host) ? 1 : 0;
+
+
+global.is_local = /localhost|192\.168\./.test(window.location.host) ? 1 : 0;
 
 let local = 'http://' + window.location.hostname + ':6057';
 let isAqa = /aqa\./gi.test(window.location.hostname)
@@ -6,7 +8,6 @@ let isAqa = /aqa\./gi.test(window.location.hostname)
 // local = 'https://api-razvitie.itrum.ru'
 local = 'http://localhost:6057'
 
-let isPortal = window.location.href.indexOf('portal.') > -1;
 let isDemo = window.location.href.indexOf('demo.') > -1;
 let isAcademy = window.location.href.indexOf('itk.academy') > -1;
 
@@ -14,16 +15,16 @@ let servers = {
     local: local,
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
-    academy: 'https://api-code.itk.academy',
-    def: 'https://api-code.itk.academy'
+    academy:  'https://api-razvitie.itk.academy',
+    def:  'https://api-razvitie.itrum.ru'
 }
-let Demo = {
+let Demo =  {
     login: <>
         <img src={'/st/logoSk.svg'} height={25} style={{opacity: .8}}/>
         {/*<div style={{marginTop: '10px'}}></div>*/}
         {/*Портал Развития*/}
     </>,
-    main: <img src={'/logos/academy/logo_vert.png'} height={100}/>,
+    main: <img src={'/logos/academy/logo_vert.png'} height={100} />,
 }
 
 
@@ -40,10 +41,9 @@ let logoImgs = {
     academy: Demo,
 }
 
-let serverKey = global.is_local ? 'local' : isPortal ? 'def' : isDemo ? 'demo' : isAcademy ? 'academy' : isAqa ? 'aqa' : 'def'
+let serverKey = global.is_local ? 'local' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : 'def'
 if (global?.is_local) {
-    // serverKey = 'def'
-    // serverKey = 'academy'
+    serverKey = 'academy'
     // isDemo = true;
 }
 window.env = {

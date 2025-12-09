@@ -101,9 +101,7 @@ class Login extends React.Component {
                                  }}/>
                         </div>
                         {t('loginAgree')} {lng === 'ru' && <a href="https://itk.academy/files/personal.pdf"
-                                                              target="_blank"><u>{t('policy')}</u></a>}
-                        {lng !== 'ru' && <a href="/privacy.pdf"
-                                            target="_blank"><u>{t('policy')}</u></a>}
+                                                             target="_blank"><u>{t('policy')}</u></a>}
                       </div>
 
                     </div>

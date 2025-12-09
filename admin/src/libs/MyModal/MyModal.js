@@ -40,14 +40,9 @@ class MyModal extends React.Component {
   }
 
   render() {
-    let {woCard, item = {}, link, colorMode, title} = this.props;
+    let {woCard, item = {}, link, title} = this.props;
     let {isOpen} = this.state;
     window.modal = this;
-    const modalContentProps = {};
-    if (colorMode) {
-      modalContentProps['data-bs-theme'] = colorMode;
-    }
-
     return (<Modal
       ariaHideApp={false}
       isOpen={!!isOpen}
@@ -58,7 +53,7 @@ class MyModal extends React.Component {
       className={'modal-size-' + (this.props.size || 1) + ' ' + (this.props.defClass || '')}
       contentLabel="Transactions Details"
     >
-      <div className={!woCard ? "card" : ''} style={{marginBottom: '0px'}} {...modalContentProps}>
+      <div className={!woCard ? "card" : ''} style={{marginBottom: '0px'}}>
         <div className={!woCard ? "card-body" : ''}>
           <div className=" afade mmodal">
             {!this.props.woClose && <i className="iconoir-xmark pull-right pointer" onClick={() => {

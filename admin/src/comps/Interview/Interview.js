@@ -153,7 +153,6 @@ function Interview({props}) {
     const [selId, setSelId] = useState(null)
     //console.log('*.....Interview Render', props);
     let {item, onChange} = props
-    console.log("qqqqq props4444", props);
 
     global.onChangeCount = setCount;
     let isSale = false;

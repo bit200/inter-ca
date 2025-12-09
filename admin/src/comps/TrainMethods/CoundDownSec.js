@@ -9,7 +9,7 @@ export function CountDownSecs(props) {
     console.log("qqqqq TIMER PROPS", props);
     let byMs = 500;
     useEffect(() => {
-        if ((!props.count || props.count < 0) && props.active) {
+        if (!props.count && props.active) {
             return props.onStop && props.onStop()
         }
         if (!props.count || !props.active) {

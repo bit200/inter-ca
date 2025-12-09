@@ -375,6 +375,7 @@ function CodeRunComponent(props) {
     >
 
         <div className="crLeft" ref={leftRef}>
+
             <div className="crVertWrap" ref={parentTopRef}>
                 <div className="crTop" ref={topRef}>
                     <div className={"vertChild rel animChild "} data-tab={topTab}

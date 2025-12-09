@@ -2625,13 +2625,6 @@ export default {
         en: "Open now",
         fr: `Ouvrir maintenant`
     },
-    "openNowNew": {
-        "ru": "Открыть следующую задачу",
-        "es": "Abrir la siguiente tarea",
-        "de": "Nächste Aufgabe öffnen",
-        "en": "Open next task",
-        "fr": "Ouvrir la tâche suivante"
-    },
     "audioQ2": {
         ru: "Раскройте вопрос",
         es: "Desarrolla la pregunta",
@@ -3674,7 +3667,6 @@ export default {
         "en": "Are you sure you want to log out?",
         "fr": "Êtes-vous sûr de vouloir vous déconnecter?"
     },
-
     "confirm": {
         "ru": "Да, подтвердить",
         "es": "Sí, confirmar",
@@ -3755,18 +3747,11 @@ export default {
         "de": "Bildungsportal",
         "fr": "Portail d'Éducation"
     },
-    "areYouSureCode": {
+    "areYouSure": {
         "ru": "Вы уверены, что хотите восстановить оригинальный код?",
         "es": "¿Está seguro de que desea restaurar el código original?",
         "de": "Sind Sie sicher, dass Sie den Originalcode wiederherstellen möchten?",
         "en": "Are you sure you want to restore the original code?",
-        "fr": "Êtes-vous sûr de vouloir rétablir le code original?"
-    },
-    "areYouSure": {
-        "ru": "Вы уверены?",
-        "es": "¿Está seguro de que desea restaurar el código original?",
-        "de": "Sind Sie sicher, dass Sie den Originalcode wiederherstellen möchten?",
-        "en": "Are you sure?",
         "fr": "Êtes-vous sûr de vouloir rétablir le code original?"
     },
     "loginErr": {
@@ -3798,126 +3783,59 @@ export default {
         "fr": "Problèmes de connexion du micro ! Effectuez un débogage sur la page de test du micro."
     },
     "hardWork": {
-        "ru": "Усердная работа ",
-        "es": "Trabajo duro ",
-        "de": "Harte Arbeit ",
-        "en": "Hard work ",
-        "fr": "Travail acharné "
+      "ru": "Усердная работа ",
+      "es": "Trabajo duro ",
+      "de": "Harte Arbeit ",
+      "en": "Hard work ",
+      "fr": "Travail acharné "
     },
     "greatWork": {
-        "ru": "Молодец, продолжай в том же духе!",
-        "es": "Buen trabajo, sigue así!",
-        "de": "Gute Arbeit, mach weiter so!",
-        "en": "Good work, keep it up!",
-        "fr": "Bon travail, continuez comme ça!"
-    },
-    "goodEstimButNeedWork": {
-        "ru": "Оценка верная, но нужно еще поработать!",
-        "es": "La evaluación es correcta, pero necesitas trabajar más!",
-        "de": "Die Bewertung ist richtig, aber du musst noch arbeiten!",
-        "en": "The assessment is correct, but you need to work more!",
-        "fr": "L'évaluation est correcte, mais vous devez travailler plus!"
-    },
-    "needToWork": {
-        "ru": "Нужно еще поработать над этим вопросом!",
-        "es": "¡Necesitas trabajar más en esta cuestión!",
-        "de": "Du musst noch an dieser Frage arbeiten!",
-        "en": "You need to work more on this issue!",
-        "fr": "Vous devez travailler davantage sur cette question!"
-    },
-    "correctSolutionAvailableIn": {
-        "ru": "Правильное решение будет доступно для просмотра через",
-        "es": "La solución correcta estará disponible para visualización en",
-        "de": "Die richtige Lösung wird in verfügbar sein",
-        "en": "The correct solution will be available for viewing in",
-        "fr": "La solution correcte sera disponible pour visualisation dans"
-    },
-    "dontReloadPage": {
-        "ru": "Не перезагрузайте страницу",
-        "es": "No recargue la página",
-        "de": "Laden Sie die Seite nicht neu",
-        "en": "Do not reload the page",
-        "fr": "Ne rechargez pas la page"
-    },
-    "correct": {
-        "ru": "Правильно",
-        "es": "Correcto",
-        "de": "Richtig",
-        "en": "Correct",
-        "fr": "Correct"
-    },
-    "incorrect": {
-        "ru": "Не правильно",
-        "es": "Incorrecto",
-        "de": "Falsch",
-        "en": "Incorrect",
-        "fr": "Incorrect"
-    },
-    "play_audio": {
-    "ru": "Воспроизвести аудио",
-        "es": "Reproducir audio",
-        "de": "Audio abspielen",
-        "en": "Play audio",
-        "fr": "Lire l'audio"
+      "ru": "Молодец, продолжай в том же духе!",
+      "es": "Buen trabajo, sigue así!",
+      "de": "Gute Arbeit, mach weiter so!",
+      "en": "Good work, keep it up!",
+      "fr": "Bon travail, continuez comme ça!"
+  },
+  "goodEstimButNeedWork": {
+      "ru": "Оценка верная, но нужно еще поработать!",
+      "es": "La evaluación es correcta, pero necesitas trabajar más!",
+      "de": "Die Bewertung ist richtig, aber du musst noch arbeiten!",
+      "en": "The assessment is correct, but you need to work more!",
+      "fr": "L'évaluation est correcte, mais vous devez travailler plus!"
+  },
+  "needToWork": {
+      "ru": "Нужно еще поработать над этим вопросом!",
+      "es": "¡Necesitas trabajar más en esta cuestión!",
+      "de": "Du musst noch an dieser Frage arbeiten!",
+      "en": "You need to work more on this issue!",
+      "fr": "Vous devez travailler davantage sur cette question!"
+  },
+  "correctSolutionAvailableIn": {
+    "ru": "Правильное решение будет доступно для просмотра через",
+    "es": "La solución correcta estará disponible para visualización en",
+    "de": "Die richtige Lösung wird in verfügbar sein",
+    "en": "The correct solution will be available for viewing in",
+    "fr": "La solution correcte sera disponible pour visualisation dans"
 },
-    "tasks_multi": {
-    "ru": "Задачи",
-        "es": "Tareas",
-        "de": "Aufgaben",
-        "en": "Tasks",
-        "fr": "Tâches"
+"dontReloadPage": {
+    "ru": "Не перезагрузайте страницу",
+    "es": "No recargue la página",
+    "de": "Laden Sie die Seite nicht neu",
+    "en": "Do not reload the page",
+    "fr": "Ne rechargez pas la page"
 },
-    "need_your_rate": {
-        "ru": "Ожидает вашей оценки",
-        "es": "Esperando tu valoración",
-        "de": "Erwartet Ihre Bewertung",
-        "en": "Awaiting your rating",
-        "fr": "En attente de votre évaluation"
-    },
-    "user_rate": {
-        "ru": "Ваша оценка",
-        "es": "Tu calificación",
-        "de": "Deine Bewertung",
-        "en": "Your rating",
-        "fr": "Votre évaluation"
-    },
-    "test_pending": {
-        "ru": "Ожидает тестов",
-        "es": "Pruebas pendientes",
-        "de": "Tests ausstehend",
-        "en": "Pending tests",
-        "fr": "En attente de tests"
-    },
-    "coding_lng": {
-        "ru": "Язык программирования",
-        "es": "Lenguaje de programación",
-        "de": "Programmiersprache",
-        "en": "Programming language",
-        "fr": "Langage de programmation"
-    },
-    "showSolution": {
-        "ru": "Показать решение",
-        "es": "Mostrar solución",
-        "de": "Lösung anzeigen",
-        "en": "Show solution",
-        "fr": "Afficher la solution"
-    },
-    "hideSolution": {
-        "ru": "Скрыть решение",
-        "es": "Ocultar solución",
-        "de": "Lösung ausblenden",
-        "en": "Hide solution",
-        "fr": "Masquer la solution"
-    },
-    "": {ru: ''},
+"xx": {ru: ''}, 
+"": {ru: ''},
 
 }
 
 /*
 
 Extend object with fields:  es (spain), de(germany), en(english), fr(Franch) to that object, franch place in  comma to keep JSON formatting (keep main key in commas "")
-     "hideSolution": {
-        "ru": "Скрыть решение",
-    },
+  "correctSolutionAvailableIn": {ru: 'Правильное решение будет доступно для просмотра через'},
+  "dontReloadPage": {ru: 'Не перезагрузайте страницу'},
+ 
+
+
 
  */

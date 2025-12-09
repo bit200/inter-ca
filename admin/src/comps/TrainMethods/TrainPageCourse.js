@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import Train from "./Train";
-import {getDefaultQuizTime, getLng,getStartTimers, pubGeneralTitle, getQuizName, getQuizAnyName} from "../RunExam";
+import {getDefaultQuizTime, getLng, getStartTimers, pubGeneralTitle} from "../RunExam";
 
 function Layout2(props) {
     let opts = props.opts;
@@ -51,7 +51,6 @@ function Layout2(props) {
 
 
         <Train
-            onNextQuizTimer={500}
             getNextInd={(ind, items) => {
                 return ++ind % items.length;
             }}

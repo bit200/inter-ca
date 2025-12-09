@@ -1,13 +1,3 @@
-
-- Admin UI -> Translate english.
-- Admin UI -> Change logo
-
-
-
-
-
--------------------------------
-- Change Sound Placer Language Based
-- Auto language detection - if website is itkedu.com -> upload
-- Sound pronounce language english
-- Privacy policy.pdf
+cp -r /home/user/landings-gen/_modules /home/user/itk-platform
+cp -r /home/user/landings-gen/interviews /home/user/itk-platform
+cp -r /home/user/landings-gen/interviews-ca /home/user/itk-platform

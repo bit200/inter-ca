@@ -70,7 +70,7 @@ img {
 .abs {
     position: absolute;
 }
-a, .link {
+.link {
     display: inline-block;
     font-family: "Comic Sans MS";
     margin-right: 10px;

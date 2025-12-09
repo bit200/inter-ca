@@ -71,11 +71,7 @@ export const stopAnyPlay = (key) => {
 
     }
 }
-
-window.lngVoice = 'en-EN' //'ru-RU'
-window.lngRecognize = 'en-EN' //'ru-EN'
 window.textToVoice = (params, cb, delay = 5) => {
-    console.log("qqqqq text to voice", );
     let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
     let speed = params.textToVoiceSpeedMSPerSymbolLimit || 100
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
@@ -95,7 +91,7 @@ window.textToVoice = (params, cb, delay = 5) => {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.0; // Speech rate (1.0 is the default)
         utterance.pitch = 1.0; // Speech pitch (1.0 is the default)
-        utterance.lang = lngVoice;
+        utterance.lang = lng;
         utterance.onend = () => {
             clearTimeout(timeout)
             setTimeout(() => {
@@ -269,15 +265,15 @@ global.CONFIG = {
                 {size: '12', type: 'HR'},
 
                 {size: 12, Component: () => {
-                        return <>
-                            <small>{nameFn('warnMsg1')}<a href={`mailto:${nameFn('contactEmailValue')}`}>{nameFn('contactEmailValue')}</a></small>
-                            <div></div>
-                            <small>{nameFn('warnMsg3')}</small>
-                        </>
+                    return <>
+                    <small>{nameFn('warnMsg1')}<a href={`mailto:${nameFn('contactEmailValue')}`}>{nameFn('contactEmailValue')}</a></small>
+                        <div></div>
+                        <small>{nameFn('warnMsg3')}</small>
+                    </>
                     }
-                },
+                    },
                 {size: '12', type: 'HR'},
-
+                
             ],
             top_filters: [
                 {
@@ -530,7 +526,7 @@ function TempEl () {
         </div>
 
         <>
-            <Outlet></Outlet>
+        <Outlet></Outlet>
         </>
     </>
 }

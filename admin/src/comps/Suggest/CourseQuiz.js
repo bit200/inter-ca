@@ -226,7 +226,6 @@ function CourseQuiz(props) {
                             // setOpen(false)
                             setQuizResults(true)
                         }}
-                        skipBottomOpenText={true}
                         Result={ResultCourseQuizPage}
                         opts={{quizes: pubQuizes}}
                         onChange={(quizHistory, v) => {

@@ -9,18 +9,6 @@ let pageOpenTime = new Date().getTime();
 const user = {
     token: null,
     public_routes: ['/login', '/register', '/forgot-password'],
-    get_lngs: () => {
-        return user?.get_info()?.lngs || []
-    },
-    add_lng: (lng) => {
-      let lngs = user.get_lngs();
-      lngs.unshift(lng);
-
-      let uniq_lngs = _.uniq(lngs);
-        console.log("qqqqq on change lng", {lngs, lng, uniq_lngs});
-
-      user.set_info_http({lngs: uniq_lngs})
-    },
     get_info: () => {
         const info = localStorage.getItem('user');
         try {
@@ -28,15 +16,6 @@ const user = {
         } catch (e) {
             return {};
         }
-    },
-    set_info_http: (_info) => {
-        let info = localStorage.getItem('user');
-        let item = {...info || {}, ..._info || {}}
-
-        user.set_info(item)
-        global.http.put('/profile/my', {item}).then(r => {
-            console.log("qqqqq rrrrrr", r);
-        })
     },
     get_id: () => {
         return (user.get_info() || {})._id
@@ -187,8 +166,7 @@ const user = {
         }
         window?.onConfirm && window?.onConfirm({
             yes: t('yesLogout'),
-            name: t('areYouSureLogout')
-        }, () => {
+            name: t('areYouSureLogout')}, () => {
 
             let token = user.get_token();
             if (token) {
@@ -202,18 +180,18 @@ const user = {
             return redirectLogin()
 
         })
-
-        function redirectLogin() {
+        function redirectLogin () {
             if (user.public_routes.indexOf(window.location.pathname) < 0) {
                 try {
                     global.navigate('/login')
-                } catch (e) {
+                } catch(e) {
                     window.location.href = '/login'
                 }
 
                 // window.location.href = '/login'
             }
         }
+
 
 
     },

@@ -6,7 +6,6 @@ import MDEditor from "@uiw/react-md-editor";
 import "./QuizPreview.css";
 import {CountDownSecs} from "./../TrainMethods/CoundDownSec";
 import {getQuizAnyName} from "../RunExam";
-import Button from "../../libs/Button";
 
 let onNextTimer;
 global._setAdminMode = (v) => {
@@ -176,7 +175,6 @@ let Layout2 = forwardRef((props, ref) => {
                     props.onNext && props.onNext()
                 }}>Идти дальше</Button>
             </>}
-
             {!skipBottomOpenText && isSubmit && disabledMs && <div>
                 <hr/>
                 След квиз откроется автоматически через {Math.round(disabledMs / 1000)}с. <a onClick={() => {

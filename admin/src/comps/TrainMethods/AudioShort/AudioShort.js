@@ -30,7 +30,7 @@ let recStartCd = new Date().getTime();
 
 
 function getUserHash() {
-    return user.get_id() + '_' + Math.round(new Date().getTime() / 1000);
+    return Math.round(new Date().getTime() / 1000);
 }
 
 let lastUpdate = 0;
@@ -66,7 +66,7 @@ function onGlobalTryOpenQuiz(item) {
 
 
 let AudioShort = forwardRef((props, ref) => {
-    console.log("qqqqq audio propsssssssssss!!!!!!", props);
+    // console.log("qqqqq proppppppppppppppp", props);
     let [isAlreadyExistsFile, setIsAlreadyExistsFile] = useState(0)
     let [attempts, setAttempts] = useState(0)
     let [comment, setComment] = useState('')
@@ -93,7 +93,6 @@ let AudioShort = forwardRef((props, ref) => {
     _titleInfo = titleInfo;
 
     let {opts, hist} = props;
-    opts ??= {}
     // let {hist} = opts || {};
     //redux alternative
     fbDetails = {
@@ -138,8 +137,10 @@ let AudioShort = forwardRef((props, ref) => {
         setTitleInfo(info)
         setAttempts(props.getStartAudioAttempt ? props.getStartAudioAttempt(props.activeInd) : 0)
 
+        console.log("qqqqq props.time ]]", hist, props);
         setIsAlreadyExistsFile(hist?.hash)
         if (hist?.hash) {
+            console.log("qqqqq ALERT HIST HASH IS ArEADY EXISTS ________",);
             return;
         }
         if (props?.time < 1) {
@@ -186,47 +187,18 @@ let AudioShort = forwardRef((props, ref) => {
         })
     }
 
-    let uploadToServerAudio = (audioUrl, finalTranscript, opts) => {
+    let uploadToServerAudio = (formData, finalTranscript, opts) => {
         if (opts.woUploadAudio) {
-            return Promise.resolve();
+            return;
         }
-        let fileName = `audio/${m.to_odb()}/${audioHash}.webm`
-
-        console.log("qqqqq audio Blob 111", audioUrl);
-        global.http.get('/gen-presign', {fileName})
-            .then(response => {
-
-                const { presignedUrl, publicUrl } = response;
-
-                if (isExam) {
-                    props.onSubmit && props.onSubmit({fileName, audioHash, sessionHash, publicUrl})
-                    props.onNext && props.onNext()
-                }
-
-                console.log("Presigned URL:", {presignedUrl, audioHash, sessionHash, publicUrl}, publicUrl);
-
-                // Convert blob URL to fetchable object
-                return fetch(audioUrl) // audioUrl is your blob:http://... URL
-                    .then(res => res.blob())
-                    .then(audioBlob => {
-                        // Upload the Blob object directly to S3
-                        return fetch(presignedUrl, {
-                            method: 'PUT',
-                            body: audioBlob,
-                            headers: {
-                                'Content-Type': 'audio/webm' // Must match your recording format
-                            }
-                        });
-                    });
-            })
-            .then(() => {
-                console.log('Upload successful');
-            })
-            .catch(error => {
-                console.error('Upload failed:', error);
-            });
-
-    };
+        formData.append('text', finalTranscript || '--');
+        fetch(VIDEO_DOMAIN + (opts.uploadAudioUrl || '/api/upload-audio'), {
+            method: 'POST',
+            body: formData
+        }).then(() => {
+            global.http.get("/audio-uploaded", opts)
+        })
+    }
 
     let toggleRecoord = () => {
 
@@ -251,14 +223,14 @@ let AudioShort = forwardRef((props, ref) => {
     }
 
     let playAndStart = (info) => {
-        info ??= {}
         let {title, smallTitle} = info;
+        console.log("qqqqq titlttl", title, opts);
 
         if (!opts.playTextSpeechBeforeQuiz) {
             return recStart();
         }
 
-
+        console.log("qqqqq smallTitle", {smallTitle});
         textToVoice({
             text: title + (/расскажите возможные а/gi.test(smallTitle) && smallTitle != title ? `. ${smallTitle}` : ``),
             lng,
@@ -279,18 +251,20 @@ let AudioShort = forwardRef((props, ref) => {
         setInitMic(false)
     }
 
-    let onRecordComplete = (url) => {
+    let onRecordComplete = (formData, url) => {
         setStatus("complete")
         setRecording(false)
         setRecognizing(true)
         setText(finalTranscript || 'Распознавание');
-        setSrc(url)
+
+        _formData = url;
+        setSrc(_formData)
 
         if (!opts.isExam && opts.playTextSpeechAfterAudioRecord) {
-            myPlayer({src: url})
+            myPlayer({src: _formData})
         }
 
-        console.log("qqqqq RRRRR C9999999999999999", url);
+        console.log("qqqqq RRRRR C9999999999999999",);
 
         setTimeout(() => {
 
@@ -299,7 +273,7 @@ let AudioShort = forwardRef((props, ref) => {
                 console.log("qqqqq RRRRR C9999999999999999   222", r);
 
                 setRecognizing(false)
-                uploadToServerAudio(url, finalTranscript, {audioHash})
+                uploadToServerAudio(formData, finalTranscript, {audioHash})
                 let text = getText();
                 setText(text);
                 onChange({}, 'recComplete');
@@ -814,7 +788,6 @@ export function recognitionStart(startCb, completeCb,) {
             startCb && startCb()
             audioChunks = [];
             mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus',
                 //   mimeType: 'audio/ogg; codecs=opus',
                 audioBitsPerSecond: 16000, // Adjust as needed (e.g., 32000 for 32 kbps)
                 sampleRate: 16000, // Adjust as needed (e.g., 16000 Hz)
@@ -823,12 +796,11 @@ export function recognitionStart(startCb, completeCb,) {
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
                     audioChunks.push(event.data);
-                    console.log("qqqqq event data", event.data);
                 }
             };
 
             mediaRecorder.onstop = () => {
-                console.log("qqqqq on stop 999999999999999999999999999999",audioChunks);
+                console.log("qqqqq on stop 999999999999999999999999999999",);
                 onSend(audioChunks)
 
             };
@@ -853,22 +825,15 @@ export function recognitionStart(startCb, completeCb,) {
 
 
     function onSend(_audioChunks) {
-        const audioBlob = new Blob(_audioChunks, {type: 'audio/webm'}); // You can change the format if needed
+        const audioBlob = new Blob(_audioChunks, {type: 'audio/wav'}); // You can change the format if needed
+        // const audioBlob = new Blob(getFake(), {type: 'audio/wav'}); // You can change the format if needed
+        const formData = new FormData();
+        formData.append('user', user.get_id())
+        formData.append('audio', audioBlob, audioHash + '.wav');
 
-        console.log("qqqqq audio Chunkds 1", _audioChunks, audioBlob);
-        const audioUrl = URL.createObjectURL(audioBlob);
 
-        // console.log("qqqqq audio Chunkds 2", audioUrl);
-        //
-        //
-        // // const audioBlob = new Blob(getFake(), {type: 'audio/wav'}); // You can change the format if needed
-        // const formData = new FormData();
-        // formData.append('user', user.get_id())
-        // formData.append('audio', audioBlob, audioHash + '.webm');
-        //
-        //
-        // audioFile = formData;
-        completeCb && completeCb(audioUrl);
+        audioFile = formData;
+        completeCb && completeCb(audioFile, URL.createObjectURL(audioBlob));
 
         audioChunks = [];
     }
@@ -879,7 +844,7 @@ export function recognitionStart(startCb, completeCb,) {
 export function recognitionInit(cb) {
     recognition = new webkitSpeechRecognition(); // Create a SpeechRecognition object
 
-    recognition.lang = lngRecognize; // Set the language for recognition (e.g., 'en-US' for English)
+    recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
     recognition.interimResults = true; // Enable interim results
     recognition.continuous = true;
 

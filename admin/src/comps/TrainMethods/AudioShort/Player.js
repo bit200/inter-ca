@@ -31,7 +31,6 @@ export default function Player(props) {
 
     window.myPlayer = (props) => {
         setText(props.text || '')
-        console.log("qqqqq prosppppppppppppppppp", props);
         if (props.hash) {
             let src = global.env.VIDEO_DOMAIN + `/audio/${props.user}/${props.hash}.wav`;
             console.log("qqqqq SRCCCCCCC", );

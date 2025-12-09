@@ -98,7 +98,7 @@
   },
   "scripts": {
     "analyze": "source-map-explorer 'build/static/js/*.js'",
-    "start": "PORT=3001 node scripts/start.js",
+    "start": "node scripts/start.js",
     "build": "DISABLE_ESLINT=true NODE_ENV=production node --stack-size=4096 scripts/build.js",
     "test": "node scripts/test.js"
   },

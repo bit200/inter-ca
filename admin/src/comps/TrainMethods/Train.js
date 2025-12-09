@@ -279,15 +279,12 @@ function Train(props) {
     let activeItem = items[activeInd] || {};
     let item = activeItem.item || {};
     item.answerType = item.answerType || 'quiz'
-    let {answerType, type} = item;
+    let {answerType} = item;
     let hist = history[getQuizId()] || {};
-
-    answerType = answerType || type;
-    console.log("qqqqq aaaaaaaa", {type, answerType}, item, items );
 
     timers[activeInd] = timers[activeInd] || getStartTime()
     let timer = timers[activeInd];
-    let isActive = props.isForceAcitve || process;
+    let isActive = process;
     let isErrRec = timer.perc < 30 && timer.time > -1;
 
     if (isResults) {
@@ -308,8 +305,7 @@ function Train(props) {
         onNext: onNext,
         onSubmit: onSubmit,
         onChange: onChange,
-        onNextQuizTimer: props.onNextQuizTimer,
-        skipBottomOpenText: props.skipBottomOpenText,
+
         getCodeFiles: props.getCodeFiles,
         getStartAudioAttempt: props.getStartAudioAttempt,
         getItemNameAndDesc: props.getItemNameAndDesc,
@@ -336,7 +332,6 @@ function Train(props) {
     let canClickDot = !opts.woClickTopCircleNavigation;
     console.log("qqqqq TERAIN RENDER", EXT_OBJ, history);
 
-    console.log("qqqqq time4444r", timer, {isActive});
     return <div>
         <DebugLogs>
             ErrRec: {isErrRec ? 'TRUE' : 'FALSE'}
@@ -410,6 +405,7 @@ function Train(props) {
                 iteration={timeoutIteration}
                 active={isActive}
                 onChange={(time, perc) => {
+                    //console.log("qqqqq on trigger timer Change", time, perc);
                     timers[activeInd] = {...timers[activeInd], time, perc};
                     setTimers({...timers})
                     props.onChangeTime && props.onChangeTime(time, timers, activeInd)

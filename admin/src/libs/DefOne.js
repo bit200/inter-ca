@@ -164,30 +164,10 @@ function ProjectDetails(params) {
     }
     // console.log("qqqqq GETTERRRRRRRRRRR RELOAD", timerFN(), obj, prevGetter);
 
-    if (props.woDetailedButtons) {
-        return <>
-                <Smart
-                    _this={this}
-                    defSize={2}
-                    autoSaveFn={autoSaveFn}
-                    httpSaveFn={httpSaveFn}
-                    defClass={props.defClass}
-                    items={[].concat(opts.edit, [
-                    ])}
-                    obj={obj}
-                    onChange={(obj, field, value) => {
-                        setObj(obj, {key: 'smart2', field, value})
-                        setCount(+count + 1)
-                        props.autoSave && autoSaveFn()
-                    }}></Smart>
-            {/*</div>*/}
-        </>
-    }
     return  <div className="card">
                 <div className="card-body">
                     <div className={'row justify-content-center'}>
                         <div className="col-12 ">
-                            {props.woDetailedButtons ? 'WO DETAILED' : 'WITH DETAILS'}
 
                             <div className="pull-right zSMax">
 
