@@ -71,8 +71,11 @@ export const stopAnyPlay = (key) => {
 
     }
 }
+
 window.textToVoice = (params, cb, delay = 5) => {
-    let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
+    let {text, lng = 'en-EN', textToVoiceTimeoutMS} = params || {};
+    // let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
+
     let speed = params.textToVoiceSpeedMSPerSymbolLimit || 100
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');

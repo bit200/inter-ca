@@ -228,7 +228,8 @@ function recognitionStart(cb) {
 function recognitionInit(cb) {
     recognition = new webkitSpeechRecognition(); // Create a SpeechRecognition object
 
-    recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    // recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    recognition.lang = 'en-EN'; // Set the language for recognition (e.g., 'en-US' for English)
     recognition.interimResults = true; // Enable interim results
     recognition.continuous = true;
 
