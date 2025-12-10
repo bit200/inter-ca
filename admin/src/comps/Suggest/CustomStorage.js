@@ -1,22 +1,22 @@
 import _ from 'underscore';
 
 let questionFilters = {
-    '~1d': {name: 'Сегодня', start: 0, end: 1},
-    '~2d': {name: 'Вчера', start: 1, end: 2},
-    '~3d': {name: 'Позавчера', start: 2, end: 3},
-    '2d': {name: '2 дня', start: 0, end: 2},
-    '3d': {name: '3 дня', start: 0, end: 3},
-    '7d': {name: '7 дней', start: 0, end: 7},
-    '14d': {name: '14 дней', start: 0, end: 14},
-    '31d': {name: '31 день', start: 0, end: 31},
-    '90d': {name: '90 дней', start: 0, end: 90},
-    '> 1d': {name: '> 1 дня', start: 1, end: -1},
-    '> 2d': {name: '> 2 дней', start: 2, end: -1},
-    '> 3d': {name: '> 3 дней', start: 3, end: -1},
-    '> 7d': {name: '> 7 дней', start: 7, end: -1},
-    '> 14d': {name: '> 14 дней', start: 14, end: -1},
-    '> 31d': {name: '> 31 дня', start: 31, end: -1},
-    '> 90d': {name: '> 90 дней', start: 90, end: -1},
+    '~1d': {name: 'Today', start: 0, end: 1},
+    '~2d': {name: 'Yesterday', start: 1, end: 2},
+    '~3d': {name: 'The day before yesterday', start: 2, end: 3},
+    '2d': {name: '2 days', start: 0, end: 2},
+    '3d': {name: '3 days', start: 0, end: 3},
+    '7d': {name: '7 days', start: 0, end: 7},
+    '14d': {name: '14 days', start: 0, end: 14},
+    '31d': {name: '31 days', start: 0, end: 31},
+    '90d': {name: '90 days', start: 0, end: 90},
+    '> 1d': {name: '> 1 day', start: 1, end: -1},
+    '> 2d': {name: '> 2 days', start: 2, end: -1},
+    '> 3d': {name: '> 3 days', start: 3, end: -1},
+    '> 7d': {name: '> 7 days', start: 7, end: -1},
+    '> 14d': {name: '> 14 days', start: 14, end: -1},
+    '> 31d': {name: '> 31 days', start: 31, end: -1},
+    '> 90d': {name: '> 90 days', start: 90, end: -1},
 }
 
 let timer;
