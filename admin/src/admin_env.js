@@ -4,6 +4,7 @@ global.is_local = /localhost|192\.168\./.test(window.location.host) ? 1 : 0;
 
 let local = 'http://' + window.location.hostname + ':6057';
 let isAqa = /aqa\./gi.test(window.location.hostname)
+let isKedu = /itkedu\./gi.test(window.location.hostname)
 // let local = 'http://212.8.247.141:6057'
 // local = 'https://api-razvitie.itrum.ru'
 local = 'http://localhost:6057'
@@ -16,6 +17,7 @@ let servers = {
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
     academy:  'https://api-razvitie.itk.academy',
+    kedu:  'https://api.itkedu.com',
     def:  'https://api-razvitie.itrum.ru'
 }
 let Demo =  {
@@ -41,7 +43,7 @@ let logoImgs = {
     academy: Demo,
 }
 
-let serverKey = global.is_local ? 'local' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : 'def'
+let serverKey = global.is_local ? 'local' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
 if (global?.is_local) {
     serverKey = 'academy'
     // isDemo = true;
