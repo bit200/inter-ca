@@ -1,3 +1,7 @@
+- app.itkedu.com
+- admin-i.itkedu.com
+- api.itkedu.com
+
 
 
 - audio player 3-rd party service
