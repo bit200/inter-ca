@@ -17,7 +17,7 @@ let servers = {
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
     academy:  'https://api-razvitie.itk.academy',
-    kedu:  'https://api.itkedu.com',
+    kedu:  'https://api-n.itkedu.com',
     def:  'https://api-razvitie.itrum.ru'
 }
 let Demo =  {
