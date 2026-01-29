@@ -3135,6 +3135,20 @@ export default {
         en: "Content suggestions",
         fr: `Suggestions de contenu`
     },
+    "publicOffer": {
+        ru: "Публичная оферта",
+        es: "Oferta pública",
+        de: "Öffentliche Angebots",
+        en: "Public offer",
+        fr: `Offre publique`
+    },
+    "openOfferPDF": {
+        ru: "Открыть оферту (PDF)",
+        es: "Abrir oferta (PDF)",
+        de: "Angebot öffnen (PDF)",
+        en: "Open offer (PDF)",
+        fr: `Ouvrir l'offre (PDF)`
+    },
     "bannerTitle1": {
         ru: "Оффер за 3 месяца",
         es: "Oferta en 3 meses",

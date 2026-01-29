@@ -195,6 +195,7 @@ global.CONFIG = {
         },
         {name: "micTest", url: "mic", icon: 'iconoir-microphone-check'},
         {name: "suggest", url: "suggestions", icon: 'iconoir-git-fork'},
+        {name: "publicOffer", url: "publicOffer", icon: 'iconoir-git-fork'},
         // { name: "Таблица Вопросов", url: "table" },
 
     ]),
@@ -468,6 +469,10 @@ const router = createBrowserRouter([
                 path: "main",
                 element: Loader("TrainMethods/CoursesList")(),
             },
+            {
+                path: "publicOffer",
+                element: <PublicOffer />,
+            },
 
             {
                 path: '/temp', element: <TempEl/>, children: [
@@ -504,6 +509,16 @@ const router = createBrowserRouter([
     // },
 ]);
 
+function PublicOffer() {
+    return (
+        <div className="p-4">
+            <h2>{t('publicOffer')}</h2>
+            <a href="/publicOffer.pdf" target="_blank" rel="noopener noreferrer">
+                {t('openOfferPDF')}
+            </a>
+        </div>
+    );
+}
 
 function TempEl () {
 
