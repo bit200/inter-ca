@@ -195,7 +195,7 @@ global.CONFIG = {
         },
         {name: "micTest", url: "mic", icon: 'iconoir-microphone-check'},
         {name: "suggest", url: "suggestions", icon: 'iconoir-git-fork'},
-        {name: "publicOffer", url: "publicOffer", icon: 'iconoir-git-fork'},
+        {name: "publicOffer", url: "publicOffer", icon: 'iconoir-journal-page'},
         // { name: "Таблица Вопросов", url: "table" },
 
     ]),
