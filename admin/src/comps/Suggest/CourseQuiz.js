@@ -284,13 +284,11 @@ function CourseQuiz(props) {
                     {isQuizOk && !isLastModule && <Button color={0} onClick={(scb) => {
                         onClose()
                         scb && scb()
-                    }
-                    }>Отлично, перейти к след модулю</Button>}
+                    }}>{t('nextModuleSuccess')}</Button>}
                     {isQuizOk && isLastModule && <Button color={0} onClick={(scb) => {
                         onClose()
                         scb && scb()
-                    }
-                    }>Отлично, ты прошел курс! Молодец!</Button>}
+                    }}>{t('courseCompletedSuccess')}</Button>}
 
 
                 </div>}

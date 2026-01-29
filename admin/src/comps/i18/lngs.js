@@ -2835,6 +2835,20 @@ export default {
         en: "Next",
         fr: `Suivant`
     },
+    nextModuleSuccess: {
+        ru: 'Отлично, перейти к след модулю',
+        es: 'Excelente, pasar al siguiente módulo',
+        de: 'Ausgezeichnet, zum nächsten Modul wechseln',
+        en: 'Great, proceed to the next module',
+        fr: 'Excellent, passer au module suivant'
+    },
+    courseCompletedSuccess: {
+        ru: 'Отлично, ты прошел курс! Молодец!',
+        es: '¡Excelente, has completado el curso! ¡Bien hecho!',
+        de: 'Ausgezeichnet, du hast den Kurs abgeschlossen! Gut gemacht!',
+        en: 'Great, you completed the course! Well done!',
+        fr: 'Excellent, vous avez terminé le cours ! Bravo !'
+    },
     "availableTopics": {
         ru: "Доступные топики",
         es: "Temas disponibles",
