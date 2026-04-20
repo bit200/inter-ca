@@ -45,9 +45,10 @@ let logoImgs = {
 
 let serverKey = global.is_local ? 'local' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
 if (global?.is_local) {
-    serverKey = 'academy'
+    // serverKey = 'academy'
     // isDemo = true;
 }
+console.log('LOOOG', serverKey);
 window.env = {
     domain: servers[serverKey] || servers.def,
     isDemo,

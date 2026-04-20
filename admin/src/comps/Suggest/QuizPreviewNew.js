@@ -21,6 +21,7 @@ let Layout2 = forwardRef((props, ref) => {
 
     let quiz = item;
     let isSubmit = _.size(hist?.chosen || {}) > 0
+    console.log('LOOOG', 'HERE RENDER QUIZ');
 
     useEffect(() => {
         let info = props.getItemNameAndDesc(item, props)

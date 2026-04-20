@@ -110,6 +110,7 @@ function RunExam(props) {
     function loadExam() {
         setLoading(true)
         global.http.get('/load-exam', {_id: getExamId()}).then(exam => {
+            console.log('LOOOG', 'exam', exam);
             setExam(exam)
             setLoading(false)
             _.each(exam.dbQuestions, q => {
@@ -385,14 +386,12 @@ function RunExam(props) {
                                warning={'00:05'}
                                onWarning={(time) => {
                                    warningModal.current.show();
-                               }
-                               }
+                               }}
                                onEnd={() => {
                                    //console.log("qqqqq onENd onEnd",);
                                    onSubmit()
-                               }
-                               }
-                    ></CountDown>
+                               }}
+                    />
                 </h5></div>
             <hr/>
             <div className={'nav flex-column nav-pills text-center'} role="tablist" aria-orientation="vertical">

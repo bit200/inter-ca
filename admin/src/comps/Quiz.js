@@ -91,9 +91,11 @@ function Quiz(props) {
     global.historyObj = historyObj;
     global.setHistoryObj = setHistoryObj;
 
+    console.log('LOOOG', 'RENDER');
 
     useEffect(() => {
         Storage.loadMyQuestions(id, ({questions, history}) => {
+            console.log('LOOOG', { id, questions, history });
             let historyObj = {};
             let query = window.location.href.split('/').slice(-1)[0];
             let queryId = query == +query ? +query : null;
