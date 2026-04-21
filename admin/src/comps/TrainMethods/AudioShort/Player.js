@@ -32,18 +32,18 @@ export default function Player(props) {
     window.myPlayer = (props) => {
         setText(props.text || '')
         if (props.hash) {
-            let src = global.env.VIDEO_DOMAIN + `/audio/${props.user}/${props.hash}.wav`;
-            console.log("qqqqq SRCCCCCCC", );
-            return onChangeSrc(src)
+            const token = user.get_token();
+            fetch(global.env.VIDEO_DOMAIN + `/audio/${props.user}/${props.hash}`, { headers: { authorization: token } })
+                .then(r => r.json())
+                .then(({url}) => onChangeSrc(url))
+            return
         }
         if (props.path) {
             let src = global.env.VIDEO_DOMAIN + '/audio' + props.path;
-           //console.log("qqqqq srccccccccc", src);
             onChangeSrc(src)
         }
         if (props.src || props.src == '') {
             onChangeSrc(props.src)
-
         }
         if (props.src == '') {
             setOpen(false)

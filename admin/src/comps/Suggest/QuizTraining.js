@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import _ from "underscore";
 
 import { Link, Outlet } from "react-router-dom";
-import QuizPreview from "./QuizPreview";
 import MyModal from "../../libs/MyModal";
 import RunQuiz from "./RunQuiz";
 

@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 import CustomStorage from './CustomStorage';
 import {QuizEditFields} from './SuggestionItem'
-import QuizPreview from './QuizPreview'
+import QuizPreview from './QuizPreviewNew'
 import Button from 'libs/Button';
 
 function QuizEditor(props) {
@@ -132,10 +132,12 @@ function QuizEditor(props) {
                     </div>
                     <div className="col-sm-6">
                         <QuizPreview
-                            quiz={{...it, variations: it.variations}}//_.shuffle(it.variations)}}
-                            onSubmit={() => {
-                               //console.log("qqqqq on Submit",);
-                            }}></QuizPreview>
+                            item={{...it, variations: it.variations}}
+                            opts={{}}
+                            hist={{}}
+                            getItemNameAndDesc={(item) => ({title: item.name, smallTitle: '', desc: ''})}
+                            onSubmit={() => {}}
+                        ></QuizPreview>
                     </div>
 
                 </div>

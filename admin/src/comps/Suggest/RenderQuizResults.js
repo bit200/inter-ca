@@ -4,7 +4,7 @@ import _ from 'underscore';
 import {
     Link, Outlet
 } from "react-router-dom";
-import QuizPreview from "./QuizPreview";
+import QuizPreview from "./QuizPreviewNew";
 import {getQuizName} from "../RunExam";
 
 function splitIntoChunks(arr, chunkSize) {
@@ -16,7 +16,7 @@ function splitIntoChunks(arr, chunkSize) {
 }
 
 
-function Layout2(props) {
+function RenderQuizResult(props) {
     let [selectedInd, setSelectedInd] = useState(0)
     let [examHist, setExamHist] = useState(getHist());
     let [userRates, setUserRates] = useState(getExamRates());
@@ -66,12 +66,13 @@ function Layout2(props) {
 
 
     let quiz = (exam.quizQuestionsPlain || [])[selectedInd]
-
+console.log('LOOOG quiz', quiz);
 
     let {rate, codeRate} = getUserRates(quiz)
     let isAudio = isAudioFn(quiz)
     let showCodeRate = isShowCodeRateFn(quiz)
-    console.log("qqqqq history44444", examHist);
+    console.log('LOOOG isAudio', isAudio, examHist, quiz.answerType);
+    // console.log("qqqqq history44444", examHist);
     return <>
         {!!exam && !!exam.quizQuestionsPlain && !!exam.quizQuestionsPlain.length && <div className={'quizResults row'}>
             {/* История тестов. Выполнено правильно {(exam.scoreDetails || {}).quizPerc || 0}% */}
@@ -98,15 +99,14 @@ function Layout2(props) {
                             let isError = () => {
                                 return isAudio && hist?.hash && !rate;
                             }
-                            console.log("qqqqq it", hist);
+                            console.log("qqqqq it hist", hist);
                             return (<div
                                 className={'menuList ' + (ind == selectedInd ? 'activeList' : '')}
-                                key={ind} onClick={() => {
-                                myPlayer(
-                                    hist?.hash
-                                        ? {path: `/${exam.user}/${hist?.hash}.wav`}
-                                        : {src: ''}
-                                )
+                                key={it._id + 'quizQuestionsPlain'} onClick={() => {
+                                const playerParams = hist?.hash ? { hash: hist.hash, user: exam.user } : { src: '' }
+
+                                myPlayer(playerParams)
+
                                 setSelectedInd(ind)
                             }}>
 
@@ -142,11 +142,7 @@ function Layout2(props) {
             <div className="col-sm-9 sticky3">
                 <div className="card">
                     <div className="card-body">
-
-                        <div
-                            style={{padding: '20px'}}
-                            // className={' ' + (_.size((examHist[quiz._id] || {}).chosen) ? 'answered' : 'notanswered')}
-                        >
+                        <div style={{padding: '20px'}}>
                             {isAudio && <>
 
                                 <div>
@@ -155,27 +151,18 @@ function Layout2(props) {
                                 <div>
                                     {([1, 2, 3, 4, 5] || []).map((it, ind) => {
                                         return (
-                                            <>
-                                                <button key={ind}
-                                                        onClick={() => {
-                                                            onUpdate({quiz: quiz._id, rate: it})
-
-                                                        }}
-                                                        className={'btn btn-sm ' + (rate == it ? 'btn-primary btn-active active selected' : 'btn-light')}
-                                                >{it}</button>
-                                            </>
-                    //                     <span key={ind} className={'shortTag ' + (rate == it ? 'selected' : '')}
-                    //                           onClick={() => {
-                    //                               onUpdate({quiz: quiz._id, rate: it})
-                    //                           }}>
-                    //     {it}
-                    // </span>
+                                            <button key={ind + 'rate_audio_ind' + quiz._id}
+                                                    onClick={() => {
+                                                        onUpdate({ quiz: quiz._id, rate: it })
+                                                    }}
+                                                    className={'btn btn-sm ' + (rate == it ? 'btn-primary btn-active active selected' : 'btn-light')}>
+                                                {it}
+                                            </button>
                                             )
                                     })}
                                 </div>
                             </>}
                             {showCodeRate && <>
-
                                 <div>
                                     <small>{t('rateYourCode')}</small>
 
@@ -205,12 +192,13 @@ function Layout2(props) {
                             {isAudio && <div>
                                 <hr/>
                             </div>}
-                            <QuizPreview quiz={quiz}
-                                         skipBottomOpenText={true}
-                                         exam={exam}
-                                         history={{...(examHist || {})[quiz?._id], isSubmit: true,}}
-                                         onSubmit={(chosen) => {
-                                         }}
+                            <QuizPreview
+                                item={quiz}
+                                skipBottomOpenText={true}
+                                hist={{...(examHist || {})[quiz?._id]}}
+                                opts={{canResubmitQuiz: false}}
+                                getItemNameAndDesc={(item) => ({title: item.name, smallTitle: '', desc: ''})}
+                                onSubmit={() => {}}
                             ></QuizPreview>
                         </div>
 
@@ -235,4 +223,4 @@ function Layout2(props) {
     </>
 }
 
-export default Layout2
+export default RenderQuizResult

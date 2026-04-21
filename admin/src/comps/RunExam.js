@@ -10,7 +10,6 @@ import MDEditor from "@uiw/react-md-editor";
 import './RunExam.css';
 import MyModal from "../libs/MyModal";
 import RunQuiz from "./Suggest/RunQuiz";
-import QuizPreview from "./Suggest/QuizPreview";
 import RenderQuizResults from "./Suggest/RenderQuizResults";
 import Loading from "../libs/Loading/Loading";
 import LogsStarterPreview from "./Suggest/LogsStarterPreview";
@@ -110,7 +109,6 @@ function RunExam(props) {
     function loadExam() {
         setLoading(true)
         global.http.get('/load-exam', {_id: getExamId()}).then(exam => {
-            console.log('LOOOG', 'exam', exam);
             setExam(exam)
             setLoading(false)
             _.each(exam.dbQuestions, q => {
@@ -121,6 +119,9 @@ function RunExam(props) {
             _.each(exam.history, q => {
                 history[q._id] = q.last
             })
+
+            console.log('LOOOG history', history);
+            console.log('LOOOG exam', exam);
 
             setJsObj(jsObj)
             setHistory(history)
@@ -498,10 +499,7 @@ function RunExam(props) {
                         <div className="tc">
                             {t('youstillhave')}
                             <div></div>
-                            <CountDown
-                                end={getEndDate(exam)}
-
-                            ></CountDown>
+                            <CountDown end={getEndDate(exam)}/>
                             <div>
                                 <hr/>
                             </div>

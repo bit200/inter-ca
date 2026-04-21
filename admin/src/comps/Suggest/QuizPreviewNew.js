@@ -11,7 +11,7 @@ global._setAdminMode = (v) => {
     localStorage.setItem("adminMode", v);
 };
 
-let Layout2 = forwardRef((props, ref) => {
+let QuizPreviewNew = forwardRef((props, ref) => {
     let [disabledMs, setDisabledMS] = useState(null);
     let [chosen, setChosen] = useState({}); //{2: true}
     let [_isSubmit, setIsSubmit] = useState(false);
@@ -191,4 +191,4 @@ let Layout2 = forwardRef((props, ref) => {
     );
 })
 
-export default Layout2;
+export default QuizPreviewNew;
