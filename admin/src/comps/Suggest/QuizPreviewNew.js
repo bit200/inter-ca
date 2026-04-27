@@ -21,7 +21,6 @@ let QuizPreviewNew = forwardRef((props, ref) => {
 
     let quiz = item;
     let isSubmit = _.size(hist?.chosen || {}) > 0
-    console.log('LOOOG', 'HERE RENDER QUIZ');
 
     useEffect(() => {
         let info = props.getItemNameAndDesc(item, props)
@@ -101,7 +100,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
     let isAdminMode = !isExam && localStorage.getItem("adminMode") == "1";
     let {preventOnNext} = opts || {};
     let isTimeout = hist?.data?.isTimeout;
-    console.log("qqqqq IS SUBMIT", hist, isSubmit, opts.canResubmitQuiz);
+    // console.log("qqqqq IS SUBMIT", hist, isSubmit, opts.canResubmitQuiz);
     return (<div
             className={
                 "quiz-preview animChilds " + (!isExam && isSubmit ? "submitted" : "nonSubmitted")

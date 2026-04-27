@@ -277,7 +277,7 @@ global.CONFIG = {
                     }
                     },
                 {size: '12', type: 'HR'},
-                
+
             ],
             top_filters: [
                 {
@@ -452,7 +452,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "quiz/:id",
-                element: Loader("RunExam")(),
+                element: Loader("RunExam/RunExam")(),
             },
             {
                 path: "courses/:id",
@@ -562,7 +562,6 @@ function Loader(path) {
             "./" +
             path.replace(".js", "").replace("./", "").replace(/^\//gi, "") +
             ".js";
-
         if (files.indexOf(_path) > -1) {
             let Comp = require("./comps/" + path).default;
             return function (props) {

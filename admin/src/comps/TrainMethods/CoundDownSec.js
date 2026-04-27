@@ -6,7 +6,7 @@ let intervalId;
 export function CountDownSecs(props) {
     let [count, setCount] = useState(props.count)
 
-    console.log("qqqqq TIMER PROPS", props);
+    // console.log("qqqqq TIMER PROPS", props);
     let byMs = 500;
     useEffect(() => {
         if (!props.count && props.active) {

@@ -1,22 +1,23 @@
 import React, {useState, useEffect, useRef} from 'react';
 import _ from 'underscore';
 import Button from 'libs/Button'
-import {
-    Link, Outlet
-} from "react-router-dom";
-import CodeRun from "./Suggest/CodeRun";
+import CodeRun from "../Suggest/CodeRun";
 import MDEditor from "@uiw/react-md-editor";
 // import Editor from "@monaco-editor/react";
 import './RunExam.css';
-import MyModal from "../libs/MyModal";
-import RunQuiz from "./Suggest/RunQuiz";
-import RenderQuizResults from "./Suggest/RenderQuizResults";
-import Loading from "../libs/Loading/Loading";
-import LogsStarterPreview from "./Suggest/LogsStarterPreview";
-import LazyEditor from "./LazyEditor/LazyEditor";
-import Train from "./TrainMethods/Train";
-import Skeleton from "../libs/Skeleton";
-import MyImg from "./MyImg";
+import MyModal from "../../libs/MyModal";
+import RunQuiz from "../Suggest/RunQuiz";
+import RenderQuizResults from "../Suggest/RenderQuizResults";
+import Loading from "../../libs/Loading/Loading";
+import LogsStarterPreview from "../Suggest/LogsStarterPreview";
+import LazyEditor from "../LazyEditor/LazyEditor";
+import Train from "../TrainMethods/Train";
+
+import MyImg from "../MyImg";
+import {useExamData} from "./useExamData";
+import ExamLoader from "./ExamLoader";
+import IncorrectExamView from "./IncorrectExamView";
+import SubmittedExamPreview from "./SubmittedExamPreview";
 // import Editor from './Suggest/LazyEditor/LazyEditor'
 let timer = {}
 
@@ -67,21 +68,29 @@ function CountDown(props) {
         className={'countdots'}>:</span> {mins}</div>
 }
 
+function getExamId() {
+    const idStr =  window.location.href.split('/quiz/')[1]
+    return idStr ? Number(idStr) : idStr
+}
+
 
 function RunExam(props) {
-    let [exam, setExam] = useState({})
-    let [dbQuestions, setDbQuestions] = useState([])
     let [submitLoading, setSubmitLoading] = useState(false)
-    let [jsObj, setJsObj] = useState({})
-    let [history, setHistory] = useState({})
-    let [loading, setLoading] = useState(true)
     let [selectedInd, setSelectedInd] = useState(0)
 
-    let [selectedTask, setSelectedTask] = useState(0)
+    const {
+        loading,
+        loadExam,
+        history,
+        jsObj,
+        exam,
+        setExam,
+        dbTasks,
+        questionsDb,
+        questionsCount,
+        setHistory,
+    } = useExamData(setSelectedInd, getExamId)
 
-    function getExamId() {
-        return window.location.href.split('/quiz/')[1]
-    }
 
     function updateExam(obj, question) {
         let SEND_DELAY = 1
@@ -106,32 +115,9 @@ function RunExam(props) {
         loadExam()
     }, [])
 
-    function loadExam() {
-        setLoading(true)
-        global.http.get('/load-exam', {_id: getExamId()}).then(exam => {
-            setExam(exam)
-            setLoading(false)
-            _.each(exam.dbQuestions, q => {
-                let jsDetails = _.filter(exam.jsDetails, it => it.question === q._id)[0]
-                jsObj[q._id] = (jsDetails || {}).details;
-            })
-            let history = {}
-            _.each(exam.history, q => {
-                history[q._id] = q.last
-            })
 
-            console.log('LOOOG history', history);
-            console.log('LOOOG exam', exam);
 
-            setJsObj(jsObj)
-            setHistory(history)
-            setSelectedInd(exam.quizQuestionsCount ? -1 : 0)
-
-            setDbQuestions(exam.dbQuestions)
-        })
-    }
-
-    let question = dbQuestions[selectedInd] || {}
+    const selectedTask = dbTasks[selectedInd] || {}
     let SUBMIT_DEFAULT = exam.availableSubmitCount || 0;
 
     function canSubmit() {
@@ -146,10 +132,7 @@ function RunExam(props) {
         } else {
             return arr[exam.attemptInd]
         }
-
-
     }
-
 
     let submitDetails = exam.submitDetails || {};
 
@@ -163,10 +146,10 @@ function RunExam(props) {
         setSubmitLoading(true)
         global.http.get('/submit-task-by-user', {_id: exam._id})
             .then(r => {
-                //console.log("qqqqq rrrr", r);
                 setExam(r)
                 scb && scb();
                 setSubmitLoading(false)
+                loadExam();
             })
     }
 
@@ -174,17 +157,9 @@ function RunExam(props) {
     let warningModal = useRef(null);
 
     if (loading) {
-        return <div className={'row'}>
-            <div className="col-xs-12">
-                <div className="card">
-                    <div className="card-body text-center tc">
-                        <Skeleton count={3} label={t('examLoading') + ' ...'}></Skeleton>
-                    </div>
-                </div>
-                {/*<Loading loading={true}/>*/}
-            </div>
-        </div>
+        return <ExamLoader />
     }
+
     if (/unactive/gi.test(exam.status)) {
         return <div className="card">
             <div className="card-body">
@@ -221,7 +196,7 @@ function RunExam(props) {
                             global.http.get('/user-start-exam', {_id: getExamId()})
                                 .then(exam => {
                                     setExam(exam)
-                                    setSelectedInd(exam.quizQuestionsCount ? -1 : 0)
+                                    setSelectedInd(questionsCount ? -1 : 0)
                                     scb && scb()
                                     loadExam();
                                 })
@@ -241,144 +216,21 @@ function RunExam(props) {
     }
 
     if (exam.status === 'submitted' || submitLoading) {
-        window.onRenderLeftMenu && window.onRenderLeftMenu(null)
-        selectedInd = selectedInd < 1 ? 0 : selectedInd;
-        let selTask = dbQuestions[selectedInd] || {}
-        let it = selTask;
-        let qId = it._id;
-        let perc = submitDetails[qId] ? submitDetails[qId].perc : -1;
-        let hist = history[qId] || {};
-        let code = (hist.files || {})['']
-        let logsReader = hist.logsReader || ''
-        let jsDetails = jsObj[qId] || {};
-        let files = Object.keys(hist.files || {}) || [''];
-        let isLogsReader = jsDetails.codeType == 'logreader'
-
-        let isIncorrect = !((exam || {}).quizQuestionsPlain || []).length && !(dbQuestions || []).length;
-        if (isIncorrect) {
-            return <>
-                <hr/>
-                <div className="card">
-                    <div className="card-body tc">
-
-                        <div className={'tc'}
-                             style={{
-                                 fontSize: '30px',
-                                 fontWeight: 'bold',
-                                 textAlign: 'center', width: '100%', padding: '50px 10px'
-                             }}>
-
-                            {t('noCorrectExamData')}
-                            <div>
-                                <MyImg w={300} top={20}>404</MyImg>
-                            </div>
-
-                        </div>
-
-                    </div>
-                </div>
-            </>
-        }
-        return <>
-            <div className={'mainCont2 row ' + (submitLoading ? 'o4' : '')}>
-                {/*<Link to={'/quiz'}>*/}
-                {/*    <i className="fa fa-arrow-left"*/}
-                {/*       style={{marginRight: '10px', marginTop: '1px', float: 'left'}}></i> Вернуться</Link>*/}
-
-
-                <div className="col-sm-12">
-                    <RenderQuizResults exam={exam} history={history}></RenderQuizResults>
-                </div>
-                <div className="col-sm-3 sticky3">
-                    <div className="card">
-                        <div className="card-body row">
-
-                            {(dbQuestions || []).map((it, ind) => {
-                                let qId = it._id;
-                                let perc = submitDetails[qId] ? submitDetails[qId].perc : -1;
-                                let hist = history[qId] || {};
-                                let code = (hist.files || {})['']
-                                let logsReader = hist.logsReader || ''
-                                let jsDetails = jsObj[qId] || {};
-                                let files = Object.keys(hist.files || {}) || [''];
-                                let isLogsReader = jsDetails.codeType == 'logreader'
-                                //console.log("qqqqq logsReaderlogsReaderlogsReader", history, logsReader, isLogsReader, it);
-
-                                return (
-                                    <div key={ind} className={'menuList  ' + (selectedInd == ind ? 'activeList' : '')}
-                                         onClick={() => {
-                                             setSelectedInd(ind)
-
-                                         }}>
-
-                                        <b>{t('task')} #{ind + 1}</b>
-                                        {exam.submitDetails &&
-                                            <div className={'taskProgress'} style={{maxWidth: '100px'}}>
-                                                <div
-                                                    className={"taskProgressValue " + (perc < 30 ? 'error' : perc < 70 ? 'norm' : 'good')}
-                                                    style={{width: (perc + '%')}}></div>
-                                            </div>}
-
-
-                                    </div>)
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="col-sm-9 sticky3">
-                    <div className="card">
-                        <div className="card-body">
-                            <div className="row">
-                                <div className="col-sm-6">
-                                    <MDEditor.Markdown
-                                        source={it.name}></MDEditor.Markdown>
-
-                                    {isLogsReader && <div>
-                                        <LogsStarterPreview _id={it._id}></LogsStarterPreview>
-                                    </div>}
-                                </div>
-                                <div className="col-sm-6">
-                                    {isLogsReader && <div style={{height: '500px'}}>
-                                        <small>{'Ответ'}</small>
-                                        <LazyEditor
-                                            options={{domReadOnly: true}}
-                                            language={'javascript'}
-                                            value={logsReader}
-                                            height={'500px'}></LazyEditor></div>}
-                                    {!isLogsReader && (files || []).map((fileName, ind) => {
-                                        let code = (hist.files || {})[fileName] || ''
-                                        return (<div key={ind} className={'rel'} style={{height: '500px'}}>
-                                            <small>{fileName || 'index.js'}</small>
-                                            <LazyEditor
-                                                options={{domReadOnly: true}}
-                                                language={'javascript'}
-                                                value={code}
-                                                height={'300px'}></LazyEditor>
-                                        </div>)
-                                    })}
-                                    {!isLogsReader && !(files || [])?.length && <div className={'tc'}>
-                                        <MyImg w={200}>404</MyImg>
-
-                                        <div
-                                            style={{marginTop: '20px'}}
-                                        >{t('taskNotStarted')}</div>
-                                    </div>}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-
-            </div>
-        </>
+        return <SubmittedExamPreview
+            exam={exam}
+            selectedInd={selectedInd}
+            setSelectedInd={setSelectedInd}
+            dbTasks={dbTasks}
+            submitDetails={submitDetails}
+            jsObj={jsObj}
+            questionsDb={questionsDb}
+            submitLoading={submitLoading}
+            history={history}
+        />
     }
 
     let Comp = () => {
         return <div className='examMenu'>
-
 
             <div className='examCount'>
                 <h5 className={'tc'} style={{marginTop: '0px'}}>
@@ -396,21 +248,20 @@ function RunExam(props) {
                 </h5></div>
             <hr/>
             <div className={'nav flex-column nav-pills text-center'} role="tablist" aria-orientation="vertical">
-                {Boolean(exam.quizQuestionsCount) && <div
+                {Boolean(questionsCount) && <div
                     onClick={() => {
                         setSelectedInd(-1)
                     }}
                     className={'nav-link waves-effect waves-light  ' + (selectedInd == -1 ? 'active' : '')}>
-                    {t('questions')}({exam.quizQuestionsCount})
+                    {t('questions')}({questionsCount})
                 </div>}
-                {(dbQuestions || []).map((it, ind) => {
+                {(dbTasks || []).map((it, ind) => {
                     let qId = it._id;
                     let perc = submitDetails[qId] ? submitDetails[qId].perc : -1;
                     return (<div key={ind}
                                  className={'nav-link waves-effect waves-light ' + (selectedInd == ind ? 'active' : '')}
                                  onClick={() => {
                                      setSelectedInd(ind)
-
                                  }}>
                         {t('task')} #{ind + 1}
                         {/* {exam.submitDetails && <div className={'taskProgress'}>
@@ -442,12 +293,10 @@ function RunExam(props) {
                 color={4}
                 forceDisabled={submitLoading}
                 onClick={(scb) => {
-                    //console.log("qqqqq click", );
                     onConfirm({
                         name: t('areYouSureToComplete')
                     }, () => {
                         onSubmit(scb)
-
                     })
                 }}>
                 <div className={'btncheck0'}>
@@ -473,7 +322,7 @@ function RunExam(props) {
     //     setHistory(history)
     //     updateExam(history[questionId], questionId)
     // }
-    //console.log("qqqqq exam", exam, history, dbQuestions);
+    //console.log("qqqqq exam", exam, history, dbTasks);
     //console.log("qqqqq historyhistoryhistoryhistory", history);
     console.log('historyObj!!3333344', JSON.stringify(history[-1], null, 4))
 
@@ -624,8 +473,8 @@ function RunExam(props) {
                                         console.log("qqqqq ON STOP on Stop ]]", v);
                                     }}
                                     getStartItems={async () => {
-                                        console.log("qqqqq GET START ITEMS [[ ", exam.quizQuestionsPlainPub);
-                                        return exam.quizQuestionsPlainPub
+                                        console.log("qqqqq GET START ITEMS [[ ", questionsDb);
+                                        return questionsDb
                                     }}
                                     getStartIndex={(items, history) => {
                                         // return 7
@@ -673,7 +522,8 @@ function RunExam(props) {
                                         woClickTopCircleNavigation: true,
                                         woTopCircleNavigation: false,
                                         // resetTimeOnClickItem: true,
-                                        quizesLength: exam?.quizQuestionsCount,
+                                        quizesLength: questionsCount,
+                                        examId: getExamId(),
 
                                         woUploadAudio: false,
                                         startWebCam: false,
@@ -725,44 +575,38 @@ function RunExam(props) {
             }
             {selectedInd !== -1 && <CodeRun
                 isNewExam={true}
-                question={question}
+                question={selectedTask}
                 onChangeCurStr={(v) => {
-                    if (question && question._id && v) {
-                        let questionId = question._id;
+                    if (selectedTask && selectedTask._id && v) {
+                        let questionId = selectedTask._id;
                         history[questionId] ??= {}
                         history[questionId].curCasesStr = v;
                         setHistory({...history})
                         updateExam(history[questionId], questionId)
                     }
-
                 }}
                 onChangeCode={(v, file) => {
                     file = file || ''
-                    let questionId = question._id;
+                    let questionId = selectedTask._id;
                     history[questionId] ??= {}
                     history[questionId].files = {...history[questionId].files, [file]: v}
                     setHistory({...history})
                     //console.log("qqqqq on change code is changed", history[questionId], history, questionId);
-
                     updateExam(history[questionId], questionId)
                 }
                 }
                 onChangeLogs={(v) => {
                     //console.log("qqqqq change logs", v);
-                    let questionId = question._id;
+                    let questionId = selectedTask._id;
                     history[questionId] ??= {}
                     history[questionId].logsReader = v;
                     setHistory({...history})
-
                     updateExam(history[questionId], questionId)
-
                 }
                 }
-                history={(history || {})[question._id]}
-                jsDetails={jsObj[question._id]}
-                isExam={true}></CodeRun>}
-
-
+                history={(history || {})[selectedTask._id]}
+                jsDetails={jsObj[selectedTask._id]}
+                isExam={true}/>}
         </div>
     </div>
 }

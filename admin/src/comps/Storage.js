@@ -251,7 +251,6 @@ const Storage = {
             })
     },
     loadMyQuestions(hashTags, cb) {
-        console.log('LOOOG', 'WHYYY', hashTags);
 
         // global.http.get('/my-questions', {hashTags}).then(r => {
         //     cb && cb(r)

@@ -184,6 +184,7 @@ function Train(props) {
             data: pubData(data),
             timer,
             opts: activeItem.opts,
+            examId: props.opts?.examId,
         }
 
         global.http.post(props.submitUrl || '/save-quiz-history', info)
@@ -330,7 +331,7 @@ function Train(props) {
     let isFast = (new Date().getTime() - lastToggle) < 400;
 
     let canClickDot = !opts.woClickTopCircleNavigation;
-    console.log("qqqqq TERAIN RENDER", EXT_OBJ, history);
+    // console.log("qqqqq TERAIN RENDER", EXT_OBJ, history);
 
     return <div>
         <DebugLogs>
