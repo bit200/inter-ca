@@ -29,6 +29,20 @@ function RenderQuizResult(props) {
         setUserRates(getExamRates())
     }, [props.history]);
 
+    // handleSelectItem
+    useEffect(() => {
+        const quiz = exam.quizQuestionsPlain[selectedInd]
+        if(!quiz){
+            return
+        }
+        const quizId = Number(quiz._id)
+        const hist = examHist[quizId] || {}
+        const playerParams = hist?.hash ? { hash: hist.hash, user: exam.user } : { src: '' }
+
+        myPlayer(playerParams)
+
+    }, [selectedInd])
+
     function onUpdate(opts) {
         let quizId = opts.quiz;
 
@@ -60,11 +74,6 @@ function RenderQuizResult(props) {
 
     const handleSelectItem  = (event) => {
         const ind = Number(event.target.dataset.quizIndex ?? '')
-        const quizId = Number(event.target.dataset.quizId ?? '')
-        const hist = examHist[quizId] || {}
-        const playerParams = hist?.hash ? { hash: hist.hash, user: exam.user } : { src: '' }
-
-        myPlayer(playerParams)
         if(typeof setSelectedIndex === 'function') {
             setSelectedIndex(ind)
             return
