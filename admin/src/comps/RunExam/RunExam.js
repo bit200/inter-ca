@@ -86,6 +86,7 @@ function RunExam(props) {
         exam,
         setExam,
         dbTasks,
+        vsTasks,
         questionsDb,
         questionsCount,
         setHistory,
@@ -575,6 +576,7 @@ function RunExam(props) {
             }
             {selectedInd !== -1 && <CodeRun
                 isNewExam={true}
+                examId={exam._id}
                 question={selectedTask}
                 onChangeCurStr={(v) => {
                     if (selectedTask && selectedTask._id && v) {

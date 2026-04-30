@@ -23,6 +23,9 @@ export function useCodeRun(props) {
 
     let question = props.question || (data || {}).question || {};
 
+
+    console.log('LOOOG question', question);
+
     global.setHistoryObj = (histObj) => {
         setData(d => ({...d, historyObj: histObj[getQuestionId()]}));
     };

@@ -48,16 +48,16 @@ function CodeRunComponent(props) {
     let directCodeSolutionModal;
     let casesModal;
 
-    useEffect(() => {
-        window.listenCtrlS = () => {
-            setTopTab('logs');
-            setForceRenderLogs(new Date().getTime());
-        };
-        topRef.current.style.height = Storage.get('codeResizeTop') || '70%';
-        rightRef.current.style.width = Storage.get('codeResizeLeft') || '50%';
-        setBotRef();
-        setLeftRef();
-    }, []);
+    // useEffect(() => {
+    //     window.listenCtrlS = () => {
+    //         setTopTab('logs');
+    //         setForceRenderLogs(new Date().getTime());
+    //     };
+    //     topRef.current.style.height = Storage.get('codeResizeTop') || '70%';
+    //     rightRef.current.style.width = Storage.get('codeResizeLeft') || '50%';
+    //     setBotRef();
+    //     setLeftRef();
+    // }, []);
 
     function setBotRef() {
         let perc = 100 - parseFloat(topRef.current.style.height);
@@ -72,7 +72,26 @@ function CodeRunComponent(props) {
     function getHeight(el) { return el.clientHeight; }
     function getWidth(el) { return el.clientWidth; }
 
+
+    const handleRunVsTask = async () => {
+
+        const result = await global.http.get(`/exam-start-vs-task`, {exam_id: props.examId, task_id: question._id})
+
+        console.log('LOOOG HAHAHAH', result);
+
+        if(result.vscode_link){
+            window.open(result.vscode_link)
+        }
+
+    }
+
     let isNewExam = props.isNewExam;
+
+    if(question.type === "vs_task"){
+        return <div>
+            <button onClick={handleRunVsTask}>RUN</button>
+        </div>
+    }
 
     return <div
         className={'codeRunWrap ' + (dragOpts.drag1 || dragOpts.drag2 ? 'dragging' + (dragOpts.drag1 ? '1' : 2) : '')}

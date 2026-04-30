@@ -8,6 +8,7 @@ export const useExamData = (setSelectedInd, getExamId) => {
     const [history, setHistory] = useState({})
     const [jsObj, setJsObj] = useState({})
     const [dbTasks, setDbTasks] = useState([])
+    const [vsTasks, setVSTasks] = useState([])
     const [questionsDb, setQuestionsDb] = useState([])
 
 
@@ -59,7 +60,8 @@ export const useExamData = (setSelectedInd, getExamId) => {
 
             setSelectedInd?.(exam.quizQuestionsCount ? -1 : 0)
             setQuestionsDb(addExamData(exam.quizQuestionsPlainPub))
-            setDbTasks(exam.tasksDb)
+            setDbTasks([...(exam.tasksDb || []), ...(exam.vsTasksDb || [])])
+            setVSTasks(exam.vsTasksDb)
 
         })
     }
@@ -73,6 +75,7 @@ export const useExamData = (setSelectedInd, getExamId) => {
         setExam,
         dbTasks,
         questionsDb,
+        vsTasks,
         setHistory,
         questionsCount: exam.quizQuestionsCount ?? 0
     }
