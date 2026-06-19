@@ -65,13 +65,13 @@ function Layout2(props) {
                     <a
                         style={{marginRight: '5px'}}
                         onClick={() => {
-                            myPlayer({path: `/${stat.user}/${stat.hash}.wav`})
+                            myPlayer({path: `/${stat.user}/${stat.hash}.webm`})
                         }}><span className="fa fa-play-circle"></span></a>
                     {getTitleInfoName(stat)}
                     {/*{getQuizAnyName(stat)}*/}
 
                     <div className={'recognized-text'}  onClick={() => {
-                        myPlayer({path: `/${stat.user}/${stat.hash}.wav`})
+                        myPlayer({path: `/${stat.user}/${stat.hash}.webm`})
                     }}>
                         {answerDetails.recognizedText || '-'}
                     </div><QHScore item={stat} rate={stat?.answerDetails?.rate} onChange={(rate) => {

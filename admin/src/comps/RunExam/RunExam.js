@@ -379,18 +379,18 @@ function RunExam(props) {
                                         return ++ind % items.length;
                                     }}
                                     preSendFBAQ={(info) => {
-                                        console.log("qqqqq info", info);
+                                        // console.log("qqqqq info", info);
                                         info.opts = info.opts || {};
                                         info.opts.exam = exam._id;
                                         return info;
                                     }}
                                     getItemNameAndDesc={(item, props) => {
-                                        console.log("qqqqq GET TITLE & NAME [[ ", item, props);
+                                        // console.log("qqqqq GET TITLE & NAME [[ ", item, props);
                                         // let smallTitle = item.specialType != 'general' ? getGeneralTitle(item) : ''
                                         return pubGeneralTitle(item)
                                     }}
                                     getCodeFiles={(item, hist, isRestart) => {
-                                        console.log("qqqqq histtttttttttttt", item, hist);
+                                        // console.log("qqqqq histtttttttttttt", item, hist);
                                         let values = (hist || {}).values || [];
 
                                         function pubItem(item, ind) {
@@ -408,7 +408,7 @@ function RunExam(props) {
                                         }
                                     }}
                                     getStartAudioAttempt={(ind) => {
-                                        console.log("qqqqq GET START Audio Attempt [[ ", ind);
+                                        // console.log("qqqqq GET START Audio Attempt [[ ", ind);
                                         return 0;
                                     }}
 
@@ -435,7 +435,7 @@ function RunExam(props) {
                                         updateExam(history[questionId], questionId)
                                     }}
                                     onChange={(quizHistory) => {
-                                        console.log("qqqqq ON CHANGE QUIZ ]]", quizHistory);
+                                        // console.log("qqqqq ON CHANGE QUIZ ]]", quizHistory);
                                         // let {data = {}, answerType} = v;
                                         let questionId = -1
                                         history[questionId] ??= {}
@@ -654,7 +654,7 @@ export function getStartTimers(items, history) {
         let _id = ((item || {}).item || {})._id
         let cd = +((history || {})[_id] || {}).cd
         let time = getDefaultQuizTime(item)
-        console.log("qqqqq timer3333", time, item);
+        // console.log("qqqqq timer3333", time, item);
         let delta = cd ? Math.round((new Date().getTime() - cd) / 1000) : 0;
         if (cd) {
             obj[ind] = {
@@ -668,13 +668,13 @@ export function getStartTimers(items, history) {
         }
     })
 
-    console.log("qqqqq timer333344", obj);
+    // console.log("qqqqq timer333344", obj);
     return obj;
 
 }
 
 function RestulExamPage(props) {
-    console.log("qqqqq result pageeeee", props);
+    // console.log("qqqqq result pageeeee", props);
     return <div className={'tc'} style={{padding: '50px 0', fontSize: '24px'}}>{
         t('congratExamComplete')
     }</div>
@@ -683,7 +683,7 @@ function RestulExamPage(props) {
 
 export function pubGeneralTitle(item) {
     let {answerType, specialName, specialTitle, specialType, specialQuestionType} = item;
-    console.log("qqqqq item44444", specialTitle, item);
+    // console.log("qqqqq item44444", specialTitle, item);
 
     let smallTitle = ''
     let isGeneral = specialType == 'general';
@@ -715,7 +715,7 @@ export function pubGeneralTitle(item) {
     let title = getQuizName(item) || getSpecialName() || smallTitle;
     let desc = isGeneral && title != specialName ? specialName : '';
 
-    console.log("qqqqq smallTitlt", {smallTitle, title, specialTitle, desc});
+    // console.log("qqqqq smallTitlt", {smallTitle, title, specialTitle, desc});
     return {
         lng: '',
         smallTitle,
@@ -730,7 +730,7 @@ export function pubGeneralTitle(item) {
 
 export function getQuizAnyName(quiz) {
     let res = getQuizName(quiz) || quiz?.specialTitle || quiz?.specialName
-    console.log("qqqqq quiz4444", quiz, res);
+    // console.log("qqqqq quiz4444", quiz, res);
     return res;
 }
 

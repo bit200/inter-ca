@@ -45,7 +45,7 @@ function Layout2(props) {
             };
 
             mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(chunks, {type: 'audio/wav'});
+                const audioBlob = new Blob(chunks, {type: 'audio/webm'});
                 const audioUrl = URL.createObjectURL(audioBlob);
                 setSrc(audioUrl)
             };

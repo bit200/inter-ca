@@ -60,7 +60,7 @@ let timeout;
 
 export const stopAnyPlay = (key) => {
     clearTimeout(timeout)
-    console.log("qqqqq titlttl stopAnyPlay", key);
+    // console.log("qqqqq titlttl stopAnyPlay", key);
 
     try {
         myPlayer({src: ''})
@@ -80,7 +80,7 @@ window.textToVoice = (params, cb, delay = 5) => {
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');
 
-    console.log("qqqqq delaydelaydelay", delay);
+    // console.log("qqqqq delaydelaydelay", delay);
     timeout = setTimeout(() => {
         stopAnyPlay('textToVoice');
         cb && cb();
@@ -98,7 +98,7 @@ window.textToVoice = (params, cb, delay = 5) => {
         utterance.onend = () => {
             clearTimeout(timeout)
             setTimeout(() => {
-                console.log("qqqqq titlttl CALLBACK");
+                // console.log("qqqqq titlttl CALLBACK");
                 cb && cb();
             }, 0)
         }
@@ -162,7 +162,7 @@ function to_url_arr(obj) {
 window.vv = 12;
 
 let isDemo = global.env.isDemo;
-console.log("qqqqq isDemo", isDemo);
+// console.log("qqqqq isDemo", isDemo);
 global.CONFIG = {
     menu: pub_menu([
         {name: "Профиль", url: "profile"},
@@ -489,6 +489,14 @@ const router = createBrowserRouter([
                 path: "train",
                 element: <TrainPage/>,
             },
+            {
+                path: "evaluations",
+                element: Loader("EvaluationList")(),
+            },
+            {
+                path: "evaluations/:id",
+                element: Loader("EvaluationDetail")(),
+            },
         ].concat(admin_urls),
     },
     {
@@ -606,7 +614,7 @@ function Root() {
         // mediaInit()
         htmlElement.setAttribute('data-url', window.location.pathname)
         let attr = colorTheme.getSize();
-        console.log("qqqqq attr444", attr, document.body.clientWidth);
+        // console.log("qqqqq attr444", attr, document.body.clientWidth);
         if (attr == 'default' && document.body.clientWidth < 1200) {
             colorTheme.toggleSize();
         }

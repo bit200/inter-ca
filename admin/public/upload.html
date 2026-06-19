@@ -23,7 +23,7 @@
         };
 
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+            const audioBlob = new Blob(chunks, { type: 'audio/webm' });
             const audioUrl = URL.createObjectURL(audioBlob);
             document.getElementById('audioPlayback').src = audioUrl;
         };

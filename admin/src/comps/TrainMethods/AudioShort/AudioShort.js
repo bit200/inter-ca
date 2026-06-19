@@ -265,6 +265,8 @@ let AudioShort = forwardRef((props, ref) => {
             myPlayer({src: _formData})
         }
 
+        console.log('LOOOG', 'COMPLETe RECORD NEED INSERT INFO HERE');
+
         setTimeout(() => {
 
             getDuration(_formData, (r) => {
@@ -766,6 +768,54 @@ function micError() {
 //     mediaRecorder.start();
 // }
 
+function float32ToInt16(input) {
+    const output = new Int16Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    return output;
+}
+
+function encodePcmToWav(pcmChunks, sampleRate) {
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const totalSamples = pcmChunks.reduce((acc, c) => acc + c.length, 0);
+
+    const float32All = new Float32Array(totalSamples);
+    let offset = 0;
+    for (const chunk of pcmChunks) {
+        float32All.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    const int16Data = float32ToInt16(float32All);
+    const dataSize = int16Data.byteLength;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    const writeStr = (off, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+    };
+
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);                                          // PCM
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true); // byteRate
+    view.setUint16(32, numChannels * (bitsPerSample / 8), true);          // blockAlign
+    view.setUint16(34, bitsPerSample, true);
+    writeStr(36, 'data');
+    view.setUint32(40, dataSize, true);
+    new Int16Array(buffer, 44).set(int16Data);
+
+    return new Blob([buffer], { type: 'audio/webm' });
+}
+
 export function recognitionStart({ startCb, completeCb, onChange }) {
     finalTranscript = ''
     interimTranscript = '';
@@ -804,7 +854,7 @@ export function recognitionStart({ startCb, completeCb, onChange }) {
 
             mediaRecorder.onstop = () => {
                 stream.getTracks().forEach(t => t.stop());
-                const localUrl = URL.createObjectURL(new Blob(audioChunks, {type: 'audio/wav'}));
+                const localUrl = URL.createObjectURL(new Blob(audioChunks, {type: 'audio/webm'}));
                 audioChunks = [];
                 completeCb && completeCb(localUrl);
                 stopAudioStream();
@@ -813,13 +863,14 @@ export function recognitionStart({ startCb, completeCb, onChange }) {
             mediaRecorder.start(chunkDurationMs);
         })
         .catch((error) => {
+            console.log('LOOOG', error);
             if (preventMicError) {
                 startCb && startCb()
             }
             micError();
             mediaRecorder = {}
             mediaRecorder.stop = () => {
-                const audioBlob = new Blob(getFake(), {type: 'audio/wav'});
+                const audioBlob = new Blob(getFake(), {type: 'audio/webm'});
                 const localUrl = URL.createObjectURL(audioBlob);
                 completeCb && completeCb(null, localUrl);
             };
@@ -830,8 +881,8 @@ export function recognitionStart({ startCb, completeCb, onChange }) {
 export function recognitionInit(cb) {
     recognition = new webkitSpeechRecognition(); // Create a SpeechRecognition object
 
-    // recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
-    recognition.lang = 'en-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    // recognition.lang = 'en-EN'; // Set the language for recognition (e.g., 'en-US' for English)
     recognition.interimResults = true; // Enable interim results
     recognition.continuous = true;
 
@@ -847,7 +898,7 @@ export function recognitionInit(cb) {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
-        // //console.log('stop RECOGNITION!!!', interimTranscript)
+        //console.log('stop RECOGNITION!!!', interimTranscript)
         // window.stopRecognition && window.stopRecognition
         // transcriptionDiv.innerHTML = finalTranscript; // Display the final transcription
     };
