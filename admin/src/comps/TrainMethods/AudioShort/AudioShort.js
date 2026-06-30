@@ -13,6 +13,7 @@ import {stopAnyPlay} from "../../../App";
 import DebugLogs from "../../DebugLogs";
 import Check from "../../StarRating";
 import {startAudioStream, sendAudioChunk, stopAudioStream} from './audioStream';
+import fixWebmDuration from 'fix-webm-duration';
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -257,7 +258,7 @@ let AudioShort = forwardRef((props, ref) => {
         setRecording(false)
         setRecognizing(true)
         setText(finalTranscript || 'Распознавание');
-
+console.log('LOOOG', 'COMPLETE');
         _formData = localUrl;
         setSrc(_formData)
 
@@ -341,6 +342,7 @@ let AudioShort = forwardRef((props, ref) => {
 
     let recStop = () => {
         setRecording(false)
+        setStatus('processing')
         setTimeout(() => {
             recognitionStop()
             props.onStop && props.onStop();
@@ -452,7 +454,7 @@ let AudioShort = forwardRef((props, ref) => {
                     <Check></Check>
                     {t('finishRec')}</Button>
                 </div>}
-                {status !== 'complete' && !recognizing && !recording &&
+                {status !== 'complete' && status !== 'processing' && !recognizing && !recording &&
                     <div style={{marginTop: '20px'}} className={'afade'}><Button color={4} size={'sm'}
                                                                                  onClick={(scb) => {
                                                                                      scb && scb()
@@ -463,6 +465,15 @@ let AudioShort = forwardRef((props, ref) => {
                     </Button></div>}
             </>}
 
+            {status === 'processing' && <div className={'recognizing afade'}>
+                <span style={{
+                    display: 'inline-block', width: 16, height: 16, marginRight: 8,
+                    border: '2px solid #ccc', borderTopColor: '#0d6efd',
+                    borderRadius: '50%', animation: 'player-spin 0.7s linear infinite',
+                    verticalAlign: 'middle'
+                }}/>
+                {t('processing') || 'Обработка...'}
+            </div>}
             {recognizing && <div className={'recognizing'}>{t('recognizing')} ... </div>}
 
             {!isExam && <>
@@ -854,10 +865,14 @@ export function recognitionStart({ startCb, completeCb, onChange }) {
 
             mediaRecorder.onstop = () => {
                 stream.getTracks().forEach(t => t.stop());
-                const localUrl = URL.createObjectURL(new Blob(audioChunks, {type: 'audio/webm'}));
+                const durationMs = new Date().getTime() - recStartCd;
+                const rawBlob = new Blob(audioChunks, {type: 'audio/webm'});
                 audioChunks = [];
-                completeCb && completeCb(localUrl);
                 stopAudioStream();
+                fixWebmDuration(rawBlob, durationMs, (fixedBlob) => {
+                    const localUrl = URL.createObjectURL(fixedBlob);
+                    completeCb && completeCb(localUrl);
+                });
             };
 
             mediaRecorder.start(chunkDurationMs);

@@ -495,7 +495,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "evaluations/:id",
-                element: Loader("EvaluationDetail")(),
+                element: Loader("EvaluationDetail/EvaluationDetail")(),
             },
         ].concat(admin_urls),
     },
