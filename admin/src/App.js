@@ -491,7 +491,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "evaluations",
-                element: Loader("EvaluationList")(),
+                element: Loader("EvaluationList/EvaluationList")(),
             },
             {
                 path: "evaluations/:id",

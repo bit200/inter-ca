@@ -64,6 +64,7 @@ export const useExamData = (setSelectedInd, getExamId) => {
         })
     }
 
+    console.log('LOOOG exam', exam);
     return {
         loading,
         loadExam,

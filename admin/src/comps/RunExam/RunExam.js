@@ -385,9 +385,7 @@ function RunExam(props) {
                                         return info;
                                     }}
                                     getItemNameAndDesc={(item, props) => {
-                                        // console.log("qqqqq GET TITLE & NAME [[ ", item, props);
-                                        // let smallTitle = item.specialType != 'general' ? getGeneralTitle(item) : ''
-                                        return pubGeneralTitle(item)
+                                        return { ...pubGeneralTitle(item), moduleInfo: item.moduleInfo || null }
                                     }}
                                     getCodeFiles={(item, hist, isRestart) => {
                                         // console.log("qqqqq histtttttttttttt", item, hist);
@@ -413,12 +411,11 @@ function RunExam(props) {
                                     }}
 
 
-                                    onChangeTime={(time, timers, activeInd) => {
-                                        // console.log("qqqqq CHANGE TIME", time, timers, activeInd);
-                                    }}
+                                    // onChangeTime={(time, timers, activeInd) => {
+                                    //     // console.log("qqqqq CHANGE TIME", time, timers, activeInd);
+                                    // }}
                                     getStartTimers={getStartTimers}
                                     getDefaultQuizTime={getDefaultQuizTime}
-
                                     onResult={(history) => {
                                         console.log("qqqqq ON RESULT course Quiz", history);
                                         // setQuizResults(true)
@@ -460,18 +457,18 @@ function RunExam(props) {
                                         console.log("qqqqq ON SUBMIT course QUIZ ]]", quizHistory);
                                         updateExam(history[questionId], questionId)
                                     }}
-                                    onReStartAttempt={(v) => {
-                                        console.log("qqqqq ON RESTART_ATTEMPT course QUIZ ]]", v);
-                                    }}
-                                    onStart={(v) => {
-                                        console.log("qqqqq ON START course QUIZ ]]", v);
-                                    }}
-                                    onReStart={(v) => {
-                                        console.log("qqqqq ON RE_START course QUIZ ]]", v);
-                                    }}
-                                    onStop={(v) => {
-                                        console.log("qqqqq ON STOP on Stop ]]", v);
-                                    }}
+                                    // onReStartAttempt={(v) => {
+                                    //     console.log("qqqqq ON RESTART_ATTEMPT course QUIZ ]]", v);
+                                    // }}
+                                    // onStart={(v) => {
+                                    //     console.log("qqqqq ON START course QUIZ ]]", v);
+                                    // }}
+                                    // onReStart={(v) => {
+                                    //     console.log("qqqqq ON RE_START course QUIZ ]]", v);
+                                    // }}
+                                    // onStop={(v) => {
+                                    //     console.log("qqqqq ON STOP on Stop ]]", v);
+                                    // }}
                                     getStartItems={async () => {
                                         console.log("qqqqq GET START ITEMS [[ ", questionsDb);
                                         return questionsDb

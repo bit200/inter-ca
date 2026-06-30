@@ -3838,7 +3838,9 @@ export default {
     "en": "Do not reload the page",
     "fr": "Ne rechargez pas la page"
 },
-"xx": {ru: ''}, 
+"by_exam": {ru: 'По экзамену'},
+"by_module": {ru: 'По модулю'},
+"xx": {ru: ''},
 "": {ru: ''},
 
 }
@@ -3848,7 +3850,7 @@ export default {
 Extend object with fields:  es (spain), de(germany), en(english), fr(Franch) to that object, franch place in  comma to keep JSON formatting (keep main key in commas "")
   "correctSolutionAvailableIn": {ru: 'Правильное решение будет доступно для просмотра через'},
   "dontReloadPage": {ru: 'Не перезагрузайте страницу'},
- 
+
 
 
 

@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useMemo} from 'react';
 import QuizPreview from "./QuizPreviewNew";
+import QuizEvaluationBadge from "./QuizEvaluationBadge";
 
 function RenderQuizResult(props) {
     const [selectedIndLocal, setSelectedInd] = useState(0)
@@ -28,6 +29,7 @@ function RenderQuizResult(props) {
         setExamHist(getHist())
         setUserRates(getExamRates())
     }, [props.history]);
+
 
     // handleSelectItem
     useEffect(() => {
@@ -175,6 +177,7 @@ function RenderQuizResult(props) {
             getItemNameAndDesc={getItemNameAndDesc}
             onSubmit={() => {}}
         />
+        {isAudio && <QuizEvaluationBadge examId={exam._id} questionId={quiz.question} />}
     </div>
 
     if (hideNav) {
