@@ -24,7 +24,7 @@ const ScoreBar = ({ score, max = 10 }) => {
     const color = getScoreRGB(score, max)
 
     return (
-        <div>
+        <div className={'card-body'}>
             <div style={{ fontSize: 36,  color }}>{score}<span style={{ fontSize: 16, color: '#999' }}>/{max}</span></div>
             <div className={styles.scoreBar}>
                 <div style={{ background: color, width: `${pct}%` }} />

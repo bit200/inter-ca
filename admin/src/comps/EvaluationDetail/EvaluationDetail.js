@@ -83,7 +83,7 @@ export default function EvaluationDetail() {
             )}
 
             {score != null && (
-                <div style={{ marginBottom: 20 }}>
+                <div style={{ marginBottom: 20 }} className={'card'}>
                     <ScoreBar score={score} />
                 </div>
             )}

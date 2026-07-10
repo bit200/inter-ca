@@ -143,6 +143,7 @@ function pub_menu(arr) {
 
 function to_url_arr(obj) {
     let arr = [];
+    console.log('LOOOG', obj);
     _.each(obj, (item, ind) => {
         let url = item.admin_url || ind;
 
@@ -151,6 +152,7 @@ function to_url_arr(obj) {
             element: <DefList props={item}></DefList>,
         });
 
+        console.log('LOOOG ADD',  item, url);
         arr.push({
             path: url + "/:id",
             element: <DefOne props={item}></DefOne>,
@@ -176,6 +178,7 @@ global.CONFIG = {
         {name: "exams", url: "quiz", icon: 'iconoir-peace-hand'},
 
         isDemo ? null : {name: "interviews", url: "interviews", icon: 'iconoir-strategy'},
+        {name: "mockInterviews", url: "mock-interviews", icon: 'iconoir-brain'},
         {
             icon: 'iconoir-page-star',
             name: "carrier",
@@ -411,10 +414,40 @@ global.CONFIG = {
                 // {name: 'Дата', key: 'date'},
             ],
         },
+        'mock-interviews': {
+            woModal: true,
+            url: "/mock-interview/my-list",
+            tabsTitle: "mockInterviews",
+            top_filters: [
+                {
+                    key: "status",
+                    def_name: "All",
+                    def_value: "",
+                    arr: [
+                        {name: "Ожидают", value: {$in: ['draft', 'active']}},
+                        {name: "Начались", value: "started"},
+                        {name: "Закончились", value: {$in: ['completed', 'evaluated']}},
+                    ],
+                },
+            ],
+            woAdd: true,
+            edit: [
+                {
+                    path: "MockInterview/MockInterview",
+                    size: 12,
+                },
+            ],
+            tabs: [
+                {name: "Название", key: "name"},
+                {name: "Статус", key: "status"},
+                {name: "Режим", key: "mode"},
+            ],
+        },
 
     },
 };
 
+console.log('LOOOG', global.CONFIG.urls);
 let admin_urls = to_url_arr(global.CONFIG.urls);
 const router = createBrowserRouter([
     {
@@ -453,6 +486,10 @@ const router = createBrowserRouter([
             {
                 path: "quiz/:id",
                 element: Loader("RunExam/RunExam")(),
+            },
+            {
+                path: "/mock-interviews/:id",
+                element: Loader("MockInterview/MockInterview")(),
             },
             {
                 path: "courses/:id",

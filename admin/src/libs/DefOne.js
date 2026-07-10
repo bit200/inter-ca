@@ -68,6 +68,8 @@ function ProjectDetails(params) {
     const [obj, setObjWrapped] = useState(null);
     const [count, setCount] = useState(0);
 
+    console.log('LOOOG', 'RENRERNERNE');
+
     function setObj(data, key) {
         setObjWrapped(data)
     }
@@ -160,6 +162,7 @@ function ProjectDetails(params) {
         ]
     };
     if (!obj || (obj && obj.reactLoading)) {
+        console.log('LOOOG', 'HERE');
         return <div></div>;
     }
     // console.log("qqqqq GETTERRRRRRRRRRR RELOAD", timerFN(), obj, prevGetter);

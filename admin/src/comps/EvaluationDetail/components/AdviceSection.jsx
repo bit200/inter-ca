@@ -7,7 +7,9 @@ function getByPath(obj, path) {
 
 function groupAdvice(rules, schemas, result) {
     const schemaByKey = {};
-    schemas.forEach(s => { schemaByKey[s.key] = s; });
+    schemas.forEach(s => {
+        schemaByKey[s.key] = s;
+    });
 
     const groups = {};
     rules.forEach(rule => {
@@ -32,23 +34,25 @@ const AdviceSection = ({ rules, schemas, result }) => {
     }
 
     return (
-        <div className={styles.adviceWrapper}>
-            <div className={styles.adviceTitle}>Как улучшить ответ:</div>
-            <div className={styles.adviceList}>
-                {groupNames.map(group => (
-                    <div key={group}>
-                        <div className={styles.adviceGroupTitle}>
-                            {group}
+        <div className={'card'}>
+            <div className={`${styles.adviceWrapper} card-body`}>
+                <div className={styles.adviceTitle}>Как улучшить ответ:</div>
+                <div className={styles.adviceList}>
+                    {groupNames.map(group => (
+                        <div key={group}>
+                            <div className={styles.adviceGroupTitle}>
+                                {group}
+                            </div>
+                            <div className={styles.adviceGroupList}>
+                                {groups[group].map((rule, i) => (
+                                    <div key={i} className={styles.adviceGroupItem}>
+                                        <span>{rule.advice}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className={styles.adviceGroupList}>
-                            {groups[group].map((rule, i) => (
-                                <div key={i} className={styles.adviceGroupItem}>
-                                    <span>{rule.advice}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
     );

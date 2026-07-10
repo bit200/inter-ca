@@ -21,47 +21,51 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
     const progressColor = allDone ? STATUS_COLOR.done : hasProcessing ? STATUS_COLOR.processing : '#999';
 
     return (
-        <div className={s.group}>
-            <div className={s.groupHeader} onClick={() => setCollapsed(c => !c)}>
-                <i className={`iconoir-nav-arrow-${collapsed ? 'right' : 'down'} ${s.groupHeaderArrow}`} />
-                {examId ? (
-                    <Link to={`/quiz/${examId}`} onClick={e => e.stopPropagation()} className={s.groupHeaderLabel}>
-                        {label}
-                    </Link>
-                ) : (
-                    <span className={s.groupHeaderLabel}>{label}</span>
-                )}
-                <span className={s.groupHeaderProgress} style={{ color: progressColor }}>
+        <div className={'card'}>
+            <div className={`${s.group} card-body`}>
+                <div className={s.groupHeader} onClick={() => setCollapsed(c => !c)}>
+                    <i className={`iconoir-nav-arrow-${collapsed ? 'right' : 'down'} ${s.groupHeaderArrow}`}/>
+                    {examId ? (
+                        <Link to={`/quiz/${examId}`} onClick={e => e.stopPropagation()} className={s.groupHeaderLabel}>
+                            {label}
+                        </Link>
+                    ) : (
+                        <span className={s.groupHeaderLabel}>{label}</span>
+                    )}
+                    <span className={s.groupHeaderProgress} style={{ color: progressColor }}>
                     {done}/{total}
-                    {hasProcessing && ' · оценивается...'}
-                    {allDone && ' · готово'}
+                        {hasProcessing && ' · оценивается...'}
+                        {allDone && ' · готово'}
                 </span>
-            </div>
+                </div>
 
-            {!collapsed && (
-                <div className={s.groupBody}>
-                    {items.map(item => {
-                        const ev = item.evaluate || {};
-                        const score = ev.result?.score;
-                        const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? '#f0a500' : STATUS_COLOR.error;
-                        return (
-                            <div key={item._id} className={s.groupItem}>
-                                <Link to={`/evaluations/${item._id}`} className={`text-truncate ${s.groupItemLink}`}>
-                                    {getQuestionTitle(item)}
-                                </Link>
-                                <span className={s.groupItemStatus} style={{ color: STATUS_COLOR[ev.status] || '#999' }}>
+                {!collapsed && (
+                    <div className={s.groupBody}>
+                        {items.map(item => {
+                            const ev = item.evaluate || {};
+                            const score = ev.result?.score;
+                            const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? '#f0a500' : STATUS_COLOR.error;
+                            return (
+                                <div key={item._id} className={s.groupItem}>
+                                    <Link to={`/evaluations/${item._id}`}
+                                          className={`text-truncate ${s.groupItemLink}`}>
+                                        {getQuestionTitle(item)}
+                                    </Link>
+                                    <span className={s.groupItemStatus}
+                                          style={{ color: STATUS_COLOR[ev.status] || '#999' }}>
                                     {STATUS_LABEL[ev.status] || ev.status}
                                 </span>
-                                {score != null && (
-                                    <span className={s.groupItemScore} style={{ color: scoreColor }}>
+                                    {score != null && (
+                                        <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10
                                     </span>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
