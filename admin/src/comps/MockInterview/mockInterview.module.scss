@@ -61,6 +61,85 @@
   padding: 20px 0;
 }
 
+.resultsRoot {
+  width: 100%;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.questionText {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  line-height: 1.4;
+}
+
+.questionItemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.answerBox {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #333;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  background: #fafafa;
+  margin-bottom: 20px;
+  white-space: pre-wrap;
+}
+
+.answerBoxSuccess {
+  border-color: #b7e4b7;
+  background: #f2faf2;
+}
+
+.answerBoxDanger {
+  border-color: #f3c2c2;
+  background: #fdf3f3;
+}
+
+.correctnessBadge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.badgeSuccess {
+  color: #2a9d2a;
+  background: #e6f7e6;
+}
+
+.badgeDanger {
+  color: #cc3333;
+  background: #fbeaea;
+}
+
+.evaluationSectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 24px 0 12px;
+  color: #333;
+}
+
+.evaluationStatus {
+  font-size: 36px;
+  font-weight: 600;
+}
+
 .iframeOverlay {
   position: fixed;
   inset: 0;
