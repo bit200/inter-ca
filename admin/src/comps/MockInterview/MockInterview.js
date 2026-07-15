@@ -57,7 +57,7 @@ function MockInterview() {
     }
 
     return (
-        <div className={`${styles.container} row`}>
+        <>
             {isPassed && <MockInterviewResults interview={item}/>}
             {!isPassed && <MockInterviewStartCard item={item} onStart={() => startAttempt(item)}/>}
             {active && <MockInterviewIframe
@@ -65,7 +65,7 @@ function MockInterview() {
                 onClose={handleCloseIframe}
                 onComplete={handleComplete}/>
             }
-        </div>
+        </>
     );
 }
 

@@ -1,5 +1,5 @@
 .container {
-  padding: 20px;
+  //padding: 20px;
 }
 
 .header {
@@ -93,7 +93,6 @@
   color: #333;
   padding: 14px 16px;
   border-radius: 8px;
-  border: 1px solid #e8e8e8;
   background: #fafafa;
   margin-bottom: 20px;
   white-space: pre-wrap;
@@ -186,4 +185,63 @@
     height: 100%;
     border: none;
   }
+}
+
+.chatWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 4px 0 20px;
+}
+
+.chatBubble {
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--bs-startbar-e-border-color);
+}
+
+.chatBubbleAnswer {
+  background: var(--bs-startbar-bg);
+  margin-left: 30%;
+  gap: 10px;
+}
+
+.chatBubbleQuestion {
+  display: flex;
+  gap: 10px;
+  background: var(--light-hover);
+  border: 1px dashed var(--c1);
+  margin-right: 30%;
+}
+
+.chatAdviceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--light-orange);
+  color: var(--dark-orange);
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--dark-orange);
+
+  i {
+    font-size: 13px;
+  }
+}
+
+.chatAdviceModalList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chatAdviceModalItem {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 14px;
+  line-height: 1.5;
 }

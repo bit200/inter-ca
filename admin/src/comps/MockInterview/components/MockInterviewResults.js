@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import styles from '../mockInterview.module.scss';
 import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
+import { withMockDialog } from './mockInterviewDialogFixture';
 
 const MockInterviewResults = ({ interview }) => {
-    const turns = interview.report?.turns || [];
+    const turns = withMockDialog(interview.report?.turns || []);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
@@ -24,7 +25,7 @@ const MockInterviewResults = ({ interview }) => {
     }
 
     return (
-        <div className={`${styles.resultsRoot} row`}>
+        <div className={`mainCont2 row`}>
             <div className="col-sm-3 sticky3">
                 <MockInterviewQuestionList
                     turns={turns}
