@@ -15,6 +15,7 @@ const MockInterviewQuestionList = ({ turns, selectedIndex, onSelect }) => {
                     >
                         <div className={styles.questionItemRow}>
                             <strong>{'Вопрос #' + (ind + 1)}</strong>
+                            <MockInterviewCorrectnessBadge passed={turn.mini_evaluation?.passed}/>
                         </div>
                     </div>
                 ))}

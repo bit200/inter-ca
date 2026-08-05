@@ -5,7 +5,7 @@ const MockInterviewCorrectnessBadge = ({ passed }) => {
     if (passed == null) return null;
 
     return (
-        <span className={`${styles.correctnessBadge} ${passed ? styles.badgeSuccess : 'incorrect'}`}>
+        <span className={`${styles.correctnessBadge} ${passed ? styles.badgeSuccess : styles.badgeDanger}`}>
             {passed ? 'Верно' : 'Неверно'}
         </span>
     );

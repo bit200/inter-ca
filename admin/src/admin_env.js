@@ -58,7 +58,6 @@ window.env = {
     VIDEO_UPLOAD_DOMAIN: 'https://uploader.itconsult-web.ru',
     VIDEO_STATIC_DOMAIN: 'https://static.itconsult-web.ru',
     VIDEO_DOMAIN: global.is_local ? 'http://localhost:1111' : 'https://uploader.itconsult-web.ru',
-    mock_interview_domain: global.is_local ? 'http://localhost:8080' : 'https://trainer-smoke.xserver-krv.ru',
     title: 'Портал развития',
     login_title: 'Портал развития',
     // login_title: 'Interview Portal',

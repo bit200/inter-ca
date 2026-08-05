@@ -28,8 +28,11 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas }) => {
             <div className={'card'}>
                 <div className={'card-body'}>
                     <div className="quiz-preview animChilds">
-                        <div className="quiz-submit-title no-select">
-                            <MDEditor.Markdown source={turn.question}/>
+                        <div className={styles.questionItemRow}>
+                            <div className="quiz-submit-title no-select">
+                                <MDEditor.Markdown source={turn.question}/>
+                            </div>
+                            <MockInterviewCorrectnessBadge passed={passed}/>
                         </div>
                     </div>
                     {true && <hr/>}

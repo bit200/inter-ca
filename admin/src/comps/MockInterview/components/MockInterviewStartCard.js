@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styles from '../mockInterview.module.scss';
 
-const MockInterviewStartCard = ({item, onStart}) => {
+const MockInterviewStartCard = ({item, error, onStart}) => {
     const [reserving, setReserving] = useState(false);
 
     const handleStart = () => {
@@ -15,11 +15,12 @@ const MockInterviewStartCard = ({item, onStart}) => {
             <div className={styles.cardMeta}>
                 <span className={styles.cardMode}>{item.mode || 'live'}</span>
                 {item.interviewId && (
-                    <span style={{ fontFamily: 'monospace', fontSize: 11 }}>
-                                {item.interviewId.slice(0, 30)}…
+                    <span className={styles.cardInterviewId}>
+                                {item.interviewId}
                             </span>
                 )}
             </div>
+            {error && <div className={`alert alert-warning ${styles.cardAlert}`}>{error}</div>}
             <div className={styles.cardBtn}>
                 <button
                     className="btn btn-primary btn-sm"

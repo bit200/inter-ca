@@ -39,7 +39,24 @@
   font-size: 13px;
   color: #888;
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.cardInterviewId {
+  font-family: monospace;
+  font-size: 11px;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cardAlert {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .cardMode {
@@ -50,6 +67,7 @@
   border-radius: 4px;
   background: #f0f4ff;
   color: #4c6ef5;
+  flex-shrink: 0;
 }
 
 .cardBtn {
