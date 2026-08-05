@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import sse from '../../libs/sse/sse';
 import styles from './evaluationDetail.module.scss';
 import ScoreBar from "./components/ScoreBar";
 import AdviceSection from "./components/AdviceSection";
@@ -32,14 +33,17 @@ export default function EvaluationDetail() {
     const { id } = useParams();
     const [item, setItem] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [retrying, setRetrying] = useState(false);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
 
+    const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id })
+        .then(data => setItem(data))
+        .catch(() => setItem(null))
+        .finally(() => setLoading(false));
+
     useEffect(() => {
-        global.http.get('/evaluate-details', { quizHistoryId: id })
-            .then(data => setItem(data))
-            .catch(() => setItem(null))
-            .finally(() => setLoading(false));
+        loadItem();
 
         global.http.get('/eval-advice-rule', { per_page: 200 }).then(r => {
             setAdviceRules(r.items || []);
@@ -49,6 +53,22 @@ export default function EvaluationDetail() {
             setMetricSchemas(r.items || []);
         });
     }, [id]);
+
+    // Live status/result updates (pending -> processing -> done/error) without the
+    // candidate having to reload - loadItem() above still owns the initial full fetch
+    // (question text, questionInfo, ...), this only patches `evaluate` as it changes.
+    useEffect(() => {
+        return sse.subscribe(`/evaluate-events/${id}`, evaluate => {
+            setItem(prev => prev && { ...prev, evaluate });
+        });
+    }, [id]);
+
+    const retry = () => {
+        setRetrying(true);
+        global.http.post('/evaluate-retry', { quizHistoryId: id })
+            .then(loadItem)
+            .finally(() => setRetrying(false));
+    };
 
     if (loading) {
         return <div style={{ padding: 20 }}>Загрузка...</div>;
@@ -72,6 +92,24 @@ export default function EvaluationDetail() {
                 <div className={styles.title}>Вопрос</div>
                 <div className={styles.questionText}>{questionText}</div>
             </div>
+
+            {(ev.status === 'pending' || ev.status === 'processing') && (
+                <div className={styles.infoCard}>
+                    <div className={styles.title} style={{ color: STATUS_COLOR[ev.status] }}>
+                        {STATUS_LABEL[ev.status]}
+                    </div>
+                </div>
+            )}
+
+            {ev.status === 'error' && (
+                <div className={styles.infoCard}>
+                    <div className={styles.title} style={{ color: STATUS_COLOR.error }}>Ошибка оценки</div>
+                    <div>{ev.error || 'Не удалось оценить ответ'}</div>
+                    <button onClick={retry} disabled={retrying} style={{ marginTop: 12 }}>
+                        {retrying ? 'Повторяем...' : 'Повторить оценку'}
+                    </button>
+                </div>
+            )}
 
             {answerText && (
                 <div className={styles.infoCard}>

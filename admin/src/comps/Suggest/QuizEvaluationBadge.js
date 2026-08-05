@@ -33,7 +33,7 @@ export default function QuizEvaluationBadge({ examId, questionId }) {
                     {score}/10
                 </span>
             )}
-            {ev.status === 'done' && (
+            {(ev.status === 'done' || ev.status === 'error') && (
                 <Link to={`/evaluations/${evalItem._id}`} style={{ fontSize: 12 }}>Детали →</Link>
             )}
         </div>
