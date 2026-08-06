@@ -11,9 +11,14 @@ local = 'http://localhost:6057'
 
 let isDemo = window.location.href.indexOf('demo.') > -1;
 let isAcademy = window.location.href.indexOf('itk.academy') > -1;
+// staging разворачивается на своём домене с nginx-проксёй /api на локальный бэкенд той
+// же VPS — поэтому домен берём из текущего origin, а не хардкодим прод-адрес, иначе
+// стейджинг-фронт молча стучится в боевой api-razvitie.itrum.ru (servers.def).
+let isStaging = /staging\./gi.test(window.location.hostname);
 
 let servers = {
     local: local,
+    staging: window.location.origin,
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
     academy:  'https://api-razvitie.itk.academy',
@@ -43,7 +48,7 @@ let logoImgs = {
     academy: Demo,
 }
 
-let serverKey = global.is_local ? 'local' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
+let serverKey = global.is_local ? 'local' : isStaging ? 'staging' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
 if (global?.is_local) {
     // serverKey = 'academy'
     // isDemo = true;
