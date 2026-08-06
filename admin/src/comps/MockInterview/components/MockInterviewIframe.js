@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo} from 'react';
+import React, {useEffect, useMemo, useRef} from 'react';
 import styles from '../mockInterview.module.scss';
 
 // см. docs/contracts/embed-interview-iframe.md в itk-live: iframe открывается
@@ -13,10 +13,26 @@ function embedOriginOf(embedUrl) {
     }
 }
 
+// itk-live закрывает сессию на сервере (и шлёт нам сигнал завершения) сразу как
+// готов финальный фидбек, не дожидаясь пока доиграет прощальная реплика бота —
+// если закрыть оверлей в этот момент, звук обрывается на середине. Даём паузу,
+// чтобы бот успел договорить.
+const FINISH_DELAY_MS = 5000;
+
 const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     const embedOrigin = useMemo(() => embedOriginOf(interview.embedUrl), [interview.embedUrl]);
+    const finishTimeoutRef = useRef(null);
 
     useEffect(() => {
+        return () => clearTimeout(finishTimeoutRef.current);
+    }, []);
+
+    useEffect(() => {
+        const completeWithDelay = () => {
+            clearTimeout(finishTimeoutRef.current);
+            finishTimeoutRef.current = setTimeout(onComplete, FINISH_DELAY_MS);
+        };
+
         const handler = (e) => {
             if (!embedOrigin || e.origin !== embedOrigin) {
                 return;
@@ -48,7 +64,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                 const isStaleHeartbeat = msg.payload?.stage === 'heartbeat'
                     && /invalid authorization/i.test(msg.payload?.error || '');
                 if (isStaleHeartbeat) {
-                    onComplete();
+                    completeWithDelay();
                     return;
                 }
 
@@ -59,7 +75,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
             if (msg.type === 'itk.interview.session_closed') {
                 const status = msg.payload?.status;
                 if (status === 'completed') {
-                    onComplete();
+                    completeWithDelay();
                 } else {
                     onClose();
                 }
