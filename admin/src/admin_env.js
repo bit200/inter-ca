@@ -12,9 +12,10 @@ local = 'http://localhost:6057'
 let isDemo = window.location.href.indexOf('demo.') > -1;
 let isAcademy = window.location.href.indexOf('itk.academy') > -1;
 // staging разворачивается на своём домене с nginx-проксёй /api на локальный бэкенд той
-// же VPS — поэтому домен берём из текущего origin, а не хардкодим прод-адрес, иначе
-// стейджинг-фронт молча стучится в боевой api-razvitie.itrum.ru (servers.def).
-let isStaging = /staging\./gi.test(window.location.hostname);
+// же VPS — поэтому домен берём из текущего origin, а не хардкодим прод-адрес. Домен
+// стейджинга (staging-app.itk.academy) сам по себе попал бы под isAcademy ниже и
+// молча стучался бы в боевой api-razvitie.itk.academy — проверяем его первым.
+let isStaging = /^staging/i.test(window.location.hostname);
 
 let servers = {
     local: local,

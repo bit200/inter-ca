@@ -9,17 +9,17 @@
 #        ssh root@<VPS_IP> "bash /root/staging-deploy.sh"
 #   3. Повторный запуск безопасен — просто обновит код (git pull) и пересоберёт фронт.
 #
-# Важно про admin_env.js: домен API для страницы определяется по хосту — для домена
-# вида "staging.*" фронт сам берёт текущий origin (см. isStaging в admin_env.js) и
-# ходит на /api на этом же домене. Поэтому BACKEND_UPSTREAM ниже — это то, куда nginx
-# проксирует /api, а не то, что видит браузер.
+# Важно про admin_env.js: домен API для страницы определяется по хосту — для хоста,
+# начинающегося с "staging" (см. isStaging в admin_env.js), фронт сам берёт текущий
+# origin и ходит на /api на этом же домене. Поэтому BACKEND_UPSTREAM ниже — это то,
+# куда nginx проксирует /api, а не то, что видит браузер.
 
 set -euo pipefail
 
 # ==================== CONFIG — отредактировать перед запуском ====================
-DOMAIN="${DOMAIN:-staging.example.com}"                       # домен стейджинга (A-запись должна уже указывать на этот VPS)
-LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-you@example.com}"     # для certbot
-BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:6057}" # куда nginx проксирует /api (адрес уже развёрнутого бэкенда)
+DOMAIN="${DOMAIN:-staging-app.itk.academy}"                   # домен стейджинга (A-запись должна уже указывать на этот VPS)
+LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-paulpetrash1@gmail.com}" # для certbot
+BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:6057}" # куда nginx проксирует /api (адрес уже развёрнутого бэкенда — поправить, когда бэк будет готов)
 GIT_REPO="${GIT_REPO:-git@github.com:bit200/inter-ca.git}"
 GIT_BRANCH="${GIT_BRANCH:-new_exam}"
 APP_DIR="${APP_DIR:-/var/www/inter-ca}"
