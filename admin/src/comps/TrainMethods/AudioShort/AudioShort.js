@@ -12,6 +12,8 @@ import MdPreview from "../../Suggest/MdPreview";
 import {stopAnyPlay} from "../../../App";
 import DebugLogs from "../../DebugLogs";
 import Check from "../../StarRating";
+import {startAudioStream, sendAudioChunk, stopAudioStream} from './audioStream';
+import fixWebmDuration from 'fix-webm-duration';
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -251,29 +253,27 @@ let AudioShort = forwardRef((props, ref) => {
         setInitMic(false)
     }
 
-    let onRecordComplete = (formData, url) => {
+    let onRecordComplete = (localUrl) => {
         setStatus("complete")
         setRecording(false)
         setRecognizing(true)
         setText(finalTranscript || 'Распознавание');
-
-        _formData = url;
+console.log('LOOOG', 'COMPLETE');
+        _formData = localUrl;
         setSrc(_formData)
 
         if (!opts.isExam && opts.playTextSpeechAfterAudioRecord) {
             myPlayer({src: _formData})
         }
 
-        console.log("qqqqq RRRRR C9999999999999999",);
+        console.log('LOOOG', 'COMPLETe RECORD NEED INSERT INFO HERE');
 
         setTimeout(() => {
 
             getDuration(_formData, (r) => {
                 recognizedDuration = r;
-                console.log("qqqqq RRRRR C9999999999999999   222", r);
 
                 setRecognizing(false)
-                uploadToServerAudio(formData, finalTranscript, {audioHash})
                 let text = getText();
                 setText(text);
                 onChange({}, 'recComplete');
@@ -299,24 +299,28 @@ let AudioShort = forwardRef((props, ref) => {
 
         console.log("qqqqq titlttl REC START 99999999999999999999999");
 
-        recognitionStart(() => {
-            console.log("qqqqq titlttl REC START 1");
-            updateUserHash();
-            props.onChangeHash && props.onChangeHash({audioHash})
-            setAttempts(++attempts)
-            setInitMic(true)
+        recognitionStart({
+            startCb: () => {
+                console.log("qqqqq titlttl REC START 1");
+                updateUserHash();
+                props.onChangeHash && props.onChangeHash({audioHash})
+                setAttempts(++attempts)
+                setInitMic(true)
 
-            countdownAudioStart(opts.MSBeforeAudioStart || 0, () => {
-                console.log("qqqqq titlttl REC START 2");
-                setStatus("recording")
-                resetScore()
+                countdownAudioStart(opts.MSBeforeAudioStart || 0, () => {
+                    console.log("qqqqq titlttl REC START 2");
+                    setStatus("recording")
+                    resetScore()
 
-                setInitMic(false)
-                setRecording(true)
-                recStartCd = new Date().getTime();
-                cb && cb()
-            })
-        }, onRecordComplete)
+                    setInitMic(false)
+                    setRecording(true)
+                    recStartCd = new Date().getTime();
+                    cb && cb()
+                })
+            },
+            completeCb: onRecordComplete,
+            onChange: props.onChange,
+        })
     }
 
     let recStart = () => {
@@ -338,6 +342,7 @@ let AudioShort = forwardRef((props, ref) => {
 
     let recStop = () => {
         setRecording(false)
+        setStatus('processing')
         setTimeout(() => {
             recognitionStop()
             props.onStop && props.onStop();
@@ -449,7 +454,7 @@ let AudioShort = forwardRef((props, ref) => {
                     <Check></Check>
                     {t('finishRec')}</Button>
                 </div>}
-                {status !== 'complete' && !recognizing && !recording &&
+                {status !== 'complete' && status !== 'processing' && !recognizing && !recording &&
                     <div style={{marginTop: '20px'}} className={'afade'}><Button color={4} size={'sm'}
                                                                                  onClick={(scb) => {
                                                                                      scb && scb()
@@ -460,6 +465,15 @@ let AudioShort = forwardRef((props, ref) => {
                     </Button></div>}
             </>}
 
+            {status === 'processing' && <div className={'recognizing afade'}>
+                <span style={{
+                    display: 'inline-block', width: 16, height: 16, marginRight: 8,
+                    border: '2px solid #ccc', borderTopColor: '#0d6efd',
+                    borderRadius: '50%', animation: 'player-spin 0.7s linear infinite',
+                    verticalAlign: 'middle'
+                }}/>
+                {t('processing') || 'Обработка...'}
+            </div>}
             {recognizing && <div className={'recognizing'}>{t('recognizing')} ... </div>}
 
             {!isExam && <>
@@ -765,12 +779,58 @@ function micError() {
 //     mediaRecorder.start();
 // }
 
-export function recognitionStart(startCb, completeCb,) {
+function float32ToInt16(input) {
+    const output = new Int16Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    return output;
+}
 
+function encodePcmToWav(pcmChunks, sampleRate) {
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const totalSamples = pcmChunks.reduce((acc, c) => acc + c.length, 0);
 
-    //console.log('recognitionInit', recognition)
+    const float32All = new Float32Array(totalSamples);
+    let offset = 0;
+    for (const chunk of pcmChunks) {
+        float32All.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    const int16Data = float32ToInt16(float32All);
+    const dataSize = int16Data.byteLength;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    const writeStr = (off, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+    };
+
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);                                          // PCM
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true); // byteRate
+    view.setUint16(32, numChannels * (bitsPerSample / 8), true);          // blockAlign
+    view.setUint16(34, bitsPerSample, true);
+    writeStr(36, 'data');
+    view.setUint32(40, dataSize, true);
+    new Int16Array(buffer, 44).set(int16Data);
+
+    return new Blob([buffer], { type: 'audio/webm' });
+}
+
+export function recognitionStart({ startCb, completeCb, onChange }) {
     finalTranscript = ''
     interimTranscript = '';
+    const chunkDurationMs = 250
 
     recognition.start();
 
@@ -778,74 +838,66 @@ export function recognitionStart(startCb, completeCb,) {
     if (!preventMicError && (!navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
         return micError();
     }
-    console.log("qqqqq titlttl REC START 444444");
 
     navigator.mediaDevices
         .getUserMedia({audio: true})
         .then((stream) => {
-            console.log("qqqqq titlttl REC START 555555");
-
-            startCb && startCb()
+                startCb && startCb()
             audioChunks = [];
+
             mediaRecorder = new MediaRecorder(stream, {
-                //   mimeType: 'audio/ogg; codecs=opus',
-                audioBitsPerSecond: 16000, // Adjust as needed (e.g., 32000 for 32 kbps)
-                sampleRate: 16000, // Adjust as needed (e.g., 16000 Hz)
+                audioBitsPerSecond: 16000,
+                sampleRate: 16000,
+            });
+
+            startAudioStream({
+                audioHash,
+                userId: user.get_id(),
+                token: user.get_token()
             });
 
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
                     audioChunks.push(event.data);
+                    sendAudioChunk(event.data);
                 }
             };
 
             mediaRecorder.onstop = () => {
-                console.log("qqqqq on stop 999999999999999999999999999999",);
-                onSend(audioChunks)
-
+                stream.getTracks().forEach(t => t.stop());
+                const durationMs = new Date().getTime() - recStartCd;
+                const rawBlob = new Blob(audioChunks, {type: 'audio/webm'});
+                audioChunks = [];
+                stopAudioStream();
+                fixWebmDuration(rawBlob, durationMs, (fixedBlob) => {
+                    const localUrl = URL.createObjectURL(fixedBlob);
+                    completeCb && completeCb(localUrl);
+                });
             };
 
-            mediaRecorder.start();
-            // startRecordingButton.disabled = true;
-            // stopRecordingButton.disabled = false;
+            mediaRecorder.start(chunkDurationMs);
         })
         .catch((error) => {
-            // alert(error)
-            // console.log("qqqqq errrr", error);
+            console.log('LOOOG', error);
             if (preventMicError) {
                 startCb && startCb()
             }
             micError();
             mediaRecorder = {}
             mediaRecorder.stop = () => {
-                onSend(getFake())
+                const audioBlob = new Blob(getFake(), {type: 'audio/webm'});
+                const localUrl = URL.createObjectURL(audioBlob);
+                completeCb && completeCb(null, localUrl);
             };
             console.error('Error accessing microphone:', error);
         });
-
-
-    function onSend(_audioChunks) {
-        const audioBlob = new Blob(_audioChunks, {type: 'audio/wav'}); // You can change the format if needed
-        // const audioBlob = new Blob(getFake(), {type: 'audio/wav'}); // You can change the format if needed
-        const formData = new FormData();
-        formData.append('user', user.get_id())
-        formData.append('audio', audioBlob, audioHash + '.wav');
-
-
-        audioFile = formData;
-        completeCb && completeCb(audioFile, URL.createObjectURL(audioBlob));
-
-        audioChunks = [];
-    }
-
-
 }
 
 export function recognitionInit(cb) {
     recognition = new webkitSpeechRecognition(); // Create a SpeechRecognition object
 
-    // recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
-    recognition.lang = 'en-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    recognition.lang = 'ru-EN'; // Set the language for recognition (e.g., 'en-US' for English)
+    // recognition.lang = 'en-EN'; // Set the language for recognition (e.g., 'en-US' for English)
     recognition.interimResults = true; // Enable interim results
     recognition.continuous = true;
 
@@ -861,7 +913,7 @@ export function recognitionInit(cb) {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
-        // //console.log('stop RECOGNITION!!!', interimTranscript)
+        //console.log('stop RECOGNITION!!!', interimTranscript)
         // window.stopRecognition && window.stopRecognition
         // transcriptionDiv.innerHTML = finalTranscript; // Display the final transcription
     };

@@ -199,9 +199,9 @@ function recognitionStart(cb) {
             };
 
             mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, {type: 'audio/wav'}); // You can change the format if needed
+                const audioBlob = new Blob(audioChunks, {type: 'audio/webm'}); // You can change the format if needed
                 const formData = new FormData();
-                formData.append('audio', audioBlob, 'audio.wav');
+                formData.append('audio', audioBlob, 'audio.webm');
 
 
                 audioFile = formData;

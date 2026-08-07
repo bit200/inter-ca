@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import _ from "underscore";
-import QuizPreview from "./QuizPreview";
+import QuizPreview from "./QuizPreviewNew";
 import { Link, Outlet } from "react-router-dom";
 import QuestionDetails from "./QuestionDetails";
 import { StarRating } from "../StarRating";
@@ -118,10 +118,12 @@ function RunQuiz(props) {
       ></div>
 
       <QuizPreview
-        quiz={quiz}
+        item={quiz}
         isExam={isExam}
         skipBottomOpenText={props.skipBottomOpenText}
-        history={history[quizId]}
+        hist={history[quizId]}
+        opts={{}}
+        getItemNameAndDesc={(item) => ({title: item.name, smallTitle: '', desc: ''})}
         onSubmit={(chosen) => {
           let isCorrect = isCorrectQuizFn(chosen, quiz.variations);
           let data = isExam

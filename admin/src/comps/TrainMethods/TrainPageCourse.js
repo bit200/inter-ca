@@ -61,9 +61,7 @@ function Layout2(props) {
                 return info;
             }}
             getItemNameAndDesc={(item, props) => {
-                console.log("qqqqq GET TITLE & NAME [[ ", item, props);
-                // let smallTitle = item.specialType != 'general' ? getGeneralTitle(item) : ''
-                return pubGeneralTitle(item)
+                return { ...pubGeneralTitle(item), moduleInfo: item.moduleInfo || null }
             }}
             getCodeFiles={(item, hist, isRestart) => {
                 console.log("qqqqq histtttttttttttt", item, hist);

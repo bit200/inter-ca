@@ -60,7 +60,7 @@ let timeout;
 
 export const stopAnyPlay = (key) => {
     clearTimeout(timeout)
-    console.log("qqqqq titlttl stopAnyPlay", key);
+    // console.log("qqqqq titlttl stopAnyPlay", key);
 
     try {
         myPlayer({src: ''})
@@ -80,7 +80,7 @@ window.textToVoice = (params, cb, delay = 5) => {
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');
 
-    console.log("qqqqq delaydelaydelay", delay);
+    // console.log("qqqqq delaydelaydelay", delay);
     timeout = setTimeout(() => {
         stopAnyPlay('textToVoice');
         cb && cb();
@@ -98,7 +98,7 @@ window.textToVoice = (params, cb, delay = 5) => {
         utterance.onend = () => {
             clearTimeout(timeout)
             setTimeout(() => {
-                console.log("qqqqq titlttl CALLBACK");
+                // console.log("qqqqq titlttl CALLBACK");
                 cb && cb();
             }, 0)
         }
@@ -143,6 +143,7 @@ function pub_menu(arr) {
 
 function to_url_arr(obj) {
     let arr = [];
+    console.log('LOOOG', obj);
     _.each(obj, (item, ind) => {
         let url = item.admin_url || ind;
 
@@ -151,6 +152,7 @@ function to_url_arr(obj) {
             element: <DefList props={item}></DefList>,
         });
 
+        console.log('LOOOG ADD',  item, url);
         arr.push({
             path: url + "/:id",
             element: <DefOne props={item}></DefOne>,
@@ -162,7 +164,7 @@ function to_url_arr(obj) {
 window.vv = 12;
 
 let isDemo = global.env.isDemo;
-console.log("qqqqq isDemo", isDemo);
+// console.log("qqqqq isDemo", isDemo);
 global.CONFIG = {
     menu: pub_menu([
         {name: "Профиль", url: "profile"},
@@ -176,6 +178,7 @@ global.CONFIG = {
         {name: "exams", url: "quiz", icon: 'iconoir-peace-hand'},
 
         isDemo ? null : {name: "interviews", url: "interviews", icon: 'iconoir-strategy'},
+        {name: "mockInterviews", url: "mock-interviews", icon: 'iconoir-brain'},
         {
             icon: 'iconoir-page-star',
             name: "carrier",
@@ -277,7 +280,7 @@ global.CONFIG = {
                     }
                     },
                 {size: '12', type: 'HR'},
-                
+
             ],
             top_filters: [
                 {
@@ -411,10 +414,40 @@ global.CONFIG = {
                 // {name: 'Дата', key: 'date'},
             ],
         },
+        'mock-interviews': {
+            woModal: true,
+            url: "/mock-interview/my-list",
+            tabsTitle: "mockInterviews",
+            top_filters: [
+                {
+                    key: "status",
+                    def_name: "All",
+                    def_value: "",
+                    arr: [
+                        {name: "Ожидают", value: {$in: ['draft', 'active']}},
+                        {name: "Начались", value: "started"},
+                        {name: "Закончились", value: {$in: ['completed', 'evaluated']}},
+                    ],
+                },
+            ],
+            woAdd: true,
+            edit: [
+                {
+                    path: "MockInterview/MockInterview",
+                    size: 12,
+                },
+            ],
+            tabs: [
+                {name: "Название", key: "name"},
+                {name: "Статус", key: "status"},
+                {name: "Режим", key: "mode"},
+            ],
+        },
 
     },
 };
 
+console.log('LOOOG', global.CONFIG.urls);
 let admin_urls = to_url_arr(global.CONFIG.urls);
 const router = createBrowserRouter([
     {
@@ -452,7 +485,11 @@ const router = createBrowserRouter([
             },
             {
                 path: "quiz/:id",
-                element: Loader("RunExam")(),
+                element: Loader("RunExam/RunExam")(),
+            },
+            {
+                path: "/mock-interviews/:id",
+                element: Loader("MockInterview/MockInterview")(),
             },
             {
                 path: "courses/:id",
@@ -488,6 +525,14 @@ const router = createBrowserRouter([
             {
                 path: "train",
                 element: <TrainPage/>,
+            },
+            {
+                path: "evaluations",
+                element: Loader("EvaluationList/EvaluationList")(),
+            },
+            {
+                path: "evaluations/:id",
+                element: Loader("EvaluationDetail/EvaluationDetail")(),
             },
         ].concat(admin_urls),
     },
@@ -562,7 +607,6 @@ function Loader(path) {
             "./" +
             path.replace(".js", "").replace("./", "").replace(/^\//gi, "") +
             ".js";
-
         if (files.indexOf(_path) > -1) {
             let Comp = require("./comps/" + path).default;
             return function (props) {
@@ -607,7 +651,7 @@ function Root() {
         // mediaInit()
         htmlElement.setAttribute('data-url', window.location.pathname)
         let attr = colorTheme.getSize();
-        console.log("qqqqq attr444", attr, document.body.clientWidth);
+        // console.log("qqqqq attr444", attr, document.body.clientWidth);
         if (attr == 'default' && document.body.clientWidth < 1200) {
             colorTheme.toggleSize();
         }

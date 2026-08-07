@@ -11,7 +11,6 @@ import QuestionDetails from './QuestionDetails'
 import JSDetails from './JSDetails'
 import DuplicatePreview from "./DuplicatePreview";
 import MyModal from "../../libs/MyModal";
-import QuizPreview from "./QuizPreview";
 import Button from "../../libs/Button";
 import CustomStorage from './CustomStorage';
 import LazyDiffEditor from "../LazyEditor/LazyDiffEditor";

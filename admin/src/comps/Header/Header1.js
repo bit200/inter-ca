@@ -466,7 +466,7 @@ function BasicPopover(props) {
                                                         <li className="nav-item" key={ind}>
                                                             <Link
                                                                 to={it.url}
-                                                                className={'nav-link ' + (((href.indexOf(it.url) > -1) || (isActive && isActive(href))) ? "active" : "")}
+                                                                className={'nav-link ' + (((href.indexOf('/' + it.url) > -1) || (isActive && isActive(href))) ? "active" : "")}
                                                                 role="button" aria-expanded="false"
                                                                 aria-controls="sidebarDashboards">
                                                                 <i className={it.icon + "  menu-icon"}></i>

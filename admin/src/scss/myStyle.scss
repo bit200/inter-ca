@@ -285,6 +285,10 @@ input[type="checkbox"] {
 .menuList {
   padding: 5px 10px;
   cursor: pointer;
+
+  * {
+    pointer-events: none;
+  }
 }
 
 
@@ -480,4 +484,9 @@ input[type="search"]:hover + .clear-icon {
 }
 .tl {
   text-align: left;
+}
+
+
+.p20 {
+  padding: 20px;
 }
