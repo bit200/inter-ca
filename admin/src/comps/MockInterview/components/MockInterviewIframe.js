@@ -86,13 +86,14 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     }, [embedOrigin, onClose, onComplete]);
 
     return (
-        <div className={styles.iframeOverlay}>
+        <div className={styles.iframeOverlay} data-testid="mock-interview-overlay">
             <div className={styles.iframeWrap}>
                 <iframe
                     src={interview.embedUrl}
                     allow="microphone; autoplay"
                     referrerPolicy="no-referrer"
                     title={interview.name}
+                    data-testid="mock-interview-embed-frame"
                 />
             </div>
         </div>

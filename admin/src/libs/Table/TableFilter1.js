@@ -72,7 +72,7 @@ class TableFilter1 extends React.Component {
           let active_filter_item = active_filter[filter_key]
           return (<div key={ind} className={"ib mr-15 mbS " + ((woTableSelect && ind == 0) ? "" : "ml-15")}>
             {arr.length &&
-                <button type="button" className={"btn btn-xs " + (!active_filter_item ? ' active btn-primary ' : '  btn-light')}
+                <button type="button" data-testid={`table-filter-${filter_key}-all`} className={"btn btn-xs " + (!active_filter_item ? ' active btn-primary ' : '  btn-light')}
                         onClick={(e) => {
                           onChangeFilter(null, filter_key)
                         }}>{NameFn(filter.def_name || 'All')}</button>}
@@ -84,6 +84,7 @@ class TableFilter1 extends React.Component {
               // console.log("qqqqq keyeyeyeyeyeyye", key);
               return (<button
                   className={'btn btn-xs ' + (key === item.value ? 'active btn-primary' : 'btn-light ')}
+                  data-testid={`table-filter-${filter_key}-${item.value}`}
                   key={ind} onClick={(e) => {
                 onChangeFilter(item, filter_key)
               }}>
@@ -116,10 +117,11 @@ class TableFilter1 extends React.Component {
               onSearch(e.target.value)
             }}
                    // autoFocus={true}
+                   data-testid="table-search-input"
                    className="search form-control search_table_item" placeholder={NameFn('search') + " ..."}/>
 
             {!woAdd && <span className="input-group-btn">
-            <button className="btn btn-light" type="button" onClick={() => onAdd()}>+ {NameFn('addName')}</button>
+            <button className="btn btn-light" data-testid="table-add-button" type="button" onClick={() => onAdd()}>+ {NameFn('addName')}</button>
             </span>}
           </div>
 
