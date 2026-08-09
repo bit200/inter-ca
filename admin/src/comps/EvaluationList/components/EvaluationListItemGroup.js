@@ -23,7 +23,8 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
     return (
         <div className={'card'}>
             <div className={`${s.group} card-body`}>
-                <div className={s.groupHeader} onClick={() => setCollapsed(c => !c)}>
+                <div className={s.groupHeader} onClick={() => setCollapsed(c => !c)}
+                     data-testid="evaluation-group-header" data-group-label={label}>
                     <i className={`iconoir-nav-arrow-${collapsed ? 'right' : 'down'} ${s.groupHeaderArrow}`}/>
                     {examId ? (
                         <Link to={`/quiz/${examId}`} onClick={e => e.stopPropagation()} className={s.groupHeaderLabel}>
@@ -48,6 +49,7 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
                             return (
                                 <div key={item._id} className={s.groupItem}>
                                     <Link to={`/evaluations/${item._id}`}
+                                          data-testid="evaluation-group-item" data-item-id={item._id}
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}
                                     </Link>

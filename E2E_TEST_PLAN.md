@@ -80,7 +80,7 @@ mock-interviews и quiz оно `woAdd:true`, кнопки нет, это тож�
 - поиск сужает выдачу (`table.search`)
 - add-button есть/нет ровно там, где ожидается по `woAdd`
 
-### Тикет 2 — Evaluations (список, деталь, live-статус через SSE, retry)
+### Тикет 2 — Evaluations (список, деталь, live-статус через SSE, retry) [DONE]
 **Файл**: `e2e/tests/evaluations.spec.js`
 **Цель**: `EvaluationList` → клик по группе/итему → `EvaluationDetail` открывается;
 если замокать бэкенд так, что `evaluate.status` меняется во времени (см. ниже) —
@@ -125,7 +125,7 @@ Playwright может перехватить его через `page.route('**/a
 **Acceptance**: все 4 сценария зелёные, задержка в сценарии 1/3 реально измерена (не
 просто "закрылось когда-нибудь"), в сценарии 2 текст ошибки виден.
 
-### Тикет 4 — RunExam, простой квиз без код-задач
+### Тикет 4 — RunExam, простой квиз без код-задач [DONE]
 **Файл**: `e2e/tests/run-exam.spec.js`
 **Цель**: `quiz/:id` → `RunExam/RunExam.js`. Замокать `GET /api/load-exam` так, чтобы
 `tasksDb` было пустым (нет код-задач → не нужен докер), а `quizQuestionsPlainPub` —

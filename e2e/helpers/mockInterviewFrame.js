@@ -29,7 +29,15 @@ function fakeEmbedPageHtml(events) {
 async function mockInterviewBackend(page, { mockItem, events, reserveFails = false }) {
   const id = mockItem._id;
 
-  await page.route(`**/api/mock-interview/my-list/${id}`, (route) => {
+  // Кастомный ajax() в admin/src/libs/http/http.js для GET всегда дописывает
+  // '?' + serialize(params) — даже при пустом params это даёт литеральный
+  // трейлинг '?' (напр. .../my-list/<id>?). Глоб-паттерн без трейлингового
+  // wildcard'а такой URL не матчит, поэтому запрос уходит в реальную сеть на
+  // localhost:6057 и падает ERR_CONNECTION_REFUSED — item в MockInterview.js
+  // никогда не устанавливается, страница зависает на "Loading...". PUT (сохранение
+  // sessionId/status) методом GET не является, трейлинга не получает — матчится
+  // и без этого. Регэксп с опциональным `?...` в конце покрывает оба случая.
+  await page.route(new RegExp(`/api/mock-interview/my-list/${id}(?:\\?.*)?$`), (route) => {
     if (route.request().method() === 'GET') {
       return route.fulfill({ json: mockItem });
     }

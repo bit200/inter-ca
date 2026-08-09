@@ -8,10 +8,15 @@ module.exports = defineConfig({
   testDir: './tests',
   timeout: 30_000,
   expect: { timeout: 5_000 },
-  fullyParallel: true,
+  // Полный параллелизм здесь оказался хуже, а не лучше: несколько Chromium с
+  // video/trace-записью одновременно на одной машине дают и флейк в тестах,
+  // завязанных на реальные setTimeout-задержки (mock-interview.spec.js меряет
+  // FINISH_DELAY_MS~5с против 6с окна — под нагрузкой не укладывается), и просто
+  // медленнее по факту (10.7м параллельно vs 54с последовательно на этой машине).
+  fullyParallel: false,
   forbidOnly: false,
   retries: 0,
-  workers: undefined,
+  workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
 
   use: {
