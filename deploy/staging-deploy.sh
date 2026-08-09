@@ -9,10 +9,10 @@
 #        ssh root@<VPS_IP> "bash /root/staging-deploy.sh"
 #   3. Повторный запуск безопасен — просто обновит код (git pull) и пересоберёт фронт.
 #
-# Важно про admin_env.js: домен API для страницы определяется по хосту — для хоста,
-# начинающегося с "staging" (см. isStaging в admin_env.js), фронт сам берёт текущий
-# origin и ходит на /api на этом же домене. Поэтому BACKEND_UPSTREAM ниже — это то,
-# куда nginx проксирует /api, а не то, что видит браузер.
+# Важно про admin_env.js: домен API для стейджинга захардкожен в servers.staging
+# (см. admin_env.js) и указывает прямо на staging-api-razvitie.itk.academy — браузер
+# ходит на бэкенд напрямую, а не через nginx этого хоста. BACKEND_UPSTREAM/проксирование
+# /api ниже оставлены как резерв на случай, если понадобится обратный прокси.
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ DOMAIN="${DOMAIN:-staging-app.itk.academy}"                   # домен ст�
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-paulpetrash1@gmail.com}" # для certbot
 BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:6057}" # куда nginx проксирует /api (адрес уже развёрнутого бэкенда — поправить, когда бэк будет готов)
 GIT_REPO="${GIT_REPO:-git@github.com:bit200/inter-ca.git}"
-GIT_BRANCH="${GIT_BRANCH:-new_exam}"
+GIT_BRANCH="${GIT_BRANCH:-staging}"
 APP_DIR="${APP_DIR:-/var/www/inter-ca}"
 NODE_MAJOR="${NODE_MAJOR:-20}"
 SKIP_TLS="${SKIP_TLS:-0}"                                     # 1 = пропустить certbot (например, домен ещё не резолвится)
@@ -57,9 +57,13 @@ else
   git clone --branch "${GIT_BRANCH}" "${GIT_REPO}" "${APP_DIR}"
 fi
 
-log "npm install (может занять пару минут)"
 cd "${APP_DIR}/admin"
-npm install --no-audit --no-fund
+if [ -d node_modules ] && [ -f node_modules/.package-lock.json ] && cmp -s package-lock.json node_modules/.package-lock.json; then
+  log "node_modules актуальны (package-lock.json не менялся), пропускаю npm install"
+else
+  log "npm install (может занять пару минут)"
+  npm install --no-audit --no-fund
+fi
 
 log "Собираю прод-бандл (npm run build)"
 DISABLE_ESLINT=true NODE_ENV=production npm run build
