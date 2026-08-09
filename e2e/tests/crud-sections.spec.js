@@ -48,16 +48,14 @@
 // действительно есть. Тест ниже проверяет фактическое поведение (кнопки у suggestions нет),
 // не то, что написано в тикете — см. отдельный комментарий в тесте suggestions.
 //
-// === Известный баг движка, который тут обходим, а не чиним ===
-// TableFilter1.js (libs/Table/TableFilter1.js — общий файл, вне периметра этого тикета)
-// строит data-testid фильтра как `table-filter-${filterKey}-${item.value}`. Для
-// mock-interviews два фильтра используют объект-значение ({$in: [...]}) — интерполяция
-// объекта в шаблонную строку даёт "[object Object]" ОБА раза, то есть у "Ожидают" и
-// "Закончились" получается ОДИН И ТОТ ЖЕ data-testid ("table-filter-status-[object Object]"),
-// подтверждено вручную в браузере. Обычный table.clickFilter() тут упадёт с Playwright
-// strict-mode violation (совпадение с 2 элементами). Раз трогать TableFilter1.js нельзя
-// (общий файл, над ним параллельно работают по другим тикетам), кликаем по позиции внутри
-// группы фильтров — см. clickMockInterviewAmbiguousFilter ниже, с комментарием на месте.
+// === Бывший известный баг движка (починен) ===
+// TableFilter1.js (libs/Table/TableFilter1.js — общий файл) раньше строил data-testid
+// фильтра как `table-filter-${filterKey}-${item.value}` и рендерил NameFn(item.value)
+// как подпись таба. Для mock-interviews два фильтра используют объект-значение
+// ({$in: [...]}) — интерполяция объекта в шаблонную строку/текст давала "[object Object]"
+// и ОДИН И ТОТ ЖЕ data-testid у "Ожидают" и "Закончились". Пофикшено в TableFilter1.js
+// (filterValueKey() даёт стабильный примитив и для строк, и для объектов) — теперь можно
+// кликать обычным table.clickFilter() с объектом в качестве value, см. тест ниже.
 
 const { test, expect } = require('@playwright/test');
 const table = require('../helpers/table');
@@ -209,15 +207,6 @@ async function clickHeaderMenu(page, href) {
   await page.locator(`.startbar-menu a[href="${href}"]`).click();
 }
 
-// Обход дублирующихся data-testid у "Ожидают"/"Закончились" в mock-interviews —
-// см. большой комментарий вверху файла. index — позиция среди всех кнопок фильтра
-// status (0 = "Все", 1 = "Ожидают", 2 = "Начались" (уникальный testid, можно было бы
-// использовать table.clickFilter, но для единообразия с соседним кликаем так же), 3 =
-// "Закончились").
-async function clickMockInterviewFilterByPosition(page, index) {
-  await page.locator('[data-testid^="table-filter-status-"]').nth(index).click();
-}
-
 test.beforeEach(async ({ page }) => {
   await mockBackend(page);
   await seedAuth(page);
@@ -348,20 +337,19 @@ test('mock-interviews: таблица, поиск, три статус-филь�
   await expect(table.rows(page)).toHaveCount(5);
   await expect(page.locator('[data-testid="table-add-button"]')).toHaveCount(0);
 
-  // "Ожидают" -> status $in [draft, active] — см. комментарий вверху про дублирующийся
-  // testid, кликаем по позиции, а не по table.clickFilter.
-  await clickMockInterviewFilterByPosition(page, 1);
+  // "Ожидают" -> status $in [draft, active]
+  await table.clickFilter(page, 'status', { $in: ['draft', 'active'] });
   await expect(table.rows(page)).toHaveCount(2);
   const waitingIds = await table.rows(page).evaluateAll((els) => els.map((el) => el.getAttribute('data-row-id')));
   expect(waitingIds.sort()).toEqual(['m1', 'm2']);
 
-  // "Начались" -> status === 'started', testid уникален, можно обычным путём
+  // "Начались" -> status === 'started'
   await table.clickFilter(page, 'status', 'started');
   await expect(table.rows(page)).toHaveCount(1);
   await expect(table.rows(page).first()).toContainText('Mock Started one');
 
   // "Закончились" -> status $in [completed, evaluated]
-  await clickMockInterviewFilterByPosition(page, 3);
+  await table.clickFilter(page, 'status', { $in: ['completed', 'evaluated'] });
   await expect(table.rows(page)).toHaveCount(2);
   const doneIds = await table.rows(page).evaluateAll((els) => els.map((el) => el.getAttribute('data-row-id')));
   expect(doneIds.sort()).toEqual(['m4', 'm5']);

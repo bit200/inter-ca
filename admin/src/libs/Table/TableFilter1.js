@@ -14,6 +14,15 @@ let timer = -1;
 let _ = window._;
 let $ = window.$;
 
+// filter item.value может быть строкой ("started") или объектом-запросом ({$in: [...]})
+// — для testid/сравнения активного таба нужен стабильный примитив в обоих случаях.
+function filterValueKey(value) {
+  if (value && typeof value === 'object') {
+    return JSON.stringify(value).replace(/[^a-zA-Z0-9]+/g, '');
+  }
+  return value;
+}
+
 class TableFilter1 extends React.Component {
 
   constructor(props) {
@@ -82,13 +91,14 @@ class TableFilter1 extends React.Component {
               active_filter_item.value = active_filter_item.key || active_filter_item.value;
               let key = active_filter_item.key || active_filter_item.value || '';
               // console.log("qqqqq keyeyeyeyeyeyye", key);
+              let itemKey = filterValueKey(item.value);
               return (<button
-                  className={'btn btn-xs ' + (key === item.value ? 'active btn-primary' : 'btn-light ')}
-                  data-testid={`table-filter-${filter_key}-${item.value}`}
+                  className={'btn btn-xs ' + (filterValueKey(key) === itemKey ? 'active btn-primary' : 'btn-light ')}
+                  data-testid={`table-filter-${filter_key}-${itemKey}`}
                   key={ind} onClick={(e) => {
                 onChangeFilter(item, filter_key)
               }}>
-                {NameFn(item.value)}
+                {NameFn(item.name)}
               </button>)
             })}
           </div>)

@@ -13,10 +13,21 @@ async function clickAdd(page) {
   await page.locator('[data-testid="table-add-button"]').click();
 }
 
+// Зеркалит filterValueKey из admin/src/libs/Table/TableFilter1.js — там testid строится
+// так же, потому что item.value фильтра может быть объектом-запросом ({$in: [...]}), а не
+// только строкой (mock-interviews: "Ожидают"/"Закончились").
+function filterValueKey(value) {
+  if (value && typeof value === 'object') {
+    return JSON.stringify(value).replace(/[^a-zA-Z0-9]+/g, '');
+  }
+  return value;
+}
+
 // filterKey — ключ из top_filters (напр. "status"), value — значение опции
-// ("started", "completed", ...), либо не передавать value для кнопки "Все"/def_name
+// ("started", "completed", {$in: [...]}, ...), либо не передавать value для кнопки
+// "Все"/def_name
 async function clickFilter(page, filterKey, value) {
-  const testId = value ? `table-filter-${filterKey}-${value}` : `table-filter-${filterKey}-all`;
+  const testId = value ? `table-filter-${filterKey}-${filterValueKey(value)}` : `table-filter-${filterKey}-all`;
   await page.locator(`[data-testid="${testId}"]`).click();
 }
 
