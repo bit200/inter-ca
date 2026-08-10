@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import sse from '../../libs/sse/sse';
+import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
 import ScoreBar from "./components/ScoreBar";
 import AdviceSection from "./components/AdviceSection";
@@ -85,9 +86,10 @@ export default function EvaluationDetail() {
     const answerText = result.text;
     const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
 
-    const playOriginalAudio = () => {
+    const playOriginalAudio = (scb) => {
         window.myPlayer({ src: '' });
-        window.myPlayer({ user: item.user, hash: item.hash, text: answerText });
+        window.myPlayer({ user: item.user, hash: item.hash });
+        scb && scb();
     };
 
     return (
@@ -123,11 +125,10 @@ export default function EvaluationDetail() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <div className={styles.title}>Распознанный текст ответа</div>
                         {hasOriginalAudio && (
-                            <button onClick={playOriginalAudio} data-testid="evaluate-play-original-audio"
-                                    className="btn btn-light btn-sm">
-                                <i className="iconoir-play" style={{ marginRight: 5 }}></i>
-                                Прослушать оригинал
-                            </button>
+                            <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
+                                    color={4} size="sm" icon="iconoir-play">
+                                {' '}Прослушать оригинал
+                            </Button>
                         )}
                     </div>
                     <div className={styles.answerText} >{answerText}</div>
