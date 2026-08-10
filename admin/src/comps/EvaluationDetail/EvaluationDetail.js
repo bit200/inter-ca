@@ -83,6 +83,12 @@ export default function EvaluationDetail() {
 
     const questionText = result.question || getQuestionTitle(item);
     const answerText = result.text;
+    const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
+
+    const playOriginalAudio = () => {
+        window.myPlayer({ src: '' });
+        window.myPlayer({ user: item.user, hash: item.hash, text: answerText });
+    };
 
     return (
         <div style={{ padding: 20 }}>
@@ -116,6 +122,13 @@ export default function EvaluationDetail() {
                 <div className={styles.infoCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <div className={styles.title}>Распознанный текст ответа</div>
+                        {hasOriginalAudio && (
+                            <button onClick={playOriginalAudio} data-testid="evaluate-play-original-audio"
+                                    className="btn btn-light btn-sm">
+                                <i className="iconoir-play" style={{ marginRight: 5 }}></i>
+                                Прослушать оригинал
+                            </button>
+                        )}
                     </div>
                     <div className={styles.answerText} >{answerText}</div>
                 </div>
