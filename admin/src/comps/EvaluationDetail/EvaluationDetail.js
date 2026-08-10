@@ -105,7 +105,8 @@ export default function EvaluationDetail() {
                 <div className={styles.infoCard} data-testid="evaluate-error-card">
                     <div className={styles.title} style={{ color: STATUS_COLOR.error }}>Ошибка оценки</div>
                     <div>{ev.error || 'Не удалось оценить ответ'}</div>
-                    <button onClick={retry} disabled={retrying} data-testid="evaluate-retry-button" style={{ marginTop: 12 }}>
+                    <button onClick={retry} disabled={retrying} data-testid="evaluate-retry-button"
+                            className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
                         {retrying ? 'Повторяем...' : 'Повторить оценку'}
                     </button>
                 </div>

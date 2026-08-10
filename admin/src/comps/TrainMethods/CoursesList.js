@@ -415,7 +415,7 @@ function Layout2(props) {
                     reloadAll();
                 }}
                 size={'lg'}>
-                <h2>Результаты Мок-Интервью</h2>
+                <h2>Результаты пробного экзамена</h2>
                 <hr/>
                 <AutoInterview interview={interview}
                                onClick={(_id) => {
@@ -589,7 +589,7 @@ function Layout2(props) {
                             { name: t('toRepeat'), key: 'ql' },
                             { name: t('feedbacks'), key: 'fb' },
                             { name: t('courses'), key: 'cl' },
-                            { name: t('mockInterviews'), key: 'inter' },
+                            { name: t('trialExam'), key: 'inter' },
                             { name: t('stats'), key: 'st' },
                         ] || []).map((it, ind) => {
                             return (<li className="nav-item" role="presentation" key={ind}
@@ -714,7 +714,7 @@ function Layout2(props) {
                                     </div>
                                 </div>
                                 <div className="pull-right " style={{ marginTop: '15px' }} onClick={() => {
-                                    TrainExam.onClickExam()
+                                    TrainExam.onClickTrain()
                                 }}>
                                     <div className="btn btn-light btn-sm">
                                         <i className="iconoir-sparks"></i>
@@ -723,7 +723,7 @@ function Layout2(props) {
                                     {/*<a href="">Тренировать</a>*/}
                                 </div>
                                 <p className="mb-0 text-truncate text-muted mt-3 statsListHead"><span
-                                    className="text-success">{totalStats.exam100}%</span>
+                                    className="text-success">{totalStats.train100}%</span>
                                     {t('on5')}</p>
                             </>
                         </div>
@@ -733,7 +733,7 @@ function Layout2(props) {
                             {loading && <Skeleton count={3} abs={true}></Skeleton>}
                             <div className="row d-flex justify-content-center border-dashed-bottom pb-3">
                                 <div className="col-lg-8">
-                                    <p className="text-dark mb-0 fw-semibold fs-14">{t('mockInterviews')}</p>
+                                    <p className="text-dark mb-0 fw-semibold fs-14">{t('trialExam')}</p>
                                     <h3 className="mt-2 mb-0 fw-bold">{(totalStats.examNotNullAvgRate / 20).toFixed(1)}</h3>
                                 </div>
                                 <div className="col-lg-4 align-self-center">
@@ -744,7 +744,7 @@ function Layout2(props) {
                                 </div>
                             </div>
                             <div className="pull-right" style={{ marginTop: '15px' }} onClick={() => {
-                                TrainExam.onClickTrain()
+                                TrainExam.onClickExam()
                             }}>
                                 <div className="btn btn-light btn-sm">
                                     <i className="iconoir-sparks"></i>
@@ -754,7 +754,7 @@ function Layout2(props) {
                                 {/*<a href="">Тренировать</a>*/}
                             </div>
                             <p className="mb-0 text-truncate text-muted mt-3 statsListHead"><span
-                                className="text-success">{totalStats.train100}%</span>
+                                className="text-success">{totalStats.exam100}%</span>
                                 {t('on5')}</p>
 
                         </div>
