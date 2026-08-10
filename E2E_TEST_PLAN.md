@@ -61,7 +61,7 @@ Playwright, запуск только руками (`e2e/`, см. `e2e/README.md
 
 ## Тикеты
 
-### Тикет 1 — CRUD-разделы (suggestions/requests/interviews/quiz-list/mock-interviews-list)
+### Тикет 1 — CRUD-разделы (suggestions/requests/interviews/quiz-list/mock-interviews-list) [DONE]
 **Файл**: `e2e/tests/crud-sections.spec.js`
 **Цель**: убедиться, что общий движок реально работает на каждом из 5 разделов —
 не логику каждого раздела досконально, а что таблица открывается, фильтр переключает
@@ -103,7 +103,7 @@ Playwright может перехватить его через `page.route('**/a
 - деталь открывается по клику из списка
 - `pending`/`processing` показывает `evaluate-status-card`, `done` — score, `error` — retry-кнопку и она реально шлёт запрос
 
-### Тикет 3 — Mock-интервью, happy path (замоканный embed-контракт)
+### Тикет 3 — Mock-интервью, happy path (замоканный embed-контракт) [DONE]
 **Файл**: `e2e/tests/mock-interview.spec.js`
 **Цель**: самый ценный тест недели — весь путь `MockInterview.js`/`MockInterviewIframe.js`
 БЕЗ реального itk-live. Используй `e2e/helpers/mockInterviewFrame.js`.
