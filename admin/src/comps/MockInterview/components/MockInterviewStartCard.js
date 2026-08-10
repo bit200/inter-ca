@@ -20,10 +20,11 @@ const MockInterviewStartCard = ({item, error, onStart}) => {
                             </span>
                 )}
             </div>
-            {error && <div className={`alert alert-warning ${styles.cardAlert}`}>{error}</div>}
+            {error && <div className={`alert alert-warning ${styles.cardAlert}`} data-testid="mock-interview-start-error">{error}</div>}
             <div className={styles.cardBtn}>
                 <button
                     className="btn btn-primary btn-sm"
+                    data-testid="mock-interview-start-button"
                     onClick={handleStart}
                     disabled={!item.interviewId || reserving}
                 >

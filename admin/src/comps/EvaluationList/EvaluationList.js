@@ -21,6 +21,7 @@ const GroupModeSwitch = ({ groupMode,  setGroupMode}) => {
     return <div>
         {['exam', 'module'].map(mode => (
             <button key={mode} onClick={() => setGroupMode(mode)}
+                    data-testid={`evaluation-group-mode-${mode}`}
                     className={'btn btn-sm ' + (groupMode === mode ? 'btn-primary' : 'btn-light')}>
                 {t(mode === 'exam' ? 'by_exam' : 'by_module')}
             </button>

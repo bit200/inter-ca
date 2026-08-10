@@ -94,7 +94,7 @@ export default function EvaluationDetail() {
             </div>
 
             {(ev.status === 'pending' || ev.status === 'processing') && (
-                <div className={styles.infoCard}>
+                <div className={styles.infoCard} data-testid="evaluate-status-card" data-status={ev.status}>
                     <div className={styles.title} style={{ color: STATUS_COLOR[ev.status] }}>
                         {STATUS_LABEL[ev.status]}
                     </div>
@@ -102,10 +102,11 @@ export default function EvaluationDetail() {
             )}
 
             {ev.status === 'error' && (
-                <div className={styles.infoCard}>
+                <div className={styles.infoCard} data-testid="evaluate-error-card">
                     <div className={styles.title} style={{ color: STATUS_COLOR.error }}>Ошибка оценки</div>
                     <div>{ev.error || 'Не удалось оценить ответ'}</div>
-                    <button onClick={retry} disabled={retrying} style={{ marginTop: 12 }}>
+                    <button onClick={retry} disabled={retrying} data-testid="evaluate-retry-button"
+                            className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
                         {retrying ? 'Повторяем...' : 'Повторить оценку'}
                     </button>
                 </div>

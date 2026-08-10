@@ -288,6 +288,7 @@ function RunExam(props) {
                     ({Math.max(SUBMIT_DEFAULT - exam.submitCount, 0)})</small></div>
             </Button>}
             <Button
+                id={'run-exam-complete-button'}
                 className={'w100 btn-secondary btn-sm'}
 
                 color={4}

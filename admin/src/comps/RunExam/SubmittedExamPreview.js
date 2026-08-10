@@ -33,7 +33,7 @@ const SubmittedExamPreview = (props) => {
     }
 
     return <>
-        <div className={'mainCont2 row ' + (submitLoading ? 'o4' : '')}>
+        <div data-testid={'submitted-exam-preview'} className={'mainCont2 row ' + (submitLoading ? 'o4' : '')}>
 
             {/* Unified sidebar */}
             <div className="col-sm-3 sticky3">
@@ -44,6 +44,7 @@ const SubmittedExamPreview = (props) => {
                             <div className="menuGroupHeader"><b>{t('questions')}</b></div>
                             {(exam.quizQuestionsPlain || []).map((it, ind) => (
                                 <div key={it._id + 'quiz'}
+                                     data-testid={'submitted-question-nav-' + ind}
                                      className={'menuList ' + (selectedType === 'quiz' && selectedQuizInd === ind ? 'activeList' : '')}
                                      onClick={() => { setSelectedType('quiz'); setSelectedQuizInd(ind) }}>
                                     <strong>{t('question')} #{ind + 1}</strong>

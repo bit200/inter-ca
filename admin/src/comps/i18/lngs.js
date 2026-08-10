@@ -2415,6 +2415,13 @@ export default {
         en: "Mock Interviews",
         fr: `Entretiens simulés`
     },
+    "trialExam": {
+        ru: "Пробный экзамен",
+        es: "Examen de prueba",
+        de: "Probeprüfung",
+        en: "Practice Exam",
+        fr: `Examen blanc`
+    },
     "stats": {
         ru: "Статистика",
         es: "Estadísticas",
@@ -2815,11 +2822,11 @@ export default {
         fr: `Exécuter la tâche dans l'éditeur`
     },
     "startMockInterview": {
-        ru: "Начать мок-интервью",
-        es: "Iniciar entrevista simulada",
-        de: "Mock-Interview starten",
-        en: "Start mock interview",
-        fr: `Démarrer un entretien simulé`
+        ru: "Начать пробный экзамен",
+        es: "Iniciar examen de prueba",
+        de: "Probeprüfung starten",
+        en: "Start practice exam",
+        fr: `Démarrer un examen blanc`
     },
     "(optional)": {
         ru: " (опционально)",
