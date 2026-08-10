@@ -52,6 +52,16 @@ if (global?.is_local) {
     // serverKey = 'academy'
     // isDemo = true;
 }
+
+// Аплоадер аудио-надиктовок (AudioShort/Player) — свой сервис на каждое окружение,
+// т.к. домены разные и live-запись должна писаться не в общий прод-сторедж.
+// Статика (уже загруженные файлы) отдаётся отдельно через S3 — сюда не относится.
+let videoUploaders = {
+    local: 'http://localhost:1111',
+    staging: 'https://staging-api-razvitie.itk.academy/uploader',
+    def: 'https://uploader.itconsult-web.ru',
+}
+
 window.env = {
     domain: servers[serverKey] || servers.def,
     isDemo,
@@ -61,7 +71,7 @@ window.env = {
     RUN_CODE_DOMAIN: 'http://localhost:4988',
     VIDEO_UPLOAD_DOMAIN: 'https://uploader.itconsult-web.ru',
     VIDEO_STATIC_DOMAIN: 'https://static.itconsult-web.ru',
-    VIDEO_DOMAIN: global.is_local ? 'http://localhost:1111' : 'https://uploader.itconsult-web.ru',
+    VIDEO_DOMAIN: videoUploaders[serverKey] || videoUploaders.def,
     title: 'Портал развития',
     login_title: 'Портал развития',
     // login_title: 'Interview Portal',
