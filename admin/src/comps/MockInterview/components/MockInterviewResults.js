@@ -4,7 +4,15 @@ import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
 
 const MockInterviewResults = ({ interview }) => {
-    const turns = interview.report?.turns || [];
+    const rawTurns = interview.turns || [];
+    const evaluateByQuestion = {};
+    (interview.evaluate || []).forEach(e => {
+        evaluateByQuestion[e.questionId] = e.evaluate;
+    });
+    const turns = rawTurns.map(turn => ({
+        ...turn,
+        evaluate: evaluateByQuestion[turn.question_id],
+    }));
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
