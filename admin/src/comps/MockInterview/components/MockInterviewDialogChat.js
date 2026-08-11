@@ -49,13 +49,20 @@ const MockInterviewDialogChat = ({ dialog }) => {
 
     if (!Array.isArray(dialog) || !dialog.length) return null;
 
+    const messages = dialog.flatMap((turn) => ([
+        { type: 'question', text: turn.question },
+        { type: 'answer', text: turn.transcript, advice: turn.advice },
+    ]));
+
     return (
         // <div className={'card'}>
         //     <div className={'card-body'}>
                 <div className={styles.chatWrap}>
                     <AdvicesModal activeAdvice={activeAdvice} setActiveAdvice={setActiveAdvice}/>
 
-                    {dialog.map((msg, index) => (<MockInterviewDialogMsg msg={msg} key={index} index={index}/>))}
+                    {messages.map((msg, index) => (
+                        <MockInterviewDialogMsg msg={msg} key={index} index={index} setActiveAdvice={setActiveAdvice}/>
+                    ))}
 
                 </div>
             // </div>

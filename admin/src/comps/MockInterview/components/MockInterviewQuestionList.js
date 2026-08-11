@@ -1,6 +1,5 @@
 import React from 'react';
 import styles from '../mockInterview.module.scss';
-import MockInterviewCorrectnessBadge from './MockInterviewCorrectnessBadge';
 
 const MockInterviewQuestionList = ({ turns, selectedIndex, onSelect }) => {
     return (
@@ -15,7 +14,6 @@ const MockInterviewQuestionList = ({ turns, selectedIndex, onSelect }) => {
                     >
                         <div className={styles.questionItemRow}>
                             <strong>{'Вопрос #' + (ind + 1)}</strong>
-                            <MockInterviewCorrectnessBadge passed={turn.mini_evaluation?.passed}/>
                         </div>
                     </div>
                 ))}
