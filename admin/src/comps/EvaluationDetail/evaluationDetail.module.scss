@@ -46,6 +46,40 @@
   }
 }
 
+.criticalErrors {
+  margin-bottom: 16px;
+}
+
+.criticalErrorsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--bs-danger-text-emphasis);
+  margin-bottom: 6px;
+}
+
+.criticalErrorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.criticalErrorItem {
+  display: flex;
+  gap: 10px;
+  background: var(--bs-danger-bg-subtle);
+  border-left: 3px solid var(--bs-danger);
+  border-radius: 0 6px 6px 0;
+  padding: 5px 14px;
+
+  span {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+  }
+}
+
 .advice {
   &Wrapper{
     margin-bottom: 16px;
