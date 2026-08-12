@@ -22,6 +22,7 @@ export default function EvaluationDetail() {
     const [item, setItem] = useState(null);
     const [loading, setLoading] = useState(true);
     const [retrying, setRetrying] = useState(false);
+    const [loadingOriginalAudio, setLoadingOriginalAudio] = useState(false);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
 
@@ -73,10 +74,29 @@ export default function EvaluationDetail() {
     const answerText = result.text;
     const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
 
-    const playOriginalAudio = (scb) => {
+    // window.myPlayer() resolves and buffers the audio async (fetch + <audio> canplay)
+    // before the player UI ever appears, so we bridge Player.js's myPlayerReady/Error
+    // events back here to keep the button visibly "loading" for that whole stretch
+    // instead of it looking clickable-but-dead for several seconds.
+    const playOriginalAudio = (scb, errCb) => {
+        setLoadingOriginalAudio(true);
+
+        const finish = (cb) => {
+            window.removeEventListener('myPlayerReady', onReady);
+            window.removeEventListener('myPlayerError', onError);
+            clearTimeout(timeoutId);
+            setLoadingOriginalAudio(false);
+            cb && cb();
+        };
+        const onReady = () => finish(scb);
+        const onError = () => finish(errCb);
+        const timeoutId = setTimeout(() => finish(scb), 20000);
+
+        window.addEventListener('myPlayerReady', onReady);
+        window.addEventListener('myPlayerError', onError);
+
         window.myPlayer({ src: '' });
         window.myPlayer({ user: item.user, hash: item.hash });
-        scb && scb();
     };
 
     return (
@@ -119,8 +139,13 @@ export default function EvaluationDetail() {
                         <div className={styles.title}>Распознанный текст ответа</div>
                         {hasOriginalAudio && (
                             <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
-                                    color={4} size="sm" icon="iconoir-play">
-                                {' '}Прослушать оригинал
+                                    disabled={loadingOriginalAudio}
+                                    color={loadingOriginalAudio ? 4 : 3} size="sm"
+                                    icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
+                                {loadingOriginalAudio
+                                    ? <span className="spinner-border spinner-border-sm" role="status"/>
+                                    : null}
+                                {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
                             </Button>
                         )}
                     </div>

@@ -26,7 +26,7 @@ export default function Player(props) {
     let onCanPlay = () => {
         setLoading(false);
         setOpen(true);
-
+        window.dispatchEvent(new Event('myPlayerReady'));
     }
 
     useEffect(() => {
@@ -52,6 +52,7 @@ export default function Player(props) {
             fetch(global.env.VIDEO_DOMAIN + `/audio/${props.user}/${props.hash}`, { headers: { authorization: token } })
                 .then(r => r.json())
                 .then(({url}) => onChangeSrc(url))
+                .catch(() => window.dispatchEvent(new Event('myPlayerError')))
             return
         }
         if (props.path) {
