@@ -27,10 +27,10 @@
 
 }
 .interviewIndicator.adminErr {
-    border-color: #8c0c0c;
+    border-color: var(--bs-danger);
 }
 .interviewIndicator.adminOk {
-    border-color: #0e650e;
+    border-color: var(--bs-success);
 }
 .interviewIndicator.adminMid {
     background: rgba(211, 182, 0, 0.68);

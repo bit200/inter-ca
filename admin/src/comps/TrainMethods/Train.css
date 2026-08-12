@@ -2,7 +2,7 @@
     width: 100%;
     position: relative;
     height: 8px;
-    background: #f1f1f1;
+    background: var(--bs-secondary-bg);
     border-radius: 5px;
     overflow: hidden;
     margin-top: 20px;
@@ -24,17 +24,17 @@
     transition: all .5s ease!important;
 }
 .timerError {
-    background: #e77272;
+    background: var(--c404);
 }
 .timerErrorWrap .timerProgress {
-    background: #e77272;
+    background: var(--c404);
 }
 .timerErrorWrap .svgContainer .svg-box{
-    box-shadow: 0px 0px 8px 2px #e77272;
+    box-shadow: 0px 0px 8px 2px var(--c404);
 }
 .timerErrorWrap .svgContainer img {
     opacity: .8;
 }
 .timerErrorWrap .svgContainer .circle{
-    background: #e77272;
+    background: var(--c404);
 }

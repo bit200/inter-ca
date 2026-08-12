@@ -1,9 +1,7 @@
 import React, {useState} from 'react';
 import {Link} from "react-router-dom";
 import s from '../evaluationList.module.scss';
-
-const STATUS_LABEL = { pending: 'Ожидает', processing: 'Оценивается...', done: 'Оценено', error: 'Ошибка' };
-const STATUS_COLOR = { pending: '#999', processing: '#f0a500', done: '#2a9d2a', error: '#cc3333' };
+import { STATUS_LABEL, STATUS_COLOR } from '../../EvaluationDetail/evaluationStatus';
 
 function getQuestionTitle(item) {
     const ti = item.titleInfo || {};
@@ -18,7 +16,7 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
     const allDone = done === total;
     const hasProcessing = items.some(it => it.evaluate?.status === 'processing');
 
-    const progressColor = allDone ? STATUS_COLOR.done : hasProcessing ? STATUS_COLOR.processing : '#999';
+    const progressColor = allDone ? STATUS_COLOR.done : hasProcessing ? STATUS_COLOR.processing : STATUS_COLOR.pending;
 
     return (
         <div className={'card'}>
@@ -45,7 +43,7 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
                         {items.map(item => {
                             const ev = item.evaluate || {};
                             const score = ev.result?.score;
-                            const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? '#f0a500' : STATUS_COLOR.error;
+                            const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                             return (
                                 <div key={item._id} className={s.groupItem}>
                                     <Link to={`/evaluations/${item._id}`}
@@ -54,7 +52,7 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
                                         {getQuestionTitle(item)}
                                     </Link>
                                     <span className={s.groupItemStatus}
-                                          style={{ color: STATUS_COLOR[ev.status] || '#999' }}>
+                                          style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
                                     {STATUS_LABEL[ev.status] || ev.status}
                                 </span>
                                     {score != null && (

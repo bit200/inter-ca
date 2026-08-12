@@ -2,39 +2,39 @@
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  color: #aaa;
+  color: var(--bs-text-muted);
   margin-bottom: 6px;
 }
 
 .questionText{
   font-size: 16px;
   font-weight: 600;
-  color: #222;
+  color: var(--bs-heading-color);
   line-height: 1.4;
 }
 .answerText{
   font-size: 14px;
   line-height: 1.7;
-  color: #333;
+  color: var(--bs-body-color);
 }
 
 .infoCard{
   margin-top: 16px;
   margin-bottom: 12px;
-  background: #fff;
-  border: 1px solid #e8e8e8;
+  background: var(--bs-card-bg);
+  border: 1px solid var(--bs-border-color);
   border-radius: 8px;
   padding: 14px 16px;
 }
 
 .bottomInfo{
   font-size: 12px;
-  color: #bbb;
+  color: var(--bs-text-muted);
   margin-top: 8px;
 }
 
 .scoreBar {
-  background: #eee;
+  background: var(--bs-secondary-bg);
   border-radius: 4px;
   height: 8px;
   margin-top: 6px;
@@ -53,7 +53,7 @@
 
   &Title{
     font-size: 16px;
-    color: #333;
+    color: var(--bs-heading-color);
     margin-bottom: 12px;
     font-weight: bold;
   }
@@ -70,7 +70,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #888;
+      color: var(--bs-text-muted);
       margin-bottom: 6px;
     }
     &List{
@@ -81,14 +81,14 @@
     &Item{
       display: flex;
       gap: 10px;
-      background: #f3f8ff;
-      border-left: 3px solid rgb(74 158 255);
+      background: var(--bs-info-bg-subtle);
+      border-left: 3px solid var(--bs-info);
       border-radius: 0 6px 6px 0;
       padding: 5px 14px;
       & > span:last-child{
         font-size: 14px;
         line-height: 1.5;
-        color: #333;
+        color: var(--bs-body-color);
       }
     }
   }

@@ -2,19 +2,13 @@ import React from 'react';
 import ScoreBar from '../../EvaluationDetail/components/ScoreBar';
 import AdviceSection from '../../EvaluationDetail/components/AdviceSection';
 import styles from '../mockInterview.module.scss';
+import { STATUS_COLOR } from '../../EvaluationDetail/evaluationStatus';
 
 const STATUS_LABEL = {
     pending: 'Ожидает оценки',
     processing: 'Оценивается...',
     done: 'Оценено',
     error: 'Ошибка оценки',
-};
-
-const STATUS_COLOR = {
-    pending: '#999',
-    processing: '#f0a500',
-    done: '#2a9d2a',
-    error: '#cc3333',
 };
 
 const MockInterviewEvaluationBlock = ({ evaluation, adviceRules, metricSchemas }) => {
@@ -36,7 +30,7 @@ const MockInterviewEvaluationBlock = ({ evaluation, adviceRules, metricSchemas }
             ) : (
                 <div className={'card'}>
                     <div className={'card-body'}>
-                        <div className={styles.evaluationStatus} style={{ color: STATUS_COLOR[status] || '#999' }}>
+                        <div className={styles.evaluationStatus} style={{ color: STATUS_COLOR[status] || STATUS_COLOR.pending }}>
                             {STATUS_LABEL[status] || status}
                         </div>
                     </div>

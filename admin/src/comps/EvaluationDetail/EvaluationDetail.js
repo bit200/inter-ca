@@ -6,20 +6,7 @@ import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
 import ScoreBar from "./components/ScoreBar";
 import AdviceSection from "./components/AdviceSection";
-
-const STATUS_LABEL = {
-    pending: 'Ожидает',
-    processing: 'Оценивается...',
-    done: 'Оценено',
-    error: 'Ошибка',
-};
-
-const STATUS_COLOR = {
-    pending: '#999',
-    processing: '#f0a500',
-    done: '#2a9d2a',
-    error: '#cc3333',
-};
+import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
 
 function getQuestionTitle(item) {
     const ti = item.titleInfo || {};
@@ -75,7 +62,7 @@ export default function EvaluationDetail() {
         return <div style={{ padding: 20 }}>Загрузка...</div>;
     }
     if (!item || item.error) {
-        return <div style={{ padding: 20, color: '#cc3333' }}>Не найдено</div>;
+        return <div style={{ padding: 20, color: STATUS_COLOR.error }}>Не найдено</div>;
     }
 
     const ev = item.evaluate || {};
@@ -94,7 +81,7 @@ export default function EvaluationDetail() {
 
     return (
         <div style={{ padding: 20 }}>
-            <Link to="/evaluations" style={{ fontSize: 13, color: '#555' }}>← Все оценки</Link>
+            <Link to="/evaluations" style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
             <div className={styles.infoCard}>
                 <div className={styles.title}>Вопрос</div>
@@ -114,7 +101,7 @@ export default function EvaluationDetail() {
                     <div className={styles.title} style={{ color: STATUS_COLOR.error }}>Ошибка оценки</div>
                     <div>{ev.error || 'Не удалось оценить ответ'}</div>
                     {ev.unrecoverable ? (
-                        <div style={{ marginTop: 12, color: '#777' }}>
+                        <div style={{ marginTop: 12, color: 'var(--bs-text-muted)' }}>
                             Эту ошибку нельзя исправить повторной попыткой — обратитесь в поддержку
                         </div>
                     ) : (

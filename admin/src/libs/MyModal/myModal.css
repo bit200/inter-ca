@@ -62,8 +62,8 @@ div.padding-button-modal > button:first-child {
     left: 40px;
     right: 40px;
     bottom: 40px;
-    border: 1px solid rgb(204, 204, 204);
-    background: rgb(255, 255, 255);
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
     overflow: auto;
     border-radius: 4px;
     outline: none;
@@ -76,8 +76,8 @@ div.padding-button-modal > button:first-child {
     left: 40px;
     right: 40px;
     bottom: 40px;
-    border: 1px solid rgb(204, 204, 204);
-    background: rgb(255, 255, 255);
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
     overflow: auto;
     border-radius: 4px;
     outline: none;
