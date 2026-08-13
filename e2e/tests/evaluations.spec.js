@@ -187,6 +187,38 @@ test.describe('Evaluations', () => {
     await expect(score).toHaveAttribute('data-score', '8');
   });
 
+  test('done показывает разбивку по параметрам рядом с общим баллом', async ({ page }) => {
+    await seedAuth(page);
+    await page.route('**/api/eval-advice-rule*', route => route.fulfill({
+      json: { items: [
+        { key: 'evaluation.speech.score', from: 0, to: 10, advice: 'ok' },
+        { key: 'evaluation.practice.avg_how', from: 0, to: 1, advice: 'ok' },
+      ] },
+    }));
+    await page.route('**/api/eval-metric-schemas*', route => route.fulfill({
+      json: { items: [
+        { key: 'evaluation.speech.score', group: 'Речь' },
+        { key: 'evaluation.practice.avg_how', group: 'Практика' },
+      ] },
+    }));
+    await mockEvalDetails(page, {
+      'ev-metrics-1': {
+        _id: 'ev-metrics-1', question: 1, titleInfo: { title: 'Вопрос' },
+        evaluate: { status: 'done', result: {
+          score: 8, text: 'Ответ кандидата',
+          evaluation: { speech: { score: 8 }, practice: { avg_how: 0.5, count: 1 } },
+        } },
+      },
+    });
+
+    await page.goto('/evaluations/ev-metrics-1');
+
+    const rows = page.locator('[data-testid="metric-breakdown-row"]');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.filter({ hasText: 'Речь' })).toHaveAttribute('data-pct', '80');
+    await expect(rows.filter({ hasText: 'Практика' })).toHaveAttribute('data-pct', '50');
+  });
+
   test('error показывает evaluate-error-card, retry реально шлёт POST /api/evaluate-retry', async ({ page }) => {
     await seedAuth(page);
     await mockAdviceEmpty(page);

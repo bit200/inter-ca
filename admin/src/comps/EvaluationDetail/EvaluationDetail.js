@@ -5,6 +5,7 @@ import sse from '../../libs/sse/sse';
 import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
 import ScoreBar from "./components/ScoreBar";
+import MetricBreakdown from "./components/MetricBreakdown";
 import AdviceSection from "./components/AdviceSection";
 import ExplainSection from "./components/ExplainSection";
 import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
@@ -163,6 +164,7 @@ export default function EvaluationDetail() {
             {score != null && (
                 <div style={{ marginBottom: 20 }} className={'card'}>
                     <ScoreBar score={score} />
+                    <MetricBreakdown rules={adviceRules} schemas={metricSchemas} result={result} />
                 </div>
             )}
 
