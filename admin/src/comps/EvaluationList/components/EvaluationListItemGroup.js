@@ -52,10 +52,12 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}
                                     </Link>
-                                    <span className={s.groupItemStatus}
-                                          style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
-                                    {STATUS_LABEL[ev.status] || ev.status}
-                                </span>
+                                    {ev.status !== 'error' && (
+                                        <span className={s.groupItemStatus}
+                                              style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
+                                        {STATUS_LABEL[ev.status] || ev.status}
+                                    </span>
+                                    )}
                                     {score != null && (
                                         <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10

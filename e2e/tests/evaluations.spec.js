@@ -187,40 +187,20 @@ test.describe('Evaluations', () => {
     await expect(score).toHaveAttribute('data-score', '8');
   });
 
-  test('error показывает evaluate-error-card, retry реально шлёт POST /api/evaluate-retry', async ({ page }) => {
+  test('error статус не показывает пользователю карточку ошибки', async ({ page }) => {
     await seedAuth(page);
     await mockAdviceEmpty(page);
-    // первый GET (при монтировании) -> error; второй GET (после retry -> loadItem())
-    // -> processing, чтобы убедиться, что retry реально переоткрыл данные
     await mockEvalDetails(page, {
       'ev-err-1': [
         { _id: 'ev-err-1', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'error', error: 'LLM timeout' } },
-        { _id: 'ev-err-1', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'processing' } },
       ],
-    });
-
-    let retryBody = null;
-    let retryCalls = 0;
-    await page.route('**/api/evaluate-retry', route => {
-      retryCalls += 1;
-      retryBody = route.request().postDataJSON();
-      return route.fulfill({ json: { ok: true } });
     });
 
     await page.goto('/evaluations/ev-err-1');
 
-    const errorCard = page.locator('[data-testid="evaluate-error-card"]');
-    await expect(errorCard).toBeVisible();
-    await expect(errorCard).toContainText('LLM timeout');
-
-    await page.locator('[data-testid="evaluate-retry-button"]').click();
-
-    await expect.poll(() => retryCalls).toBe(1);
-    expect(retryBody).toEqual({ quizHistoryId: 'ev-err-1' });
-
-    // retry() дергает loadItem() -> второй мокнутый ответ (processing)
-    await expect(page.locator('[data-testid="evaluate-status-card"]')).toHaveAttribute('data-status', 'processing');
-    await expect(errorCard).toHaveCount(0);
+    await expect(page.locator('[data-testid="evaluate-error-card"]')).toHaveCount(0);
+    await expect(page.getByText('LLM timeout')).toHaveCount(0);
+    await expect(page.getByText('Ошибка оценки')).toHaveCount(0);
   });
 
   test('SSE: evaluate-status-card меняет data-status без релоада страницы', async ({ page }) => {

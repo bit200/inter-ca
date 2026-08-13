@@ -26,12 +26,11 @@ export default function EvaluationDetail() {
     const backTo = backGroupMode === 'module' ? '/evaluations?mode=module' : '/evaluations';
     const [item, setItem] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [retrying, setRetrying] = useState(false);
     const [loadingOriginalAudio, setLoadingOriginalAudio] = useState(false);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
 
-    const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id })
+    const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id }, { wo_notify: true })
         .then(data => setItem(data))
         .catch(() => setItem(null))
         .finally(() => setLoading(false));
@@ -39,13 +38,13 @@ export default function EvaluationDetail() {
     useEffect(() => {
         loadItem();
 
-        global.http.get('/eval-advice-rule', { per_page: 200 }).then(r => {
+        global.http.get('/eval-advice-rule', { per_page: 200 }, { wo_notify: true }).then(r => {
             setAdviceRules(r.items || []);
-        });
+        }).catch(() => {});
 
-        global.http.get('/eval-metric-schemas').then(r => {
+        global.http.get('/eval-metric-schemas', {}, { wo_notify: true }).then(r => {
             setMetricSchemas(r.items || []);
-        });
+        }).catch(() => {});
     }, [id]);
 
     // Live status/result updates (pending -> processing -> done/error) without the
@@ -56,13 +55,6 @@ export default function EvaluationDetail() {
             setItem(prev => prev && { ...prev, evaluate });
         });
     }, [id]);
-
-    const retry = () => {
-        setRetrying(true);
-        global.http.post('/evaluate-retry', { quizHistoryId: id })
-            .then(loadItem)
-            .finally(() => setRetrying(false));
-    };
 
     const explainSingle = () => global.http.post('/evaluate-explain', { quizHistoryId: id }, { wo_notify: true });
 
@@ -120,23 +112,6 @@ export default function EvaluationDetail() {
                     <div className={styles.title} style={{ color: STATUS_COLOR[ev.status] }}>
                         {STATUS_LABEL[ev.status]}
                     </div>
-                </div>
-            )}
-
-            {ev.status === 'error' && (
-                <div className={styles.infoCard} data-testid="evaluate-error-card">
-                    <div className={styles.title} style={{ color: STATUS_COLOR.error }}>Ошибка оценки</div>
-                    <div>{ev.error || 'Не удалось оценить ответ'}</div>
-                    {ev.unrecoverable ? (
-                        <div style={{ marginTop: 12, color: 'var(--bs-text-muted)' }}>
-                            Эту ошибку нельзя исправить повторной попыткой — обратитесь в поддержку
-                        </div>
-                    ) : (
-                        <button onClick={retry} disabled={retrying} data-testid="evaluate-retry-button"
-                                className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
-                            {retrying ? 'Повторяем...' : 'Повторить оценку'}
-                        </button>
-                    )}
                 </div>
             )}
 
