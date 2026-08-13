@@ -2849,6 +2849,13 @@ export default {
         en: "Attempt",
         fr: `Tentative`
     },
+    "currentAttempt": {
+        ru: "Текущая",
+        es: "Actual",
+        de: "Aktuell",
+        en: "Current",
+        fr: `Actuelle`
+    },
     "(optional)": {
         ru: " (опционально)",
         es: " (opcional)",
