@@ -19,6 +19,7 @@ function MockInterview() {
     const [active, setActive] = useState(null);
     const [completedLocally, setCompletedLocally] = useState(false);
     const [startError, setStartError] = useState(null);
+    const [botBusy, setBotBusy] = useState(false);
     const [retaking, setRetaking] = useState(false);
     const autoStartedRef = useRef(false);
     const reservedRef = useRef(false);
@@ -89,6 +90,7 @@ function MockInterview() {
     // на фронт никогда не попадает, iframe открывается сразу на готовый embed_url.
     const startAttempt = (attemptItem) => {
         setStartError(null);
+        setBotBusy(false);
         return global.http.post(`/mock-interview/my-list/${attemptItem._id}/reserve`, {}, { wo_notify: true })
             .then(() => {
                 reservedRef.current = true;
@@ -107,11 +109,13 @@ function MockInterview() {
                 if (reservedRef.current) {
                     releaseReservation();
                 }
-                const message = e?.error === 'busy'
+                const isBusy = e?.error === 'busy';
+                const message = isBusy
                     ? 'Интервью сейчас занято другим пользователем. Попробуйте открыть позже.'
                     : 'Не удалось забронировать интервью. Попробуйте ещё раз.';
                 global.notify.warning(message);
                 setStartError(message);
+                setBotBusy(isBusy);
             });
     };
 
@@ -163,7 +167,7 @@ function MockInterview() {
     return (
         <>
             {isPassed && <MockInterviewResults interview={item}/>}
-            {!isPassed && <MockInterviewStartCard item={item} error={startError} onStart={() => startAttempt(item)}/>}
+            {!isPassed && <MockInterviewStartCard item={item} error={startError} busy={botBusy} onStart={() => startAttempt(item)}/>}
             <MockInterviewAttemptHistory
                 history={mergedHistory}
                 currentItem={item}

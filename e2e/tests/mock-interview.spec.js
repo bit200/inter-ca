@@ -130,6 +130,14 @@ test.describe('Mock-интервью — happy path и фолбэки (замо�
     await expect(startError).toBeVisible({ timeout: 10_000 });
     await expect(startError).toContainText('занято другим пользователем');
 
+    // замочек вместо обычной ошибки: карточка помечена data-busy, есть иконка
+    // замка, кнопка не задизейблена (можно проверить снова, когда бот освободится)
+    await expect(page.locator('[data-testid="mock-interview-start-card"]')).toHaveAttribute('data-busy', 'true');
+    await expect(page.locator('[data-testid="mock-interview-busy-lock"]')).toBeVisible();
+    const startButton = page.locator('[data-testid="mock-interview-start-button"]');
+    await expect(startButton).toBeEnabled();
+    await expect(startButton).toContainText('Проверить снова');
+
     // оверлей интервью при этом не должен появиться вообще
     await expect(page.locator('[data-testid="mock-interview-overlay"]')).toBeHidden();
   });
