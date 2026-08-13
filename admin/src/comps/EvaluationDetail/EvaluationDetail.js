@@ -6,6 +6,7 @@ import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
 import ScoreBar from "./components/ScoreBar";
 import AdviceSection from "./components/AdviceSection";
+import ExplainSection from "./components/ExplainSection";
 import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
 
 function getQuestionTitle(item) {
@@ -58,6 +59,8 @@ export default function EvaluationDetail() {
             .then(loadItem)
             .finally(() => setRetrying(false));
     };
+
+    const explainSingle = () => global.http.post('/evaluate-explain', { quizHistoryId: id }, { wo_notify: true });
 
     if (loading) {
         return <div style={{ padding: 20 }}>Загрузка...</div>;
@@ -161,6 +164,10 @@ export default function EvaluationDetail() {
 
             {score != null && (
                 <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
+            )}
+
+            {score != null && (
+                <ExplainSection onExplain={explainSingle} />
             )}
 
             <div className={styles.bottomInfo}>

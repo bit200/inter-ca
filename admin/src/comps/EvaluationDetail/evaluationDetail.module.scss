@@ -80,6 +80,80 @@
   }
 }
 
+.explainWrapper {
+  margin-bottom: 20px;
+}
+
+.explainNotReady {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--bs-text-muted);
+}
+
+.explainError {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--bs-danger-text-emphasis);
+}
+
+.explainCard {
+  margin-top: 14px;
+}
+
+.explainSummary {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--bs-body-color);
+  margin-bottom: 14px;
+}
+
+.explainComponents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.explainComponentItem {
+  background: var(--bs-secondary-bg);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.explainComponentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.explainComponentName {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--bs-text-muted);
+}
+
+.explainComponentScore {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-heading-color);
+}
+
+.explainComponentVerdict {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+}
+
+.explainComponentSuggestion {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bs-text-muted);
+  margin-top: 4px;
+}
+
 .advice {
   &Wrapper{
     margin-bottom: 16px;

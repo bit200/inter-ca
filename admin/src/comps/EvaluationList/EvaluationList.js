@@ -33,7 +33,10 @@ function EvaluationList() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [, setLastSeenDone] = UseLocalStorage('evaluateLastSeenDone', 0);
-    const [groupMode, setGroupMode] = useState('exam');
+    // Plain useState reset to 'exam' on every remount - navigating into a module's
+    // detail view and back (a route push to /evaluations, not history.back()) remounts
+    // this component fresh and silently dropped the 'module' tab the person was just on.
+    const [groupMode, setGroupMode] = UseLocalStorage('evaluationGroupMode', 'exam');
     const done = items.filter(it => it.evaluate?.status === 'done').length;
     const groups = groupItems(items, groupMode);
 
