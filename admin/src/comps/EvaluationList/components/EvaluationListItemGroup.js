@@ -9,7 +9,7 @@ function getQuestionTitle(item) {
 }
 
 
-const EvaluationListItemGroup = ({ examId, label, items }) => {
+const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
     const [collapsed, setCollapsed] = useState(true);
     const done = items.filter(it => it.evaluate?.status === 'done').length;
     const total = items.length;
@@ -47,6 +47,7 @@ const EvaluationListItemGroup = ({ examId, label, items }) => {
                             return (
                                 <div key={item._id} className={s.groupItem}>
                                     <Link to={`/evaluations/${item._id}`}
+                                          state={{ groupMode }}
                                           data-testid="evaluation-group-item" data-item-id={item._id}
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}

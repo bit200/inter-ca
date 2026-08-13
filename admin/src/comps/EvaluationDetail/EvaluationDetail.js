@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 
 import sse from '../../libs/sse/sse';
 import Button from '../../libs/Button';
@@ -20,6 +20,10 @@ function getQuestionTitle(item) {
 
 export default function EvaluationDetail() {
     const { id } = useParams();
+    // Came from EvaluationListItemGroup's Link state={{ groupMode }} - falls back to
+    // 'exam' for a direct/refreshed visit with no navigation state at all.
+    const backGroupMode = useLocation().state?.groupMode === 'module' ? 'module' : 'exam';
+    const backTo = backGroupMode === 'module' ? '/evaluations?mode=module' : '/evaluations';
     const [item, setItem] = useState(null);
     const [loading, setLoading] = useState(true);
     const [retrying, setRetrying] = useState(false);
@@ -104,7 +108,7 @@ export default function EvaluationDetail() {
 
     return (
         <div style={{ padding: 20 }}>
-            <Link to="/evaluations" style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
+            <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
             <div className={styles.infoCard}>
                 <div className={styles.title}>Вопрос</div>

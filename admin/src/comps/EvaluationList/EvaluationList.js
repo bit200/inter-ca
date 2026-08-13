@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import UseLocalStorage from '../../libs/UseLocalStorage';
 import styles from './evaluationList.module.scss'
 import EvaluationListItemGroup from "./components/EvaluationListItemGroup";
@@ -13,7 +14,7 @@ const GroupList = ({groups, groupMode}) => {
     }
 
     return groups.map(({ key, items: groupRows }) => {
-        return <EvaluationListItemGroup key={key} examId={getExamId(groupMode, key)} label={getGroupLabel(groupMode, key)} items={groupRows} />;
+        return <EvaluationListItemGroup key={key} examId={getExamId(groupMode, key)} label={getGroupLabel(groupMode, key)} items={groupRows} groupMode={groupMode} />;
     })
 }
 
@@ -33,10 +34,13 @@ function EvaluationList() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [, setLastSeenDone] = UseLocalStorage('evaluateLastSeenDone', 0);
-    // Plain useState reset to 'exam' on every remount - navigating into a module's
-    // detail view and back (a route push to /evaluations, not history.back()) remounts
-    // this component fresh and silently dropped the 'module' tab the person was just on.
-    const [groupMode, setGroupMode] = UseLocalStorage('evaluationGroupMode', 'exam');
+    // In the URL (?mode=), not component state - the module-detail screen links back
+    // to /evaluations with this same param (see EvaluationListItemGroup/EvaluationDetail),
+    // so both the in-app back link and the real browser back button land on the tab the
+    // person was actually looking at, instead of always resetting to 'exam'.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const groupMode = searchParams.get('mode') === 'module' ? 'module' : 'exam';
+    const setGroupMode = (mode) => setSearchParams(mode === 'exam' ? {} : { mode });
     const done = items.filter(it => it.evaluate?.status === 'done').length;
     const groups = groupItems(items, groupMode);
 
