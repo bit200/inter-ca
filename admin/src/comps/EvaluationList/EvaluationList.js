@@ -5,17 +5,40 @@ import styles from './evaluationList.module.scss'
 import EvaluationListItemGroup from "./components/EvaluationListItemGroup";
 import {groupItems} from "./evaluate-list.utils";
 
+const GROUPS_PAGE_SIZE = 25;
+
 const getGroupLabel = (groupMode, key) => groupMode === 'exam' ? `Экзамен #${key}` : key
 const getExamId = (groupMode, key) => groupMode === 'exam' ? key : null;
 
+// /evaluate-list has no server-side pagination yet, so we still fetch the whole
+// list in one shot — this only guards against rendering hundreds/thousands of
+// group headers at once (item rows inside a group are already lazy, see
+// EvaluationListItemGroup's collapsed state).
 const GroupList = ({groups, groupMode}) => {
+    const [visibleCount, setVisibleCount] = useState(GROUPS_PAGE_SIZE);
+
+    useEffect(() => {
+        setVisibleCount(GROUPS_PAGE_SIZE);
+    }, [groupMode, groups.length]);
+
     if(!groups.length){
         return <div className={styles.noInfo}>Нет оценок</div>
     }
 
-    return groups.map(({ key, items: groupRows }) => {
-        return <EvaluationListItemGroup key={key} examId={getExamId(groupMode, key)} label={getGroupLabel(groupMode, key)} items={groupRows} groupMode={groupMode} />;
-    })
+    const visibleGroups = groups.slice(0, visibleCount);
+    const remaining = groups.length - visibleGroups.length;
+
+    return <>
+        {visibleGroups.map(({ key, items: groupRows }) => (
+            <EvaluationListItemGroup key={key} examId={getExamId(groupMode, key)} label={getGroupLabel(groupMode, key)} items={groupRows} groupMode={groupMode} />
+        ))}
+        {remaining > 0 && (
+            <button type="button" className="btn btn-light btn-sm" data-testid="evaluation-groups-show-more"
+                    onClick={() => setVisibleCount(c => c + GROUPS_PAGE_SIZE)}>
+                Показать ещё ({remaining})
+            </button>
+        )}
+    </>
 }
 
 const GroupModeSwitch = ({ groupMode,  setGroupMode}) => {
