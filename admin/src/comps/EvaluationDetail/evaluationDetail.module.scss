@@ -57,6 +57,28 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+
+  &:hover {
+    background: var(--bs-secondary-bg);
+  }
+}
+
+.metricModalList {
+  margin: 0;
+  padding-left: 18px;
+
+  li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+
+  li:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .metricRowLabel {

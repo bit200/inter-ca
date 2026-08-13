@@ -217,6 +217,12 @@ test.describe('Evaluations', () => {
     await expect(rows).toHaveCount(2);
     await expect(rows.filter({ hasText: 'Речь' })).toHaveAttribute('data-pct', '80');
     await expect(rows.filter({ hasText: 'Практика' })).toHaveAttribute('data-pct', '50');
+
+    // клик по параметру открывает модалку с пояснением именно по этой группе
+    await rows.filter({ hasText: 'Речь' }).click();
+    const modal = page.locator('[data-testid="metric-breakdown-modal"]');
+    await expect(modal).toBeVisible();
+    await expect(modal).toContainText('ok');
   });
 
   test('error показывает evaluate-error-card, retry реально шлёт POST /api/evaluate-retry', async ({ page }) => {

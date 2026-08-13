@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from '../evaluationDetail.module.scss';
-import { getByPath } from './adviceLogic';
+import MyModal from '../../../libs/MyModal';
+import { getByPath, groupAdvice } from './adviceLogic';
 
 // Advice-rule ranges are the only place this app already knows a metric's
 // natural scale (schemas only carry key+group, no explicit max/weight) - so
@@ -41,13 +42,20 @@ function buildGroupPercents(rules, schemas, result) {
 }
 
 const MetricBreakdown = ({ rules, schemas, result }) => {
+    const [openGroup, setOpenGroup] = useState(null);
     const rows = buildGroupPercents(rules, schemas, result);
     if (!rows.length) return null;
+
+    // Same grouping AdviceSection already uses for the advice list below - here
+    // it's reused to answer "why is this parameter at X%?" inside the modal for
+    // that specific group, instead of duplicating the matching logic.
+    const adviceByGroup = groupAdvice(rules, schemas, result);
 
     return (
         <div className={styles.metricBreakdown} data-testid="metric-breakdown">
             {rows.map(({ group, pct }) => (
-                <div key={group} className={styles.metricRow} data-testid="metric-breakdown-row" data-group={group} data-pct={pct}>
+                <div key={group} className={styles.metricRow} data-testid="metric-breakdown-row"
+                     data-group={group} data-pct={pct} onClick={() => setOpenGroup(group)}>
                     <span className={styles.metricRowLabel}>{group}</span>
                     <div className={styles.metricRowBar}>
                         <div style={{ width: `${pct}%` }} />
@@ -55,6 +63,24 @@ const MetricBreakdown = ({ rules, schemas, result }) => {
                     <span className={styles.metricRowPct}>{pct}%</span>
                 </div>
             ))}
+
+            {openGroup && (
+                <MyModal isOpen title={openGroup} size="small" onClose={() => setOpenGroup(null)}>
+                    <div data-testid="metric-breakdown-modal">
+                        {(adviceByGroup[openGroup] || []).length > 0 ? (
+                            <ul className={styles.metricModalList}>
+                                {adviceByGroup[openGroup].map((rule, i) => (
+                                    <li key={i}>{rule.advice}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div style={{ color: 'var(--bs-text-muted)' }}>
+                                Нет дополнительных пояснений по этому параметру.
+                            </div>
+                        )}
+                    </div>
+                </MyModal>
+            )}
         </div>
     );
 };
