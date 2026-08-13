@@ -30,7 +30,7 @@ const MockInterviewStartCard = ({item, error, onStart}) => {
                 >
                     {!item.interviewId && 'Not configured'}
                     {item.interviewId && reserving && 'Проверка...'}
-                    {item.interviewId && !reserving && (t('start') || 'Start')}
+                    {item.interviewId && !reserving && (t('continue') || 'Продолжить')}
                 </button>
             </div>
         </div>

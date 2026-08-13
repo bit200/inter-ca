@@ -2828,6 +2828,27 @@ export default {
         en: "Start practice exam",
         fr: `Démarrer un examen blanc`
     },
+    "retakeMockInterview": {
+        ru: "Пройти заново",
+        es: "Repetir intento",
+        de: "Erneut versuchen",
+        en: "Retake",
+        fr: `Retenter`
+    },
+    "attemptHistory": {
+        ru: "История попыток",
+        es: "Historial de intentos",
+        de: "Versuchsverlauf",
+        en: "Attempt history",
+        fr: `Historique des tentatives`
+    },
+    "attemptNumber": {
+        ru: "Попытка",
+        es: "Intento",
+        de: "Versuch",
+        en: "Attempt",
+        fr: `Tentative`
+    },
     "(optional)": {
         ru: " (опционально)",
         es: " (opcional)",
