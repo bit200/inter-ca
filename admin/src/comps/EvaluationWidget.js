@@ -9,11 +9,11 @@ function EvaluationWidget() {
     const [lastSeenDone, setLastSeenDone] = UseLocalStorage('evaluateLastSeenDone', 0);
 
     useEffect(() => {
-        global.http.get('/evaluate-list', {})
-            .then(items => {
-                const list = items || [];
-                const done = list.filter(it => it.evaluate?.status === 'done').length;
-                const total = list.length;
+        // count_only: this widget only ever needs the two numbers, not every item -
+        // see itk-platform-en's getEvaluateList (controllers/evaluate.js)
+        global.http.get('/evaluate-list', { count_only: 1 })
+            .then(stats => {
+                const { done = 0, total = 0 } = stats || {};
                 setStats({ done, total, newCount: Math.max(0, done - lastSeenDone) });
             })
             .catch(() => {})
