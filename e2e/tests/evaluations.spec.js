@@ -249,6 +249,36 @@ test.describe('Evaluations', () => {
     await expect(page.locator('[data-testid="metric-breakdown-modal"]')).toHaveCount(0);
   });
 
+  test('группа "Ошибки" инвертирована: 0 ошибок -> 100%, не 0%', async ({ page }) => {
+    await seedAuth(page);
+    await page.route('**/api/eval-advice-rule*', route => route.fulfill({
+      // count=0 (лучший случай, ошибок нет) попадает в диапазон [0,10] - строка
+      // остаётся кликабельной, просто с "хорошей" рекомендацией/сообщением.
+      json: { items: [{ key: 'evaluation.errors.count', from: 0, to: 10, advice: 'ошибок не найдено' }] },
+    }));
+    await page.route('**/api/eval-metric-schemas*', route => route.fulfill({
+      json: { items: [{ key: 'evaluation.errors.count', group: 'Ошибки' }] },
+    }));
+    await mockEvalDetails(page, {
+      'ev-errors-1': {
+        _id: 'ev-errors-1', question: 1, titleInfo: { title: 'Вопрос' },
+        evaluate: { status: 'done', result: {
+          score: 9, text: 'Ответ кандидата',
+          evaluation: { errors: { count: 0 } },
+        } },
+      },
+    });
+
+    await page.goto('/evaluations/ev-errors-1');
+
+    // Сырое значение 0 нормализуется в 0% от диапазона правила - без инверсии это
+    // выглядело бы как красный, почти пустой бар для ЛУЧШЕГО возможного случая
+    // (ошибок нет). После инверсии для группы "Ошибки" 0 ошибок -> 100%, зелёный.
+    const errorsRow = page.locator('[data-testid="metric-breakdown-row"]').filter({ hasText: 'Ошибки' });
+    await expect(errorsRow).toHaveAttribute('data-pct', '100');
+    await expect(errorsRow.locator('[class*="metricRowBar"] > div')).toHaveCSS('background-color', 'rgb(28, 190, 28)');
+  });
+
   test('error показывает evaluate-error-card, retry реально шлёт POST /api/evaluate-retry', async ({ page }) => {
     await seedAuth(page);
     await mockAdviceEmpty(page);

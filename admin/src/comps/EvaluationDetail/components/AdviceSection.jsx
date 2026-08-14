@@ -20,12 +20,29 @@ function buildMetricRanges(rules) {
     return ranges;
 }
 
+// Every row is displayed as "how good is this parameter" (full green bar = good,
+// matching the overall score above it) - but the raw normalized value only means
+// that for metrics where higher is better (речь, практика, ...). For a group like
+// "Ошибки", the underlying value is a count/level of errors, so a raw 0 (the best
+// possible outcome - no errors) still normalizes to 0% and would render as a red,
+// near-empty bar - exactly backwards. metricSchemas don't currently carry an
+// explicit direction flag (only key+group are read elsewhere in this file) - if
+// the backend schema object ever adds one (e.g. `invert`/`lowerIsBetter`), prefer
+// it over this name-based guess. Until then, matching the group label is the only
+// signal available client-side for the one confirmed case (errors).
+function isLowerBetterGroup(schema, group) {
+    if (schema && typeof schema.invert === 'boolean') return schema.invert;
+    if (schema && typeof schema.lowerIsBetter === 'boolean') return schema.lowerIsBetter;
+    return /ошибк|error/i.test(group || '');
+}
+
 function buildGroupPercents(rules, schemas, result) {
     const ranges = buildMetricRanges(rules);
     const schemaByKey = {};
     schemas.forEach(s => { schemaByKey[s.key] = s; });
 
     const groupValues = {};
+    const groupSchema = {};
     Object.keys(ranges).forEach(key => {
         const val = getByPath(result, key);
         if (val == null || typeof val !== 'number') return;
@@ -33,13 +50,15 @@ function buildGroupPercents(rules, schemas, result) {
         if (max <= min) return;
         const pct = Math.round(Math.max(0, Math.min(1, (val - min) / (max - min))) * 100);
         const group = schemaByKey[key]?.group || 'Общее';
+        groupSchema[group] = groupSchema[group] || schemaByKey[key];
         (groupValues[group] = groupValues[group] || []).push(pct);
     });
 
-    return Object.keys(groupValues).map(group => ({
-        group,
-        pct: Math.round(groupValues[group].reduce((a, b) => a + b, 0) / groupValues[group].length),
-    }));
+    return Object.keys(groupValues).map(group => {
+        const avgPct = Math.round(groupValues[group].reduce((a, b) => a + b, 0) / groupValues[group].length);
+        const pct = isLowerBetterGroup(groupSchema[group], group) ? 100 - avgPct : avgPct;
+        return { group, pct };
+    });
 }
 
 const AdviceSection = ({ rules, schemas, result }) => {
