@@ -55,23 +55,24 @@ function Layout2(props) {
            //console.log("qqqqq statstat",stat );
             let answerDetails = stat.answerDetails || {}
             if (!stat || !stat._id) {
-                return <div>-</div>
+                return <div data-testid="auto-interview-dash">-</div>
             }
-            return (<div key={ind} className={'row'}>
+            return (<div key={ind} className={'row'} data-testid="auto-interview-row">
                 <div className="col-sm-12">
                     <hr/>
                 </div>
                 <div className="col-sm-8">
                     <a
+                        data-testid="auto-interview-play"
                         style={{marginRight: '5px'}}
                         onClick={() => {
-                            myPlayer({path: `/${stat.user}/${stat.hash}.webm`})
+                            myPlayer({user: stat.user, hash: stat.hash})
                         }}><span className="fa fa-play-circle"></span></a>
                     {getTitleInfoName(stat)}
                     {/*{getQuizAnyName(stat)}*/}
 
                     <div className={'recognized-text'}  onClick={() => {
-                        myPlayer({path: `/${stat.user}/${stat.hash}.webm`})
+                        myPlayer({user: stat.user, hash: stat.hash})
                     }}>
                         {answerDetails.recognizedText || '-'}
                     </div><QHScore item={stat} rate={stat?.answerDetails?.rate} onChange={(rate) => {
