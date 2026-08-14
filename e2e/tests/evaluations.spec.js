@@ -187,6 +187,68 @@ test.describe('Evaluations', () => {
     await expect(score).toHaveAttribute('data-score', '8');
   });
 
+  test('done показывает "Детали оценки" с прогресс-барами по параметрам рядом с общим баллом', async ({ page }) => {
+    await seedAuth(page);
+    await page.route('**/api/eval-advice-rule*', route => route.fulfill({
+      json: { items: [
+        { key: 'evaluation.speech.score', from: 0, to: 10, advice: 'ok' },
+        { key: 'evaluation.practice.avg_how', from: 0, to: 1, advice: 'unused' },
+      ] },
+    }));
+    await page.route('**/api/eval-metric-schemas*', route => route.fulfill({
+      json: { items: [
+        { key: 'evaluation.speech.score', group: 'Речь' },
+        { key: 'evaluation.practice.avg_how', group: 'Практика' },
+      ] },
+    }));
+    await mockEvalDetails(page, {
+      'ev-metrics-1': {
+        _id: 'ev-metrics-1', question: 1, titleInfo: { title: 'Вопрос' },
+        evaluate: { status: 'done', result: {
+          score: 8, text: 'Ответ кандидата',
+          // avg_how=5 is outside the advice rule's [0,1] range, so this row still
+          // gets a percent bar (clamped to 100%) but NO matching advice - used below
+          // to exercise the "no advice -> non-interactive row" cursor/no-modal behavior.
+          evaluation: { speech: { score: 8 }, practice: { avg_how: 5, count: 1 } },
+        } },
+      },
+    });
+
+    await page.goto('/evaluations/ev-metrics-1');
+
+    // Прогресс-бары и рекомендации теперь в одной секции "Детали оценки" -
+    // отдельной карточки metric-breakdown над ней больше нет.
+    await expect(page.getByText('Детали оценки')).toBeVisible();
+
+    const rows = page.locator('[data-testid="metric-breakdown-row"]');
+    await expect(rows).toHaveCount(2);
+
+    const speechRow = rows.filter({ hasText: 'Речь' });
+    const practiceRow = rows.filter({ hasText: 'Практика' });
+    await expect(speechRow).toHaveAttribute('data-pct', '80');
+
+    // Речь: значение 8 попадает в диапазон [0,10] правила -> есть рекомендация,
+    // строка кликабельна (курсор-указатель) и открывает модалку с этой рекомендацией.
+    await expect(speechRow).toHaveAttribute('data-clickable', 'true');
+    await expect(speechRow).toHaveCSS('cursor', 'pointer');
+    await speechRow.click();
+    const modal = page.locator('[data-testid="metric-breakdown-modal"]');
+    await expect(modal).toBeVisible();
+    await expect(modal).toContainText('ok');
+    await expect(modal).not.toContainText('unused');
+
+    // Закрываем модалку, чтобы дальше проверить строку без рекомендаций.
+    await page.keyboard.press('Escape');
+    await expect(modal).toHaveCount(0);
+
+    // Практика: значение 5 вне диапазона [0,1] правила -> рекомендаций нет,
+    // строка НЕ кликабельна - обычный курсор, клик не открывает модалку.
+    await expect(practiceRow).toHaveAttribute('data-clickable', 'false');
+    await expect(practiceRow).toHaveCSS('cursor', 'default');
+    await practiceRow.click();
+    await expect(page.locator('[data-testid="metric-breakdown-modal"]')).toHaveCount(0);
+  });
+
   test('error показывает evaluate-error-card, retry реально шлёт POST /api/evaluate-retry', async ({ page }) => {
     await seedAuth(page);
     await mockAdviceEmpty(page);

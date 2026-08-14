@@ -165,39 +165,76 @@
     margin-bottom: 12px;
     font-weight: bold;
   }
+}
 
-  &List{
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.metricBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+
+  &:hover {
+    background: var(--bs-secondary-bg);
+  }
+}
+
+// Rows for a group with no matching advice - nothing happens on click, so the
+// row shouldn't invite one: no pointer cursor, no hover affordance.
+.metricRowStatic {
+  cursor: default;
+
+  &:hover {
+    background: none;
+  }
+}
+
+.metricRowLabel {
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.metricRowBar {
+  flex: 1;
+  background: var(--bs-secondary-bg);
+  border-radius: 4px;
+  height: 6px;
+
+  & > div {
+    background: var(--c1, var(--bs-primary));
+    border-radius: 4px;
+    height: 6px;
+  }
+}
+
+.metricRowPct {
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.metricModalList {
+  margin: 0;
+  padding-left: 18px;
+
+  li {
+    margin-bottom: 8px;
+    line-height: 1.5;
   }
 
-  &Group{
-    &Title{
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--bs-text-muted);
-      margin-bottom: 6px;
-    }
-    &List{
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    &Item{
-      display: flex;
-      gap: 10px;
-      background: var(--bs-info-bg-subtle);
-      border-left: 3px solid var(--bs-info);
-      border-radius: 0 6px 6px 0;
-      padding: 5px 14px;
-      & > span:last-child{
-        font-size: 14px;
-        line-height: 1.5;
-        color: var(--bs-body-color);
-      }
-    }
+  li:last-child {
+    margin-bottom: 0;
   }
 }
