@@ -33,43 +33,47 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
     }
 
     return (
-        <div className={styles.card} style={{ marginBottom: 20 }}>
-            {showList && (
-                <>
-                    <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
-                    <div className={styles.list}>
-                        {history.map((attempt, ind) => {
-                            const score = PASSED_STATUSES.includes(attempt.status) ? averageScore(attempt) : null;
-                            const isCurrent = attempt._id === currentItem._id;
-                            return (
-                                <div key={attempt._id} className={styles.card} data-testid="mock-interview-attempt-row">
-                                    <div className={styles.cardMeta}>
-                                        <span>{(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (history.length - ind))}</span>
-                                        {isCurrent && <span className={styles.cardMode}>{t('currentAttempt') || 'Текущая'}</span>}
+        <div className="card" style={{ marginBottom: 20 }}>
+            <div className={`card-body ${styles.cardBody}`}>
+                {showList && (
+                    <>
+                        <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
+                        <div className={styles.list}>
+                            {history.map((attempt, ind) => {
+                                const score = PASSED_STATUSES.includes(attempt.status) ? averageScore(attempt) : null;
+                                const isCurrent = attempt._id === currentItem._id;
+                                return (
+                                    <div key={attempt._id} className="card" data-testid="mock-interview-attempt-row">
+                                        <div className={`card-body ${styles.cardBody}`}>
+                                            <div className={styles.cardMeta}>
+                                                <span>{(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (history.length - ind))}</span>
+                                                {isCurrent && <span className={styles.cardMode}>{t('currentAttempt') || 'Текущая'}</span>}
+                                            </div>
+                                            <div className={styles.cardMeta}>
+                                                <span>{STATUS_LABEL[attempt.status] || attempt.status}</span>
+                                                {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
+                                            </div>
+                                            {score != null && <div>{'Балл: ' + score + '/10'}</div>}
+                                        </div>
                                     </div>
-                                    <div className={styles.cardMeta}>
-                                        <span>{STATUS_LABEL[attempt.status] || attempt.status}</span>
-                                        {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
-                                    </div>
-                                    {score != null && <div>{'Балл: ' + score + '/10'}</div>}
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
+                {latestCompleted && (
+                    <div className={styles.cardBtn}>
+                        <button
+                            className="btn btn-primary btn-sm"
+                            data-testid="mock-interview-retake-button"
+                            onClick={onRetake}
+                            disabled={retaking}
+                        >
+                            {retaking ? 'Проверка...' : (t('retakeMockInterview') || 'Пройти заново')}
+                        </button>
                     </div>
-                </>
-            )}
-            {latestCompleted && (
-                <div className={styles.cardBtn}>
-                    <button
-                        className="btn btn-primary btn-sm"
-                        data-testid="mock-interview-retake-button"
-                        onClick={onRetake}
-                        disabled={retaking}
-                    >
-                        {retaking ? 'Проверка...' : (t('retakeMockInterview') || 'Пройти заново')}
-                    </button>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

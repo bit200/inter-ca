@@ -69,9 +69,11 @@ const MockInterviewResults = ({ interview }) => {
 
     if (!turns.length) {
         return (
-            <div className={styles.card}>
-                <p className={styles.cardName}>{interview.name}</p>
-                <div className={styles.noInfo}>Результаты пока недоступны</div>
+            <div className="card">
+                <div className={`card-body ${styles.cardBody}`}>
+                    <p className={styles.cardName}>{interview.name}</p>
+                    <div className={styles.noInfo}>Результаты пока недоступны</div>
+                </div>
             </div>
         );
     }
