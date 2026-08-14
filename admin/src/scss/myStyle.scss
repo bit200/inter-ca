@@ -31,6 +31,14 @@
   float: left;
 }
 
+// Стейкхолдер попросил уменьшить иконки конкретно в статистических карточках
+// дашборда (ИИ оценка/тренировка/пробный экзамен/мок-интервью) - .thumb-xl это
+// общий wrapper-класс именно этих 4 карточек (EvaluationWidget, CoursesList.js
+// trains/trialExam, MockInterviewWidget), больше нигде в проекте не встречается.
+.thumb-xl [class^="iconoir-"] {
+  zoom: .78;
+}
+
 .btn.btn-sm i {
   zoom: .8;
 }
