@@ -160,44 +160,99 @@
   }
 
   &Title{
-    font-size: 16px;
+    font-size: 18px;
     color: var(--bs-heading-color);
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     font-weight: bold;
   }
+}
 
-  &List{
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.metricBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin: -6px -8px;
+
+  &:hover {
+    background: var(--bs-secondary-bg);
   }
+}
 
-  &Group{
-    &Title{
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--bs-text-muted);
-      margin-bottom: 6px;
-    }
-    &List{
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    &Item{
-      display: flex;
-      gap: 10px;
-      background: var(--bs-info-bg-subtle);
-      border-left: 3px solid var(--bs-info);
-      border-radius: 0 6px 6px 0;
-      padding: 5px 14px;
-      & > span:last-child{
-        font-size: 14px;
-        line-height: 1.5;
-        color: var(--bs-body-color);
-      }
-    }
+// Rows for a group with no matching advice - nothing happens on click, so the
+// row shouldn't invite one: no pointer cursor, no hover affordance.
+.metricRowStatic {
+  cursor: default;
+
+  &:hover {
+    background: none;
+  }
+}
+
+.metricRowLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bs-heading-color);
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+// Подсказка "тут есть совет, можно нажать" - без неё непонятно, что строка
+// вообще кликабельна (плоский текст+бар не читается как интерактивный элемент).
+.metricRowHint {
+  margin-left: 6px;
+  font-size: 13px;
+  color: var(--c1, var(--bs-primary));
+  vertical-align: -1px;
+}
+
+.metricRowBar {
+  flex: 1;
+  background: var(--bs-secondary-bg);
+  border-radius: 6px;
+  height: 10px;
+
+  & > div {
+    border-radius: 6px;
+    height: 10px;
+  }
+}
+
+.metricRowPct {
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.metricModalList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+// Тот же вид, что был у советов в исходном варианте (см. .criticalErrorItem
+// выше) - отдельные блоки читаются лучше, чем плоский маркированный список.
+.metricModalItem {
+  display: flex;
+  gap: 10px;
+  background: var(--bs-info-bg-subtle);
+  border-left: 3px solid var(--bs-info);
+  border-radius: 0 6px 6px 0;
+  padding: 5px 14px;
+
+  span {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--bs-body-color);
   }
 }
