@@ -171,7 +171,7 @@ export default function EvaluationDetail() {
             )}
 
             {score != null && (
-                <ExplainSection onExplain={explainSingle} />
+                <ExplainSection onExplain={explainSingle} initialExplain={ev.explain} />
             )}
 
             <div className={styles.bottomInfo}>

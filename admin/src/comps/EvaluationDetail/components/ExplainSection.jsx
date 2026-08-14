@@ -20,9 +20,16 @@ function isNotReady(err) {
 // callers hit different scoreServiceITK-proxying endpoints with different
 // ids, so the request itself is injected via `onExplain` rather than baked in
 // here.
-const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку' }) => {
-    const [status, setStatus] = useState('idle'); // idle | loading | done | not_ready | error
-    const [explain, setExplain] = useState(null);
+//
+// The backend persists the LLM explanation the first time it's generated (see
+// itk-platform-en's postEvaluateExplain/explainEvaluate) and returns the cached
+// copy on every later call rather than re-running the LLM - so once `explain`
+// exists (from `initialExplain` or a fresh click) there is deliberately no button
+// to trigger another run. `initialExplain` lets a caller that already has it (from
+// its own details fetch) show it immediately on page load, with no click required.
+const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку', initialExplain = null }) => {
+    const [status, setStatus] = useState(initialExplain ? 'done' : 'idle'); // idle | loading | done | not_ready | error
+    const [explain, setExplain] = useState(initialExplain);
 
     const handleClick = () => {
         setStatus('loading');
@@ -42,24 +49,26 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
 
     return (
         <div className={styles.explainWrapper}>
-            <button
-                onClick={handleClick}
-                disabled={status === 'loading'}
-                className="btn btn-outline-primary btn-sm"
-                data-testid="evaluate-explain-button"
-            >
-                {status === 'loading' ? (
-                    <>
-                        <span className="spinner-border spinner-border-sm" role="status"/>
-                        {' '}Расшифровываем...
-                    </>
-                ) : (
-                    <>
-                        <i className="iconoir-sparks"/>{' '}
-                        {explain ? 'Обновить расшифровку' : buttonLabel}
-                    </>
-                )}
-            </button>
+            {!explain && (
+                <button
+                    onClick={handleClick}
+                    disabled={status === 'loading'}
+                    className="btn btn-outline-primary btn-sm"
+                    data-testid="evaluate-explain-button"
+                >
+                    {status === 'loading' ? (
+                        <>
+                            <span className="spinner-border spinner-border-sm" role="status"/>
+                            {' '}Расшифровываем...
+                        </>
+                    ) : (
+                        <>
+                            <i className="iconoir-sparks"/>{' '}
+                            {buttonLabel}
+                        </>
+                    )}
+                </button>
+            )}
 
             {status === 'not_ready' && (
                 <div className={styles.explainNotReady} data-testid="evaluate-explain-not-ready">
