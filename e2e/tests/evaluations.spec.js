@@ -437,4 +437,84 @@ test.describe('Evaluations', () => {
       await sse.close();
     }
   });
+
+  // Тикет "не гонять LLM повторно" — itk-platform-en теперь персистит расшифровку
+  // (evaluate.explain) и отдаёт её же в /evaluate-details, так что при уже
+  // существующей расшифровке страница показывает её сразу, без клика и без
+  // единого запроса к /evaluate-explain.
+  test('расшифровка, уже сохранённая в evaluate.explain, показывается сразу без клика', async ({ page }) => {
+    await seedAuth(page);
+    await mockAdviceEmpty(page);
+    await mockEvalDetails(page, {
+      'ev-explain-cached': {
+        _id: 'ev-explain-cached',
+        question: 1,
+        titleInfo: { title: 'Вопрос' },
+        evaluate: {
+          status: 'done',
+          result: { score: 8, text: 'Ответ кандидата' },
+          explain: {
+            summary: 'Общий разбор ответа',
+            components: [{ name: 'Точность', score: 9, verdict: 'Отлично', suggestion: 'Продолжайте в том же духе' }],
+          },
+        },
+      },
+    });
+
+    let explainCalls = 0;
+    await page.route('**/api/evaluate-explain', route => {
+      explainCalls += 1;
+      return route.fulfill({ json: { explain: { summary: 'не должно вызываться' } } });
+    });
+
+    await page.goto('/evaluations/ev-explain-cached');
+
+    const result = page.locator('[data-testid="evaluate-explain-result"]');
+    await expect(result).toBeVisible();
+    await expect(result).toContainText('Общий разбор ответа');
+    await expect(result).toContainText('Точность');
+
+    // ни кнопки генерации, ни кнопки "Обновить" быть не должно - расшифровка
+    // уже показана, перегенерировать её нечем
+    await expect(page.locator('[data-testid="evaluate-explain-button"]')).toHaveCount(0);
+    expect(explainCalls).toBe(0);
+  });
+
+  // Первая генерация (когда explain ещё нет) остаётся кликом по кнопке - но как
+  // только результат получен, кнопка пропадает совсем (не превращается в "Обновить
+  // расшифровку"), т.к. повторный LLM-вызов для того же ответа больше не предусмотрен.
+  test('после первой генерации расшифровки кнопка "Обновить" не появляется', async ({ page }) => {
+    await seedAuth(page);
+    await mockAdviceEmpty(page);
+    await mockEvalDetails(page, {
+      'ev-explain-fresh': {
+        _id: 'ev-explain-fresh',
+        question: 1,
+        titleInfo: { title: 'Вопрос' },
+        evaluate: { status: 'done', result: { score: 7, text: 'Ответ кандидата' } },
+      },
+    });
+
+    let explainCalls = 0;
+    await page.route('**/api/evaluate-explain', route => {
+      explainCalls += 1;
+      return route.fulfill({ json: { explain: { summary: 'Свежий разбор', components: [] } } });
+    });
+
+    await page.goto('/evaluations/ev-explain-fresh');
+
+    const button = page.locator('[data-testid="evaluate-explain-button"]');
+    await expect(button).toBeVisible();
+    await expect(button).toContainText('Расшифровать оценку');
+
+    await button.click();
+
+    const result = page.locator('[data-testid="evaluate-explain-result"]');
+    await expect(result).toBeVisible();
+    await expect(result).toContainText('Свежий разбор');
+    expect(explainCalls).toBe(1);
+
+    // никакой кнопки для повторного вызова после успешной генерации
+    await expect(button).toHaveCount(0);
+  });
 });

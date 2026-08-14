@@ -37,6 +37,7 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId
                 metricSchemas={metricSchemas}
                 interviewId={interviewId}
                 evaluateId={turn.evaluateId}
+                evaluateExplain={turn.evaluateExplain}
             />
         </div>
     );

@@ -12,7 +12,7 @@ const STATUS_LABEL = {
     error: 'Ошибка оценки',
 };
 
-const MockInterviewEvaluationBlock = ({ evaluation, adviceRules, metricSchemas, interviewId, evaluateId }) => {
+const MockInterviewEvaluationBlock = ({ evaluation, adviceRules, metricSchemas, interviewId, evaluateId, evaluateExplain }) => {
     const result = evaluation || {};
     const score = result.score;
     const status = evaluation ? 'done' : 'pending';
@@ -34,7 +34,7 @@ const MockInterviewEvaluationBlock = ({ evaluation, adviceRules, metricSchemas, 
                     </div>
                     <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
                     {interviewId != null && evaluateId != null && (
-                        <ExplainSection onExplain={explainDialogTurn} />
+                        <ExplainSection onExplain={explainDialogTurn} initialExplain={evaluateExplain} />
                     )}
                 </>
             ) : (

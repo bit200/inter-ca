@@ -56,6 +56,7 @@ const MockInterviewResults = ({ interview }) => {
             ...turn,
             evaluate,
             evaluateId: jobsByQuestion[turn.question_id]?.evaluateId ?? null,
+            evaluateExplain: jobsByQuestion[turn.question_id]?.explain ?? null,
             dialog: turn.dialog
                 ? withDialogAdvice(turn.dialog, evaluate?.turns, adviceRules, metricSchemas)
                 : turn.dialog,
