@@ -135,6 +135,20 @@ test.describe('Evaluations', () => {
     await expect(headers.first()).toHaveAttribute('data-group-label', 'Экзамен #501');
   });
 
+  test('error-записи не показываются в списке вообще', async ({ page }) => {
+    await seedAuth(page);
+    await mockEvalList(page, [
+      { _id: 'ev-exam-1', exam: 501, question: 1, titleInfo: { title: 'Что такое замыкание?' }, evaluate: { status: 'pending' } },
+      { _id: 'ev-exam-2', exam: 501, question: 2, titleInfo: { title: 'Сломанный ответ' }, evaluate: { status: 'error', error: 'LLM timeout' } },
+    ]);
+
+    await page.goto('/evaluations');
+
+    await page.locator('[data-testid="evaluation-group-header"] i').click();
+    await expect(page.locator('[data-testid="evaluation-group-item"]')).toHaveCount(1);
+    await expect(page.getByText('Сломанный ответ')).toHaveCount(0);
+  });
+
   test('деталь открывается по клику из списка', async ({ page }) => {
     await seedAuth(page);
     await mockEvalList(page, [
@@ -201,6 +215,47 @@ test.describe('Evaluations', () => {
     await expect(page.locator('[data-testid="evaluate-error-card"]')).toHaveCount(0);
     await expect(page.getByText('LLM timeout')).toHaveCount(0);
     await expect(page.getByText('Ошибка оценки')).toHaveCount(0);
+  });
+
+  test('error статус тихо ретраится сам, без клика пользователя', async ({ page }) => {
+    await seedAuth(page);
+    await mockAdviceEmpty(page);
+    await mockEvalDetails(page, {
+      'ev-err-1': { _id: 'ev-err-1', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'error', error: 'LLM timeout' } },
+    });
+
+    let retryBody = null;
+    let retryCalls = 0;
+    await page.route('**/api/evaluate-retry', route => {
+      retryCalls += 1;
+      retryBody = route.request().postDataJSON();
+      return route.fulfill({ json: { ok: true } });
+    });
+
+    await page.goto('/evaluations/ev-err-1');
+
+    // никакой кнопки нет - ретрай должен уйти сам, без единого клика
+    await expect.poll(() => retryCalls).toBe(1);
+    expect(retryBody).toEqual({ quizHistoryId: 'ev-err-1' });
+  });
+
+  test('unrecoverable error не ретраится автоматически', async ({ page }) => {
+    await seedAuth(page);
+    await mockAdviceEmpty(page);
+    await mockEvalDetails(page, {
+      'ev-err-2': { _id: 'ev-err-2', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'error', error: 'Bad audio', unrecoverable: true } },
+    });
+
+    let retryCalls = 0;
+    await page.route('**/api/evaluate-retry', route => {
+      retryCalls += 1;
+      return route.fulfill({ json: { ok: true } });
+    });
+
+    await page.goto('/evaluations/ev-err-2');
+    await page.waitForTimeout(500);
+
+    expect(retryCalls).toBe(0);
   });
 
   test('SSE: evaluate-status-card меняет data-status без релоада страницы', async ({ page }) => {

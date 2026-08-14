@@ -56,6 +56,25 @@ export default function EvaluationDetail() {
         });
     }, [id]);
 
+    // Ошибка теперь нигде не показывается пользователю (ни кнопки, ни текста) -
+    // значит его больше некому нажать вручную. Вместо этого тихо просим бэкенд
+    // повторить оценку сами, без UI-эффекта: если ретрай реально запустится,
+    // это придёт тем же SSE-событием выше и просто обновит статус на экране.
+    // Бэкенд сам решает, доступен ли ретрай (лимит попыток/интервал между ними) -
+    // здесь только клиентский тротлинг, чтобы не долбить endpoint на каждый
+    // ререндер/переход на страницу.
+    useEffect(() => {
+        const evStatus = item?.evaluate?.status;
+        if (evStatus !== 'error' || item?.evaluate?.unrecoverable) return;
+
+        const key = `evalAutoRetry:${id}`;
+        const last = Number(localStorage.getItem(key) || 0);
+        if (Date.now() - last < 10 * 60 * 1000) return;
+
+        localStorage.setItem(key, String(Date.now()));
+        global.http.post('/evaluate-retry', { quizHistoryId: id }, { wo_notify: true }).catch(() => {});
+    }, [item?.evaluate?.status, item?.evaluate?.unrecoverable, id]);
+
     const explainSingle = () => global.http.post('/evaluate-explain', { quizHistoryId: id }, { wo_notify: true });
 
     if (loading) {

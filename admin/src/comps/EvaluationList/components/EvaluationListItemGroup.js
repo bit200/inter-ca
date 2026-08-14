@@ -40,7 +40,9 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
 
                 {!collapsed && (
                     <div className={s.groupBody}>
-                        {items.map(item => {
+                        {/* error-записи молча ретраятся сами (см. EvaluationDetail.js/бэкенд) -
+                            пока не восстановятся, показывать их тут вообще нечем и незачем */}
+                        {items.filter(item => item.evaluate?.status !== 'error').map(item => {
                             const ev = item.evaluate || {};
                             const score = ev.result?.score;
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
@@ -52,12 +54,10 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}
                                     </Link>
-                                    {ev.status !== 'error' && (
-                                        <span className={s.groupItemStatus}
-                                              style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
+                                    <span className={s.groupItemStatus}
+                                          style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
                                         {STATUS_LABEL[ev.status] || ev.status}
                                     </span>
-                                    )}
                                     {score != null && (
                                         <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10
