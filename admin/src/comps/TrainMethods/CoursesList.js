@@ -609,6 +609,10 @@ function Layout2(props) {
 
                     </ul>
                     {tab == 'fb' && <>
+                        {/* Отдельная, более новая система оценки ИИ (не curator-фидбек ниже) -
+                            последние 10 оценённых ответов, полный список с группировкой на /evaluations.
+                            Стоит выше старого фидбека по приоритету. */}
+                        <RecentAiEvaluations />
                         <div className="card">
                             <div className="card-body animChild">
                                 <FeedbacksList
@@ -621,9 +625,6 @@ function Layout2(props) {
                                 ></FeedbacksList>
                             </div>
                         </div>
-                        {/* Отдельная, более новая система оценки ИИ (не curator-фидбек выше) -
-                            последние 10 оценённых ответов, полный список с группировкой на /evaluations */}
-                        <RecentAiEvaluations />
                     </>}
                     {tab == 'other' && <TopStats
                         {...TrainExam}
