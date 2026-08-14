@@ -30,8 +30,16 @@ async function seedAuth(page) {
   }));
 }
 
-async function mockEvalList(page, items) {
-  await page.route('**/api/evaluate-list*', route => route.fulfill({ json: items }));
+// /evaluate-list возвращает не голый массив, а { items, total, done } (см.
+// EvaluationList.js: `const { items: pageItems = [], total = 0, done = 0 } = data`) -
+// total/done по умолчанию считаем от переданных items (error-записи исключены,
+// как их считает реальный бэкенд), но даём тестам возможность переопределить
+// через третий аргумент, если нужно проверить именно рассинхрон total/items.
+async function mockEvalList(page, items, overrides = {}) {
+  const visible = items.filter(it => it.evaluate?.status !== 'error');
+  const total = overrides.total ?? visible.length;
+  const done = overrides.done ?? visible.filter(it => it.evaluate?.status === 'done').length;
+  await page.route('**/api/evaluate-list*', route => route.fulfill({ json: { items, total, done } }));
 }
 
 // byId: quizHistoryId -> item (одна и та же деталь на каждый GET) либо массив
@@ -147,6 +155,27 @@ test.describe('Evaluations', () => {
     await page.locator('[data-testid="evaluation-group-header"] i').click();
     await expect(page.locator('[data-testid="evaluation-group-item"]')).toHaveCount(1);
     await expect(page.getByText('Сломанный ответ')).toHaveCount(0);
+  });
+
+  test('счётчик "готово/всего" в группе не учитывает скрытые error-записи', async ({ page }) => {
+    await seedAuth(page);
+    // 2 видимых (1 done + 1 pending) и 5 error - если бы error попадали в total,
+    // получилось бы обманчивое "1/7" вместо честного "1/2"
+    await mockEvalList(page, [
+      { _id: 'ev-1', question: 1, titleInfo: { title: 'Вопрос 1' }, evaluate: { status: 'done', result: { score: 8 } } },
+      { _id: 'ev-2', question: 2, titleInfo: { title: 'Вопрос 2' }, evaluate: { status: 'pending' } },
+      { _id: 'ev-err-1', question: 3, titleInfo: { title: 'Ошибка 1' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-2', question: 4, titleInfo: { title: 'Ошибка 2' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-3', question: 5, titleInfo: { title: 'Ошибка 3' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-4', question: 6, titleInfo: { title: 'Ошибка 4' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-5', question: 7, titleInfo: { title: 'Ошибка 5' }, evaluate: { status: 'error' } },
+    ], { total: 2, done: 1 });
+
+    await page.goto('/evaluations?mode=module');
+
+    await expect(page.locator('[data-testid="evaluation-group-header"]')).toContainText('1/2');
+    await expect(page.locator('[data-testid="evaluation-group-header"]')).not.toContainText('1/7');
+    await expect(page.getByText('1/2 оценено')).toBeVisible();
   });
 
   test('деталь открывается по клику из списка', async ({ page }) => {
