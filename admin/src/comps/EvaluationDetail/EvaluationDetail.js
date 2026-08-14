@@ -121,36 +121,42 @@ export default function EvaluationDetail() {
         <div style={{ padding: 20 }}>
             <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
-            <div className={styles.infoCard}>
-                <div className={styles.title}>Вопрос</div>
-                <div className={styles.questionText}>{questionText}</div>
+            <div className={`card ${styles.infoCardSpacing}`}>
+                <div className="card-body">
+                    <div className={styles.title}>Вопрос</div>
+                    <div className={styles.questionText}>{questionText}</div>
+                </div>
             </div>
 
             {(ev.status === 'pending' || ev.status === 'processing') && (
-                <div className={styles.infoCard} data-testid="evaluate-status-card" data-status={ev.status}>
-                    <div className={styles.title} style={{ color: STATUS_COLOR[ev.status] }}>
-                        {STATUS_LABEL[ev.status]}
+                <div className={`card ${styles.infoCardSpacing}`} data-testid="evaluate-status-card" data-status={ev.status}>
+                    <div className="card-body">
+                        <div className={styles.title} style={{ color: STATUS_COLOR[ev.status] }}>
+                            {STATUS_LABEL[ev.status]}
+                        </div>
                     </div>
                 </div>
             )}
 
             {answerText && (
-                <div className={styles.infoCard}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <div className={styles.title}>Распознанный текст ответа</div>
-                        {hasOriginalAudio && (
-                            <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
-                                    disabled={loadingOriginalAudio}
-                                    color={loadingOriginalAudio ? 4 : 3} size="sm"
-                                    icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
-                                {loadingOriginalAudio
-                                    ? <span className="spinner-border spinner-border-sm" role="status"/>
-                                    : null}
-                                {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
-                            </Button>
-                        )}
+                <div className={`card ${styles.infoCardSpacing}`}>
+                    <div className="card-body">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <div className={styles.title}>Распознанный текст ответа</div>
+                            {hasOriginalAudio && (
+                                <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
+                                        disabled={loadingOriginalAudio}
+                                        color={loadingOriginalAudio ? 4 : 3} size="sm"
+                                        icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
+                                    {loadingOriginalAudio
+                                        ? <span className="spinner-border spinner-border-sm" role="status"/>
+                                        : null}
+                                    {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
+                                </Button>
+                            )}
+                        </div>
+                        <div className={styles.answerText} >{answerText}</div>
                     </div>
-                    <div className={styles.answerText} >{answerText}</div>
                 </div>
             )}
 
