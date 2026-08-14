@@ -10,7 +10,7 @@ function getQuestionTitle(item) {
 
 
 const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
-    const [collapsed, setCollapsed] = useState(true);
+    const [collapsed, setCollapsed] = useState(false);
     // error-записи молча ретраятся сами (см. EvaluationDetail.js/бэкенд) и нигде
     // не отображаются - значит и в "X/Y" их учитывать не надо: иначе "2/7" с
     // 5 невидимыми error-записями читается как "ещё 5 не оценено", хотя на самом

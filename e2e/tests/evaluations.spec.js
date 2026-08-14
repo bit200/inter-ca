@@ -128,19 +128,19 @@ test.describe('Evaluations', () => {
 
     await page.goto('/evaluations');
 
-    // groupMode по умолчанию — 'exam': видна только группа item'а с exam-полем
+    // groupMode по умолчанию — 'module': видна только группа item'а без exam-поля
     const headers = page.locator('[data-testid="evaluation-group-header"]');
-    await expect(headers).toHaveCount(1);
-    await expect(headers.first()).toHaveAttribute('data-group-label', 'Экзамен #501');
-
-    await page.locator('[data-testid="evaluation-group-mode-module"]').click();
-
     await expect(headers).toHaveCount(1);
     await expect(headers.first()).toHaveAttribute('data-group-label', 'JS Basics');
 
     await page.locator('[data-testid="evaluation-group-mode-exam"]').click();
+
     await expect(headers).toHaveCount(1);
     await expect(headers.first()).toHaveAttribute('data-group-label', 'Экзамен #501');
+
+    await page.locator('[data-testid="evaluation-group-mode-module"]').click();
+    await expect(headers).toHaveCount(1);
+    await expect(headers.first()).toHaveAttribute('data-group-label', 'JS Basics');
   });
 
   test('error-записи не показываются в списке вообще', async ({ page }) => {
@@ -190,10 +190,10 @@ test.describe('Evaluations', () => {
 
     await page.goto('/evaluations');
 
-    // группа свёрнута по умолчанию — кликаем по стрелке-иконке в хедере (не по
-    // самому лейблу: тот — <Link to="/quiz/:examId">, клик по нему увёл бы на
-    // немокнутый роут)
-    await page.locator('[data-testid="evaluation-group-header"] i').click();
+    // мокнутая запись - экзаменационная, а таб по умолчанию теперь 'module' -
+    // переключаемся на 'exam', чтобы её увидеть. Группа развёрнута по умолчанию,
+    // отдельный клик по стрелке-иконке больше не нужен.
+    await page.locator('[data-testid="evaluation-group-mode-exam"]').click();
     await page.locator('[data-testid="evaluation-group-item"][data-item-id="ev-exam-1"]').click();
 
     await expect(page).toHaveURL(/\/evaluations\/ev-exam-1$/);
