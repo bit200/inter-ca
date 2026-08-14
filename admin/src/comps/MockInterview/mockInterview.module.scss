@@ -19,14 +19,15 @@
   gap: 16px;
 }
 
-.card {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 10px;
-  padding: 20px;
+// Раньше был самодостаточной "карточкой" (со своими border/padding/background) -
+// из-за этого фон не подхватывал ту же тему/оттенок, что и обычные .card/.card-body
+// в остальном приложении, и выглядел серым. Теперь это только внутренняя раскладка
+// контента (flex-колонка + отступы), а сам "белый фон карточки" даёт обёртка из
+// настоящих Bootstrap-классов .card/.card-body в разметке компонентов.
+.cardBody {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--bs-card-bg);
 }
 
 .cardName {
