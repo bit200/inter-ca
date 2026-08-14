@@ -30,8 +30,16 @@ async function seedAuth(page) {
   }));
 }
 
-async function mockEvalList(page, items) {
-  await page.route('**/api/evaluate-list*', route => route.fulfill({ json: items }));
+// /evaluate-list возвращает не голый массив, а { items, total, done } (см.
+// EvaluationList.js: `const { items: pageItems = [], total = 0, done = 0 } = data`) -
+// total/done по умолчанию считаем от переданных items (error-записи исключены,
+// как их считает реальный бэкенд), но даём тестам возможность переопределить
+// через третий аргумент, если нужно проверить именно рассинхрон total/items.
+async function mockEvalList(page, items, overrides = {}) {
+  const visible = items.filter(it => it.evaluate?.status !== 'error');
+  const total = overrides.total ?? visible.length;
+  const done = overrides.done ?? visible.filter(it => it.evaluate?.status === 'done').length;
+  await page.route('**/api/evaluate-list*', route => route.fulfill({ json: { items, total, done } }));
 }
 
 // byId: quizHistoryId -> item (одна и та же деталь на каждый GET) либо массив
@@ -135,6 +143,41 @@ test.describe('Evaluations', () => {
     await expect(headers.first()).toHaveAttribute('data-group-label', 'Экзамен #501');
   });
 
+  test('error-записи не показываются в списке вообще', async ({ page }) => {
+    await seedAuth(page);
+    await mockEvalList(page, [
+      { _id: 'ev-exam-1', exam: 501, question: 1, titleInfo: { title: 'Что такое замыкание?' }, evaluate: { status: 'pending' } },
+      { _id: 'ev-exam-2', exam: 501, question: 2, titleInfo: { title: 'Сломанный ответ' }, evaluate: { status: 'error', error: 'LLM timeout' } },
+    ]);
+
+    await page.goto('/evaluations');
+
+    await page.locator('[data-testid="evaluation-group-header"] i').click();
+    await expect(page.locator('[data-testid="evaluation-group-item"]')).toHaveCount(1);
+    await expect(page.getByText('Сломанный ответ')).toHaveCount(0);
+  });
+
+  test('счётчик "готово/всего" в группе не учитывает скрытые error-записи', async ({ page }) => {
+    await seedAuth(page);
+    // 2 видимых (1 done + 1 pending) и 5 error - если бы error попадали в total,
+    // получилось бы обманчивое "1/7" вместо честного "1/2"
+    await mockEvalList(page, [
+      { _id: 'ev-1', question: 1, titleInfo: { title: 'Вопрос 1' }, evaluate: { status: 'done', result: { score: 8 } } },
+      { _id: 'ev-2', question: 2, titleInfo: { title: 'Вопрос 2' }, evaluate: { status: 'pending' } },
+      { _id: 'ev-err-1', question: 3, titleInfo: { title: 'Ошибка 1' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-2', question: 4, titleInfo: { title: 'Ошибка 2' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-3', question: 5, titleInfo: { title: 'Ошибка 3' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-4', question: 6, titleInfo: { title: 'Ошибка 4' }, evaluate: { status: 'error' } },
+      { _id: 'ev-err-5', question: 7, titleInfo: { title: 'Ошибка 5' }, evaluate: { status: 'error' } },
+    ], { total: 2, done: 1 });
+
+    await page.goto('/evaluations?mode=module');
+
+    await expect(page.locator('[data-testid="evaluation-group-header"]')).toContainText('1/2');
+    await expect(page.locator('[data-testid="evaluation-group-header"]')).not.toContainText('1/7');
+    await expect(page.getByText('1/2 оценено')).toBeVisible();
+  });
+
   test('деталь открывается по клику из списка', async ({ page }) => {
     await seedAuth(page);
     await mockEvalList(page, [
@@ -187,16 +230,27 @@ test.describe('Evaluations', () => {
     await expect(score).toHaveAttribute('data-score', '8');
   });
 
-  test('error показывает evaluate-error-card, retry реально шлёт POST /api/evaluate-retry', async ({ page }) => {
+  test('error статус не показывает пользователю карточку ошибки', async ({ page }) => {
     await seedAuth(page);
     await mockAdviceEmpty(page);
-    // первый GET (при монтировании) -> error; второй GET (после retry -> loadItem())
-    // -> processing, чтобы убедиться, что retry реально переоткрыл данные
     await mockEvalDetails(page, {
       'ev-err-1': [
         { _id: 'ev-err-1', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'error', error: 'LLM timeout' } },
-        { _id: 'ev-err-1', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'processing' } },
       ],
+    });
+
+    await page.goto('/evaluations/ev-err-1');
+
+    await expect(page.locator('[data-testid="evaluate-error-card"]')).toHaveCount(0);
+    await expect(page.getByText('LLM timeout')).toHaveCount(0);
+    await expect(page.getByText('Ошибка оценки')).toHaveCount(0);
+  });
+
+  test('error статус тихо ретраится сам, без клика пользователя', async ({ page }) => {
+    await seedAuth(page);
+    await mockAdviceEmpty(page);
+    await mockEvalDetails(page, {
+      'ev-err-1': { _id: 'ev-err-1', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'error', error: 'LLM timeout' } },
     });
 
     let retryBody = null;
@@ -209,18 +263,28 @@ test.describe('Evaluations', () => {
 
     await page.goto('/evaluations/ev-err-1');
 
-    const errorCard = page.locator('[data-testid="evaluate-error-card"]');
-    await expect(errorCard).toBeVisible();
-    await expect(errorCard).toContainText('LLM timeout');
-
-    await page.locator('[data-testid="evaluate-retry-button"]').click();
-
+    // никакой кнопки нет - ретрай должен уйти сам, без единого клика
     await expect.poll(() => retryCalls).toBe(1);
     expect(retryBody).toEqual({ quizHistoryId: 'ev-err-1' });
+  });
 
-    // retry() дергает loadItem() -> второй мокнутый ответ (processing)
-    await expect(page.locator('[data-testid="evaluate-status-card"]')).toHaveAttribute('data-status', 'processing');
-    await expect(errorCard).toHaveCount(0);
+  test('unrecoverable error не ретраится автоматически', async ({ page }) => {
+    await seedAuth(page);
+    await mockAdviceEmpty(page);
+    await mockEvalDetails(page, {
+      'ev-err-2': { _id: 'ev-err-2', question: 1, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'error', error: 'Bad audio', unrecoverable: true } },
+    });
+
+    let retryCalls = 0;
+    await page.route('**/api/evaluate-retry', route => {
+      retryCalls += 1;
+      return route.fulfill({ json: { ok: true } });
+    });
+
+    await page.goto('/evaluations/ev-err-2');
+    await page.waitForTimeout(500);
+
+    expect(retryCalls).toBe(0);
   });
 
   test('SSE: evaluate-status-card меняет data-status без релоада страницы', async ({ page }) => {

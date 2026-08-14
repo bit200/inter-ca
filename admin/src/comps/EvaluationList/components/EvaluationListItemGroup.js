@@ -11,10 +11,15 @@ function getQuestionTitle(item) {
 
 const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
     const [collapsed, setCollapsed] = useState(true);
-    const done = items.filter(it => it.evaluate?.status === 'done').length;
-    const total = items.length;
-    const allDone = done === total;
-    const hasProcessing = items.some(it => it.evaluate?.status === 'processing');
+    // error-записи молча ретраятся сами (см. EvaluationDetail.js/бэкенд) и нигде
+    // не отображаются - значит и в "X/Y" их учитывать не надо: иначе "2/7" с
+    // 5 невидимыми error-записями читается как "ещё 5 не оценено", хотя на самом
+    // деле их просто не видно. Считаем total/done только по видимым записям.
+    const visibleItems = items.filter(item => item.evaluate?.status !== 'error');
+    const done = visibleItems.filter(it => it.evaluate?.status === 'done').length;
+    const total = visibleItems.length;
+    const allDone = total > 0 && done === total;
+    const hasProcessing = visibleItems.some(it => it.evaluate?.status === 'processing');
 
     const progressColor = allDone ? STATUS_COLOR.done : hasProcessing ? STATUS_COLOR.processing : STATUS_COLOR.pending;
 
@@ -40,7 +45,7 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
 
                 {!collapsed && (
                     <div className={s.groupBody}>
-                        {items.map(item => {
+                        {visibleItems.map(item => {
                             const ev = item.evaluate || {};
                             const score = ev.result?.score;
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
@@ -54,8 +59,8 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                                     </Link>
                                     <span className={s.groupItemStatus}
                                           style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
-                                    {STATUS_LABEL[ev.status] || ev.status}
-                                </span>
+                                        {STATUS_LABEL[ev.status] || ev.status}
+                                    </span>
                                     {score != null && (
                                         <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10
