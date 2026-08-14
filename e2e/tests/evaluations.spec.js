@@ -150,9 +150,11 @@ test.describe('Evaluations', () => {
       { _id: 'ev-exam-2', exam: 501, question: 2, titleInfo: { title: 'Сломанный ответ' }, evaluate: { status: 'error', error: 'LLM timeout' } },
     ]);
 
-    await page.goto('/evaluations');
+    // items тут все с exam - дефолтный таб теперь 'module' (см. тест выше), значит
+    // без явного mode=exam группа вообще не отрендерится. Группа развёрнута по
+    // умолчанию, отдельный клик по стрелке-иконке больше не нужен.
+    await page.goto('/evaluations?mode=exam');
 
-    await page.locator('[data-testid="evaluation-group-header"] i').click();
     await expect(page.locator('[data-testid="evaluation-group-item"]')).toHaveCount(1);
     await expect(page.getByText('Сломанный ответ')).toHaveCount(0);
   });
