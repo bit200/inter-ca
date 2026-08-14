@@ -80,10 +80,10 @@ function EvaluationList() {
     // In the URL (?mode=), not component state - the module-detail screen links back
     // to /evaluations with this same param (see EvaluationListItemGroup/EvaluationDetail),
     // so both the in-app back link and the real browser back button land on the tab the
-    // person was actually looking at, instead of always resetting to 'exam'.
+    // person was actually looking at, instead of always resetting to 'module'.
     const [searchParams, setSearchParams] = useSearchParams();
-    const groupMode = searchParams.get('mode') === 'module' ? 'module' : 'exam';
-    const setGroupMode = (mode) => setSearchParams(mode === 'exam' ? {} : { mode });
+    const groupMode = searchParams.get('mode') === 'exam' ? 'exam' : 'module';
+    const setGroupMode = (mode) => setSearchParams(mode === 'module' ? {} : { mode });
     const groups = groupItems(items, groupMode);
     const hasMore = items.length < stats.total;
 

@@ -10,7 +10,7 @@ function getQuestionTitle(item) {
 
 
 const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
-    const [collapsed, setCollapsed] = useState(true);
+    const [collapsed, setCollapsed] = useState(false);
     const done = items.filter(it => it.evaluate?.status === 'done').length;
     const total = items.length;
     const allDone = done === total;
