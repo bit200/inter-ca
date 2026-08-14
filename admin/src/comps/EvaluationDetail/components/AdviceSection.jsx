@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styles from '../evaluationDetail.module.scss'
 import MyModal from '../../../libs/MyModal';
+import { getScoreRGB } from './ScoreBar';
 import { getByPath, groupAdvice } from './adviceLogic';
 
 // Advice-rule ranges are the only place this app already knows a metric's
@@ -80,6 +81,9 @@ const AdviceSection = ({ rules, schemas, result }) => {
                             {rows.map(({ group, pct }) => {
                                 const advice = adviceByGroup[group] || [];
                                 const clickable = advice.length > 0;
+                                // Та же красно-жёлто-зелёная шкала, что и у большого балла в
+                                // ScoreBar - визуально привязывает "Детали оценки" к оценке сверху.
+                                const color = getScoreRGB(pct, 100);
                                 return (
                                     <div key={group}
                                          className={clickable ? styles.metricRow : `${styles.metricRow} ${styles.metricRowStatic}`}
@@ -88,9 +92,9 @@ const AdviceSection = ({ rules, schemas, result }) => {
                                          onClick={clickable ? () => setOpenGroup(group) : undefined}>
                                         <span className={styles.metricRowLabel}>{group}</span>
                                         <div className={styles.metricRowBar}>
-                                            <div style={{ width: `${pct}%` }} />
+                                            <div style={{ width: `${pct}%`, background: color }} />
                                         </div>
-                                        <span className={styles.metricRowPct}>{pct}%</span>
+                                        <span className={styles.metricRowPct} style={{ color }}>{pct}%</span>
                                     </div>
                                 );
                             })}
@@ -99,13 +103,15 @@ const AdviceSection = ({ rules, schemas, result }) => {
                 )}
 
                 {openGroup && (
-                    <MyModal isOpen title={openGroup} size="small" onClose={() => setOpenGroup(null)}>
+                    <MyModal isOpen title={openGroup} size="lg" onClose={() => setOpenGroup(null)}>
                         <div data-testid="metric-breakdown-modal">
-                            <ul className={styles.metricModalList}>
+                            <div className={styles.metricModalList}>
                                 {(adviceByGroup[openGroup] || []).map((rule, i) => (
-                                    <li key={i}>{rule.advice}</li>
+                                    <div key={i} className={styles.metricModalItem}>
+                                        <span>{rule.advice}</span>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
                     </MyModal>
                 )}

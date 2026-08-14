@@ -4,7 +4,7 @@ import styles from '../evaluationDetail.module.scss'
 
 const lerp = (a, b, t) => Math.round(a + (b - a) * t);
 
-const getScoreRGB = (score, max) => {
+export const getScoreRGB = (score, max) => {
     const t = Math.max(0, Math.min(1, score / max));
     let r, g, b;
     if (t < 0.5) {
