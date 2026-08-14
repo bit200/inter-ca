@@ -109,7 +109,14 @@ const AdviceSection = ({ rules, schemas, result }) => {
                                          data-testid="metric-breakdown-row" data-group={group} data-pct={pct}
                                          data-clickable={clickable}
                                          onClick={clickable ? () => setOpenGroup(group) : undefined}>
-                                        <span className={styles.metricRowLabel}>{group}</span>
+                                        <span className={styles.metricRowLabel}>
+                                            {group}
+                                            {clickable && (
+                                                <i className={`iconoir-light-bulb-on ${styles.metricRowHint}`}
+                                                   data-testid="metric-breakdown-row-hint"
+                                                   title="Есть рекомендация - нажмите, чтобы посмотреть"/>
+                                            )}
+                                        </span>
                                         <div className={styles.metricRowBar}>
                                             <div style={{ width: `${pct}%`, background: color }} />
                                         </div>

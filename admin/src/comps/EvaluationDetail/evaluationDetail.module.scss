@@ -205,6 +205,15 @@
   flex-shrink: 0;
 }
 
+// Подсказка "тут есть совет, можно нажать" - без неё непонятно, что строка
+// вообще кликабельна (плоский текст+бар не читается как интерактивный элемент).
+.metricRowHint {
+  margin-left: 6px;
+  font-size: 13px;
+  color: var(--c1, var(--bs-primary));
+  vertical-align: -1px;
+}
+
 .metricRowBar {
   flex: 1;
   background: var(--bs-secondary-bg);

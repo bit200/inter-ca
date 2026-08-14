@@ -236,6 +236,8 @@ test.describe('Evaluations', () => {
     // строка кликабельна (курсор-указатель) и открывает модалку с этой рекомендацией.
     await expect(speechRow).toHaveAttribute('data-clickable', 'true');
     await expect(speechRow).toHaveCSS('cursor', 'pointer');
+    // Подсказка "тут есть совет" - без неё непонятно, что строка кликабельна.
+    await expect(speechRow.locator('[data-testid="metric-breakdown-row-hint"]')).toBeVisible();
     await speechRow.click();
     const modal = page.locator('[data-testid="metric-breakdown-modal"]');
     await expect(modal).toBeVisible();
@@ -250,6 +252,8 @@ test.describe('Evaluations', () => {
     // строка НЕ кликабельна - обычный курсор, клик не открывает модалку.
     await expect(practiceRow).toHaveAttribute('data-clickable', 'false');
     await expect(practiceRow).toHaveCSS('cursor', 'default');
+    // Нет рекомендации - нет и подсказки-иконки, незачем звать её нажать.
+    await expect(practiceRow.locator('[data-testid="metric-breakdown-row-hint"]')).toHaveCount(0);
     await practiceRow.click();
     await expect(page.locator('[data-testid="metric-breakdown-modal"]')).toHaveCount(0);
   });
