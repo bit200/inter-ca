@@ -11,6 +11,8 @@ import Courses from "./Comps/Courses";
 import CircularProgress2 from "./Comps/CircularProgress2";
 import QuestionsList, {smartLoad} from "./Comps/QuestionList";
 import FeedbacksList from "./Comps/FeedbacksList";
+import RecentAiEvaluations from "./Comps/RecentAiEvaluations";
+import RecentMockInterviews from "./Comps/RecentMockInterviews";
 import TopStats from "./Comps/TopStats";
 import Interviews from "./Comps/Interviews";
 import WorkSessions from "./Comps/WorkSessions";
@@ -590,6 +592,7 @@ function Layout2(props) {
                             { name: t('feedbacks'), key: 'fb' },
                             { name: t('courses'), key: 'cl' },
                             { name: t('trialExam'), key: 'inter' },
+                            { name: t('mockInterviews'), key: 'mock' },
                             { name: t('stats'), key: 'st' },
                         ] || []).map((it, ind) => {
                             return (<li className="nav-item" role="presentation" key={ind}
@@ -605,18 +608,23 @@ function Layout2(props) {
                         })}
 
                     </ul>
-                    {tab == 'fb' && <div className="card">
-                        <div className="card-body animChild">
-                            <FeedbacksList
-                                onClick={clickFeedback}
-                                onTrain={onTrainFeedback}
-                                onChangeFb={changeFb}
-                                fb={fb}
-                                res={res3}
-                                loading={loading3}
-                            ></FeedbacksList>
+                    {tab == 'fb' && <>
+                        <div className="card">
+                            <div className="card-body animChild">
+                                <FeedbacksList
+                                    onClick={clickFeedback}
+                                    onTrain={onTrainFeedback}
+                                    onChangeFb={changeFb}
+                                    fb={fb}
+                                    res={res3}
+                                    loading={loading3}
+                                ></FeedbacksList>
+                            </div>
                         </div>
-                    </div>}
+                        {/* Отдельная, более новая система оценки ИИ (не curator-фидбек выше) -
+                            последние 10 оценённых ответов, полный список с группировкой на /evaluations */}
+                        <RecentAiEvaluations />
+                    </>}
                     {tab == 'other' && <TopStats
                         {...TrainExam}
                         totalStats={totalStats}
@@ -660,6 +668,7 @@ function Layout2(props) {
                                 }}></Interviews>
                         </div>
                     </div>}
+                    {tab == 'mock' && <RecentMockInterviews />}
                     {tab == 'st' &&
                         <div className="card">
                             <div className="card-body">
