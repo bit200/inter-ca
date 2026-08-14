@@ -30,8 +30,13 @@ async function seedAuth(page) {
   }));
 }
 
+// /evaluate-list отвечает {items, total, done} с тех пор, как список стал пагинированным
+// (см. коммит "Fetch /evaluate-list paginated instead of the whole history at once") -
+// EvaluationList.js деструктурирует именно эту форму, голый массив как ответ он не поймёт.
 async function mockEvalList(page, items) {
-  await page.route('**/api/evaluate-list*', route => route.fulfill({ json: items }));
+  await page.route('**/api/evaluate-list*', route => route.fulfill({
+    json: { items, total: items.length, done: items.filter(it => it.evaluate?.status === 'done').length },
+  }));
 }
 
 // byId: quizHistoryId -> item (одна и та же деталь на каждый GET) либо массив
