@@ -29,6 +29,7 @@ import Skeleton from "../../libs/Skeleton";
 import SemiCircle from "./Comps/SemiCircle";
 import {UserImg} from "../Header/Header1";
 import EvaluationWidget from "../EvaluationWidget";
+import MockInterviewWidget from "../MockInterviewWidget";
 
 function getRecentlyOpenCd(it) {
     let _id = it?._id || it || -1;
@@ -760,6 +761,7 @@ function Layout2(props) {
                         </div>
                     </div>
                     <EvaluationWidget/>
+                    <MockInterviewWidget/>
                     {isLocal && <>
                         <div className="card cardShadow" style={{ overflow: 'hidden', filter: 'blur(2px)' }}
                              onDoubleClick={() => {
