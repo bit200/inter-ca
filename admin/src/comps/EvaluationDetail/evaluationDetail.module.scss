@@ -18,13 +18,13 @@
   color: var(--bs-body-color);
 }
 
-.infoCard{
+// Раньше был самодостаточной карточкой (свои border/background) - как и у
+// мок-интервью, это не подхватывало box-shadow настоящих Bootstrap .card и
+// выглядело без белого фона. Теперь только внешние отступы, сама "карточка" -
+// настоящие .card/.card-body в разметке.
+.infoCardSpacing{
   margin-top: 16px;
   margin-bottom: 12px;
-  background: var(--bs-card-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 8px;
-  padding: 14px 16px;
 }
 
 .bottomInfo{
