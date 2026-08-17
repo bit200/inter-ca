@@ -8,13 +8,14 @@ import Button from "../../libs/Button";
 import QuizTraining from "./QuizTraining";
 import RunQuiz from "./RunQuiz";
 import MyModal from "../../libs/MyModal";
-import {Link, useNavigate} from "react-router-dom";
+import {Link} from "react-router-dom";
 import {generateSuggestion} from "./SuggestionItem";
 import CustomStorage from "./CustomStorage";
 import Train from "../TrainMethods/Train";
 import {getDefaultQuizTime, getStartTimers} from "../RunExam";
 import TrainPageCourse from "../TrainMethods/TrainPageCourse";
 import quiz from "../Quiz";
+import MockInterviewCore from "../MockInterview/MockInterviewCore";
 
 let quizIteration = 0;
 
@@ -28,23 +29,33 @@ function CourseQuiz(props) {
     let [quizes, setQuizes] = useState([]);
     let [pubQuizes, setPubQuizes] = useState([]);
     let [quizPerc, setQuizPerc] = useState(0);
-    let [startingInterview, setStartingInterview] = useState(false);
-    let navigate = useNavigate();
 
-    // Тот же контракт создания попытки (POST .../my-list -> navigate на её страницу),
-    // что уже используется в MockInterview.js/handleRetake - тут это "первая" попытка
-    // для только что законченного курса, а не ретейк.
-    function startInterview() {
-        setStartingInterview(true);
-        global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
-            .then(({item: newItem}) => {
-                navigate(`/mock-interviews/${newItem._id}`);
-            })
-            .catch(() => {
-                setStartingInterview(false);
-                window.notify.warning('Не удалось начать интервью. Попробуйте ещё раз.');
-            })
-    }
+    // Для последнего модуля курса с настроенным interviewId модалка "Проверить
+    // знания" получает второй таб - мок-интервью вместо обычного текстового
+    // квиза (см. обсуждение "два таба бот/надиктовка"). Активен по умолчанию,
+    // как только он есть - отдельной кнопки-подмены на "Молодец!" при этом
+    // не делаем, сам квиз-таб остаётся доступен рядом как раньше.
+    let hasInterviewTab = isLastModule && !!interviewId;
+    let [activeTab, setActiveTab] = useState(hasInterviewTab ? 'interview' : 'quiz');
+    let [interviewAttemptId, setInterviewAttemptId] = useState(null);
+    let [creatingAttempt, setCreatingAttempt] = useState(false);
+
+    // Ту же занятость бота (reserve -> busy), что уже проверяется на странице
+    // /mock-interviews/:id, переиспользуем через MockInterviewCore - тут только
+    // создаём "первую" попытку для этого interviewId, дальше всё (старт, замочек
+    // если бот занят, ретейк) ведёт сам Core.
+    useEffect(() => {
+        if (open && activeTab === 'interview' && interviewId && !interviewAttemptId && !creatingAttempt) {
+            setCreatingAttempt(true);
+            global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
+                .then(({item: newItem}) => setInterviewAttemptId(newItem._id))
+                .catch(() => {
+                    window.notify.warning('Не удалось начать интервью. Попробуйте ещё раз.');
+                    setActiveTab('quiz');
+                })
+                .finally(() => setCreatingAttempt(false));
+        }
+    }, [open, activeTab, interviewId, interviewAttemptId, creatingAttempt]);
 
     let localQuizIteration;
     localQuizIteration = quizIteration;
@@ -236,17 +247,32 @@ function CourseQuiz(props) {
         >
             <>
 
+                {hasInterviewTab && <div className={'btn-group'} style={{marginBottom: '15px'}}>
+                    <button
+                        className={`btn btn-sm ${activeTab === 'interview' ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => setActiveTab('interview')}
+                    >
+                        <i className="iconoir-brain"></i> Мок-интервью
+                    </button>
+                    <button
+                        className={`btn btn-sm ${activeTab === 'quiz' ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => setActiveTab('quiz')}
+                    >
+                        Обычная проверка
+                    </button>
+                </div>}
+
+                {hasInterviewTab && activeTab === 'interview' && <div>
+                    {!interviewAttemptId
+                        ? <div>Готовим интервью...</div>
+                        : <MockInterviewCore
+                            attemptId={interviewAttemptId}
+                            onRetake={setInterviewAttemptId}
+                        />}
+                </div>}
+
+                {(!hasInterviewTab || activeTab === 'quiz') && <>
                 {!loading && !quizResults && !!_quizes.length && <div>
-                    {isLastModule && interviewId && <div style={{marginBottom: '15px'}}>
-                        <Button className={'btn btn-sm btn-primary'} disabled={startingInterview} onClick={(scb) => {
-                            startInterview();
-                            scb && scb();
-                        }}>
-                            <i className="iconoir-brain"></i>
-                            {startingInterview ? '...' : 'Пройти мок-интервью'}
-                        </Button>
-                        <hr/>
-                    </div>}
                     <TrainPageCourse
                         onResult={() => {
                             console.log("777777 qqqqq EEEEEEEEEEEEEEEEEEEEEEEEE onRESULT444",);
@@ -321,6 +347,7 @@ function CourseQuiz(props) {
 
 
                 </div>}
+                </>}
             </>
 
 
