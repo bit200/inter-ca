@@ -193,19 +193,11 @@ function CourseQuiz(props) {
                 {t('loadingResultsTesting')}
                 ...</button>}
         {!loading && <>
-            {!!_quizes.length && <Button className={'btn btn-sm btn-primary'} disabled={startingInterview} onClick={(scb) => {
-                // Финальная проверка знаний курса, для которого настроено интервью -
-                // ведём в бота вместо обычного текстового квиза (см. историю с
-                // "Проверить знания" на финальном экране курса).
-                if (isLastModule && interviewId) {
-                    startInterview();
-                    scb && scb();
-                } else {
-                    reGenerateQuiz(scb)
-                }
+            {!!_quizes.length && <Button className={'btn btn-sm btn-primary'} onClick={(scb) => {
+                reGenerateQuiz(scb)
             }}>
                 <i className="iconoir-double-check"></i>
-                {startingInterview ? '...' : (title || t('checkKnowledge'))}</Button>}
+                {title || t('checkKnowledge')}</Button>}
             {isEmptyQuiz && <><Button
                 // disabled={true}
                 className={'btn btn-sm btn-primary'} onClick={(scb) => {
@@ -245,6 +237,16 @@ function CourseQuiz(props) {
             <>
 
                 {!loading && !quizResults && !!_quizes.length && <div>
+                    {isLastModule && interviewId && <div style={{marginBottom: '15px'}}>
+                        <Button className={'btn btn-sm btn-primary'} disabled={startingInterview} onClick={(scb) => {
+                            startInterview();
+                            scb && scb();
+                        }}>
+                            <i className="iconoir-brain"></i>
+                            {startingInterview ? '...' : 'Пройти мок-интервью'}
+                        </Button>
+                        <hr/>
+                    </div>}
                     <TrainPageCourse
                         onResult={() => {
                             console.log("777777 qqqqq EEEEEEEEEEEEEEEEEEEEEEEEE onRESULT444",);
