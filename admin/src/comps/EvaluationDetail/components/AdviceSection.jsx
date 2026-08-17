@@ -56,8 +56,15 @@ function buildGroupPercents(rules, schemas, result) {
 
     return Object.keys(groupValues).map(group => {
         const avgPct = Math.round(groupValues[group].reduce((a, b) => a + b, 0) / groupValues[group].length);
-        const pct = isLowerBetterGroup(groupSchema[group], group) ? 100 - avgPct : avgPct;
-        return { group, pct };
+        const inverted = isLowerBetterGroup(groupSchema[group], group);
+        const pct = inverted ? 100 - avgPct : avgPct;
+        // The percent already reads as "how good", so an inverted group's own name
+        // ("Ошибки") would read backwards next to it (100% Ошибки = зелёным?!) -
+        // flip the label to match what the number actually means. The raw `group`
+        // is kept as the row/modal key (adviceByGroup, data-group, ...) so this is
+        // display-only.
+        const label = inverted ? 'Без ошибок' : group;
+        return { group, label, pct };
     });
 }
 
@@ -97,7 +104,7 @@ const AdviceSection = ({ rules, schemas, result }) => {
                     <>
                         <div className={styles.adviceTitle}>Детали оценки</div>
                         <div className={styles.metricBreakdown} data-testid="metric-breakdown">
-                            {rows.map(({ group, pct }) => {
+                            {rows.map(({ group, label, pct }) => {
                                 const advice = adviceByGroup[group] || [];
                                 const clickable = advice.length > 0;
                                 // Та же красно-жёлто-зелёная шкала, что и у большого балла в
@@ -110,7 +117,7 @@ const AdviceSection = ({ rules, schemas, result }) => {
                                          data-clickable={clickable}
                                          onClick={clickable ? () => setOpenGroup(group) : undefined}>
                                         <span className={styles.metricRowLabel}>
-                                            {group}
+                                            {label}
                                             {clickable && (
                                                 <i className={`iconoir-light-bulb-on ${styles.metricRowHint}`}
                                                    data-testid="metric-breakdown-row-hint"
