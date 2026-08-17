@@ -193,11 +193,19 @@ function CourseQuiz(props) {
                 {t('loadingResultsTesting')}
                 ...</button>}
         {!loading && <>
-            {!!_quizes.length && <Button className={'btn btn-sm btn-primary'} onClick={(scb) => {
-                reGenerateQuiz(scb)
+            {!!_quizes.length && <Button className={'btn btn-sm btn-primary'} disabled={startingInterview} onClick={(scb) => {
+                // Финальная проверка знаний курса, для которого настроено интервью -
+                // ведём в бота вместо обычного текстового квиза (см. историю с
+                // "Проверить знания" на финальном экране курса).
+                if (isLastModule && interviewId) {
+                    startInterview();
+                    scb && scb();
+                } else {
+                    reGenerateQuiz(scb)
+                }
             }}>
                 <i className="iconoir-double-check"></i>
-                {title || t('checkKnowledge')}</Button>}
+                {startingInterview ? '...' : (title || t('checkKnowledge'))}</Button>}
             {isEmptyQuiz && <><Button
                 // disabled={true}
                 className={'btn btn-sm btn-primary'} onClick={(scb) => {
@@ -216,16 +224,7 @@ function CourseQuiz(props) {
                     </small>
                 </div>
             </>}
-            {isLastModule && !_quizes.length && interviewId &&
-                <Button className={'btn btn-sm btn-primary'} disabled={startingInterview} onClick={(scb) => {
-                    saveResults(100, () => {
-                    })
-                    onSuccess && onSuccess({status: 'ok'}, () => {
-                        startInterview();
-                        scb && scb()
-                    })
-                }}>{startingInterview ? '...' : 'Пройти интервью с ботом'}</Button>}
-            {isLastModule && !_quizes.length && !interviewId &&
+            {isLastModule && !_quizes.length &&
                 <Link to='/courses' className={'btn btn-sm btn-primary'} onClick={(scb) => {
                     saveResults(100, () => {
                     })
@@ -312,17 +311,11 @@ function CourseQuiz(props) {
                         scb && scb()
                     }
                     }>Отлично, перейти к след модулю</Button>}
-                    {isQuizOk && isLastModule && !interviewId && <Button color={0} onClick={(scb) => {
+                    {isQuizOk && isLastModule && <Button color={0} onClick={(scb) => {
                         onClose()
                         scb && scb()
                     }
                     }>Отлично, ты прошел курс! Молодец!</Button>}
-                    {isQuizOk && isLastModule && interviewId && <Button color={0} disabled={startingInterview} onClick={(scb) => {
-                        onClose()
-                        startInterview()
-                        scb && scb()
-                    }
-                    }>{startingInterview ? '...' : 'Отлично, ты прошел курс! Пройти интервью с ботом'}</Button>}
 
 
                 </div>}
