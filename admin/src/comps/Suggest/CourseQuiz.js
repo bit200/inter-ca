@@ -8,7 +8,7 @@ import Button from "../../libs/Button";
 import QuizTraining from "./QuizTraining";
 import RunQuiz from "./RunQuiz";
 import MyModal from "../../libs/MyModal";
-import {Link, useHistory} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {generateSuggestion} from "./SuggestionItem";
 import CustomStorage from "./CustomStorage";
 import Train from "../TrainMethods/Train";
@@ -19,7 +19,7 @@ import quiz from "../Quiz";
 let quizIteration = 0;
 
 function CourseQuiz(props) {
-    let {onAction, isLastModule, title, onSuccess, questionId, moduleId} = props;
+    let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId} = props;
 
     let [loading, setLoading] = useState(false);
     let [open, setOpen] = useState(false);
@@ -28,6 +28,23 @@ function CourseQuiz(props) {
     let [quizes, setQuizes] = useState([]);
     let [pubQuizes, setPubQuizes] = useState([]);
     let [quizPerc, setQuizPerc] = useState(0);
+    let [startingInterview, setStartingInterview] = useState(false);
+    let navigate = useNavigate();
+
+    // Тот же контракт создания попытки (POST .../my-list -> navigate на её страницу),
+    // что уже используется в MockInterview.js/handleRetake - тут это "первая" попытка
+    // для только что законченного курса, а не ретейк.
+    function startInterview() {
+        setStartingInterview(true);
+        global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
+            .then(({item: newItem}) => {
+                navigate(`/mock-interviews/${newItem._id}`);
+            })
+            .catch(() => {
+                setStartingInterview(false);
+                window.notify.warning('Не удалось начать интервью. Попробуйте ещё раз.');
+            })
+    }
 
     let localQuizIteration;
     localQuizIteration = quizIteration;
@@ -199,7 +216,16 @@ function CourseQuiz(props) {
                     </small>
                 </div>
             </>}
-            {isLastModule && !_quizes.length &&
+            {isLastModule && !_quizes.length && interviewId &&
+                <Button className={'btn btn-sm btn-primary'} disabled={startingInterview} onClick={(scb) => {
+                    saveResults(100, () => {
+                    })
+                    onSuccess && onSuccess({status: 'ok'}, () => {
+                        startInterview();
+                        scb && scb()
+                    })
+                }}>{startingInterview ? '...' : 'Пройти интервью с ботом'}</Button>}
+            {isLastModule && !_quizes.length && !interviewId &&
                 <Link to='/courses' className={'btn btn-sm btn-primary'} onClick={(scb) => {
                     saveResults(100, () => {
                     })
@@ -286,11 +312,17 @@ function CourseQuiz(props) {
                         scb && scb()
                     }
                     }>Отлично, перейти к след модулю</Button>}
-                    {isQuizOk && isLastModule && <Button color={0} onClick={(scb) => {
+                    {isQuizOk && isLastModule && !interviewId && <Button color={0} onClick={(scb) => {
                         onClose()
                         scb && scb()
                     }
                     }>Отлично, ты прошел курс! Молодец!</Button>}
+                    {isQuizOk && isLastModule && interviewId && <Button color={0} disabled={startingInterview} onClick={(scb) => {
+                        onClose()
+                        startInterview()
+                        scb && scb()
+                    }
+                    }>{startingInterview ? '...' : 'Отлично, ты прошел курс! Пройти интервью с ботом'}</Button>}
 
 
                 </div>}
