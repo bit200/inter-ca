@@ -1,4 +1,5 @@
 import React, {useEffect, useMemo, useRef} from 'react';
+import {createPortal} from 'react-dom';
 import styles from '../mockInterview.module.scss';
 
 // см. docs/contracts/embed-interview-iframe.md в itk-live: iframe открывается
@@ -85,7 +86,10 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
         return () => window.removeEventListener('message', handler);
     }, [embedOrigin, onClose, onComplete]);
 
-    return (
+    // Портал в body - иначе при старте из таба CourseQuiz (встроен в MyModal)
+    // оверлей остаётся зажат в DOM-поддереве модалки вместо настоящего
+    // полноэкранного вида, как на отдельной странице /mock-interviews/:id.
+    return createPortal((
         <div className={styles.iframeOverlay} data-testid="mock-interview-overlay">
             <div className={styles.iframeWrap}>
                 <iframe
@@ -97,7 +101,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                 />
             </div>
         </div>
-    );
+    ), document.body);
 };
 
 export default MockInterviewIframe;

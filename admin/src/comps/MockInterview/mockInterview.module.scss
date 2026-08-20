@@ -162,7 +162,10 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
-  z-index: 9999;
+  // Выше z-index у .ReactModal__Overlay (myModal.css, 10000000000) - интервью
+  // может стартовать из таба CourseQuiz, встроенного в MyModal, и должно
+  // перекрывать её собой на весь экран, а не оставаться под затемнением модалки.
+  z-index: 10000000001;
   display: flex;
   flex-direction: column;
 }
