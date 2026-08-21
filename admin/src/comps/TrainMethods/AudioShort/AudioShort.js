@@ -12,6 +12,7 @@ import MdPreview from "../../Suggest/MdPreview";
 import {stopAnyPlay} from "../../../App";
 import DebugLogs from "../../DebugLogs";
 import Check from "../../StarRating";
+import {createSilenceWatcher, isEmptyRecording} from "./silenceCheck";
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -74,6 +75,7 @@ let AudioShort = forwardRef((props, ref) => {
     let [codeRate, setCodeRate] = useState(0)
     let [selectedNames, setSelectedNames] = useState({})
     let [initMic, setInitMic] = useState(false)
+    let [noSoundErr, setNoSoundErr] = useState(false)
 
     let [status, setStatus] = useState('waitStart')
     let [text, setText] = useState('')
@@ -287,6 +289,17 @@ let AudioShort = forwardRef((props, ref) => {
         // setCd(new Date())
     }
 
+    // микрофон молчал всю запись — ответа нет, отправлять нечего
+    let onRecordEmpty = () => {
+        setNoSoundErr(true)
+        setRecording(false)
+        setRecognizing(false)
+        setInitMic(false)
+        setCountDownBeforeStart(0)
+        setStatus('waitStart')
+        props.onStop && props.onStop();
+    }
+
     let countdownAudioStart = (ms, cb) => {
         setCountDownBeforeStart(ms)
         setTimeout(() => {
@@ -299,6 +312,7 @@ let AudioShort = forwardRef((props, ref) => {
 
         console.log("qqqqq titlttl REC START 99999999999999999999999");
 
+        setNoSoundErr(false)
         recognitionStart(() => {
             console.log("qqqqq titlttl REC START 1");
             updateUserHash();
@@ -316,7 +330,10 @@ let AudioShort = forwardRef((props, ref) => {
                 recStartCd = new Date().getTime();
                 cb && cb()
             })
-        }, onRecordComplete)
+        }, onRecordComplete, {
+            onEmptyAudio: onRecordEmpty,
+            silenceAutoStopMS: opts.silenceAutoStopMS,
+        })
     }
 
     let recStart = () => {
@@ -459,6 +476,14 @@ let AudioShort = forwardRef((props, ref) => {
                         {t('startRec')}
                     </Button></div>}
             </>}
+
+            {noSoundErr && !recording && !recognizing && <div className={'noSoundErr afade'} role={'alert'}>
+                <i className="iconoir-microphone-mute"></i>
+                <div>
+                    <b>{t('noSoundErrTitle')}</b>
+                    <span>{t('noSoundErrHint')}</span>
+                </div>
+            </div>}
 
             {recognizing && <div className={'recognizing'}>{t('recognizing')} ... </div>}
 
@@ -765,7 +790,9 @@ function micError() {
 //     mediaRecorder.start();
 // }
 
-export function recognitionStart(startCb, completeCb,) {
+export function recognitionStart(startCb, completeCb, silenceOpts = {}) {
+
+    let silenceWatcher = null;
 
 
     //console.log('recognitionInit', recognition)
@@ -791,6 +818,15 @@ export function recognitionStart(startCb, completeCb,) {
                 //   mimeType: 'audio/ogg; codecs=opus',
                 audioBitsPerSecond: 16000, // Adjust as needed (e.g., 32000 for 32 kbps)
                 sampleRate: 16000, // Adjust as needed (e.g., 16000 Hz)
+            });
+
+            silenceWatcher = createSilenceWatcher(stream, {
+                silenceAutoStopMs: silenceOpts.silenceAutoStopMS,
+                onSilenceLimit: () => {
+                    // за всё время записи ни одного звука — прерываем надиктовку сами
+                    console.log("qqqqq no sound from user, stopping record");
+                    recognitionStop();
+                },
             });
 
             mediaRecorder.ondataavailable = (event) => {
@@ -827,6 +863,17 @@ export function recognitionStart(startCb, completeCb,) {
     function onSend(_audioChunks) {
         const audioBlob = new Blob(_audioChunks, {type: 'audio/wav'}); // You can change the format if needed
         // const audioBlob = new Blob(getFake(), {type: 'audio/wav'}); // You can change the format if needed
+
+        const soundStats = silenceWatcher ? silenceWatcher.stop() : null;
+        silenceWatcher = null;
+        if (soundStats && isEmptyRecording({...soundStats, blobSize: audioBlob.size})) {
+            console.log("qqqqq empty audio, nothing to send", soundStats);
+            audioChunks = [];
+            audioFile = null;
+            silenceOpts.onEmptyAudio && silenceOpts.onEmptyAudio({...soundStats, blobSize: audioBlob.size});
+            return;
+        }
+
         const formData = new FormData();
         formData.append('user', user.get_id())
         formData.append('audio', audioBlob, audioHash + '.wav');
