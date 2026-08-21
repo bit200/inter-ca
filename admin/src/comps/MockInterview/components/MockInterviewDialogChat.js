@@ -44,15 +44,34 @@ const MockInterviewDialogMsg = ({
     );
 }
 
-const MockInterviewDialogChat = ({ dialog }) => {
+// dialog-записи бэкенда не содержат текста вопроса (ни основного, ни
+// follow-up) - есть только transcript ответа. Основной вопрос берём из
+// mainQuestion (turn.question родительского turn), а перед follow-up-ответом
+// показываем mini_evaluation.feedback предыдущей реплики - это реакция бота,
+// которая фактически предшествует уточняющему вопросу, а самого текста
+// follow-up-вопроса в данных нет. Мета-реплики вроде "Начнём."
+// (mini_evaluation.action === 'start_interview') из отображения исключаем целиком.
+function buildMessages(dialog, mainQuestion) {
+    const entries = dialog.filter(entry => entry.mini_evaluation?.action !== 'start_interview'
+        && entry.mini_evaluation?.quality !== 'meta');
+
+    return entries.flatMap((entry, i) => {
+        const questionText = i === 0 ? mainQuestion : entries[i - 1].mini_evaluation?.feedback;
+        const messages = [];
+        if (questionText) {
+            messages.push({ type: 'question', text: questionText });
+        }
+        messages.push({ type: 'answer', text: entry.transcript, advice: entry.advice });
+        return messages;
+    });
+}
+
+const MockInterviewDialogChat = ({ dialog, mainQuestion }) => {
     const [activeAdvice, setActiveAdvice] = useState(null);
 
     if (!Array.isArray(dialog) || !dialog.length) return null;
 
-    const messages = dialog.flatMap((turn) => ([
-        { type: 'question', text: turn.question },
-        { type: 'answer', text: turn.transcript, advice: turn.advice },
-    ]));
+    const messages = buildMessages(dialog, mainQuestion);
 
     return (
         // <div className={'card'}>

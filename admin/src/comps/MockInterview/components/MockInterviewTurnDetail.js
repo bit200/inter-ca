@@ -28,7 +28,7 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId
                             source={turn.transcript || '—'}
                         />
                     </div>}
-                    {hasDialog && <MockInterviewDialogChat dialog={turn.dialog}/>}
+                    {hasDialog && <MockInterviewDialogChat dialog={turn.dialog} mainQuestion={turn.question}/>}
                 </div>
             </div>
             <MockInterviewEvaluationBlock
