@@ -16,22 +16,39 @@ function embedOriginOf(embedUrl) {
 
 // itk-live закрывает сессию на сервере (и шлёт нам сигнал завершения) сразу как
 // готов финальный фидбек, не дожидаясь пока доиграет прощальная реплика бота —
-// если закрыть оверлей в этот момент, звук обрывается на середине. Даём паузу,
-// чтобы бот успел договорить.
-const FINISH_DELAY_MS = 5000;
+// если закрыть оверлей в этот момент, звук обрывается на середине. Раньше здесь
+// была слепая пауза в 5с; вместо гадания слушаем itk.interview.state.aiPlaying
+// (см. itk-live/services/web-ui/.../useEmbedRuntimeEvents.js - тот же флаг,
+// которым runtime показывает "ИИ говорит") и закрываем оверлей, как только
+// проигрывание реально закончилось. FINISH_FALLBACK_MS - страховка на случай,
+// если state-событие с aiPlaying:false почему-то не придёт.
+const FINISH_FALLBACK_MS = 8000;
 
 const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     const embedOrigin = useMemo(() => embedOriginOf(interview.embedUrl), [interview.embedUrl]);
     const finishTimeoutRef = useRef(null);
+    const aiPlayingRef = useRef(false);
+    const awaitingFinishRef = useRef(false);
 
     useEffect(() => {
         return () => clearTimeout(finishTimeoutRef.current);
     }, []);
 
     useEffect(() => {
-        const completeWithDelay = () => {
+        const finishNow = () => {
             clearTimeout(finishTimeoutRef.current);
-            finishTimeoutRef.current = setTimeout(onComplete, FINISH_DELAY_MS);
+            awaitingFinishRef.current = false;
+            onComplete();
+        };
+
+        const scheduleFinish = () => {
+            awaitingFinishRef.current = true;
+            if (!aiPlayingRef.current) {
+                finishNow();
+                return;
+            }
+            clearTimeout(finishTimeoutRef.current);
+            finishTimeoutRef.current = setTimeout(finishNow, FINISH_FALLBACK_MS);
         };
 
         const handler = (e) => {
@@ -50,6 +67,14 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                 return;
             }
 
+            if (msg.type === 'itk.interview.state') {
+                aiPlayingRef.current = !!msg.payload?.aiPlaying;
+                if (awaitingFinishRef.current && !aiPlayingRef.current) {
+                    finishNow();
+                }
+                return;
+            }
+
             if (msg.type === 'itk.interview.error') {
                 // todo добавить логику временного сохранения логов ошибок
                 console.error(msg, e);
@@ -65,7 +90,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                 const isStaleHeartbeat = msg.payload?.stage === 'heartbeat'
                     && /invalid authorization/i.test(msg.payload?.error || '');
                 if (isStaleHeartbeat) {
-                    completeWithDelay();
+                    scheduleFinish();
                     return;
                 }
 
@@ -76,7 +101,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
             if (msg.type === 'itk.interview.session_closed') {
                 const status = msg.payload?.status;
                 if (status === 'completed') {
-                    completeWithDelay();
+                    scheduleFinish();
                 } else {
                     onClose();
                 }
@@ -91,6 +116,23 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     // полноэкранного вида, как на отдельной странице /mock-interviews/:id.
     return createPortal((
         <div className={styles.iframeOverlay} data-testid="mock-interview-overlay">
+            <div className={styles.iframeHeader}>
+                <span>{interview.name}</span>
+                {/* Ждать сигнала aiPlaying:false не обязательно, если пользователь
+                    сам решил, что бот договорил - кнопка завершает сразу. */}
+                <button
+                    type="button"
+                    className={styles.iframeClose}
+                    onClick={() => {
+                        clearTimeout(finishTimeoutRef.current);
+                        awaitingFinishRef.current = false;
+                        onComplete();
+                    }}
+                    data-testid="mock-interview-exit-btn"
+                >
+                    Выйти
+                </button>
+            </div>
             <div className={styles.iframeWrap}>
                 <iframe
                     src={interview.embedUrl}

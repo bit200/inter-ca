@@ -828,6 +828,18 @@ function encodePcmToWav(pcmChunks, sampleRate) {
 }
 
 export function recognitionStart({ startCb, completeCb, onChange }) {
+    // Guard against a second concurrent recording: mediaRecorder/audioHash are
+    // module-level (shared across calls, not React state), so if this fires
+    // twice close together (e.g. two useEffect triggers/a double click before
+    // React re-renders), a second MediaRecorder + WebSocket would open while
+    // the first is still streaming - both writing chunks to the same S3 key
+    // via multipart upload, racing each other and corrupting the audio (seen
+    // in prod as "Uploaded bytes are not a valid or supported audio file").
+    if (mediaRecorder && mediaRecorder.state && mediaRecorder.state !== 'inactive') {
+        console.log("qqqqq recognitionStart ignored - already recording", mediaRecorder.state);
+        return;
+    }
+
     finalTranscript = ''
     interimTranscript = '';
     const chunkDurationMs = 250
