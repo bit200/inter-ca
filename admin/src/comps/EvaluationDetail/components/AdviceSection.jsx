@@ -110,11 +110,19 @@ const AdviceSection = ({ rules, schemas, result }) => {
                                 // Та же красно-жёлто-зелёная шкала, что и у большого балла в
                                 // ScoreBar - визуально привязывает "Детали оценки" к оценке сверху.
                                 const color = getScoreRGB(pct, 100);
+                                // 0% - это пустой бар и одинокая цифра сбоку: строка читается
+                                // как "тут ничего нет", а не как "тут провал", и теряется среди
+                                // соседних. Подсвечиваем саму строку и её название тем же danger,
+                                // которым на этой карточке уже помечены критические ошибки.
+                                const zero = pct === 0;
+                                const rowClasses = [styles.metricRow];
+                                if (!clickable) rowClasses.push(styles.metricRowStatic);
+                                if (zero) rowClasses.push(styles.metricRowZero);
                                 return (
                                     <div key={group}
-                                         className={clickable ? styles.metricRow : `${styles.metricRow} ${styles.metricRowStatic}`}
+                                         className={rowClasses.join(' ')}
                                          data-testid="metric-breakdown-row" data-group={group} data-pct={pct}
-                                         data-clickable={clickable}
+                                         data-clickable={clickable} data-zero={zero}
                                          onClick={clickable ? () => setOpenGroup(group) : undefined}>
                                         <span className={styles.metricRowLabel}>
                                             {label}

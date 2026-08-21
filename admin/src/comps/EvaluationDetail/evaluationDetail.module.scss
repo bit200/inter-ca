@@ -215,6 +215,33 @@
   }
 }
 
+// Показатель, упавший в 0: пустой бар + одинокая цифра сбоку читаются как
+// "данных нет", а не как провал. Красим строку и её название тем же danger,
+// что и критические ошибки выше на этой карточке. Цвета берём только из
+// bootstrap-переменных: --bs-danger-rgb одинаков в обеих темах и прозрачная
+// заливка ложится и на светлый, и на тёмный фон, а --bs-danger-text-emphasis
+// bootstrap сам переопределяет под [data-bs-theme=dark].
+.metricRowZero {
+  background: rgba(var(--bs-danger-rgb), .12);
+  border-left: 3px solid var(--bs-danger);
+  padding-left: 5px;
+
+  .metricRowLabel {
+    color: var(--bs-danger-text-emphasis);
+    font-weight: 600;
+  }
+
+  // Наведение усиливает ту же заливку - но только там, где по строке
+  // действительно есть что открыть (.metricRowStatic отменяет hover).
+  &:not(.metricRowStatic):hover {
+    background: rgba(var(--bs-danger-rgb), .18);
+  }
+
+  &.metricRowStatic:hover {
+    background: rgba(var(--bs-danger-rgb), .12);
+  }
+}
+
 .metricRowLabel {
   font-size: 14px;
   font-weight: 500;
