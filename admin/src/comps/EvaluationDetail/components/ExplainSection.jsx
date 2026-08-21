@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from '../evaluationDetail.module.scss';
+import { formatScore } from './formatScore';
 
 // scoreServiceITK's POST /evaluate/:id/explain answers 409 while the job isn't
 // `completed` yet (a legitimate race, not a real error - see itk-platform-en's
@@ -94,11 +95,16 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                                         <div className={styles.explainComponentHeader}>
                                             <span className={styles.explainComponentName}>{c.name}</span>
                                             {c.score != null && (
-                                                <span className={styles.explainComponentScore}>{c.score}</span>
+                                                <span className={styles.explainComponentScore}>{formatScore(c.score)}</span>
                                             )}
                                         </div>
                                         {c.verdict && <div className={styles.explainComponentVerdict}>{c.verdict}</div>}
-                                        {c.suggestion && <div className={styles.explainComponentSuggestion}>{c.suggestion}</div>}
+                                        {c.suggestion && (
+                                            <div className={styles.explainComponentSuggestion}>
+                                                <i className="iconoir-light-bulb-on"/>
+                                                <span>{c.suggestion}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
