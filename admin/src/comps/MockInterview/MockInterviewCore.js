@@ -12,8 +12,10 @@ const PASSED_STATUSES = ['completed', 'evaluated'];
 // можно было переиспользовать не только на отдельной странице, но и встроенным
 // табом в CourseQuiz (после последнего модуля курса) - без дублирования
 // логики. Разница между использованиями только в том, откуда берётся
-// исходный attemptId и что делать при ретейке (см. onRetake).
-function MockInterviewCore({attemptId, onRetake}) {
+// исходный attemptId и что делать при ретейке (см. onRetake) и по завершении
+// интервью (см. onComplete, опционален - используется CourseQuiz, чтобы
+// закрыть модалку курса и увести на полноценную страницу результатов).
+function MockInterviewCore({attemptId, onRetake, onComplete}) {
     const [item, setItem] = useState(null);
     const [history, setHistory] = useState([]);
     const [active, setActive] = useState(null);
@@ -133,6 +135,7 @@ function MockInterviewCore({attemptId, onRetake}) {
         setItem(prev => ({ ...prev, status: 'completed' }));
         setActive(null);
         setCompletedLocally(true);
+        onComplete && onComplete(itemRef.current._id);
     };
 
     const handleCloseIframe = () => {

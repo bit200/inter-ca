@@ -8,7 +8,7 @@ import Button from "../../libs/Button";
 import QuizTraining from "./QuizTraining";
 import RunQuiz from "./RunQuiz";
 import MyModal from "../../libs/MyModal";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {generateSuggestion} from "./SuggestionItem";
 import CustomStorage from "./CustomStorage";
 import Train from "../TrainMethods/Train";
@@ -21,6 +21,7 @@ let quizIteration = 0;
 
 function CourseQuiz(props) {
     let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId} = props;
+    let navigate = useNavigate();
 
     let [loading, setLoading] = useState(false);
     let [open, setOpen] = useState(false);
@@ -268,6 +269,15 @@ function CourseQuiz(props) {
                         : <MockInterviewCore
                             attemptId={interviewAttemptId}
                             onRetake={setInterviewAttemptId}
+                            onComplete={(completedId) => {
+                                // Модалка курса тесновата для полного экрана
+                                // результатов интервью (список вопросов + разбор
+                                // ответа) - как только интервью завершено, закрываем
+                                // её и уводим на ту же страницу /mock-interviews/:id,
+                                // на которой результаты открываются в обычном потоке.
+                                hideModal();
+                                navigate(`/mock-interviews/${completedId}`);
+                            }}
                         />}
                 </div>}
 

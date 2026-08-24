@@ -4,66 +4,74 @@ import MyModal from '../../../libs/MyModal';
 import { getScoreRGB } from './ScoreBar';
 import { getByPath, groupAdvice } from './adviceLogic';
 
-// Advice-rule ranges are the only place this app already knows a metric's
-// natural scale (schemas only carry key+group, no explicit max/weight) - so
-// each key's overall [min(from), max(to)] across its own rules doubles as
-// its 0-100% normalization range here.
-function buildMetricRanges(rules) {
+// eval-metric-schemas already carries each key's real scale (min/max) - that's
+// the source of truth for normalization. Advice-rule ranges only cover the
+// spans someone wrote advice text for (e.g. relevance rules stop at 7.5, not
+// the metric's real max of 9), so using them for normalization silently
+// shrinks the scale and skews every percent below 100%'s worth of coverage.
+function buildMetricRanges(schemas) {
     const ranges = {};
-    rules.forEach(rule => {
-        if (!rule.key || rule.from == null || rule.to == null) return;
-        const r = ranges[rule.key] || { min: rule.from, max: rule.to };
-        r.min = Math.min(r.min, rule.from);
-        r.max = Math.max(r.max, rule.to);
-        ranges[rule.key] = r;
+    schemas.forEach(s => {
+        if (!s.key || s.min == null || s.max == null) return;
+        ranges[s.key] = { min: s.min, max: s.max };
     });
     return ranges;
 }
 
 // Every row is displayed as "how good is this parameter" (full green bar = good,
 // matching the overall score above it) - but the raw normalized value only means
-// that for metrics where higher is better (речь, практика, ...). For a group like
-// "Ошибки", the underlying value is a count/level of errors, so a raw 0 (the best
-// possible outcome - no errors) still normalizes to 0% and would render as a red,
-// near-empty bar - exactly backwards. metricSchemas don't currently carry an
-// explicit direction flag (only key+group are read elsewhere in this file) - if
-// the backend schema object ever adds one (e.g. `invert`/`lowerIsBetter`), prefer
-// it over this name-based guess. Until then, matching the group label is the only
-// signal available client-side for the one confirmed case (errors).
-function isLowerBetterGroup(schema, group) {
+// that for metrics where higher is better (речь, практика, ...). For a metric
+// like is_offtop or errors, the underlying value is "how much of a bad thing",
+// so a raw 0 (the best possible outcome) must normalize to 100% ("good"), not
+// 0% - and a raw 1 (worst) must read as 0%. metricSchemas don't currently carry
+// an explicit direction flag - if the backend schema object ever adds one (e.g.
+// `invert`/`lowerIsBetter`), prefer it over this name-based guess. Checked per
+// KEY (not per group) because a group can mix directions - "Релевантность" has
+// both evaluation.relevance.relevance (higher is better) and
+// evaluation.relevance.is_offtop (lower is better); averaging their raw percents
+// without inverting is_offtop first previously let is_offtop:1 (worst case)
+// contribute 100% to the group average instead of 0%.
+function isLowerBetterKey(key, schema) {
     if (schema && typeof schema.invert === 'boolean') return schema.invert;
     if (schema && typeof schema.lowerIsBetter === 'boolean') return schema.lowerIsBetter;
-    return /ошибк|error/i.test(group || '');
+    return /is_offtop|is_critical|\berror|fillers\.count/i.test(key || '');
 }
 
-function buildGroupPercents(rules, schemas, result) {
-    const ranges = buildMetricRanges(rules);
+function buildGroupPercents(schemas, result) {
+    const ranges = buildMetricRanges(schemas);
     const schemaByKey = {};
     schemas.forEach(s => { schemaByKey[s.key] = s; });
 
     const groupValues = {};
-    const groupSchema = {};
+    const groupAllInverted = {};
     Object.keys(ranges).forEach(key => {
         const val = getByPath(result, key);
         if (val == null || typeof val !== 'number') return;
         const { min, max } = ranges[key];
         if (max <= min) return;
-        const pct = Math.round(Math.max(0, Math.min(1, (val - min) / (max - min))) * 100);
+        const rawPct = Math.max(0, Math.min(1, (val - min) / (max - min))) * 100;
+        const inverted = isLowerBetterKey(key, schemaByKey[key]);
+        // Invert per-key BEFORE averaging into the group, so a mixed-direction
+        // group (see comment above) averages "how good", not raw normalized value.
+        const pct = inverted ? 100 - rawPct : rawPct;
         const group = schemaByKey[key]?.group || 'Общее';
-        groupSchema[group] = groupSchema[group] || schemaByKey[key];
         (groupValues[group] = groupValues[group] || []).push(pct);
+        // Only used for the row label below - a group's label flips to "Без
+        // ошибок" only when EVERY metric in it is inverted (e.g. "Ошибки", a
+        // single is_critical key), not for a mixed group like "Релевантность"
+        // whose already-inverted-and-averaged percent reads correctly as-is.
+        if (!(group in groupAllInverted)) groupAllInverted[group] = true;
+        groupAllInverted[group] = groupAllInverted[group] && inverted;
     });
 
     return Object.keys(groupValues).map(group => {
-        const avgPct = Math.round(groupValues[group].reduce((a, b) => a + b, 0) / groupValues[group].length);
-        const inverted = isLowerBetterGroup(groupSchema[group], group);
-        const pct = inverted ? 100 - avgPct : avgPct;
-        // The percent already reads as "how good", so an inverted group's own name
-        // ("Ошибки") would read backwards next to it (100% Ошибки = зелёным?!) -
+        const pct = Math.round(groupValues[group].reduce((a, b) => a + b, 0) / groupValues[group].length);
+        // The percent already reads as "how good", so an all-inverted group's own
+        // name ("Ошибки") would read backwards next to it (100% Ошибки = зелёным?!) -
         // flip the label to match what the number actually means. The raw `group`
         // is kept as the row/modal key (adviceByGroup, data-group, ...) so this is
         // display-only.
-        const label = inverted ? 'Без ошибок' : group;
+        const label = groupAllInverted[group] ? 'Без ошибок' : group;
         return { group, label, pct };
     });
 }
@@ -71,7 +79,7 @@ function buildGroupPercents(rules, schemas, result) {
 const AdviceSection = ({ rules, schemas, result }) => {
     const [openGroup, setOpenGroup] = useState(null);
 
-    const rows = buildGroupPercents(rules, schemas, result);
+    const rows = buildGroupPercents(schemas, result);
     // Same rule-matching used to answer "why is this parameter at X%?" in the
     // modal below - computed once here and reused for every row instead of
     // being recomputed per row or duplicated as a separate always-visible list.
