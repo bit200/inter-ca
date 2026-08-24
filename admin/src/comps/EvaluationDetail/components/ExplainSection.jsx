@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styles from '../evaluationDetail.module.scss';
 import { formatScore } from './formatScore';
+import { explainComponentLabel } from './explainComponentLabel';
 
 // scoreServiceITK's POST /evaluate/:id/explain answers 409 while the job isn't
 // `completed` yet (a legitimate race, not a real error - see itk-platform-en's
@@ -31,6 +32,9 @@ function isNotReady(err) {
 const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку', initialExplain = null }) => {
     const [status, setStatus] = useState(initialExplain ? 'done' : 'idle'); // idle | loading | done | not_ready | error
     const [explain, setExplain] = useState(initialExplain);
+    // null - вкладка "Все"; иначе индекс компонента в explain.components
+    // (по индексу, а не по названию: LLM вполне может прислать два одинаковых).
+    const [activeComponent, setActiveComponent] = useState(null);
 
     const handleClick = () => {
         setStatus('loading');
@@ -47,6 +51,14 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                 setStatus(isNotReady(err) ? 'not_ready' : 'error');
             });
     };
+
+    const components = explain?.components || [];
+    // Пара {c, i} - индекс нужен и для key, и чтобы вкладка знала, что подсветить,
+    // когда список отфильтрован до одного компонента.
+    const indexed = components.map((c, i) => ({ c, i }));
+    const visibleComponents = activeComponent === null
+        ? indexed
+        : indexed.filter(({ i }) => i === activeComponent);
 
     return (
         <div className={styles.explainWrapper}>
@@ -88,26 +100,55 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                         {explain.summary && (
                             <div className={styles.explainSummary}>{explain.summary}</div>
                         )}
-                        {(explain.components || []).length > 0 && (
-                            <div className={styles.explainComponents}>
-                                {explain.components.map((c, i) => (
-                                    <div key={i} className={styles.explainComponentItem}>
-                                        <div className={styles.explainComponentHeader}>
-                                            <span className={styles.explainComponentName}>{c.name}</span>
-                                            {c.score != null && (
-                                                <span className={styles.explainComponentScore}>{formatScore(c.score)}</span>
+                        {components.length > 0 && (
+                            <>
+                                {components.length > 1 && (
+                                    <ul className={`nav nav-tabs ${styles.explainTabs}`} role="tablist"
+                                        data-testid="evaluate-explain-tabs">
+                                        <li className="nav-item" role="presentation">
+                                            <button type="button" role="tab"
+                                                    aria-selected={activeComponent === null}
+                                                    className={`nav-link fw-medium ${activeComponent === null ? 'active' : ''}`}
+                                                    onClick={() => setActiveComponent(null)}>
+                                                Все
+                                            </button>
+                                        </li>
+                                        {components.map((c, i) => (
+                                            <li className="nav-item" role="presentation" key={i}>
+                                                <button type="button" role="tab"
+                                                        aria-selected={activeComponent === i}
+                                                        className={`nav-link fw-medium ${activeComponent === i ? 'active' : ''}`}
+                                                        onClick={() => setActiveComponent(i)}>
+                                                    {explainComponentLabel(c.name)}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <div className={styles.explainComponents}>
+                                    {visibleComponents.map(({ c, i }) => (
+                                        <div key={i} className={styles.explainComponentItem}>
+                                            <div className={styles.explainComponentHeader}>
+                                                {/* Во вкладке одного параметра его название уже стоит
+                                                    в самой вкладке - второй раз подписывать нечего. */}
+                                                {activeComponent === null && (
+                                                    <span className={styles.explainComponentName}>{explainComponentLabel(c.name)}</span>
+                                                )}
+                                                {c.score != null && (
+                                                    <span className={styles.explainComponentScore}>{formatScore(c.score)}</span>
+                                                )}
+                                            </div>
+                                            {c.verdict && <div className={styles.explainComponentVerdict}>{c.verdict}</div>}
+                                            {c.suggestion && (
+                                                <div className={styles.explainComponentSuggestion}>
+                                                    <i className="iconoir-light-bulb-on"/>
+                                                    <span>{c.suggestion}</span>
+                                                </div>
                                             )}
                                         </div>
-                                        {c.verdict && <div className={styles.explainComponentVerdict}>{c.verdict}</div>}
-                                        {c.suggestion && (
-                                            <div className={styles.explainComponentSuggestion}>
-                                                <i className="iconoir-light-bulb-on"/>
-                                                <span>{c.suggestion}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>

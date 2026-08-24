@@ -150,6 +150,9 @@ $scoreGood: rgb(28, 190, 28);
 }
 
 .explainComponentScore {
+  // Название параметра слева может отсутствовать (когда открыта вкладка
+  // одного параметра) - балл всё равно держится правого края.
+  margin-left: auto;
   font-size: 13px;
   font-weight: 600;
   color: var(--bs-heading-color);
@@ -338,4 +341,30 @@ $scoreGood: rgb(28, 190, 28);
   // и это читается как моргание.
   min-width: 190px;
   opacity: 1;
+}
+
+// Переключатель параметров расшифровки. Берём тот же bootstrap-овский
+// nav-tabs, что уже используется как вкладки в остальной админке
+// (CoursesList, шапка) - свой стиль вкладок читался бы как чужая заплатка.
+// Внутри карточки они мельче навигационных: это подписи параметров, а не
+// разделы страницы, и перевешивать общий вердикт над ними не должны.
+.explainTabs {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+
+  :global(.nav-link) {
+    font-size: 13px;
+    padding: 5px 12px;
+    color: var(--bs-text-muted);
+    background: none;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--bs-body-color);
+    }
+
+    &:global(.active) {
+      color: var(--bs-heading-color);
+    }
+  }
 }

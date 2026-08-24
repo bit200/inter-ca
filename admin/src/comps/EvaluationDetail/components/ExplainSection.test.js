@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import ExplainSection from './ExplainSection';
 
 const explain = {
@@ -11,11 +11,45 @@ const explain = {
             verdict: 'Ответ частично касается темы.',
             suggestion: 'Разделяйте ответственность useCallback и React.memo.',
         },
+        {
+            name: 'DEPTH',
+            score: 0.5,
+            verdict: 'Раскрытие темы поверхностное.',
+        },
     ],
 };
 
 describe('ExplainSection', () => {
     const renderIt = () => render(<ExplainSection onExplain={() => Promise.resolve({ explain })} initialExplain={explain}/>);
+
+    it('подписывает компоненты по-русски, а не техническим ключом метрики', () => {
+        renderIt();
+        expect(screen.getAllByText('Релевантность').length).toBeGreaterThan(0);
+        expect(screen.queryByText('RELEVANCE')).not.toBeInTheDocument();
+        expect(screen.queryByText('DEPTH')).not.toBeInTheDocument();
+    });
+
+    it('даёт вкладки по параметрам и оставляет только выбранный', () => {
+        renderIt();
+        const tabs = screen.getByTestId('evaluate-explain-tabs');
+        expect(tabs).toBeInTheDocument();
+        // по умолчанию открыты "Все"
+        expect(screen.getByText('Ответ частично касается темы.')).toBeInTheDocument();
+        expect(screen.getByText('Раскрытие темы поверхностное.')).toBeInTheDocument();
+
+        fireEvent.click(within(tabs).getByText('Глубина'));
+        expect(screen.queryByText('Ответ частично касается темы.')).not.toBeInTheDocument();
+        expect(screen.getByText('Раскрытие темы поверхностное.')).toBeInTheDocument();
+
+        fireEvent.click(within(tabs).getByText('Все'));
+        expect(screen.getByText('Ответ частично касается темы.')).toBeInTheDocument();
+    });
+
+    it('не показывает вкладки, когда компонент всего один', () => {
+        render(<ExplainSection onExplain={() => Promise.resolve({ explain })}
+                               initialExplain={{ ...explain, components: [explain.components[0]] }}/>);
+        expect(screen.queryByTestId('evaluate-explain-tabs')).not.toBeInTheDocument();
+    });
 
     it('показывает округлённую оценку компонента, а не сырую дробь', () => {
         renderIt();
