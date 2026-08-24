@@ -118,7 +118,7 @@ function EvaluationList() {
     };
 
     if (loading) {
-        return <div style={{ padding: 20 }}>Загрузка...</div>;
+        return <div className={styles.container}>Загрузка...</div>;
     }
 
     return (
