@@ -5,12 +5,10 @@
   padding: 0 0 20px;
 }
 
-// Палитра страницы: те же три цвета, что и у шкалы оценки (см.
-// components/scoreColor.js). Больше на этом экране цветов нет - смысл несут
-// только "плохо / есть куда расти / норма".
-$scoreBad: rgb(230, 25, 25);
-$scoreMid: rgb(234, 161, 5);
-$scoreGood: rgb(28, 190, 28);
+// Палитра страницы - те же три цвета, что и у шкалы оценки: --score-bad /
+// --score-mid / --score-good из scss/colors.scss (там же ..-rgb для заливок).
+// Больше на этом экране цветов нет - смысл несут только
+// "плохо / есть куда расти / норма".
 
 .title{
   font-size: 11px;
@@ -69,7 +67,7 @@ $scoreGood: rgb(28, 190, 28);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: $scoreBad;
+  color: var(--score-bad);
   margin-bottom: 6px;
 }
 
@@ -82,8 +80,8 @@ $scoreGood: rgb(28, 190, 28);
 .criticalErrorItem {
   display: flex;
   gap: 10px;
-  background: rgba(230, 25, 25, .10);
-  border-left: 3px solid $scoreBad;
+  background: rgba(var(--score-bad-rgb), .10);
+  border-left: 3px solid var(--score-bad);
   border-radius: 0 6px 6px 0;
   padding: 5px 14px;
 
@@ -107,7 +105,7 @@ $scoreGood: rgb(28, 190, 28);
 .explainError {
   margin-top: 10px;
   font-size: 13px;
-  color: $scoreBad;
+  color: var(--score-bad);
 }
 
 .explainCard {
@@ -176,14 +174,14 @@ $scoreGood: rgb(28, 190, 28);
   font-size: 13px;
   line-height: 1.5;
   color: var(--bs-body-color);
-  background: rgba(28, 190, 28, .10);
-  border-left: 3px solid $scoreGood;
+  background: rgba(var(--score-good-rgb), .10);
+  border-left: 3px solid var(--score-good);
   border-radius: 0 6px 6px 0;
   padding: 6px 12px;
   margin-top: 8px;
 
   i {
-    color: $scoreGood;
+    color: var(--score-good);
     font-size: 14px;
     flex-shrink: 0;
   }
@@ -237,23 +235,23 @@ $scoreGood: rgb(28, 190, 28);
 // шкалы, что и критические ошибки выше на этой карточке; заливка - тот же цвет
 // с прозрачностью, она ложится и на светлый, и на тёмный фон.
 .metricRowZero {
-  background: rgba(230, 25, 25, .10);
-  border-left: 3px solid $scoreBad;
+  background: rgba(var(--score-bad-rgb), .10);
+  border-left: 3px solid var(--score-bad);
   padding-left: 5px;
 
   .metricRowLabel {
-    color: $scoreBad;
+    color: var(--score-bad);
     font-weight: 600;
   }
 
   // Наведение усиливает ту же заливку - но только там, где по строке
   // действительно есть что открыть (.metricRowStatic отменяет hover).
   &:not(.metricRowStatic):hover {
-    background: rgba(230, 25, 25, .16);
+    background: rgba(var(--score-bad-rgb), .16);
   }
 
   &.metricRowStatic:hover {
-    background: rgba(230, 25, 25, .10);
+    background: rgba(var(--score-bad-rgb), .10);
   }
 }
 
@@ -270,7 +268,7 @@ $scoreGood: rgb(28, 190, 28);
 .metricRowHint {
   margin-left: 6px;
   font-size: 13px;
-  color: $scoreGood;
+  color: var(--score-good);
   vertical-align: -1px;
 }
 
@@ -305,8 +303,8 @@ $scoreGood: rgb(28, 190, 28);
 .metricModalItem {
   display: flex;
   gap: 10px;
-  background: rgba(28, 190, 28, .10);
-  border-left: 3px solid $scoreGood;
+  background: rgba(var(--score-good-rgb), .10);
+  border-left: 3px solid var(--score-good);
   border-radius: 0 6px 6px 0;
   padding: 5px 14px;
 
@@ -324,17 +322,17 @@ $scoreGood: rgb(28, 190, 28);
 // .btn-success из общей темы независимо от порядка подключения стилей.
 .playOriginal.playOriginal {
   --bs-btn-color: #fff;
-  --bs-btn-bg: #{$scoreGood};
-  --bs-btn-border-color: #{$scoreGood};
+  --bs-btn-bg: var(--score-good);
+  --bs-btn-border-color: var(--score-good);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(24, 168, 24);
-  --bs-btn-hover-border-color: rgb(24, 168, 24);
+  --bs-btn-hover-bg: var(--score-good-hover);
+  --bs-btn-hover-border-color: var(--score-good-hover);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(21, 150, 21);
-  --bs-btn-active-border-color: rgb(21, 150, 21);
+  --bs-btn-active-bg: var(--score-good-active);
+  --bs-btn-active-border-color: var(--score-good-active);
   --bs-btn-disabled-color: #fff;
-  --bs-btn-disabled-bg: #{$scoreGood};
-  --bs-btn-disabled-border-color: #{$scoreGood};
+  --bs-btn-disabled-bg: var(--score-good);
+  --bs-btn-disabled-border-color: var(--score-good);
   --bs-btn-box-shadow: none;
   box-shadow: none;
   // Подпись меняется на "Загрузка...", а ширина - нет: иначе кнопка прыгает,
