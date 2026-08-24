@@ -97,12 +97,17 @@ export default function EvaluationDetail() {
     // events back here to keep the button visibly "loading" for that whole stretch
     // instead of it looking clickable-but-dead for several seconds.
     const playOriginalAudio = (scb, errCb) => {
-        setLoadingOriginalAudio(true);
+        // Аудио часто отдаётся почти мгновенно, и если включать "Загрузка..."
+        // сразу, кнопка на долю секунды меняет подпись и тут же возвращает
+        // прежнюю - на экране это выглядит как моргание. Показываем состояние
+        // загрузки, только если ожидание реально затянулось.
+        const showLoadingId = setTimeout(() => setLoadingOriginalAudio(true), 400);
 
         const finish = (cb) => {
             window.removeEventListener('myPlayerReady', onReady);
             window.removeEventListener('myPlayerError', onError);
             clearTimeout(timeoutId);
+            clearTimeout(showLoadingId);
             setLoadingOriginalAudio(false);
             cb && cb();
         };
@@ -143,10 +148,14 @@ export default function EvaluationDetail() {
                     <div className="card-body">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <div className={styles.title}>Распознанный текст ответа</div>
+                            {/* Цвет кнопки не переключается на время загрузки: раньше она на
+                                миг становилась серой (color=4) и возвращалась обратно - это и
+                                читалось как моргание. Меняется только иконка. */}
                             {hasOriginalAudio && (
                                 <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
                                         disabled={loadingOriginalAudio}
-                                        color={loadingOriginalAudio ? 4 : 3} size="sm"
+                                        className={styles.playOriginal}
+                                        color={3} size="sm"
                                         icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
                                     {loadingOriginalAudio
                                         ? <span className="spinner-border spinner-border-sm" role="status"/>
