@@ -12,7 +12,7 @@ import MdPreview from "../../Suggest/MdPreview";
 import {stopAnyPlay} from "../../../App";
 import DebugLogs from "../../DebugLogs";
 import Check from "../../StarRating";
-import {startAudioStream, sendAudioChunk, stopAudioStream} from './audioStream';
+import {startAudioStream, sendAudioChunk, stopAudioStream, abortAudioStream} from './audioStream';
 import fixWebmDuration from 'fix-webm-duration';
 import {createSilenceWatcher, isEmptyRecording} from "./silenceCheck";
 
@@ -916,17 +916,20 @@ export function recognitionStart({ startCb, completeCb, onChange, onEmptyAudio, 
                 const durationMs = new Date().getTime() - recStartCd;
                 const rawBlob = new Blob(audioChunks, {type: 'audio/webm'});
                 audioChunks = [];
-                stopAudioStream();
 
                 // микрофон молчал всю запись - не отдаём пустую надиктовку дальше
                 const soundStats = silenceWatcher ? silenceWatcher.stop() : null;
                 silenceWatcher = null;
                 if (soundStats && isEmptyRecording({...soundStats, blobSize: rawBlob.size})) {
                     console.log("qqqqq empty audio, nothing to send", soundStats);
+                    // чанки уже ушли по сокету - просим сервер не класть их в S3
+                    abortAudioStream('silence');
                     audioFile = null;
                     onEmptyAudio && onEmptyAudio({...soundStats, blobSize: rawBlob.size});
                     return;
                 }
+
+                stopAudioStream();
 
                 fixWebmDuration(rawBlob, durationMs, (fixedBlob) => {
                     const localUrl = URL.createObjectURL(fixedBlob);
