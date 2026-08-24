@@ -78,10 +78,10 @@ export default function EvaluationDetail() {
     const explainSingle = () => global.http.post('/evaluate-explain', { quizHistoryId: id }, { wo_notify: true });
 
     if (loading) {
-        return <div style={{ padding: 20 }}>Загрузка...</div>;
+        return <div className={styles.page}>Загрузка...</div>;
     }
     if (!item || item.error) {
-        return <div style={{ padding: 20, color: STATUS_COLOR.error }}>Не найдено</div>;
+        return <div className={styles.page} style={{ color: STATUS_COLOR.error }}>Не найдено</div>;
     }
 
     const ev = item.evaluate || {};
@@ -118,7 +118,7 @@ export default function EvaluationDetail() {
     };
 
     return (
-        <div style={{ padding: 20 }}>
+        <div className={styles.page}>
             <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
             <div className={`card ${styles.infoCardSpacing}`}>
