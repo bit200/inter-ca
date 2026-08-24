@@ -100,6 +100,16 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
 
             if (msg.type === 'itk.interview.session_closed') {
                 const status = msg.payload?.status;
+                // Своей кнопки "Выйти" в шапке оверлея больше нет - выходят той,
+                // что рисует сам itk-live внутри iframe (было две одинаковых на
+                // одном экране). Её нажатие приходит сюда тем же session_closed,
+                // поэтому логику прежней кнопки переносим сюда: если финал уже
+                // объявлен и мы лишь ждём, пока бот доиграет прощание, выход
+                // пользователя это ожидание обрывает и завершает попытку сразу.
+                if (awaitingFinishRef.current) {
+                    finishNow();
+                    return;
+                }
                 if (status === 'completed') {
                     scheduleFinish();
                 } else {
@@ -118,20 +128,6 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
         <div className={styles.iframeOverlay} data-testid="mock-interview-overlay">
             <div className={styles.iframeHeader}>
                 <span>{interview.name}</span>
-                {/* Ждать сигнала aiPlaying:false не обязательно, если пользователь
-                    сам решил, что бот договорил - кнопка завершает сразу. */}
-                <button
-                    type="button"
-                    className={styles.iframeClose}
-                    onClick={() => {
-                        clearTimeout(finishTimeoutRef.current);
-                        awaitingFinishRef.current = false;
-                        onComplete();
-                    }}
-                    data-testid="mock-interview-exit-btn"
-                >
-                    Выйти
-                </button>
             </div>
             <div className={styles.iframeWrap}>
                 <iframe
