@@ -11,6 +11,10 @@ import MyImg from "../MyImg";
 import ChatDetails from './ChatDetails'
 function CourseDetails(props) {
     let [data, setData] = useState({});
+    // Курс->интервью привязка живёт на шаблоне course (не на courseUser, который
+    // единственный тут хранится в data) - держим отдельно, т.к. courseUser не
+    // содержит статических полей курса.
+    let [interviewId, setInterviewId] = useState(null);
     let [parentLoading, setParentLoading] = useState(true);
     let [loading, setLoading] = useState(true);
 
@@ -66,6 +70,7 @@ function CourseDetails(props) {
                     courseUser.modules.length - 1
                 );
                 setData(courseUser);
+                setInterviewId(course.interviewId || null);
                 setQHistory(qHistory);
                 setMHistory(mHistory);
                 setDBQuestionsObj(dbQuestionsObj);
@@ -398,6 +403,7 @@ function CourseDetails(props) {
                                     selectedModuleInd === ((data || {}).modules || []).length - 1
                                 }
                                 moduleId={selectedModule.module}
+                                interviewId={interviewId}
                                 onChangeQHistory={(r) => {
                                     //console.log("qqqqq qhistoyr before", qHistory);
                                     qHistory ??= {};

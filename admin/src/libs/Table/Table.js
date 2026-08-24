@@ -590,7 +590,7 @@ class Table extends React.Component {
                                     {(!!data && data).map((item, ind) => {
                                         return (<div key={ind} onClick={() => {
                                             opts.onClickItem && opts.onClickItem(item)
-                                        }}>
+                                        }} data-testid="table-row" data-row-id={item._id}>
                                             <Comp item={item} onAdd={this.onAdd.bind(this)} _this={this}
                                                   _ind={ind}></Comp>
                                         </div>)
@@ -645,6 +645,8 @@ class Table extends React.Component {
                                                    onClick={() => {
                                                        opts.onClickItem && opts.onClickItem(point)
                                                    }}
+                                                   data-testid="table-row"
+                                                   data-row-id={point._id}
                                                    className={(class_fn ? class_fn(point) : '') + (point.is_removed ? ' opacity-removed' : '')}
                                             // onClick={() => {
                                             //   onItemClick(item)

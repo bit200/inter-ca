@@ -14,6 +14,15 @@ let timer = -1;
 let _ = window._;
 let $ = window.$;
 
+// filter item.value может быть строкой ("started") или объектом-запросом ({$in: [...]})
+// — для testid/сравнения активного таба нужен стабильный примитив в обоих случаях.
+function filterValueKey(value) {
+  if (value && typeof value === 'object') {
+    return JSON.stringify(value).replace(/[^a-zA-Z0-9]+/g, '');
+  }
+  return value;
+}
+
 class TableFilter1 extends React.Component {
 
   constructor(props) {
@@ -72,7 +81,7 @@ class TableFilter1 extends React.Component {
           let active_filter_item = active_filter[filter_key]
           return (<div key={ind} className={"ib mr-15 mbS " + ((woTableSelect && ind == 0) ? "" : "ml-15")}>
             {arr.length &&
-                <button type="button" className={"btn btn-xs " + (!active_filter_item ? ' active btn-primary ' : '  btn-light')}
+                <button type="button" data-testid={`table-filter-${filter_key}-all`} className={"btn btn-xs " + (!active_filter_item ? ' active btn-primary ' : '  btn-light')}
                         onClick={(e) => {
                           onChangeFilter(null, filter_key)
                         }}>{NameFn(filter.def_name || 'All')}</button>}
@@ -82,12 +91,14 @@ class TableFilter1 extends React.Component {
               active_filter_item.value = active_filter_item.key || active_filter_item.value;
               let key = active_filter_item.key || active_filter_item.value || '';
               // console.log("qqqqq keyeyeyeyeyeyye", key);
+              let itemKey = filterValueKey(item.value);
               return (<button
-                  className={'btn btn-xs ' + (key === item.value ? 'active btn-primary' : 'btn-light ')}
+                  className={'btn btn-xs ' + (filterValueKey(key) === itemKey ? 'active btn-primary' : 'btn-light ')}
+                  data-testid={`table-filter-${filter_key}-${itemKey}`}
                   key={ind} onClick={(e) => {
                 onChangeFilter(item, filter_key)
               }}>
-                {NameFn(item.value)}
+                {NameFn(item.name)}
               </button>)
             })}
           </div>)
@@ -116,10 +127,11 @@ class TableFilter1 extends React.Component {
               onSearch(e.target.value)
             }}
                    // autoFocus={true}
+                   data-testid="table-search-input"
                    className="search form-control search_table_item" placeholder={NameFn('search') + " ..."}/>
 
             {!woAdd && <span className="input-group-btn">
-            <button className="btn btn-light" type="button" onClick={() => onAdd()}>+ {NameFn('addName')}</button>
+            <button className="btn btn-light" data-testid="table-add-button" type="button" onClick={() => onAdd()}>+ {NameFn('addName')}</button>
             </span>}
           </div>
 

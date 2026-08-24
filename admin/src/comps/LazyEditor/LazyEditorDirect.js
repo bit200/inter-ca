@@ -1,11 +1,7 @@
-import React, {lazy, Suspense, useEffect, useState} from 'react';
-import {Editor, loader} from "@monaco-editor/react";
-import * as monaco from 'monaco-editor';
-
-loader.config({monaco});
+import React, {useEffect, useState} from 'react';
+import {Editor} from "@monaco-editor/react";
 
 function EditDirect(props) {
-    console.log("qqqqq monaco editor porps", props);
     const [theme, setTheme] = useState('vs-light'); // Default theme
 
     useEffect(() => {
@@ -27,8 +23,8 @@ function EditDirect(props) {
         return () => observer.disconnect();
     }, []);
 
-    return <div className={'myEditorWrap'} style={{height: props.height || 'auto'}}>
-        <Editor {...props} height={'100%'} width={'100%'} theme={theme} ></Editor>
+    return <div className={'myEditorWrap'} style={{ height: props.height || 'auto' }}>
+        <Editor {...props} height={'100%'} width={'100%'} theme={theme} />
     </div>
 }
 

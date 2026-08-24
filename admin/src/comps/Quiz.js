@@ -91,7 +91,6 @@ function Quiz(props) {
     global.historyObj = historyObj;
     global.setHistoryObj = setHistoryObj;
 
-
     useEffect(() => {
         Storage.loadMyQuestions(id, ({questions, history}) => {
             let historyObj = {};

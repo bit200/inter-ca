@@ -31,6 +31,7 @@ function PreviewCourseModule(props) {
         questions,
         dbQuestionsObj,
         moduleId,
+        interviewId,
     } = props;
     let isAdmin = global.env.isAdmin || props.isAdmin;
 
@@ -256,6 +257,7 @@ function PreviewCourseModule(props) {
                             title={t('checkKnowledge')}
                             moduleId={moduleId}
                             isLastModule={isLastModule}
+                            interviewId={isLastModule ? interviewId : null}
                             courseUserId={courseUserId}
                             onSuccess={(r, cb) => {
                                 onChangeMHistory({[moduleId]: r}, cb)

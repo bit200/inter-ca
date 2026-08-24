@@ -107,7 +107,12 @@ export function sortFn(key) {
 }
 
 export async function createAutoInterview(opts) {
-    return http.post('/auto-interview', opts)
+    // /auto-interview is the generic auto-CRUD route for the AutoInterview model, which
+    // defaults to admin-only auth (see itk-platform-en initDb.js) - it 403s for the regular
+    // candidates who start their own trial exams here, so the resulting quiz answers never
+    // get tagged with an autoInterview id and "Результаты пробного экзамена" has nothing to
+    // show later. /create-auto-interview is a dedicated, candidate-auth-scoped endpoint.
+    return http.post('/create-auto-interview', opts)
 }
 
 

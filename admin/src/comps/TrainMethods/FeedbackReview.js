@@ -61,7 +61,7 @@ function Layout2(props) {
 export const HashPlayer = (props) => {
     let {hash, user} = props.item || {};
     return <div onClick={() => {
-        myPlayer({path: `/${user}/${hash}.wav`})
+        myPlayer({path: `/${user}/${hash}.webm`})
     }}>
         <div className="fa fa-play-circle"></div>
         <div></div>

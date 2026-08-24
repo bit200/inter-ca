@@ -1,0 +1,191 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useLocation } from 'react-router-dom';
+
+import sse from '../../libs/sse/sse';
+import Button from '../../libs/Button';
+import styles from './evaluationDetail.module.scss';
+import ScoreBar from "./components/ScoreBar";
+import AdviceSection from "./components/AdviceSection";
+import ExplainSection from "./components/ExplainSection";
+import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
+
+function getQuestionTitle(item) {
+    const ti = item.titleInfo || {};
+    if (ti.title || ti.smallTitle || ti.desc) {
+        return ti.title || ti.smallTitle || ti.desc;
+    }
+    const qi = item.questionInfo || {};
+    return qi.title || qi.name || `Вопрос #${item.question}`;
+}
+
+export default function EvaluationDetail() {
+    const { id } = useParams();
+    // Came from EvaluationListItemGroup's Link state={{ groupMode }} - falls back to
+    // 'exam' for a direct/refreshed visit with no navigation state at all.
+    const backGroupMode = useLocation().state?.groupMode === 'module' ? 'module' : 'exam';
+    const backTo = backGroupMode === 'module' ? '/evaluations?mode=module' : '/evaluations';
+    const [item, setItem] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [loadingOriginalAudio, setLoadingOriginalAudio] = useState(false);
+    const [adviceRules, setAdviceRules] = useState([]);
+    const [metricSchemas, setMetricSchemas] = useState([]);
+
+    const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id }, { wo_notify: true })
+        .then(data => setItem(data))
+        .catch(() => setItem(null))
+        .finally(() => setLoading(false));
+
+    useEffect(() => {
+        loadItem();
+
+        global.http.get('/eval-advice-rule', { per_page: 200 }, { wo_notify: true }).then(r => {
+            setAdviceRules(r.items || []);
+        }).catch(() => {});
+
+        global.http.get('/eval-metric-schemas', {}, { wo_notify: true }).then(r => {
+            setMetricSchemas(r.items || []);
+        }).catch(() => {});
+    }, [id]);
+
+    // Live status/result updates (pending -> processing -> done/error) without the
+    // candidate having to reload - loadItem() above still owns the initial full fetch
+    // (question text, questionInfo, ...), this only patches `evaluate` as it changes.
+    useEffect(() => {
+        return sse.subscribe(`/evaluate-events/${id}`, evaluate => {
+            setItem(prev => prev && { ...prev, evaluate });
+        });
+    }, [id]);
+
+    // Ошибка теперь нигде не показывается пользователю (ни кнопки, ни текста) -
+    // значит его больше некому нажать вручную. Вместо этого тихо просим бэкенд
+    // повторить оценку сами, без UI-эффекта: если ретрай реально запустится,
+    // это придёт тем же SSE-событием выше и просто обновит статус на экране.
+    // Бэкенд сам решает, доступен ли ретрай (лимит попыток/интервал между ними) -
+    // здесь только клиентский тротлинг, чтобы не долбить endpoint на каждый
+    // ререндер/переход на страницу.
+    useEffect(() => {
+        const evStatus = item?.evaluate?.status;
+        if (evStatus !== 'error' || item?.evaluate?.unrecoverable) return;
+
+        const key = `evalAutoRetry:${id}`;
+        const last = Number(localStorage.getItem(key) || 0);
+        if (Date.now() - last < 10 * 60 * 1000) return;
+
+        localStorage.setItem(key, String(Date.now()));
+        global.http.post('/evaluate-retry', { quizHistoryId: id }, { wo_notify: true }).catch(() => {});
+    }, [item?.evaluate?.status, item?.evaluate?.unrecoverable, id]);
+
+    const explainSingle = () => global.http.post('/evaluate-explain', { quizHistoryId: id }, { wo_notify: true });
+
+    if (loading) {
+        return <div className={styles.page}>Загрузка...</div>;
+    }
+    if (!item || item.error) {
+        return <div className={styles.page} style={{ color: STATUS_COLOR.error }}>Не найдено</div>;
+    }
+
+    const ev = item.evaluate || {};
+    const result = ev.result || {};
+    const score = result.score;
+
+    const questionText = result.question || getQuestionTitle(item);
+    const answerText = result.text;
+    const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
+
+    // window.myPlayer() resolves and buffers the audio async (fetch + <audio> canplay)
+    // before the player UI ever appears, so we bridge Player.js's myPlayerReady/Error
+    // events back here to keep the button visibly "loading" for that whole stretch
+    // instead of it looking clickable-but-dead for several seconds.
+    const playOriginalAudio = (scb, errCb) => {
+        // Аудио часто отдаётся почти мгновенно, и если включать "Загрузка..."
+        // сразу, кнопка на долю секунды меняет подпись и тут же возвращает
+        // прежнюю - на экране это выглядит как моргание. Показываем состояние
+        // загрузки, только если ожидание реально затянулось.
+        const showLoadingId = setTimeout(() => setLoadingOriginalAudio(true), 400);
+
+        const finish = (cb) => {
+            window.removeEventListener('myPlayerReady', onReady);
+            window.removeEventListener('myPlayerError', onError);
+            clearTimeout(timeoutId);
+            clearTimeout(showLoadingId);
+            setLoadingOriginalAudio(false);
+            cb && cb();
+        };
+        const onReady = () => finish(scb);
+        const onError = () => finish(errCb);
+        const timeoutId = setTimeout(() => finish(scb), 20000);
+
+        window.addEventListener('myPlayerReady', onReady);
+        window.addEventListener('myPlayerError', onError);
+
+        window.myPlayer({ src: '' });
+        window.myPlayer({ user: item.user, hash: item.hash });
+    };
+
+    return (
+        <div className={styles.page}>
+            <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
+
+            <div className={`card ${styles.infoCardSpacing}`}>
+                <div className="card-body">
+                    <div className={styles.title}>Вопрос</div>
+                    <div className={styles.questionText}>{questionText}</div>
+                </div>
+            </div>
+
+            {(ev.status === 'pending' || ev.status === 'processing') && (
+                <div className={`card ${styles.infoCardSpacing}`} data-testid="evaluate-status-card" data-status={ev.status}>
+                    <div className="card-body">
+                        <div className={styles.title} style={{ color: STATUS_COLOR[ev.status] }}>
+                            {STATUS_LABEL[ev.status]}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {answerText && (
+                <div className={`card ${styles.infoCardSpacing}`}>
+                    <div className="card-body">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <div className={styles.title}>Распознанный текст ответа</div>
+                            {/* Цвет кнопки не переключается на время загрузки: раньше она на
+                                миг становилась серой (color=4) и возвращалась обратно - это и
+                                читалось как моргание. Меняется только иконка. */}
+                            {hasOriginalAudio && (
+                                <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
+                                        disabled={loadingOriginalAudio}
+                                        className={styles.playOriginal}
+                                        color={3} size="sm"
+                                        icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
+                                    {loadingOriginalAudio
+                                        ? <span className="spinner-border spinner-border-sm" role="status"/>
+                                        : null}
+                                    {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
+                                </Button>
+                            )}
+                        </div>
+                        <div className={styles.answerText} >{answerText}</div>
+                    </div>
+                </div>
+            )}
+
+            {score != null && (
+                <div style={{ marginBottom: 20 }} className={'card'}>
+                    <ScoreBar score={score} />
+                </div>
+            )}
+
+            {score != null && (
+                <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
+            )}
+
+            {score != null && (
+                <ExplainSection onExplain={explainSingle} initialExplain={ev.explain} />
+            )}
+
+            <div className={styles.bottomInfo}>
+                {item.cd && <span>Дата ответа: {new Date(item.cd).toLocaleString('ru')}</span>}
+            </div>
+        </div>
+    );
+}

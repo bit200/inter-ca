@@ -1,0 +1,368 @@
+// Ширину контента задаёт сама раскладка (.container-xxl + .mainWrapPadd2),
+// как на дашборде. Своих боковых отступов страница не добавляет - иначе
+// при переходе с дашборда контент сужается и получается "прыжок".
+.page{
+  padding: 0 0 20px;
+}
+
+// Палитра страницы - те же три цвета, что и у шкалы оценки: --score-bad /
+// --score-mid / --score-good из scss/colors.scss (там же ..-rgb для заливок).
+// Больше на этом экране цветов нет - смысл несут только
+// "плохо / есть куда расти / норма".
+
+.title{
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--bs-text-muted);
+  margin-bottom: 6px;
+}
+
+.questionText{
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bs-heading-color);
+  line-height: 1.4;
+}
+.answerText{
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--bs-body-color);
+}
+
+// Раньше был самодостаточной карточкой (свои border/background) - как и у
+// мок-интервью, это не подхватывало box-shadow настоящих Bootstrap .card и
+// выглядело без белого фона. Теперь только внешние отступы, сама "карточка" -
+// настоящие .card/.card-body в разметке.
+.infoCardSpacing{
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+.bottomInfo{
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  margin-top: 8px;
+}
+
+.scoreBar {
+  background: var(--bs-secondary-bg);
+  border-radius: 4px;
+  height: 8px;
+  margin-top: 6px;
+  width: 100%;
+
+  & > div{
+    border-radius: 4px;
+    height: 8px;
+  }
+}
+
+.criticalErrors {
+  margin-bottom: 16px;
+}
+
+.criticalErrorsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--score-bad);
+  margin-bottom: 6px;
+}
+
+.criticalErrorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.criticalErrorItem {
+  display: flex;
+  gap: 10px;
+  background: rgba(var(--score-bad-rgb), .10);
+  border-left: 3px solid var(--score-bad);
+  border-radius: 0 6px 6px 0;
+  padding: 5px 14px;
+
+  span {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+  }
+}
+
+.explainWrapper {
+  margin-bottom: 20px;
+}
+
+.explainNotReady {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--bs-text-muted);
+}
+
+.explainError {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--score-bad);
+}
+
+.explainCard {
+  margin-top: 14px;
+}
+
+.explainSummary {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--bs-body-color);
+  margin-bottom: 14px;
+}
+
+.explainComponents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.explainComponentItem {
+  background: var(--bs-secondary-bg);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.explainComponentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.explainComponentName {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--bs-text-muted);
+}
+
+.explainComponentScore {
+  // Название параметра слева может отсутствовать (когда открыта вкладка
+  // одного параметра) - балл всё равно держится правого края.
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-heading-color);
+}
+
+.explainComponentVerdict {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+}
+
+// Рекомендация - то, ради чего расшифровку и открывают, а бледно-серым текстом
+// она читалась как сноска. Оформляем тем же приёмом, что уже принят на этом
+// экране для акцентных врезок (см. .criticalErrorItem / .metricModalItem):
+// мягкая подложка + цветная полоса слева, только в зелёном - "что делать",
+// в отличие от красного "что не так".
+.explainComponentSuggestion {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+  background: rgba(var(--score-good-rgb), .10);
+  border-left: 3px solid var(--score-good);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin-top: 8px;
+
+  i {
+    color: var(--score-good);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.advice {
+  &Wrapper{
+    margin-bottom: 16px;
+  }
+
+  &Title{
+    font-size: 18px;
+    color: var(--bs-heading-color);
+    margin-bottom: 16px;
+    font-weight: bold;
+  }
+}
+
+.metricBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin: -6px -8px;
+
+  &:hover {
+    background: var(--bs-secondary-bg);
+  }
+}
+
+// Rows for a group with no matching advice - nothing happens on click, so the
+// row shouldn't invite one: no pointer cursor, no hover affordance.
+.metricRowStatic {
+  cursor: default;
+
+  &:hover {
+    background: none;
+  }
+}
+
+// Показатель, упавший в 0: пустой бар + одинокая цифра сбоку читаются как
+// "данных нет", а не как провал. Красим строку и её название тем же красным
+// шкалы, что и критические ошибки выше на этой карточке; заливка - тот же цвет
+// с прозрачностью, она ложится и на светлый, и на тёмный фон.
+.metricRowZero {
+  background: rgba(var(--score-bad-rgb), .10);
+  border-left: 3px solid var(--score-bad);
+  padding-left: 5px;
+
+  .metricRowLabel {
+    color: var(--score-bad);
+    font-weight: 600;
+  }
+
+  // Наведение усиливает ту же заливку - но только там, где по строке
+  // действительно есть что открыть (.metricRowStatic отменяет hover).
+  &:not(.metricRowStatic):hover {
+    background: rgba(var(--score-bad-rgb), .16);
+  }
+
+  &.metricRowStatic:hover {
+    background: rgba(var(--score-bad-rgb), .10);
+  }
+}
+
+.metricRowLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bs-heading-color);
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+// Подсказка "тут есть совет, можно нажать" - без неё непонятно, что строка
+// вообще кликабельна (плоский текст+бар не читается как интерактивный элемент).
+.metricRowHint {
+  margin-left: 6px;
+  font-size: 13px;
+  color: var(--score-good);
+  vertical-align: -1px;
+}
+
+.metricRowBar {
+  flex: 1;
+  background: var(--bs-secondary-bg);
+  border-radius: 6px;
+  height: 10px;
+
+  & > div {
+    border-radius: 6px;
+    height: 10px;
+  }
+}
+
+.metricRowPct {
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.metricModalList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+// Тот же вид, что был у советов в исходном варианте (см. .criticalErrorItem
+// выше) - отдельные блоки читаются лучше, чем плоский маркированный список.
+.metricModalItem {
+  display: flex;
+  gap: 10px;
+  background: rgba(var(--score-good-rgb), .10);
+  border-left: 3px solid var(--score-good);
+  border-radius: 0 6px 6px 0;
+  padding: 5px 14px;
+
+  span {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+  }
+}
+
+// Кнопка "Прослушать оригинал". Bootstrap-класс .btn-success на этой теме
+// бирюзовый - на странице это был лишний, шестой цвет. Перекрываем его
+// btn-переменными на зелёный шкалы, чтобы зелёный на экране значил одно и то же.
+// Класс продублирован в селекторе намеренно: он должен перебивать
+// .btn-success из общей темы независимо от порядка подключения стилей.
+.playOriginal.playOriginal {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--score-good);
+  --bs-btn-border-color: var(--score-good);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--score-good-hover);
+  --bs-btn-hover-border-color: var(--score-good-hover);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--score-good-active);
+  --bs-btn-active-border-color: var(--score-good-active);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--score-good);
+  --bs-btn-disabled-border-color: var(--score-good);
+  --bs-btn-box-shadow: none;
+  box-shadow: none;
+  // Подпись меняется на "Загрузка...", а ширина - нет: иначе кнопка прыгает,
+  // и это читается как моргание.
+  min-width: 190px;
+  opacity: 1;
+}
+
+// Переключатель параметров расшифровки. Берём тот же bootstrap-овский
+// nav-tabs, что уже используется как вкладки в остальной админке
+// (CoursesList, шапка) - свой стиль вкладок читался бы как чужая заплатка.
+// Внутри карточки они мельче навигационных: это подписи параметров, а не
+// разделы страницы, и перевешивать общий вердикт над ними не должны.
+.explainTabs {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+
+  :global(.nav-link) {
+    font-size: 13px;
+    padding: 5px 12px;
+    color: var(--bs-text-muted);
+    background: none;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--bs-body-color);
+    }
+
+    &:global(.active) {
+      color: var(--bs-heading-color);
+    }
+  }
+}

@@ -81,9 +81,11 @@
         stopRecordingButton.disabled = false;
 
 
+        console.log('LOOOG audioChunks', audioChunks);
         navigator.mediaDevices
             .getUserMedia({ audio: true })
             .then((stream) => {
+                console.log('LOOOG audioChunks', audioChunks);
                 audioChunks = [];
                 mediaRecorder = new MediaRecorder(stream, {
 //   mimeType: 'audio/ogg; codecs=opus',
@@ -98,9 +100,9 @@
                 };
 
                 mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // You can change the format if needed
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // You can change the format if needed
                     const formData = new FormData();
-                    formData.append('audio', audioBlob, 'audio.wav');
+                    formData.append('audio', audioBlob, 'audio.webm');
 
                     fetch('http://localhost:3200/upload-audio', {
                         method: 'POST',

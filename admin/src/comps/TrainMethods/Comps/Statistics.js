@@ -83,7 +83,7 @@ function Layout2(props) {
         {name: 'on5inExam', keys: ['examRates', '5']},
         {name: 'on5inTrain', keys: ['trainRates', '5']},
         {name: 'trainPassed', keys: ['trainCount']},
-        {name: 'mockInterviews', keys: ['examCount']},
+        {name: 'trialExam', keys: ['examCount']},
         {
           name:'avgRateTrain', fn(odb) {
             let st = get(odb, [])

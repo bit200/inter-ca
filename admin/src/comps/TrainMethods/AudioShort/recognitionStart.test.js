@@ -14,10 +14,21 @@ jest.mock('axios', () => ({__esModule: true, default: {get: () => Promise.resolv
 jest.mock('../../../App', () => ({stopAnyPlay: () => null}));
 jest.mock('@uiw/react-md-editor', () => ({__esModule: true, default: () => null, commands: {}}));
 jest.mock('../../Suggest/MdPreview', () => ({__esModule: true, default: () => null}));
+jest.mock('./audioStream', () => ({
+    startAudioStream: () => null,
+    sendAudioChunk: () => null,
+    stopAudioStream: jest.fn(),
+    abortAudioStream: jest.fn(),
+}));
+jest.mock('fix-webm-duration', () => ({
+    __esModule: true,
+    default: (blob, ms, cb) => cb(blob),
+}));
 
 // require, а не import: глобалы выше должны быть готовы до загрузки модуля
 const {recognitionInit, recognitionStart, recognitionStop} = require('./AudioShort');
 const {SILENCE_RMS_THRESHOLD} = require('./silenceCheck');
+const {stopAudioStream, abortAudioStream} = require('./audioStream');
 
 let recorders;
 
@@ -60,6 +71,8 @@ function pushChunk() {
 
 beforeEach(() => {
     jest.useFakeTimers();
+    stopAudioStream.mockClear();
+    abortAudioStream.mockClear();
     recognitionInit();
 });
 
@@ -72,7 +85,7 @@ it('не отправляет запись, в которой не было зв
     let completed = [];
     let empty = [];
 
-    recognitionStart(null, (...a) => completed.push(a), {onEmptyAudio: (s) => empty.push(s)});
+    recognitionStart({completeCb: (...a) => completed.push(a), onEmptyAudio: (s) => empty.push(s)});
     await Promise.resolve();
 
     pushChunk();
@@ -82,6 +95,10 @@ it('не отправляет запись, в которой не было зв
     expect(completed.length).toBe(0);
     expect(empty.length).toBe(1);
     expect(empty[0].voicedMs).toBe(0);
+    // чанки уже улетели по сокету - сервер должен получить отмену, а не stop,
+    // иначе пустая запись окажется в S3
+    expect(abortAudioStream).toHaveBeenCalled();
+    expect(stopAudioStream).not.toHaveBeenCalled();
 });
 
 it('отправляет запись, в которой звук был', async () => {
@@ -89,7 +106,7 @@ it('отправляет запись, в которой звук был', async
     let completed = [];
     let empty = [];
 
-    recognitionStart(null, (...a) => completed.push(a), {onEmptyAudio: (s) => empty.push(s)});
+    recognitionStart({completeCb: (...a) => completed.push(a), onEmptyAudio: (s) => empty.push(s)});
     await Promise.resolve();
 
     pushChunk();
@@ -98,17 +115,21 @@ it('отправляет запись, в которой звук был', async
 
     expect(empty.length).toBe(0);
     expect(completed.length).toBe(1);
+    expect(stopAudioStream).toHaveBeenCalled();
+    expect(abortAudioStream).not.toHaveBeenCalled();
 });
 
 it('сам прерывает надиктовку, если микрофон молчит слишком долго', async () => {
     setupMic(0);
     let empty = [];
 
-    recognitionStart(null, () => {}, {onEmptyAudio: (s) => empty.push(s), silenceAutoStopMS: 1000});
+    recognitionStart({completeCb: () => {}, onEmptyAudio: (s) => empty.push(s), silenceAutoStopMS: 1000});
     await Promise.resolve();
 
     pushChunk();
     jest.advanceTimersByTime(1200);
 
     expect(empty.length).toBe(1);
+    expect(abortAudioStream).toHaveBeenCalled();
+    expect(stopAudioStream).not.toHaveBeenCalled();
 });

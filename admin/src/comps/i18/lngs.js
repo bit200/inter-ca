@@ -2415,6 +2415,13 @@ export default {
         en: "Mock Interviews",
         fr: `Entretiens simulés`
     },
+    "trialExam": {
+        ru: "Пробный экзамен",
+        es: "Examen de prueba",
+        de: "Probeprüfung",
+        en: "Practice Exam",
+        fr: `Examen blanc`
+    },
     "stats": {
         ru: "Статистика",
         es: "Estadísticas",
@@ -2815,11 +2822,39 @@ export default {
         fr: `Exécuter la tâche dans l'éditeur`
     },
     "startMockInterview": {
-        ru: "Начать мок-интервью",
-        es: "Iniciar entrevista simulada",
-        de: "Mock-Interview starten",
-        en: "Start mock interview",
-        fr: `Démarrer un entretien simulé`
+        ru: "Начать пробный экзамен",
+        es: "Iniciar examen de prueba",
+        de: "Probeprüfung starten",
+        en: "Start practice exam",
+        fr: `Démarrer un examen blanc`
+    },
+    "retakeMockInterview": {
+        ru: "Пройти заново",
+        es: "Repetir intento",
+        de: "Erneut versuchen",
+        en: "Retake",
+        fr: `Retenter`
+    },
+    "attemptHistory": {
+        ru: "История попыток",
+        es: "Historial de intentos",
+        de: "Versuchsverlauf",
+        en: "Attempt history",
+        fr: `Historique des tentatives`
+    },
+    "attemptNumber": {
+        ru: "Попытка",
+        es: "Intento",
+        de: "Versuch",
+        en: "Attempt",
+        fr: `Tentative`
+    },
+    "currentAttempt": {
+        ru: "Текущая",
+        es: "Actual",
+        de: "Aktuell",
+        en: "Current",
+        fr: `Actuelle`
     },
     "(optional)": {
         ru: " (опционально)",
@@ -3852,7 +3887,30 @@ export default {
     "en": "Do not reload the page",
     "fr": "Ne rechargez pas la page"
 },
-"xx": {ru: ''}, 
+"mockInterviewStep": {
+    ru: "Мок-интервью",
+    es: "Entrevista simulada",
+    de: "Mock-Interview",
+    en: "Mock interview",
+    fr: `Entretien simulé`
+},
+"preparingMockInterview": {
+    ru: "Готовим интервью...",
+    es: "Preparando la entrevista...",
+    de: "Interview wird vorbereitet...",
+    en: "Preparing the interview...",
+    fr: `Préparation de l'entretien...`
+},
+"mockInterviewNotStarted": {
+    ru: "Интервью не открылось. Обновите страницу и попробуйте ещё раз.",
+    es: "La entrevista no se abrió. Actualiza la página e inténtalo de nuevo.",
+    de: "Das Interview wurde nicht geöffnet. Aktualisiere die Seite und versuche es erneut.",
+    en: "The interview did not open. Reload the page and try again.",
+    fr: `L'entretien ne s'est pas ouvert. Rechargez la page et réessayez.`
+},
+"by_exam": {ru: 'По экзамену'},
+"by_module": {ru: 'По модулю'},
+"xx": {ru: ''},
 "": {ru: ''},
 
 }
@@ -3862,7 +3920,7 @@ export default {
 Extend object with fields:  es (spain), de(germany), en(english), fr(Franch) to that object, franch place in  comma to keep JSON formatting (keep main key in commas "")
   "correctSolutionAvailableIn": {ru: 'Правильное решение будет доступно для просмотра через'},
   "dontReloadPage": {ru: 'Не перезагрузайте страницу'},
- 
+
 
 
 

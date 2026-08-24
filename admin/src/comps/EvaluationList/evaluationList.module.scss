@@ -1,0 +1,92 @@
+.container {
+  // Боковые отступы - на раскладке (.container-xxl + .mainWrapPadd2), как на
+  // дашборде, чтобы ширина контента не менялась при переходе между экранами.
+  padding: 0 0 20px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  h4 {
+    margin: 0;
+  }
+
+  & > span {
+    color: var(--bs-text-muted);
+    font-size: 14px;
+  }
+
+  & > div {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+  }
+}
+
+.noInfo {
+  color: var(--bs-text-muted);
+}
+
+// EvaluationListItemGroup
+.group {
+  margin-bottom: 24px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 0;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.groupHeaderArrow {
+  font-size: 13px;
+  color: var(--bs-text-muted);
+}
+
+.groupHeaderLabel {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.groupHeaderProgress {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.groupBody {
+  padding-left: 20px;
+}
+
+.groupItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  flex-wrap: wrap;
+}
+
+.groupItemLink {
+  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.groupItemStatus {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.groupItemScore {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}

@@ -61,6 +61,7 @@ class Login extends React.Component {
                       <div className="c10 l"><input className="form-control w100"
                                                     value={this.state.username}
                                                     id="username"
+                                                    data-testid="login-username"
                                                     onChange={this.handleChange}
                                                     type="text" placeholder={t('login')}/>
                       </div>
@@ -68,6 +69,7 @@ class Login extends React.Component {
                     <div className="form-group"><label className="c2 r pr5">{t('password')}</label>
                       <div className="c10 l"><input type="password"
                                                     id="password"
+                                                    data-testid="login-password"
                                                     value={this.state.password}
                                                     onChange={this.handleChange}
                                                     className="form-control w100"
@@ -81,6 +83,7 @@ class Login extends React.Component {
                       <div className="c2 tr" style={{marginTop: '15px'}}>
                         <div className="w100" style={{minHeight: '19px'}}>
                           <Button type="submit"
+                                  id="login-submit"
                                   icon={'iconoir-double-check'}
                               // className="pull-right"
                                   disabled={!this.state.checked || this.state.loading}>

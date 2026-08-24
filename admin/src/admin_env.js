@@ -11,9 +11,13 @@ local = 'http://localhost:6057'
 
 let isDemo = window.location.href.indexOf('demo.') > -1;
 let isAcademy = window.location.href.indexOf('itk.academy') > -1;
+// Домен стейджинга (staging-app.itk.academy) сам по себе попал бы под isAcademy ниже и
+// молча стучался бы в боевой api-razvitie.itk.academy — проверяем его первым.
+let isStaging = /^staging/i.test(window.location.hostname);
 
 let servers = {
     local: local,
+    staging: 'https://staging-api-razvitie.itk.academy',
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
     academy:  'https://api-razvitie.itk.academy',
@@ -43,11 +47,21 @@ let logoImgs = {
     academy: Demo,
 }
 
-let serverKey = global.is_local ? 'local' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
+let serverKey = global.is_local ? 'local' : isStaging ? 'staging' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
 if (global?.is_local) {
-    serverKey = 'academy'
+    // serverKey = 'academy'
     // isDemo = true;
 }
+
+// Аплоадер аудио-надиктовок (AudioShort/Player) — свой сервис на каждое окружение,
+// т.к. домены разные и live-запись должна писаться не в общий прод-сторедж.
+// Статика (уже загруженные файлы) отдаётся отдельно через S3 — сюда не относится.
+let videoUploaders = {
+    local: 'http://localhost:1111',
+    staging: 'https://staging-api-razvitie.itk.academy/uploader',
+    def: 'https://uploader.itconsult-web.ru',
+}
+
 window.env = {
     domain: servers[serverKey] || servers.def,
     isDemo,
@@ -57,7 +71,7 @@ window.env = {
     RUN_CODE_DOMAIN: 'http://localhost:4988',
     VIDEO_UPLOAD_DOMAIN: 'https://uploader.itconsult-web.ru',
     VIDEO_STATIC_DOMAIN: 'https://static.itconsult-web.ru',
-    VIDEO_DOMAIN: global.is_local ? 'http://localhost:1111' : 'https://uploader.itconsult-web.ru',
+    VIDEO_DOMAIN: videoUploaders[serverKey] || videoUploaders.def,
     title: 'Портал развития',
     login_title: 'Портал развития',
     // login_title: 'Interview Portal',

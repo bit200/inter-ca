@@ -11,6 +11,8 @@ import Courses from "./Comps/Courses";
 import CircularProgress2 from "./Comps/CircularProgress2";
 import QuestionsList, {smartLoad} from "./Comps/QuestionList";
 import FeedbacksList from "./Comps/FeedbacksList";
+import RecentAiEvaluations from "./Comps/RecentAiEvaluations";
+import RecentMockInterviews from "./Comps/RecentMockInterviews";
 import TopStats from "./Comps/TopStats";
 import Interviews from "./Comps/Interviews";
 import WorkSessions from "./Comps/WorkSessions";
@@ -28,6 +30,8 @@ import {recognitionInit, recognitionStart, recognitionStop} from "./AudioShort/A
 import Skeleton from "../../libs/Skeleton";
 import SemiCircle from "./Comps/SemiCircle";
 import {UserImg} from "../Header/Header1";
+import EvaluationWidget from "../EvaluationWidget";
+import MockInterviewWidget from "../MockInterviewWidget";
 
 function getRecentlyOpenCd(it) {
     let _id = it?._id || it || -1;
@@ -98,10 +102,10 @@ function Layout2(props) {
             setLoading3(false)
         })
         global.http.get("/load-my-courses-q").then((r) => {
-            let {courses, userCourses, questionIds} = r;
+            let { courses, userCourses, questionIds } = r;
             setRes(r);
             setCourses(courses);
-            let history = userCourses.reduce((acc, it) => ({...acc, [it.course]: it}), {});
+            let history = userCourses.reduce((acc, it) => ({ ...acc, [it.course]: it }), {});
             setHistory(
                 history
             );
@@ -114,9 +118,9 @@ function Layout2(props) {
                 })
             })
 
-            let {calcQuestion = {}} = r.result || {};
+            let { calcQuestion = {} } = r.result || {};
             let questions = ((r.result || {}).questions || []).map(it => {
-                return {...it, ...calcQuestion[it._id] || {}, isRead: !!qhistory[it._id]?.isRead}
+                return { ...it, ...calcQuestion[it._id] || {}, isRead: !!qhistory[it._id]?.isRead }
             });
 
 
@@ -127,7 +131,7 @@ function Layout2(props) {
             }), {});
             let visibleQuestions = questions.filter(it => it.isRead);
             let visibleQuestionsObj = visibleQuestions.reduce((acc, it) => {
-                return {...acc, [it._id]: true}
+                return { ...acc, [it._id]: true }
             }, {});
             setQHistory(qhistory)
             setVisibleQuestions(visibleQuestions)
@@ -158,7 +162,7 @@ function Layout2(props) {
     console.log("qqqqq resresresresres", res);
 
     async function clickQuestion(item, key) {
-        smartClick([item], {total: 7, isExam: false})
+        smartClick([item], { total: 7, isExam: false })
         // setOpen(true);
         // setModalOpts({loading: true, quizes: []})
         // let {_id} = item || {};
@@ -177,7 +181,7 @@ function Layout2(props) {
 
     async function clickCourse(questions = []) {
         console.log("qqqqq smartClicksmartClicksmartClick", questions);
-        smartClick(questions, {total: 7})
+        smartClick(questions, { total: 7 })
     }
 
     async function smartClick(questions = [], opts) {
@@ -189,10 +193,10 @@ function Layout2(props) {
             query,
         } = opts || {};
         let sortKey = opts.sortKey || isExam ? 'nextCd' : 'nextCd'
-        let questionsObj = questions.reduce((acc, it) => ({...acc, [it._id || it]: true}), {})
+        let questionsObj = questions.reduce((acc, it) => ({ ...acc, [it._id || it]: true }), {})
 
-        let {result, userCourses} = res || {};
-        let {calcQuestion, questionsWithQuizes, calcQuiz = {}} = result || {};
+        let { result, userCourses } = res || {};
+        let { calcQuestion, questionsWithQuizes, calcQuiz = {} } = result || {};
         // let visibleQuestionsObj = userCourses.reduce((acc, it, ind) => {
         //     return {...acc, ...it.qHistory || {}}
         // }, {})
@@ -209,7 +213,7 @@ function Layout2(props) {
             }
             let it = questionsWithQuizes[key] || []
             return [...acc, ...it.map(it => {
-                return {...it, question: key, ...calcQuiz[it._id] || {}}
+                return { ...it, question: key, ...calcQuiz[it._id] || {} }
             })]
         }, [])
 
@@ -238,10 +242,10 @@ function Layout2(props) {
         let days = 1000 * 24 * 3600;
         let _lastCd = Math.round((new Date().getTime() - 1 * days) / 1000)
 
-        function insertIterations(sortedAllQuizes, {total = 9, quizes = [], order = 1, alreadyQuizes = {}}) {
+        function insertIterations(sortedAllQuizes, { total = 9, quizes = [], order = 1, alreadyQuizes = {} }) {
             let localQuestions = {}
             _.each(sortedAllQuizes, (item, ind) => {
-                let {_id, question, order, lastCd} = item;
+                let { _id, question, order, lastCd } = item;
                 if (
                     _lastCd > lastCd &&
                     visibleQuestionsObj[question] && order == 1 && !alreadyQuizes[_id] && !localQuestions[question] && quizes.length < total) {
@@ -249,7 +253,7 @@ function Layout2(props) {
                 }
             })
             _.each(sortedAllQuizes, (item, ind) => {
-                let {_id, question, order} = item;
+                let { _id, question, order } = item;
 
                 if (visibleQuestionsObj[question] && !alreadyQuizes[_id] && quizes.length < total) {
                     quizes.push(item)
@@ -258,9 +262,9 @@ function Layout2(props) {
             return quizes;
         }
 
-        let filteredQuizes = insertIterations(sortedAllQuizes, {total})
+        let filteredQuizes = insertIterations(sortedAllQuizes, { total })
         console.log("qqqqq quiestions 3.5", filteredQuizes);
-        setModalOpts({loading: true, quizes: []})
+        setModalOpts({ loading: true, quizes: [] })
         setOpen(true)
 
         let dbQuizes = await getDBQuizes(filteredQuizes)
@@ -316,20 +320,20 @@ function Layout2(props) {
             //console.log("qqqqq auto Interivew", autoInterview);
         }
 
-        setModalOpts({loading: false, quizes: dbQuizes, isExam, autoInterview})
+        setModalOpts({ loading: false, quizes: dbQuizes, isExam, autoInterview })
 
     }
 
 
     let onTrainFeedback = async (props) => {
-        let {fb, hist, quizId} = props;
+        let { fb, hist, quizId } = props;
         console.log("qqqqq props", props);
-        let dbQuizes = await getDBQuizes([{_id: quizId || hist?.quiz}])
+        let dbQuizes = await getDBQuizes([{ _id: quizId || hist?.quiz }])
         _.each(dbQuizes, (item, ind) => {
             item.opts = item.opts || {};
             item.opts.parentFB = fb._id;
         })
-        setModalOpts({loading: false, quizes: dbQuizes, isExam: false})
+        setModalOpts({ loading: false, quizes: dbQuizes, isExam: false })
         setOpen(true)
 
         //console.log("qqqqq db Quizes44444", dbQuizes);
@@ -339,12 +343,12 @@ function Layout2(props) {
 
     let onTrainInterview = async (_id) => {
         //console.log("qqqqq it on train Interivew", _id);
-        let dbQuizes = await getDBQuizes([{_id}])
+        let dbQuizes = await getDBQuizes([{ _id }])
         _.each(dbQuizes, (item, ind) => {
             item.opts = item.opts || {};
             item.opts.parentFB = fb._id;
         })
-        setModalOpts({loading: false, quizes: dbQuizes, isExam: false})
+        setModalOpts({ loading: false, quizes: dbQuizes, isExam: false })
         setOpen(true)
 
         //console.log("qqqqq db Quizes44444", dbQuizes);
@@ -354,14 +358,14 @@ function Layout2(props) {
     let changeFb = (v) => {
         _.each(res.fb, (item, ind) => {
             if (item._id == v._id) {
-                let vv = {...item, ...v};
+                let vv = { ...item, ...v };
                 res.fb[ind] = vv;
                 global.http.put("/feedback-history", vv).then(r => {
                     //console.log("qqqqq upDtedddddd", );
                 })
             }
         })
-        setRes({...res})
+        setRes({ ...res })
         return v;
     }
 
@@ -372,12 +376,12 @@ function Layout2(props) {
 
     smartLoad(questions, {
         total: 7,
-        query: {train: 2, exam: 3},
+        query: { train: 2, exam: 3 },
         logs: true,
         shuffleResults: true, woRemoveEmpty: true
     })
-    let totalStats = getTotalStats({res, history});
-    let topStatasNew = getTopStatsNew({res: res2});
+    let totalStats = getTotalStats({ res, history });
+    let topStatasNew = getTopStatsNew({ res: res2 });
 
     interview = interview || (res.interviews || {})[0];
     fb = fb || (res.fb || {})[0];
@@ -406,7 +410,7 @@ function Layout2(props) {
         }
     }
     return (
-        <div style={{margin: "0"}} className={'courseWrap ' + (loading ? 'courseLoading' : '')}>
+        <div style={{ margin: "0" }} className={'courseWrap ' + (loading ? 'courseLoading' : '')}>
             <MyModal
                 isOpen={interviewModal}
                 onClose={() => {
@@ -414,12 +418,12 @@ function Layout2(props) {
                     reloadAll();
                 }}
                 size={'lg'}>
-                <h2>Результаты Мок-Интервью</h2>
+                <h2>Результаты пробного экзамена</h2>
                 <hr/>
                 <AutoInterview interview={interview}
                                onClick={(_id) => {
                                    //console.log("qqqqq interview555 on Train", _id);
-                                   clickQuestion({_id}, 'train')
+                                   clickQuestion({ _id }, 'train')
                                    // smartClick(questions, {
                                    //     query: {train: 1}
                                    // })
@@ -515,7 +519,7 @@ function Layout2(props) {
                                                 {lng == 'fr' && <>{t('module')}{endWord2('s', topStatasNew.modules)}</>}
 
                                             </p>
-                                                {/*<p className="text-muted mb-0 fw-medium">Модул{endWord('ей', topStatasNew.modules)}</p>*/}
+                                            {/*<p className="text-muted mb-0 fw-medium">Модул{endWord('ей', topStatasNew.modules)}</p>*/}
                                         </div>
 
                                         <div
@@ -585,11 +589,12 @@ function Layout2(props) {
 
                     <ul className="nav nav-tabs mb-3" role="tablist">
                         {([
-                            {name: t('toRepeat'), key: 'ql'},
-                            {name: t('feedbacks'), key: 'fb'},
-                            {name: t('courses'), key: 'cl'},
-                            {name: t('mockInterviews'), key: 'inter'},
-                            {name: t('stats'), key: 'st'},
+                            { name: t('toRepeat'), key: 'ql' },
+                            { name: t('feedbacks'), key: 'fb' },
+                            { name: t('courses'), key: 'cl' },
+                            { name: t('trialExam'), key: 'inter' },
+                            { name: t('mockInterviews'), key: 'mock' },
+                            { name: t('stats'), key: 'st' },
                         ] || []).map((it, ind) => {
                             return (<li className="nav-item" role="presentation" key={ind}
                                         onClick={() => {
@@ -604,18 +609,24 @@ function Layout2(props) {
                         })}
 
                     </ul>
-                    {tab == 'fb' && <div className="card">
-                        <div className="card-body animChild">
-                            <FeedbacksList
-                                onClick={clickFeedback}
-                                onTrain={onTrainFeedback}
-                                onChangeFb={changeFb}
-                                fb={fb}
-                                res={res3}
-                                loading={loading3}
-                            ></FeedbacksList>
+                    {tab == 'fb' && <>
+                        {/* Отдельная, более новая система оценки ИИ (не curator-фидбек ниже) -
+                            последние 10 оценённых ответов, полный список с группировкой на /evaluations.
+                            Стоит выше старого фидбека по приоритету. */}
+                        <RecentAiEvaluations />
+                        <div className="card">
+                            <div className="card-body animChild">
+                                <FeedbacksList
+                                    onClick={clickFeedback}
+                                    onTrain={onTrainFeedback}
+                                    onChangeFb={changeFb}
+                                    fb={fb}
+                                    res={res3}
+                                    loading={loading3}
+                                ></FeedbacksList>
+                            </div>
                         </div>
-                    </div>}
+                    </>}
                     {tab == 'other' && <TopStats
                         {...TrainExam}
                         totalStats={totalStats}
@@ -659,6 +670,7 @@ function Layout2(props) {
                                 }}></Interviews>
                         </div>
                     </div>}
+                    {tab == 'mock' && <RecentMockInterviews />}
                     {tab == 'st' &&
                         <div className="card">
                             <div className="card-body">
@@ -712,8 +724,8 @@ function Layout2(props) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="pull-right " style={{marginTop: '15px'}} onClick={() => {
-                                    TrainExam.onClickExam()
+                                <div className="pull-right " style={{ marginTop: '15px' }} onClick={() => {
+                                    TrainExam.onClickTrain()
                                 }}>
                                     <div className="btn btn-light btn-sm">
                                         <i className="iconoir-sparks"></i>
@@ -722,7 +734,7 @@ function Layout2(props) {
                                     {/*<a href="">Тренировать</a>*/}
                                 </div>
                                 <p className="mb-0 text-truncate text-muted mt-3 statsListHead"><span
-                                    className="text-success">{totalStats.exam100}%</span>
+                                    className="text-success">{totalStats.train100}%</span>
                                     {t('on5')}</p>
                             </>
                         </div>
@@ -732,7 +744,7 @@ function Layout2(props) {
                             {loading && <Skeleton count={3} abs={true}></Skeleton>}
                             <div className="row d-flex justify-content-center border-dashed-bottom pb-3">
                                 <div className="col-lg-8">
-                                    <p className="text-dark mb-0 fw-semibold fs-14">{t('mockInterviews')}</p>
+                                    <p className="text-dark mb-0 fw-semibold fs-14">{t('trialExam')}</p>
                                     <h3 className="mt-2 mb-0 fw-bold">{(totalStats.examNotNullAvgRate / 20).toFixed(1)}</h3>
                                 </div>
                                 <div className="col-lg-4 align-self-center">
@@ -742,8 +754,8 @@ function Layout2(props) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="pull-right" style={{marginTop: '15px'}} onClick={() => {
-                                TrainExam.onClickTrain()
+                            <div className="pull-right" style={{ marginTop: '15px' }} onClick={() => {
+                                TrainExam.onClickExam()
                             }}>
                                 <div className="btn btn-light btn-sm">
                                     <i className="iconoir-sparks"></i>
@@ -753,27 +765,31 @@ function Layout2(props) {
                                 {/*<a href="">Тренировать</a>*/}
                             </div>
                             <p className="mb-0 text-truncate text-muted mt-3 statsListHead"><span
-                                className="text-success">{totalStats.train100}%</span>
+                                className="text-success">{totalStats.exam100}%</span>
                                 {t('on5')}</p>
 
                         </div>
                     </div>
+                    <EvaluationWidget/>
+                    <MockInterviewWidget/>
                     {isLocal && <>
-                      <div className="card cardShadow" style={{overflow: 'hidden', filter: 'blur(2px)'}} onDoubleClick={() => {
-                        setImgInd(++imgInd % promoImgs?.length)
-                    }}>
-                        <div className="card-body3">
-                            <img src={`/st/promo/i4.png`} alt=""/>
+                        <div className="card cardShadow" style={{ overflow: 'hidden', filter: 'blur(2px)' }}
+                             onDoubleClick={() => {
+                                 setImgInd(++imgInd % promoImgs?.length)
+                             }}>
+                            <div className="card-body3">
+                                <img src={`/st/promo/i4.png`} alt=""/>
+                            </div>
                         </div>
-                    </div>
                     </>}
-                    {lng == 'ru' && <div className="card cardShadow" style={{overflow: 'hidden'}} onDoubleClick={() => {
-                        setImgInd(++imgInd % promoImgs?.length)
-                    }}>
-                        <div className="card-body3">
-                            <img src={`/st/promo/${promoImgs[imgInd]}`} alt=""/>
-                        </div>
-                    </div>}
+                    {lng == 'ru' &&
+                        <div className="card cardShadow" style={{ overflow: 'hidden' }} onDoubleClick={() => {
+                            setImgInd(++imgInd % promoImgs?.length)
+                        }}>
+                            <div className="card-body3">
+                                <img src={`/st/promo/${promoImgs[imgInd]}`} alt=""/>
+                            </div>
+                        </div>}
                 </div>
 
             </div>
@@ -781,15 +797,16 @@ function Layout2(props) {
         </div>
     );
 }
-export function  endWord (name, count) {
+
+export function endWord(name, count) {
     let ww = {
         'ей': {
-            1 : 'ь',
+            1: 'ь',
             2: 'я',
             5: 'ей',
         },
         'ов': {
-            1 : '',
+            1: '',
             2: 'а',
             5: 'ов',
         }
@@ -812,7 +829,8 @@ export function  endWord (name, count) {
     return wwName[5];
 
 }
-export function  endWord2 (name, count) {
+
+export function endWord2(name, count) {
 
     if ((count > 1) || !count) {
         return name || ''
@@ -821,4 +839,5 @@ export function  endWord2 (name, count) {
 
 
 }
+
 export default Layout2;
