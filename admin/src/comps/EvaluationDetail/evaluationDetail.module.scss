@@ -147,11 +147,29 @@
   color: var(--bs-body-color);
 }
 
+// Рекомендация - то, ради чего расшифровку и открывают, а бледно-серым текстом
+// она читалась как сноска. Оформляем тем же приёмом, что уже принят на этом
+// экране для акцентных врезок (см. .criticalErrorItem / .metricModalItem):
+// мягкая подложка + цветная полоса слева, только в зелёном - "что делать",
+// в отличие от красного "что не так".
 .explainComponentSuggestion {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--bs-text-muted);
-  margin-top: 4px;
+  color: var(--bs-body-color);
+  background: var(--bs-success-bg-subtle);
+  border-left: 3px solid var(--bs-success);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin-top: 8px;
+
+  i {
+    color: var(--bs-success-text-emphasis);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
 }
 
 .advice {
@@ -194,6 +212,33 @@
 
   &:hover {
     background: none;
+  }
+}
+
+// Показатель, упавший в 0: пустой бар + одинокая цифра сбоку читаются как
+// "данных нет", а не как провал. Красим строку и её название тем же danger,
+// что и критические ошибки выше на этой карточке. Цвета берём только из
+// bootstrap-переменных: --bs-danger-rgb одинаков в обеих темах и прозрачная
+// заливка ложится и на светлый, и на тёмный фон, а --bs-danger-text-emphasis
+// bootstrap сам переопределяет под [data-bs-theme=dark].
+.metricRowZero {
+  background: rgba(var(--bs-danger-rgb), .12);
+  border-left: 3px solid var(--bs-danger);
+  padding-left: 5px;
+
+  .metricRowLabel {
+    color: var(--bs-danger-text-emphasis);
+    font-weight: 600;
+  }
+
+  // Наведение усиливает ту же заливку - но только там, где по строке
+  // действительно есть что открыть (.metricRowStatic отменяет hover).
+  &:not(.metricRowStatic):hover {
+    background: rgba(var(--bs-danger-rgb), .18);
+  }
+
+  &.metricRowStatic:hover {
+    background: rgba(var(--bs-danger-rgb), .12);
   }
 }
 
