@@ -23,3 +23,22 @@ describe('getScoreRGB', () => {
         expect(getScoreRGB(42, 10)).toBe(SCORE_COLOR.good);
     });
 });
+
+describe('палитра оценки', () => {
+    it('берёт цвета из css-переменных, а не хардкодит rgb', () => {
+        expect(Object.values(SCORE_COLOR)).toEqual([
+            'var(--score-bad)', 'var(--score-mid)', 'var(--score-good)',
+        ]);
+    });
+
+    it('эти переменные объявлены в общей палитре проекта', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const colors = fs.readFileSync(path.join(__dirname, '../../../scss/colors.scss'), 'utf8');
+
+        for (const name of ['--score-bad', '--score-mid', '--score-good']) {
+            expect(colors).toContain(`${name}:`);
+            expect(colors).toContain(`${name}-rgb:`);
+        }
+    });
+});
