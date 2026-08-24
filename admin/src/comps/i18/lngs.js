@@ -3887,6 +3887,27 @@ export default {
     "en": "Do not reload the page",
     "fr": "Ne rechargez pas la page"
 },
+"mockInterviewStep": {
+    ru: "Мок-интервью",
+    es: "Entrevista simulada",
+    de: "Mock-Interview",
+    en: "Mock interview",
+    fr: `Entretien simulé`
+},
+"preparingMockInterview": {
+    ru: "Готовим интервью...",
+    es: "Preparando la entrevista...",
+    de: "Interview wird vorbereitet...",
+    en: "Preparing the interview...",
+    fr: `Préparation de l'entretien...`
+},
+"mockInterviewNotStarted": {
+    ru: "Интервью не открылось. Обновите страницу и попробуйте ещё раз.",
+    es: "La entrevista no se abrió. Actualiza la página e inténtalo de nuevo.",
+    de: "Das Interview wurde nicht geöffnet. Aktualisiere die Seite und versuche es erneut.",
+    en: "The interview did not open. Reload the page and try again.",
+    fr: `L'entretien ne s'est pas ouvert. Rechargez la page et réessayez.`
+},
 "by_exam": {ru: 'По экзамену'},
 "by_module": {ru: 'По модулю'},
 "xx": {ru: ''},
