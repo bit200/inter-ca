@@ -3824,6 +3824,20 @@ export default {
         "en": "Rating",
         "fr": "Évaluation"
     },
+    "noSoundErrTitle": {
+        "ru": "Ваш ответ не записался — микрофон молчал",
+        "es": "No se grabó tu respuesta: el micrófono no captó sonido",
+        "de": "Deine Antwort wurde nicht aufgezeichnet – das Mikrofon blieb stumm",
+        "en": "Your answer was not recorded — the microphone stayed silent",
+        "fr": "Votre réponse n'a pas été enregistrée : le micro est resté muet"
+    },
+    "noSoundErrHint": {
+        "ru": "Включите микрофон, проверьте громкость и запишите ответ заново.",
+        "es": "Activa el micrófono, comprueba el volumen y graba la respuesta de nuevo.",
+        "de": "Schalte das Mikrofon ein, prüfe die Lautstärke und nimm die Antwort erneut auf.",
+        "en": "Turn the microphone on, check the volume and record your answer again.",
+        "fr": "Activez le micro, vérifiez le volume et enregistrez à nouveau votre réponse."
+    },
     "micProblemErr": {
         "ru": "Проблемы с подключением микрофона! Сделайте отладку на странице тестирования микрофона",
         "es": "Problemas con la conexión del micrófono. Realice una depuración en la página de prueba de micrófono.",

@@ -14,6 +14,7 @@ import DebugLogs from "../../DebugLogs";
 import Check from "../../StarRating";
 import {startAudioStream, sendAudioChunk, stopAudioStream} from './audioStream';
 import fixWebmDuration from 'fix-webm-duration';
+import {createSilenceWatcher, isEmptyRecording} from "./silenceCheck";
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -76,6 +77,7 @@ let AudioShort = forwardRef((props, ref) => {
     let [codeRate, setCodeRate] = useState(0)
     let [selectedNames, setSelectedNames] = useState({})
     let [initMic, setInitMic] = useState(false)
+    let [noSoundErr, setNoSoundErr] = useState(false)
 
     let [status, setStatus] = useState('waitStart')
     let [text, setText] = useState('')
@@ -287,6 +289,17 @@ console.log('LOOOG', 'COMPLETE');
         // setCd(new Date())
     }
 
+    // микрофон молчал всю запись — ответа нет, отправлять нечего
+    let onRecordEmpty = () => {
+        setNoSoundErr(true)
+        setRecording(false)
+        setRecognizing(false)
+        setInitMic(false)
+        setCountDownBeforeStart(0)
+        setStatus('waitStart')
+        props.onStop && props.onStop();
+    }
+
     let countdownAudioStart = (ms, cb) => {
         setCountDownBeforeStart(ms)
         setTimeout(() => {
@@ -299,6 +312,7 @@ console.log('LOOOG', 'COMPLETE');
 
         console.log("qqqqq titlttl REC START 99999999999999999999999");
 
+        setNoSoundErr(false)
         recognitionStart({
             startCb: () => {
                 console.log("qqqqq titlttl REC START 1");
@@ -320,6 +334,8 @@ console.log('LOOOG', 'COMPLETE');
             },
             completeCb: onRecordComplete,
             onChange: props.onChange,
+            onEmptyAudio: onRecordEmpty,
+            silenceAutoStopMS: opts.silenceAutoStopMS,
         })
     }
 
@@ -474,6 +490,15 @@ console.log('LOOOG', 'COMPLETE');
                 }}/>
                 {t('processing') || 'Обработка...'}
             </div>}
+
+            {noSoundErr && !recording && !recognizing && <div className={'noSoundErr afade'} role={'alert'}>
+                <i className="iconoir-microphone-mute"></i>
+                <div>
+                    <b>{t('noSoundErrTitle')}</b>
+                    <span>{t('noSoundErrHint')}</span>
+                </div>
+            </div>}
+
             {recognizing && <div className={'recognizing'}>{t('recognizing')} ... </div>}
 
             {!isExam && <>
@@ -827,7 +852,9 @@ function encodePcmToWav(pcmChunks, sampleRate) {
     return new Blob([buffer], { type: 'audio/webm' });
 }
 
-export function recognitionStart({ startCb, completeCb, onChange }) {
+export function recognitionStart({ startCb, completeCb, onChange, onEmptyAudio, silenceAutoStopMS }) {
+    let silenceWatcher = null;
+
     // Guard against a second concurrent recording: mediaRecorder/audioHash are
     // module-level (shared across calls, not React state), so if this fires
     // twice close together (e.g. two useEffect triggers/a double click before
@@ -868,6 +895,15 @@ export function recognitionStart({ startCb, completeCb, onChange }) {
                 token: user.get_token()
             });
 
+            silenceWatcher = createSilenceWatcher(stream, {
+                silenceAutoStopMs: silenceAutoStopMS,
+                onSilenceLimit: () => {
+                    // за всё время записи ни одного звука — прерываем надиктовку сами
+                    console.log("qqqqq no sound from user, stopping record");
+                    recognitionStop();
+                },
+            });
+
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
                     audioChunks.push(event.data);
@@ -881,6 +917,17 @@ export function recognitionStart({ startCb, completeCb, onChange }) {
                 const rawBlob = new Blob(audioChunks, {type: 'audio/webm'});
                 audioChunks = [];
                 stopAudioStream();
+
+                // микрофон молчал всю запись - не отдаём пустую надиктовку дальше
+                const soundStats = silenceWatcher ? silenceWatcher.stop() : null;
+                silenceWatcher = null;
+                if (soundStats && isEmptyRecording({...soundStats, blobSize: rawBlob.size})) {
+                    console.log("qqqqq empty audio, nothing to send", soundStats);
+                    audioFile = null;
+                    onEmptyAudio && onEmptyAudio({...soundStats, blobSize: rawBlob.size});
+                    return;
+                }
+
                 fixWebmDuration(rawBlob, durationMs, (fixedBlob) => {
                     const localUrl = URL.createObjectURL(fixedBlob);
                     completeCb && completeCb(localUrl);
