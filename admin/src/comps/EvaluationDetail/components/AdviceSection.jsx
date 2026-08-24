@@ -2,79 +2,16 @@ import React, { useState } from 'react';
 import styles from '../evaluationDetail.module.scss'
 import MyModal from '../../../libs/MyModal';
 import { getScoreRGB } from './scoreColor';
-import { getByPath, groupAdvice } from './adviceLogic';
+import { groupAdvice } from './adviceLogic';
+import { buildGroupPercents, weakestGroup, WEAK_PCT } from './metricGroups';
 
-// eval-metric-schemas already carries each key's real scale (min/max) - that's
-// the source of truth for normalization. Advice-rule ranges only cover the
-// spans someone wrote advice text for (e.g. relevance rules stop at 7.5, not
-// the metric's real max of 9), so using them for normalization silently
-// shrinks the scale and skews every percent below 100%'s worth of coverage.
-function buildMetricRanges(schemas) {
-    const ranges = {};
-    schemas.forEach(s => {
-        if (!s.key || s.min == null || s.max == null) return;
-        ranges[s.key] = { min: s.min, max: s.max };
-    });
-    return ranges;
-}
+export { buildGroupPercents, weakestGroup };
 
-// Every row is displayed as "how good is this parameter" (full green bar = good,
-// matching the overall score above it) - but the raw normalized value only means
-// that for metrics where higher is better (речь, практика, ...). For a metric
-// like is_offtop or errors, the underlying value is "how much of a bad thing",
-// so a raw 0 (the best possible outcome) must normalize to 100% ("good"), not
-// 0% - and a raw 1 (worst) must read as 0%. metricSchemas don't currently carry
-// an explicit direction flag - if the backend schema object ever adds one (e.g.
-// `invert`/`lowerIsBetter`), prefer it over this name-based guess. Checked per
-// KEY (not per group) because a group can mix directions - "Релевантность" has
-// both evaluation.relevance.relevance (higher is better) and
-// evaluation.relevance.is_offtop (lower is better); averaging their raw percents
-// without inverting is_offtop first previously let is_offtop:1 (worst case)
-// contribute 100% to the group average instead of 0%.
-function isLowerBetterKey(key, schema) {
-    if (schema && typeof schema.invert === 'boolean') return schema.invert;
-    if (schema && typeof schema.lowerIsBetter === 'boolean') return schema.lowerIsBetter;
-    return /is_offtop|is_critical|\berror|fillers\.count/i.test(key || '');
-}
-
-function buildGroupPercents(schemas, result) {
-    const ranges = buildMetricRanges(schemas);
-    const schemaByKey = {};
-    schemas.forEach(s => { schemaByKey[s.key] = s; });
-
-    const groupValues = {};
-    const groupAllInverted = {};
-    Object.keys(ranges).forEach(key => {
-        const val = getByPath(result, key);
-        if (val == null || typeof val !== 'number') return;
-        const { min, max } = ranges[key];
-        if (max <= min) return;
-        const rawPct = Math.max(0, Math.min(1, (val - min) / (max - min))) * 100;
-        const inverted = isLowerBetterKey(key, schemaByKey[key]);
-        // Invert per-key BEFORE averaging into the group, so a mixed-direction
-        // group (see comment above) averages "how good", not raw normalized value.
-        const pct = inverted ? 100 - rawPct : rawPct;
-        const group = schemaByKey[key]?.group || 'Общее';
-        (groupValues[group] = groupValues[group] || []).push(pct);
-        // Only used for the row label below - a group's label flips to "Без
-        // ошибок" only when EVERY metric in it is inverted (e.g. "Ошибки", a
-        // single is_critical key), not for a mixed group like "Релевантность"
-        // whose already-inverted-and-averaged percent reads correctly as-is.
-        if (!(group in groupAllInverted)) groupAllInverted[group] = true;
-        groupAllInverted[group] = groupAllInverted[group] && inverted;
-    });
-
-    return Object.keys(groupValues).map(group => {
-        const pct = Math.round(groupValues[group].reduce((a, b) => a + b, 0) / groupValues[group].length);
-        // The percent already reads as "how good", so an all-inverted group's own
-        // name ("Ошибки") would read backwards next to it (100% Ошибки = зелёным?!) -
-        // flip the label to match what the number actually means. The raw `group`
-        // is kept as the row/modal key (adviceByGroup, data-group, ...) so this is
-        // display-only.
-        const label = groupAllInverted[group] ? 'Без ошибок' : group;
-        return { group, label, pct };
-    });
-}
+// Сколько советов показывать прямо на странице. Раньше рекомендация - самое
+// ценное на экране - лежала за кликом по строке метрики, и её никто не видел.
+// Теперь советы по самым слабым группам стоят под метриками; модалка осталась
+// для всего остального, чтобы колонка не превратилась в простыню.
+const VISIBLE_ADVICE = 2;
 
 const AdviceSection = ({ rules, schemas, result }) => {
     const [openGroup, setOpenGroup] = useState(null);
@@ -87,6 +24,15 @@ const AdviceSection = ({ rules, schemas, result }) => {
     const criticalErrors = result?.evaluation?.errors?.is_critical
         ? (result.evaluation.errors.errors || [])
         : [];
+
+    // Наружу выносим советы по проседающим группам, от самой слабой к менее
+    // слабой - по одному на группу, чтобы разные темы не вытеснялись двумя
+    // советами про одно и то же.
+    const highlighted = rows
+        .filter(row => row.pct < WEAK_PCT && (adviceByGroup[row.group] || []).length > 0)
+        .sort((a, b) => a.pct - b.pct)
+        .slice(0, VISIBLE_ADVICE)
+        .map(row => ({ ...row, advice: adviceByGroup[row.group][0].advice }));
 
     if (!rows.length && !criticalErrors.length) {
         return null;
@@ -110,13 +56,23 @@ const AdviceSection = ({ rules, schemas, result }) => {
 
                 {rows.length > 0 && (
                     <>
-                        <div className={styles.adviceTitle}>Детали оценки</div>
+                        <div className={styles.adviceTitle}>Из чего сложился балл</div>
+
+                        {/* Общая ось 0-100 для всех показателей: точки выстраиваются
+                            в столбик, и просевший показатель виден тем, что его точка
+                            выпала влево - без чтения процентов. */}
+                        <div className={styles.metricAxis} aria-hidden="true">
+                            <span style={{ left: '0%' }}>0</span>
+                            <span style={{ left: '50%' }}>50</span>
+                            <span style={{ left: '100%' }}>100%</span>
+                        </div>
+
                         <div className={styles.metricBreakdown} data-testid="metric-breakdown">
                             {rows.map(({ group, label, pct }) => {
                                 const advice = adviceByGroup[group] || [];
                                 const clickable = advice.length > 0;
                                 // Та же красно-жёлто-зелёная шкала, что и у большого балла в
-                                // ScoreBar - визуально привязывает "Детали оценки" к оценке сверху.
+                                // ScoreDial - визуально привязывает метрики к оценке сверху.
                                 const color = getScoreRGB(pct, 100);
                                 // 0% - это пустой бар и одинокая цифра сбоку: строка читается
                                 // как "тут ничего нет", а не как "тут провал", и теряется среди
@@ -140,14 +96,32 @@ const AdviceSection = ({ rules, schemas, result }) => {
                                                    title="Есть рекомендация - нажмите, чтобы посмотреть"/>
                                             )}
                                         </span>
-                                        <div className={styles.metricRowBar}>
-                                            <div style={{ width: `${pct}%`, background: color }} />
-                                        </div>
+                                        <span className={styles.metricRowTrack}>
+                                            <i className={styles.metricRowTick}/>
+                                            <span className={styles.metricRowFill}
+                                                  style={{ width: `${pct}%`, background: color }}/>
+                                            <span className={styles.metricRowDot}
+                                                  style={{ left: `${pct}%`, background: color }}/>
+                                        </span>
                                         <span className={styles.metricRowPct} style={{ color }}>{pct}%</span>
                                     </div>
                                 );
                             })}
                         </div>
+
+                        {highlighted.length > 0 && (
+                            <div className={styles.adviceOut} data-testid="metric-advice-out">
+                                {highlighted.map(({ group, label, advice }) => (
+                                    <div key={group} className={styles.adviceOutItem} data-group={group}>
+                                        <i className="iconoir-light-bulb-on"/>
+                                        <div>
+                                            <b>Что подтянуть · {label}</b>
+                                            <p>{advice}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </>
                 )}
 
