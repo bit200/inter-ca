@@ -24,6 +24,7 @@ const LABELS = {
     examples: 'Примеры',
     completeness: 'Полнота',
     accuracy: 'Точность',
+    fact_verify: 'Факты',
     communication: 'Коммуникация',
     confidence: 'Уверенность',
     overall: 'Общая оценка',

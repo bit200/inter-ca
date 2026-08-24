@@ -10,6 +10,8 @@ describe('explainComponentLabel', () => {
     it('понимает имя с суффиксом и полный путь до метрики', () => {
         expect(explainComponentLabel('depth_score')).toBe('Глубина');
         expect(explainComponentLabel('evaluation.errors.errors')).toBe('Ошибки');
+        expect(explainComponentLabel('FACT_VERIFY')).toBe('Факты');
+        expect(explainComponentLabel('fact_verify_score')).toBe('Факты');
     });
 
     it('оставляет как есть то, что уже пришло по-русски или неизвестно', () => {
