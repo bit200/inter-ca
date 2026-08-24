@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from '../evaluationDetail.module.scss';
 import { formatScore } from './formatScore';
 import { explainComponentLabel } from './explainComponentLabel';
@@ -29,7 +30,11 @@ function isNotReady(err) {
 // exists (from `initialExplain` or a fresh click) there is deliberately no button
 // to trigger another run. `initialExplain` lets a caller that already has it (from
 // its own details fetch) show it immediately on page load, with no click required.
-const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку', initialExplain = null }) => {
+// `buttonSlot` - DOM-узел, в который отрендерить саму кнопку. На странице
+// разбора ответа она стоит в шапке, рядом с баллом (главное действие экрана
+// не должно теряться в конце ленты), а расшифровка появляется здесь же, на
+// своём месте. Без слота кнопка, как и раньше, рендерится по месту.
+const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку', initialExplain = null, buttonSlot = null, buttonClassName = 'btn btn-outline-primary btn-sm' }) => {
     const [status, setStatus] = useState(initialExplain ? 'done' : 'idle'); // idle | loading | done | not_ready | error
     const [explain, setExplain] = useState(initialExplain);
     // null - вкладка "Все"; иначе индекс компонента в explain.components
@@ -60,13 +65,11 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
         ? indexed
         : indexed.filter(({ i }) => i === activeComponent);
 
-    return (
-        <div className={styles.explainWrapper}>
-            {!explain && (
+    const button = !explain && (
                 <button
                     onClick={handleClick}
                     disabled={status === 'loading'}
-                    className="btn btn-outline-primary btn-sm"
+                    className={buttonClassName}
                     data-testid="evaluate-explain-button"
                 >
                     {status === 'loading' ? (
@@ -81,7 +84,11 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                         </>
                     )}
                 </button>
-            )}
+    );
+
+    return (
+        <div className={styles.explainWrapper}>
+            {button && (buttonSlot ? createPortal(button, buttonSlot) : button)}
 
             {status === 'not_ready' && (
                 <div className={styles.explainNotReady} data-testid="evaluate-explain-not-ready">

@@ -4,18 +4,19 @@ import { Link, useParams, useLocation } from 'react-router-dom';
 import sse from '../../libs/sse/sse';
 import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
-import ScoreBar from "./components/ScoreBar";
+import ScoreDial from "./components/ScoreDial";
 import AdviceSection from "./components/AdviceSection";
 import ExplainSection from "./components/ExplainSection";
+import { buildGroupPercents, weakestGroup } from "./components/metricGroups";
 import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
 
-function getQuestionTitle(item) {
+// Короткое название вопроса/задания, если оно есть отдельно от самого текста
+// вопроса: в шапке стоит именно оно, а полный текст вопроса - репликой над
+// ответом. Так вопрос не печатается на экране дважды.
+function getContextTitle(item) {
     const ti = item.titleInfo || {};
-    if (ti.title || ti.smallTitle || ti.desc) {
-        return ti.title || ti.smallTitle || ti.desc;
-    }
     const qi = item.questionInfo || {};
-    return qi.title || qi.name || `Вопрос #${item.question}`;
+    return ti.title || ti.smallTitle || ti.desc || qi.title || qi.name || null;
 }
 
 export default function EvaluationDetail() {
@@ -29,6 +30,11 @@ export default function EvaluationDetail() {
     const [loadingOriginalAudio, setLoadingOriginalAudio] = useState(false);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
+    // Узел в шапке, куда ExplainSection порталом кладёт свою кнопку: главное
+    // действие экрана стоит рядом с баллом, а результат расшифровки - ниже,
+    // на своём месте. callback-ref через useState, чтобы после монтирования
+    // шапки произошёл ререндер и портал получил живой узел.
+    const [explainSlot, setExplainSlot] = useState(null);
 
     const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id }, { wo_notify: true })
         .then(data => setItem(data))
@@ -88,9 +94,17 @@ export default function EvaluationDetail() {
     const result = ev.result || {};
     const score = result.score;
 
-    const questionText = result.question || getQuestionTitle(item);
+    const contextTitle = getContextTitle(item);
+    const questionText = result.question || contextTitle || `Вопрос #${item.question}`;
+    // Заголовок шапки: короткое название, а если его нет - сам вопрос (тогда
+    // реплики с вопросом над ответом не будет, чтобы не дублировать текст).
+    const heroTitle = contextTitle || questionText;
+    const showQuestionTurn = questionText !== heroTitle;
     const answerText = result.text;
     const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
+    // Слабое место в шапке считается из тех же процентов, что рисует колонка
+    // метрик справа (см. metricGroups.js) - новых данных от бэкенда не нужно.
+    const weakest = score != null ? weakestGroup(buildGroupPercents(metricSchemas, result)) : null;
 
     // window.myPlayer() resolves and buffers the audio async (fetch + <audio> canplay)
     // before the player UI ever appears, so we bridge Player.js's myPlayerReady/Error
@@ -126,10 +140,48 @@ export default function EvaluationDetail() {
         <div className={styles.page}>
             <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
+            {/* Шапка: балл с вердиктом словом, сам вопрос и главные действия в
+                одной строке. Раньше балл стоял третьим блоком, после длинного
+                транскрипта, - на вопрос "как ответил?" экран отвечал только
+                после прокрутки. */}
             <div className={`card ${styles.infoCardSpacing}`}>
-                <div className="card-body">
-                    <div className={styles.title}>Вопрос</div>
-                    <div className={styles.questionText}>{questionText}</div>
+                <div className={`card-body ${styles.hero}`} data-testid="evaluation-hero">
+                    {score != null && <ScoreDial score={score} />}
+
+                    <div className={styles.heroMain}>
+                        <div className={styles.title}>Вопрос</div>
+                        <div className={styles.questionText}>{heroTitle}</div>
+                        <div className={styles.chips}>
+                            <span className={styles.chip}>
+                                {item.answerType === 'audio' ? 'Голосовой ответ' : 'Текстовый ответ'}
+                            </span>
+                            {item.cd && (
+                                <span className={styles.chip}>{new Date(item.cd).toLocaleString('ru')}</span>
+                            )}
+                            {weakest && (
+                                <span className={`${styles.chip} ${styles.chipWeak}`} data-testid="evaluation-weak-chip">
+                                    Слабое место: {weakest.label} · {weakest.pct}%
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={styles.heroActions}>
+                        {/* Сюда ExplainSection порталом кладёт "Расшифровать оценку" */}
+                        <div ref={setExplainSlot} className={styles.heroSlot}/>
+                        {hasOriginalAudio && (
+                            <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
+                                    disabled={loadingOriginalAudio}
+                                    className={styles.playOriginal}
+                                    color={3} size="sm"
+                                    icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
+                                {loadingOriginalAudio
+                                    ? <span className="spinner-border spinner-border-sm" role="status"/>
+                                    : null}
+                                {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -143,49 +195,41 @@ export default function EvaluationDetail() {
                 </div>
             )}
 
-            {answerText && (
-                <div className={`card ${styles.infoCardSpacing}`}>
-                    <div className="card-body">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <div className={styles.title}>Распознанный текст ответа</div>
-                            {/* Цвет кнопки не переключается на время загрузки: раньше она на
-                                миг становилась серой (color=4) и возвращалась обратно - это и
-                                читалось как моргание. Меняется только иконка. */}
-                            {hasOriginalAudio && (
-                                <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
-                                        disabled={loadingOriginalAudio}
-                                        className={styles.playOriginal}
-                                        color={3} size="sm"
-                                        icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
-                                    {loadingOriginalAudio
-                                        ? <span className="spinner-border spinner-border-sm" role="status"/>
-                                        : null}
-                                    {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
-                                </Button>
+            {/* Ответ слева, разбор справа: пара "спросили - ответил" читается
+                подряд, а метрики стоят рядом с текстом, а не под ним. */}
+            <div className={styles.columns}>
+                {answerText && (
+                    <div className={'card'}>
+                        <div className="card-body">
+                            <div className={styles.title}>Как прошёл ответ</div>
+
+                            {showQuestionTurn && (
+                                <div className={`${styles.turn} ${styles.turnAsk}`}>
+                                    <span className={styles.turnWho}>В</span>
+                                    <div className={styles.turnBody}>{questionText}</div>
+                                </div>
                             )}
+
+                            <div className={styles.turn}>
+                                <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>О</span>
+                                <div className={`${styles.turnBody} ${styles.answerText}`}>{answerText}</div>
+                            </div>
                         </div>
-                        <div className={styles.answerText} >{answerText}</div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {score != null && (
-                <div style={{ marginBottom: 20 }} className={'card'}>
-                    <ScoreBar score={score} />
-                </div>
-            )}
-
-            {score != null && (
-                <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
-            )}
-
-            {score != null && (
-                <ExplainSection onExplain={explainSingle} initialExplain={ev.explain} />
-            )}
-
-            <div className={styles.bottomInfo}>
-                {item.cd && <span>Дата ответа: {new Date(item.cd).toLocaleString('ru')}</span>}
+                {score != null && (
+                    <div className={styles.sideColumn}>
+                        <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
+                    </div>
+                )}
             </div>
+
+            {score != null && (
+                <ExplainSection onExplain={explainSingle} initialExplain={ev.explain}
+                                buttonSlot={explainSlot}
+                                buttonClassName={`btn btn-sm ${styles.explainAction}`} />
+            )}
         </div>
     );
 }
