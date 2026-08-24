@@ -5,6 +5,13 @@
   padding: 0 0 20px;
 }
 
+// Палитра страницы: те же три цвета, что и у шкалы оценки (см.
+// components/scoreColor.js). Больше на этом экране цветов нет - смысл несут
+// только "плохо / есть куда расти / норма".
+$scoreBad: rgb(230, 25, 25);
+$scoreMid: rgb(234, 161, 5);
+$scoreGood: rgb(28, 190, 28);
+
 .title{
   font-size: 11px;
   font-weight: 600;
@@ -62,7 +69,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--bs-danger-text-emphasis);
+  color: $scoreBad;
   margin-bottom: 6px;
 }
 
@@ -75,8 +82,8 @@
 .criticalErrorItem {
   display: flex;
   gap: 10px;
-  background: var(--bs-danger-bg-subtle);
-  border-left: 3px solid var(--bs-danger);
+  background: rgba(230, 25, 25, .10);
+  border-left: 3px solid $scoreBad;
   border-radius: 0 6px 6px 0;
   padding: 5px 14px;
 
@@ -100,7 +107,7 @@
 .explainError {
   margin-top: 10px;
   font-size: 13px;
-  color: var(--bs-danger-text-emphasis);
+  color: $scoreBad;
 }
 
 .explainCard {
@@ -166,14 +173,14 @@
   font-size: 13px;
   line-height: 1.5;
   color: var(--bs-body-color);
-  background: var(--bs-success-bg-subtle);
-  border-left: 3px solid var(--bs-success);
+  background: rgba(28, 190, 28, .10);
+  border-left: 3px solid $scoreGood;
   border-radius: 0 6px 6px 0;
   padding: 6px 12px;
   margin-top: 8px;
 
   i {
-    color: var(--bs-success-text-emphasis);
+    color: $scoreGood;
     font-size: 14px;
     flex-shrink: 0;
   }
@@ -223,29 +230,27 @@
 }
 
 // Показатель, упавший в 0: пустой бар + одинокая цифра сбоку читаются как
-// "данных нет", а не как провал. Красим строку и её название тем же danger,
-// что и критические ошибки выше на этой карточке. Цвета берём только из
-// bootstrap-переменных: --bs-danger-rgb одинаков в обеих темах и прозрачная
-// заливка ложится и на светлый, и на тёмный фон, а --bs-danger-text-emphasis
-// bootstrap сам переопределяет под [data-bs-theme=dark].
+// "данных нет", а не как провал. Красим строку и её название тем же красным
+// шкалы, что и критические ошибки выше на этой карточке; заливка - тот же цвет
+// с прозрачностью, она ложится и на светлый, и на тёмный фон.
 .metricRowZero {
-  background: rgba(var(--bs-danger-rgb), .12);
-  border-left: 3px solid var(--bs-danger);
+  background: rgba(230, 25, 25, .10);
+  border-left: 3px solid $scoreBad;
   padding-left: 5px;
 
   .metricRowLabel {
-    color: var(--bs-danger-text-emphasis);
+    color: $scoreBad;
     font-weight: 600;
   }
 
   // Наведение усиливает ту же заливку - но только там, где по строке
   // действительно есть что открыть (.metricRowStatic отменяет hover).
   &:not(.metricRowStatic):hover {
-    background: rgba(var(--bs-danger-rgb), .18);
+    background: rgba(230, 25, 25, .16);
   }
 
   &.metricRowStatic:hover {
-    background: rgba(var(--bs-danger-rgb), .12);
+    background: rgba(230, 25, 25, .10);
   }
 }
 
@@ -262,7 +267,7 @@
 .metricRowHint {
   margin-left: 6px;
   font-size: 13px;
-  color: var(--c1, var(--bs-primary));
+  color: $scoreGood;
   vertical-align: -1px;
 }
 
@@ -297,8 +302,8 @@
 .metricModalItem {
   display: flex;
   gap: 10px;
-  background: var(--bs-info-bg-subtle);
-  border-left: 3px solid var(--bs-info);
+  background: rgba(28, 190, 28, .10);
+  border-left: 3px solid $scoreGood;
   border-radius: 0 6px 6px 0;
   padding: 5px 14px;
 
@@ -307,4 +312,30 @@
     line-height: 1.5;
     color: var(--bs-body-color);
   }
+}
+
+// Кнопка "Прослушать оригинал". Bootstrap-класс .btn-success на этой теме
+// бирюзовый - на странице это был лишний, шестой цвет. Перекрываем его
+// btn-переменными на зелёный шкалы, чтобы зелёный на экране значил одно и то же.
+// Класс продублирован в селекторе намеренно: он должен перебивать
+// .btn-success из общей темы независимо от порядка подключения стилей.
+.playOriginal.playOriginal {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #{$scoreGood};
+  --bs-btn-border-color: #{$scoreGood};
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: rgb(24, 168, 24);
+  --bs-btn-hover-border-color: rgb(24, 168, 24);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: rgb(21, 150, 21);
+  --bs-btn-active-border-color: rgb(21, 150, 21);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: #{$scoreGood};
+  --bs-btn-disabled-border-color: #{$scoreGood};
+  --bs-btn-box-shadow: none;
+  box-shadow: none;
+  // Подпись меняется на "Загрузка...", а ширина - нет: иначе кнопка прыгает,
+  // и это читается как моргание.
+  min-width: 190px;
+  opacity: 1;
 }

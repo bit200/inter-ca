@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styles from '../evaluationDetail.module.scss'
 import MyModal from '../../../libs/MyModal';
-import { getScoreRGB } from './ScoreBar';
+import { getScoreRGB } from './scoreColor';
 import { getByPath, groupAdvice } from './adviceLogic';
 
 // eval-metric-schemas already carries each key's real scale (min/max) - that's
