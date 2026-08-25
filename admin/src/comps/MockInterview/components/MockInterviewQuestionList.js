@@ -19,7 +19,10 @@ const MockInterviewQuestionList = ({ turns, selectedIndex, onSelect, failedCount
                     >
                         <div className={styles.questionItemRow}>
                             <strong>{'Вопрос #' + (ind + 1)}</strong>
-                            {turn.evaluateStatus === 'error' && (
+                            {turn.skipped && (
+                                <span className={styles.questionItemSkipped}>пропущен</span>
+                            )}
+                            {!turn.skipped && turn.evaluateStatus === 'error' && (
                                 <span className={styles.questionItemFailed}>без оценки</span>
                             )}
                         </div>

@@ -42,6 +42,22 @@ describe('MockInterviewEvaluationBlock', () => {
         expect(screen.queryByText(/Оценка по тексту ответа/)).not.toBeInTheDocument();
     });
 
+    it('пропущенный вопрос называет пропуском и показывает балл 0', () => {
+        const onRetry = jest.fn();
+        render(<MockInterviewEvaluationBlock
+            evaluation={{ score: 0, skipped: true, reason: 'no_answer' }}
+            evaluateStatus={'done'}
+            interviewId={1000}
+            onRetry={onRetry}
+        />);
+        expect(screen.getByText(/Ответ на этот вопрос пропущен/)).toBeInTheDocument();
+        expect(screen.getByText('score:0')).toBeInTheDocument();
+        // пропуск - не сбой оценки: ни ошибки, ни кнопки перезапуска тут быть не должно
+        expect(screen.queryByText(/оценить не удалось/i)).not.toBeInTheDocument();
+        expect(screen.queryByText('Оценить ещё раз')).not.toBeInTheDocument();
+        expect(screen.queryByText('advice')).not.toBeInTheDocument();
+    });
+
     it('пока оценка не пришла - показывает ожидание, а не ошибку', () => {
         render(<MockInterviewEvaluationBlock evaluation={null} evaluateStatus={'pending'} interviewId={1000}/>);
         expect(screen.getByText('Ожидает оценки')).toBeInTheDocument();

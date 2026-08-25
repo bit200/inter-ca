@@ -93,3 +93,11 @@ export function isAudioLostJob(job) {
 export function isTextOnlyEvaluate(evaluate) {
     return !!(evaluate && (evaluate.textOnly || evaluate.mode === 'text'));
 }
+
+// Вопрос, на который ответа не было: оркестратор помечает такой ход
+// action: 'no_answer', бэкенд не гоняет его через сервис оценки и сразу
+// отдаёт результат со score 0 и skipped. В интерфейсе это не ошибка оценки,
+// а факт: вопрос пропущен, балл за него — 0.
+export function isSkippedEvaluate(evaluate) {
+    return !!(evaluate && (evaluate.skipped || evaluate.reason === 'no_answer'));
+}

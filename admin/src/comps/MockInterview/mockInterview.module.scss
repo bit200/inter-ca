@@ -283,6 +283,20 @@
   padding: 10px 16px 0;
 }
 
+// Пропущенный вопрос - не сбой оценки, а факт: ответа не было. Поэтому метка
+// приглушённая, а не красная, как у "Без оценки", и рядом с ней обычная шкала
+// с нулём - балл за пропуск честно виден на той же шкале, что и остальные.
+.evaluationSkipped {
+  border-left: 3px solid var(--bs-border-color);
+}
+
+.evaluationSkippedNote {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bs-text-muted);
+  padding: 10px 16px 0;
+}
+
 .evaluationFailed {
   border-left: 3px solid var(--bs-danger);
 }
@@ -326,9 +340,19 @@
   white-space: nowrap;
 }
 
+.questionItemSkipped {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-text-muted);
+  white-space: nowrap;
+}
+
 // В выбранном пункте списка фон уже залит акцентом - красный по нему не читается,
 // поэтому там метка живёт цветом самого пункта.
-:global(.activeList) .questionItemFailed {
+:global(.activeList) .questionItemFailed,
+:global(.activeList) .questionItemSkipped {
   color: inherit;
   opacity: 0.85;
 }
