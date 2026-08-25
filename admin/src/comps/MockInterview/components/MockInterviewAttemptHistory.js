@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from '../mockInterview.module.scss';
+import { attemptScoreSummary } from './evaluateJobState';
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
 
@@ -11,16 +12,10 @@ const STATUS_LABEL = {
     evaluated: 'Завершено',
 };
 
-// Совпадает с полем, которое читает MockInterviewEvaluationBlock (result.score) -
-// там же 0..10, просто здесь агрегируем по всем вопросам попытки, т.к. отдельного
-// поля с итоговым баллом на самой попытке нет (см. mockInterview.md).
-function averageScore(attempt) {
-    const scores = (attempt.evaluate || [])
-        .map(entry => entry?.evaluate?.score)
-        .filter(score => typeof score === 'number');
-    if (!scores.length) return null;
-    return Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10;
-}
+// Балл попытки агрегируем сами: отдельного поля с итогом на попытке нет
+// (см. mockInterview.md), а часть вопросов может остаться без оценки, если
+// сервис оценки упал по ним - тогда средний балл считается по оставшимся,
+// и сколько их было, показываем строкой рядом (см. attemptScoreSummary).
 
 const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake }) => {
     // Список прошлых попыток показываем только когда их реально больше одной -
@@ -40,7 +35,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                         <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
                         <div className={styles.list}>
                             {history.map((attempt, ind) => {
-                                const score = PASSED_STATUSES.includes(attempt.status) ? averageScore(attempt) : null;
+                                const passed = PASSED_STATUSES.includes(attempt.status);
+                                const { score, scored, total } = passed
+                                    ? attemptScoreSummary(attempt)
+                                    : { score: null, scored: 0, total: 0 };
+                                const partial = score != null && total > 0 && scored < total;
                                 const isCurrent = attempt._id === currentItem._id;
                                 return (
                                     <div key={attempt._id} className="card" data-testid="mock-interview-attempt-row">
@@ -54,6 +53,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                                 {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
                                             </div>
                                             {score != null && <div>{'Балл: ' + score + '/10'}</div>}
+                                            {partial && (
+                                                <div className={styles.cardScoreNote}>
+                                                    {'Оценено ' + scored + ' из ' + total + ' вопросов'}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
