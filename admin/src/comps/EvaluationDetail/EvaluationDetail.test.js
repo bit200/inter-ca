@@ -38,3 +38,35 @@ describe('EvaluationDetail: ширина контента', () => {
         expect(page.style.padding).toBe('');
     });
 });
+
+describe('EvaluationDetail: оценка куратора', () => {
+    // Куратор ставит свой балл и пишет рекомендацию в админке, и приходят они
+    // тем же /evaluate-details, что и машинная оценка. Раньше страница их
+    // игнорировала - кандидат видел только балл ИИ.
+    it('показывает балл куратора и его рекомендацию рядом с автоматической оценкой', async () => {
+        const { findByTestId } = renderPage({
+            _id: 1042,
+            answerType: 'audio',
+            evaluate: { status: 'done', result: { question: 'Что такое замыкание?', text: 'Ответ', score: 5.4 } },
+            mentorReview: { score: 8, comment: 'Добавь пример из практики', mentorName: 'Пётр Смирнов' },
+        });
+
+        const band = await findByTestId('mentor-review');
+        expect(band).toHaveTextContent('Оценка куратора');
+        expect(band).toHaveTextContent('Пётр Смирнов');
+        expect(band).toHaveTextContent('8');
+        expect(band).toHaveTextContent('на 2.6 выше автоматической');
+        expect(band).toHaveTextContent('Добавь пример из практики');
+    });
+
+    it('без оценки куратора блока на странице нет', async () => {
+        const { queryByTestId, findByText } = renderPage({
+            _id: 1042,
+            answerType: 'text',
+            evaluate: { status: 'done', result: { question: 'Что такое замыкание?', text: 'Ответ', score: 5.4 } },
+        });
+        await findByText('Что такое замыкание?');
+
+        expect(queryByTestId('mentor-review')).toBe(null);
+    });
+});
