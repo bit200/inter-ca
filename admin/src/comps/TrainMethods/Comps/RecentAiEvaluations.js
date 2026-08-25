@@ -4,6 +4,10 @@ import { STATUS_LABEL, STATUS_COLOR } from '../../EvaluationDetail/evaluationSta
 
 const RECENT_COUNT = 10;
 
+// Только для подписи статуса в этом виджете - в полном списке (/evaluations) цвета
+// статусов не трогаем.
+const LABEL_COLOR = { done: 'var(--bs-primary)' };
+
 function getQuestionTitle(item) {
     const ti = item.titleInfo || {};
     return ti.title || ti.smallTitle || ti.desc || `Вопрос #${item.question}`;
@@ -50,21 +54,22 @@ function RecentAiEvaluations() {
                 {visible.map(item => {
                     const ev = item.evaluate || {};
                     const score = ev.result?.score;
+                    const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                     return (
                         <div key={item._id} className="d-flex align-items-center justify-content-between border-dashed-bottom pb-2 mb-2"
                              data-testid="recent-ai-evaluation-item" data-item-id={item._id}>
                             <Link to={`/evaluations/${item._id}`} className="text-truncate" style={{ flex: 1, marginRight: 10 }}>
                                 {getQuestionTitle(item)}
                             </Link>
-                            <span className="fs-12 fw-semibold me-2" style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
+                            {/* Слово статуса ("Оценено") - основным зелёным портала
+                                (--bs-primary), а не бирюзовым STATUS_COLOR.done: на
+                                дашборде это спокойная подпись фирменным цветом, смысл
+                                несёт балл рядом, он и светофорит по порогам. */}
+                            <span className="fs-12 fw-semibold me-2" style={{ color: LABEL_COLOR[ev.status] || STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
                                 {STATUS_LABEL[ev.status] || ev.status}
                             </span>
-                            {/* Балл тут не светофорит по порогам, как в полном списке
-                                (EvaluationListItemGroup.js): на дашборде это витрина
-                                "оценка готова", а не разбор - цвет у балла один, зелёный
-                                статуса "Оценено". */}
                             {score != null && (
-                                <span className="fw-bold" style={{ color: STATUS_COLOR.done, whiteSpace: 'nowrap' }}>
+                                <span className="fw-bold" style={{ color: scoreColor, whiteSpace: 'nowrap' }}>
                                     {score}/10
                                 </span>
                             )}
