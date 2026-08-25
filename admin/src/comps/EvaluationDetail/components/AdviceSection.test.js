@@ -11,40 +11,29 @@ const rules = [
     { key: 'evaluation.practice.count', from: 0, to: 10, advice: 'Приведите примеры' },
 ];
 const schemas = [
-    { key: 'evaluation.speech.clarity', group: 'Речь' },
-    { key: 'evaluation.practice.count', group: 'Практика' },
+    { key: 'evaluation.speech.clarity', group: 'Речь', min: 0, max: 10 },
+    { key: 'evaluation.practice.count', group: 'Практика', min: 0, max: 10 },
 ];
 
-const rowByGroup = (group) => screen.getAllByTestId('metric-breakdown-row')
-    .find(el => el.dataset.group === group);
-
-describe('AdviceSection: показатель с 0%', () => {
-    it('помечает нулевую строку, оставляя остальные без подсветки', () => {
+describe('AdviceSection: заметки на полях', () => {
+    it('показывает совет по проседающей группе и молчит про сильные', () => {
         render(<AdviceSection rules={rules} schemas={schemas} result={{
-            evaluation: { speech: { clarity: 0 }, practice: { count: 8 } },
+            evaluation: { speech: { clarity: 0 }, practice: { count: 9 } },
         }}/>);
 
-        const zeroRow = rowByGroup('Речь');
-        expect(zeroRow.dataset.pct).toBe('0');
-        expect(zeroRow.dataset.zero).toBe('true');
-        expect(zeroRow.className).toContain('metricRowZero');
-
-        const okRow = rowByGroup('Практика');
-        expect(okRow.dataset.zero).toBe('false');
-        expect(okRow.className).not.toContain('metricRowZero');
+        const out = screen.getByTestId('metric-advice-out');
+        expect(out).toHaveTextContent('Говорите чётче');
+        expect(out).not.toHaveTextContent('Приведите примеры');
     });
 
-    it('подсвечивает нулевую строку и там, где по ней нечего открыть', () => {
-        // Значение вне диапазона правила - совета нет, строка статичная,
-        // но 0% всё равно должен быть виден.
-        render(<AdviceSection
-            rules={[{ key: 'evaluation.speech.clarity', from: 8, to: 10, advice: 'Говорите чётче' }]}
-            schemas={schemas}
-            result={{ evaluation: { speech: { clarity: 2 } } }}/>);
+    // Показатели переехали в линейку чипов над ответом (ScoreStrip) - если
+    // карточка советов снова начнёт их печатать, на экране будет два одинаковых
+    // разбора балла.
+    it('не дублирует показатели, когда советов нет', () => {
+        const { container } = render(<AdviceSection rules={[]} schemas={schemas} result={{
+            evaluation: { speech: { clarity: 9 } },
+        }}/>);
 
-        const row = rowByGroup('Речь');
-        expect(row.dataset.clickable).toBe('false');
-        expect(row.dataset.zero).toBe('true');
-        expect(row.className).toContain('metricRowZero');
+        expect(container.firstChild).toBe(null);
     });
 });
