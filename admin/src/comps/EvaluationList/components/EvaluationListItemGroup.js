@@ -24,8 +24,8 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
     const progressColor = allDone ? STATUS_COLOR.done : hasProcessing ? STATUS_COLOR.processing : STATUS_COLOR.pending;
 
     return (
-        <div className={'card'}>
-            <div className={`${s.group} card-body`}>
+        <div className={`card ${s.groupCard}`}>
+            <div className={s.group}>
                 <div className={s.groupHeader} onClick={() => setCollapsed(c => !c)}
                      data-testid="evaluation-group-header" data-group-label={label}>
                     <i className={`iconoir-nav-arrow-${collapsed ? 'right' : 'down'} ${s.groupHeaderArrow}`}/>
@@ -57,10 +57,15 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}
                                     </Link>
-                                    <span className={s.groupItemStatus}
-                                          style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
-                                        {STATUS_LABEL[ev.status] || ev.status}
-                                    </span>
+                                    {/* Слово "Оценено" рядом с баллом ничего не добавляет:
+                                        балл сам по себе и есть признак готовности.
+                                        Подпись оставлена только для незавершённых статусов. */}
+                                    {ev.status !== 'done' && (
+                                        <span className={s.groupItemStatus}
+                                              style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
+                                            {STATUS_LABEL[ev.status] || ev.status}
+                                        </span>
+                                    )}
                                     {score != null && (
                                         <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10
