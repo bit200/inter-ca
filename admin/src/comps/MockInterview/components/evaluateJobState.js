@@ -41,3 +41,18 @@ export function jobsByQuestion(evaluateState) {
 export function countFailedQuestions(turns) {
     return turns.filter(turn => turn.evaluateStatus === 'error').length;
 }
+
+// Сводка по попытке для истории: средний балл считается только по оценённым
+// вопросам, поэтому рядом нужно показать, сколько их было на самом деле -
+// иначе "Балл: 8/10" по 7 вопросам из 10 читается как оценка всей попытки.
+export function attemptScoreSummary(attempt) {
+    const entries = attempt?.evaluate || [];
+    const scores = entries
+        .map(entry => entry?.evaluate?.score)
+        .filter(score => typeof score === 'number');
+    const total = attempt?.turns?.length || entries.length;
+    const score = scores.length
+        ? Math.round((scores.reduce((sum, value) => sum + value, 0) / scores.length) * 10) / 10
+        : null;
+    return { score, scored: scores.length, total };
+}
