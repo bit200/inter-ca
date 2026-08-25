@@ -23,6 +23,25 @@ describe('MockInterviewEvaluationBlock', () => {
         expect(onRetry).toHaveBeenCalled();
     });
 
+    it('когда аудио ответа потеряно - предлагает оценку по тексту', () => {
+        const onRetry = jest.fn();
+        render(<MockInterviewEvaluationBlock evaluation={null} evaluateStatus={'error'} interviewId={1000} audioLost={true} onRetry={onRetry}/>);
+        expect(screen.getByText('Запись ответа не сохранилась')).toBeInTheDocument();
+        expect(screen.queryByText('Оценить ещё раз')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByText('Оценить по тексту'));
+        expect(onRetry).toHaveBeenCalled();
+    });
+
+    it('оценку, посчитанную по тексту, помечает как оценку без аудио-метрик', () => {
+        render(<MockInterviewEvaluationBlock evaluation={{ score: 6, textOnly: true }} evaluateStatus={'done'} interviewId={1000}/>);
+        expect(screen.getByText(/Оценка по тексту ответа/)).toBeInTheDocument();
+    });
+
+    it('обычную оценку пометкой про текст не пачкает', () => {
+        render(<MockInterviewEvaluationBlock evaluation={{ score: 6 }} evaluateStatus={'done'} interviewId={1000}/>);
+        expect(screen.queryByText(/Оценка по тексту ответа/)).not.toBeInTheDocument();
+    });
+
     it('пока оценка не пришла - показывает ожидание, а не ошибку', () => {
         render(<MockInterviewEvaluationBlock evaluation={null} evaluateStatus={'pending'} interviewId={1000}/>);
         expect(screen.getByText('Ожидает оценки')).toBeInTheDocument();

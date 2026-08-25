@@ -78,3 +78,18 @@ export function resolveQuestionEvaluate(evaluate, job) {
     if (hasEvaluateResult(job?.result)) return job.result;
     return evaluate;
 }
+
+// Часть ошибок оценки нет смысла перезапускать как есть: аудиозапись ответа не
+// доехала до хранилища (job.unrecoverable), и повторный прогон с аудио упадёт
+// так же. Текст ответа при этом сохранён - такой вопрос можно оценить по
+// одному тексту, без аудио-метрик.
+export function isAudioLostJob(job) {
+    return !!(job?.unrecoverable || job?.result?.unrecoverable);
+}
+
+// Оценка, посчитанная по одному тексту: в ней нет метрик темпа, пауз и
+// слов-паразитов, поэтому рядом с баллом нужна пометка - иначе балл читается
+// как полноценный.
+export function isTextOnlyEvaluate(evaluate) {
+    return !!(evaluate && (evaluate.textOnly || evaluate.mode === 'text'));
+}

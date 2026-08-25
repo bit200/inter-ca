@@ -1,4 +1,4 @@
-import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, hasEvaluateResult, attemptScoreSummary, resolveQuestionEvaluate } from './evaluateJobState';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, hasEvaluateResult, attemptScoreSummary, resolveQuestionEvaluate, isAudioLostJob, isTextOnlyEvaluate } from './evaluateJobState';
 
 describe('getQuestionEvaluateStatus', () => {
     it('отдаёт done, когда оценка есть - даже если джоба помечена errored', () => {
@@ -124,5 +124,24 @@ describe('attemptScoreSummary с результатами джоб', () => {
             },
         };
         expect(attemptScoreSummary(attempt)).toEqual({ score: 7, scored: 2, total: 2 });
+    });
+});
+
+describe('isAudioLostJob / isTextOnlyEvaluate', () => {
+    it('unrecoverable-джоба означает потерянное аудио - повтор с записью не поможет', () => {
+        expect(isAudioLostJob({ status: 'errored', unrecoverable: true })).toBe(true);
+        expect(isAudioLostJob({ status: 'errored', result: { unrecoverable: true } })).toBe(true);
+    });
+
+    it('обычная ошибка оценки потерей аудио не считается', () => {
+        expect(isAudioLostJob({ status: 'errored' })).toBe(false);
+        expect(isAudioLostJob(null)).toBe(false);
+    });
+
+    it('оценку по тексту узнаёт и по флагу, и по режиму', () => {
+        expect(isTextOnlyEvaluate({ score: 6, textOnly: true })).toBe(true);
+        expect(isTextOnlyEvaluate({ score: 6, mode: 'text' })).toBe(true);
+        expect(isTextOnlyEvaluate({ score: 6 })).toBe(false);
+        expect(isTextOnlyEvaluate(null)).toBe(false);
     });
 });
