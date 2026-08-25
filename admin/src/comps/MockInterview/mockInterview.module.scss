@@ -247,12 +247,29 @@
   gap: 10px;
 }
 
+// Советы приходят отдельными репликами, но одинаковым 16-пиксельным текстом
+// подряд читались как один сплошной абзац. Разводим их той же акцентной
+// врезкой, что принята на экране оценки для рекомендаций
+// (см. .explainComponentSuggestion в evaluationDetail): мягкая зелёная
+// подложка + полоса слева + иконка - "что делать" видно с одного взгляда,
+// и границы совета не приходится искать глазами.
 .chatAdviceModalItem {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--bs-secondary-bg);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  background: rgba(var(--score-good-rgb), .10);
+  border-left: 3px solid var(--score-good);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
+  color: var(--bs-body-color);
+
+  i {
+    color: var(--score-good);
+    font-size: 15px;
+    flex-shrink: 0;
+  }
 }
 
 // Вопрос, который сервис оценки не смог посчитать (evaluateState.jobs[].status
