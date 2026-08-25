@@ -7,6 +7,7 @@ import styles from './evaluationDetail.module.scss';
 import ScoreDial from "./components/ScoreDial";
 import AdviceSection from "./components/AdviceSection";
 import ExplainSection from "./components/ExplainSection";
+import MentorReviewSection from "./components/MentorReviewSection";
 import { buildGroupPercents, weakestGroup } from "./components/metricGroups";
 import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
 
@@ -183,6 +184,11 @@ export default function EvaluationDetail() {
                         )}
                     </div>
                 </div>
+
+                {/* Оценка куратора - вторым ярусом той же карточки: она про тот
+                    же ответ, что и балл выше, и её нельзя было потерять где-то
+                    ниже по странице. */}
+                <MentorReviewSection review={item.mentorReview} autoScore={score}/>
             </div>
 
             {(ev.status === 'pending' || ev.status === 'processing') && (
