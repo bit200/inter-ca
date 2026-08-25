@@ -1,4 +1,4 @@
-import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, hasEvaluateResult, attemptScoreSummary } from './evaluateJobState';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, hasEvaluateResult, attemptScoreSummary, resolveQuestionEvaluate } from './evaluateJobState';
 
 describe('getQuestionEvaluateStatus', () => {
     it('отдаёт done, когда оценка есть - даже если джоба помечена errored', () => {
@@ -72,5 +72,57 @@ describe('attemptScoreSummary', () => {
 
     it('без единой оценки балла нет', () => {
         expect(attemptScoreSummary({ turns: [{}, {}], evaluate: [] })).toEqual({ score: null, scored: 0, total: 2 });
+    });
+});
+
+describe('resolveQuestionEvaluate', () => {
+    it('берёт результат из джобы, когда в сводном evaluate оценки нет', () => {
+        // Пачка упала (часть вопросов errored), сводный interview.evaluate не
+        // пополнился, но джоба досчиталась и принесла result со score -
+        // показывать надо оценку, а не "Ожидает оценки".
+        const job = { questionId: 'q-useref', evaluateId: 1551, status: 'done', result: { score: 4.4 } };
+        expect(resolveQuestionEvaluate(undefined, job)).toEqual({ score: 4.4 });
+        expect(getQuestionEvaluateStatus(resolveQuestionEvaluate(undefined, job), job)).toBe('done');
+    });
+
+    it('оставляет сводную оценку, когда она есть', () => {
+        expect(resolveQuestionEvaluate({ score: 7 }, { result: { score: 4.4 } })).toEqual({ score: 7 });
+    });
+
+    it('не выдаёт за оценку пустой результат джобы', () => {
+        expect(resolveQuestionEvaluate(undefined, { status: 'errored', result: null })).toBe(undefined);
+        expect(resolveQuestionEvaluate(undefined, { status: 'errored', result: {} })).toBe(undefined);
+    });
+});
+
+describe('attemptScoreSummary с результатами джоб', () => {
+    it('считает балл по оценкам из джоб, когда сводный evaluate пуст', () => {
+        const attempt = {
+            turns: [{ question_id: 'q-1' }, { question_id: 'q-2' }, { question_id: 'q-3' }],
+            evaluate: [],
+            evaluateState: {
+                status: 'errored',
+                jobs: [
+                    { questionId: 'q-1', status: 'errored', result: null },
+                    { questionId: 'q-2', status: 'done', result: { score: 4 } },
+                    { questionId: 'q-3', status: 'done', result: { score: 6 } },
+                ],
+            },
+        };
+        expect(attemptScoreSummary(attempt)).toEqual({ score: 5, scored: 2, total: 3 });
+    });
+
+    it('не считает один и тот же вопрос дважды', () => {
+        const attempt = {
+            turns: [{ question_id: 'q-1' }, { question_id: 'q-2' }],
+            evaluate: [{ questionId: 'q-1', evaluate: { score: 8 } }],
+            evaluateState: {
+                jobs: [
+                    { questionId: 'q-1', status: 'done', result: { score: 8 } },
+                    { questionId: 'q-2', status: 'done', result: { score: 6 } },
+                ],
+            },
+        };
+        expect(attemptScoreSummary(attempt)).toEqual({ score: 7, scored: 2, total: 2 });
     });
 });

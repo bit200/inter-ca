@@ -47,12 +47,34 @@ export function countFailedQuestions(turns) {
 // иначе "Балл: 8/10" по 7 вопросам из 10 читается как оценка всей попытки.
 export function attemptScoreSummary(attempt) {
     const entries = attempt?.evaluate || [];
-    const scores = entries
-        .map(entry => entry?.evaluate?.score)
-        .filter(score => typeof score === 'number');
-    const total = attempt?.turns?.length || entries.length;
+    const jobs = jobsByQuestion(attempt?.evaluateState);
+    const scored = {};
+    entries.forEach((entry, ind) => {
+        const evaluate = resolveQuestionEvaluate(entry?.evaluate, jobs[entry?.questionId]);
+        if (hasEvaluateResult(evaluate)) scored[entry?.questionId || 'entry-' + ind] = evaluate.score;
+    });
+    // Джоба могла досчитаться, не попав в сводный interview.evaluate - её
+    // результат тоже идёт в средний балл (см. resolveQuestionEvaluate).
+    Object.keys(jobs).forEach(questionId => {
+        if (scored[questionId] == null && hasEvaluateResult(jobs[questionId].result)) {
+            scored[questionId] = jobs[questionId].result.score;
+        }
+    });
+    const scores = Object.values(scored);
+    const total = attempt?.turns?.length || Math.max(entries.length, Object.keys(jobs).length);
     const score = scores.length
         ? Math.round((scores.reduce((sum, value) => sum + value, 0) / scores.length) * 10) / 10
         : null;
     return { score, scored: scores.length, total };
+}
+
+// Оценка одного вопроса живёт в двух местах: сводный interview.evaluate и
+// результат самой джобы (evaluateState.jobs[].result). Когда пачка упала
+// целиком, сводный список может не пополниться, хотя джоба честно досчиталась
+// и принесла result со score - тогда показывать надо именно его, а не
+// "Ожидает оценки".
+export function resolveQuestionEvaluate(evaluate, job) {
+    if (hasEvaluateResult(evaluate)) return evaluate;
+    if (hasEvaluateResult(job?.result)) return job.result;
+    return evaluate;
 }

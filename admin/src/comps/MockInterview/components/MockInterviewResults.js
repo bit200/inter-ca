@@ -3,7 +3,7 @@ import styles from '../mockInterview.module.scss';
 import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
 import { groupAdvice } from '../../EvaluationDetail/components/adviceLogic';
-import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions } from './evaluateJobState';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, resolveQuestionEvaluate } from './evaluateJobState';
 
 // One dialog answer's advice, computed with the exact same rule-matching logic
 // as AdviceSection (see adviceLogic.js) - just re-targeted at that single
@@ -50,8 +50,8 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
     const [metricSchemas, setMetricSchemas] = useState([]);
 
     const turns = rawTurns.map(turn => {
-        const evaluate = evaluateByQuestion[turn.question_id];
         const job = jobs[turn.question_id];
+        const evaluate = resolveQuestionEvaluate(evaluateByQuestion[turn.question_id], job);
         return {
             ...turn,
             evaluate,
