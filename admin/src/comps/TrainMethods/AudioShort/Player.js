@@ -1,5 +1,4 @@
-import AudioPlayer from 'react-h5-audio-player';
-import 'react-h5-audio-player/lib/styles.css';
+import CallPlayer from './CallPlayer';
 import './Player.css'
 import {useEffect, useRef, useState} from "react";
 
@@ -35,7 +34,7 @@ export default function Player(props) {
         // autoplay с включаем после появления ui
         if(open){
             setTimeout(() => {
-                playerRef.current?.audio?.current?.play();
+                playerRef.current?.play();
             }, 1_000) // Задержка для плавности UI воспроизведение начинается с появление плейера
         }
 
@@ -73,25 +72,20 @@ export default function Player(props) {
             setSrc('')
             setOpen(false)
         }}></div>
-        <div className="row">
+        <div className="row align-items-center player-body">
             <div className={text ? "col-sm-7" : "col-sm-12"}>
                 {loading && src && <div className="player-spinner"><div className="player-spinner-inner"/></div>}
-                <AudioPlayer
+                <CallPlayer
                     ref={playerRef}
                     key={playerKey}
-                    autoPlay={false}
-                    loop={false}
-                    autoPlayAfterSrcChange={false}
                     src={src}
                     onLoadStart={() => setLoading(true)}
                     onCanPlay={onCanPlay}
-                    onClickNext={() => {}}
                 />
             </div>
-            <div className="col-sm-5 text-muted">
-                <div style={{maxHeight: '90px', overflowY: 'auto'}}>
-                    {text}</div>
-            </div>
+            {text ? <div className="col-sm-5 text-muted player-text">
+                <div>{text}</div>
+            </div> : null}
         </div>
     </div>
 };
