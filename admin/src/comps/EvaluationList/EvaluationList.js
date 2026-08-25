@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import UseLocalStorage from '../../libs/UseLocalStorage';
 import styles from './evaluationList.module.scss'
 import EvaluationListItemGroup from "./components/EvaluationListItemGroup";
+import EvaluationListEmpty from "./components/EvaluationListEmpty";
 import {groupItems} from "./evaluate-list.utils";
 
 const GROUPS_PAGE_SIZE = 25;
@@ -15,7 +16,7 @@ const getExamId = (groupMode, key) => groupMode === 'exam' ? key : null;
 // changing, which now also happens whenever loadMore() below appends another page.
 // Resetting on every fetch would collapse groups the person already expanded just
 // because more data quietly arrived.
-const GroupList = ({groups, groupMode, hasMore, loadingMore, onLoadMore}) => {
+const GroupList = ({groups, groupMode, hasMore, loadingMore, onLoadMore, onSwitchMode}) => {
     const [visibleCount, setVisibleCount] = useState(GROUPS_PAGE_SIZE);
 
     useEffect(() => {
@@ -23,7 +24,7 @@ const GroupList = ({groups, groupMode, hasMore, loadingMore, onLoadMore}) => {
     }, [groupMode]);
 
     if(!groups.length){
-        return <div className={styles.noInfo}>Нет оценок</div>
+        return <EvaluationListEmpty groupMode={groupMode} onSwitchMode={onSwitchMode}/>
     }
 
     const visibleGroups = groups.slice(0, visibleCount);
@@ -128,7 +129,7 @@ function EvaluationList() {
                 <span>{stats.done}/{stats.total} оценено</span>
                 <GroupModeSwitch groupMode={groupMode} setGroupMode={setGroupMode} />
             </div>
-            <GroupList groupMode={groupMode} groups={groups} hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore} />
+            <GroupList groupMode={groupMode} groups={groups} hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore} onSwitchMode={setGroupMode} />
         </div>
     );
 }
