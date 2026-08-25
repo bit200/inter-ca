@@ -108,7 +108,10 @@ window.textToVoice = (params, cb, delay = 5) => {
     }
 }
 
-let files = require.context("./comps", true, /\.(js|jsx)$/).keys();
+// тесты и моки рядом с компонентами в бандл не тянем: иначе их require("fs") и
+// прочие node-модули валят сборку webpack и вешают оверлей ошибки поверх страницы
+const componentsContext = require.context("./comps", true, /^(?!.*\.(test|spec)\.(js|jsx)$)(?!.*\/__tests__\/).*\.(js|jsx)$/);
+let files = componentsContext.keys();
 global.Fetcher = Fetcher;
 
 global.question_statuses = [
@@ -564,7 +567,7 @@ function Loader(path) {
             ".js";
 
         if (files.indexOf(_path) > -1) {
-            let Comp = require("./comps/" + path).default;
+            let Comp = componentsContext(_path).default;
             return function (props) {
                 return <Comp props={props}></Comp>;
             };
