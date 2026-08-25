@@ -61,13 +61,15 @@ function RecentAiEvaluations() {
                             <Link to={`/evaluations/${item._id}`} className="text-truncate" style={{ flex: 1, marginRight: 10 }}>
                                 {getQuestionTitle(item)}
                             </Link>
-                            {/* Слово статуса ("Оценено") - основным зелёным портала
-                                (--bs-primary), а не бирюзовым STATUS_COLOR.done: на
-                                дашборде это спокойная подпись фирменным цветом, смысл
-                                несёт балл рядом, он и светофорит по порогам. */}
-                            <span className="fs-12 fw-semibold me-2" style={{ color: LABEL_COLOR[ev.status] || STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
-                                {STATUS_LABEL[ev.status] || ev.status}
-                            </span>
+                            {/* Готовая оценка говорит сама за собой: подпись "Оценено"
+                                дублировала балл рядом, поэтому у done показываем только
+                                балл. Незавершённым статусам (в очереди/оценивается)
+                                показывать нечего, кроме подписи - её и оставляем. */}
+                            {score == null && (
+                                <span className="fs-12 fw-semibold" style={{ color: LABEL_COLOR[ev.status] || STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
+                                    {STATUS_LABEL[ev.status] || ev.status}
+                                </span>
+                            )}
                             {score != null && (
                                 <span className="fw-bold" style={{ color: scoreColor, whiteSpace: 'nowrap' }}>
                                     {score}/10
