@@ -50,7 +50,6 @@ function RecentAiEvaluations() {
                 {visible.map(item => {
                     const ev = item.evaluate || {};
                     const score = ev.result?.score;
-                    const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                     return (
                         <div key={item._id} className="d-flex align-items-center justify-content-between border-dashed-bottom pb-2 mb-2"
                              data-testid="recent-ai-evaluation-item" data-item-id={item._id}>
@@ -60,8 +59,12 @@ function RecentAiEvaluations() {
                             <span className="fs-12 fw-semibold me-2" style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
                                 {STATUS_LABEL[ev.status] || ev.status}
                             </span>
+                            {/* Балл тут не светофорит по порогам, как в полном списке
+                                (EvaluationListItemGroup.js): на дашборде это витрина
+                                "оценка готова", а не разбор - цвет у балла один, зелёный
+                                статуса "Оценено". */}
                             {score != null && (
-                                <span className="fw-bold" style={{ color: scoreColor, whiteSpace: 'nowrap' }}>
+                                <span className="fw-bold" style={{ color: STATUS_COLOR.done, whiteSpace: 'nowrap' }}>
                                     {score}/10
                                 </span>
                             )}
