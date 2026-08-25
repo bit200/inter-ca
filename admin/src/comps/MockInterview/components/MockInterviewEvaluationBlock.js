@@ -4,7 +4,7 @@ import AdviceSection from '../../EvaluationDetail/components/AdviceSection';
 import ExplainSection from '../../EvaluationDetail/components/ExplainSection';
 import styles from '../mockInterview.module.scss';
 import { STATUS_COLOR } from '../../EvaluationDetail/evaluationStatus';
-import { getQuestionEvaluateStatus, isTextOnlyEvaluate } from './evaluateJobState';
+import { getQuestionEvaluateStatus, isTextOnlyEvaluate, isSkippedEvaluate } from './evaluateJobState';
 
 const STATUS_LABEL = {
     pending: 'Ожидает оценки',
@@ -30,6 +30,7 @@ const MockInterviewEvaluationBlock = ({
     // фолбэк - для мест, которые статус пока не прокидывают.
     const status = evaluateStatus || getQuestionEvaluateStatus(evaluation, null);
     const textOnly = isTextOnlyEvaluate(result);
+    const skipped = isSkippedEvaluate(result);
 
     const explainDialogTurn = () => global.http.post(
         `/mock-interview/${interviewId}/explain`,
@@ -41,7 +42,16 @@ const MockInterviewEvaluationBlock = ({
         <div>
             <div className={styles.evaluationSectionTitle}>Оценка ИИ</div>
 
-            {score != null && (
+            {skipped && (
+                <div style={{ marginBottom: 20 }} className={`card ${styles.evaluationSkipped}`}>
+                    <div className={styles.evaluationSkippedNote}>
+                        Ответ на этот вопрос пропущен — оценивать нечего, поэтому балл за него 0.
+                    </div>
+                    <ScoreBar score={0} />
+                </div>
+            )}
+
+            {!skipped && score != null && (
                 <>
                     <div style={{ marginBottom: 20 }} className={'card'}>
                         {textOnly && (
@@ -58,7 +68,7 @@ const MockInterviewEvaluationBlock = ({
                 </>
             )}
 
-            {score == null && status === 'error' && (
+            {!skipped && score == null && status === 'error' && (
                 <div className={`card ${styles.evaluationFailed}`}>
                     <div className={'card-body'}>
                         <div className={styles.evaluationFailedLabel}>Без оценки</div>
@@ -104,7 +114,7 @@ const MockInterviewEvaluationBlock = ({
                 </div>
             )}
 
-            {score == null && status !== 'error' && (
+            {!skipped && score == null && status !== 'error' && (
                 <div className={'card'}>
                     <div className={'card-body'}>
                         <div className={styles.evaluationStatus} style={{ color: STATUS_COLOR[status] || STATUS_COLOR.pending }}>

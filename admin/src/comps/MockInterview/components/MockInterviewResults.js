@@ -3,7 +3,7 @@ import styles from '../mockInterview.module.scss';
 import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
 import { groupAdvice } from '../../EvaluationDetail/components/adviceLogic';
-import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, resolveQuestionEvaluate, isAudioLostJob } from './evaluateJobState';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, resolveQuestionEvaluate, isAudioLostJob, isSkippedEvaluate } from './evaluateJobState';
 
 // One dialog answer's advice, computed with the exact same rule-matching logic
 // as AdviceSection (see adviceLogic.js) - just re-targeted at that single
@@ -59,6 +59,7 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
             evaluateId: job?.evaluateId ?? null,
             evaluateExplain: job?.explain ?? null,
             audioLost: isAudioLostJob(job),
+            skipped: isSkippedEvaluate(evaluate),
             dialog: turn.dialog
                 ? withDialogAdvice(turn.dialog, evaluate?.turns, adviceRules, metricSchemas)
                 : turn.dialog,

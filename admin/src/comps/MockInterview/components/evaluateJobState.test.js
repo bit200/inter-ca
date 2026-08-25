@@ -1,4 +1,4 @@
-import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, hasEvaluateResult, attemptScoreSummary, resolveQuestionEvaluate, isAudioLostJob, isTextOnlyEvaluate } from './evaluateJobState';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, hasEvaluateResult, attemptScoreSummary, resolveQuestionEvaluate, isAudioLostJob, isTextOnlyEvaluate, isSkippedEvaluate } from './evaluateJobState';
 
 describe('getQuestionEvaluateStatus', () => {
     it('отдаёт done, когда оценка есть - даже если джоба помечена errored', () => {
@@ -143,5 +143,16 @@ describe('isAudioLostJob / isTextOnlyEvaluate', () => {
         expect(isTextOnlyEvaluate({ score: 6, mode: 'text' })).toBe(true);
         expect(isTextOnlyEvaluate({ score: 6 })).toBe(false);
         expect(isTextOnlyEvaluate(null)).toBe(false);
+    });
+});
+
+describe('isSkippedEvaluate', () => {
+    it('узнаёт пропущенный вопрос по пометке бэкенда', () => {
+        expect(isSkippedEvaluate({ score: 0, skipped: true, reason: 'no_answer' })).toBe(true);
+    });
+
+    it('обычную оценку с нулевым баллом пропуском не считает', () => {
+        expect(isSkippedEvaluate({ score: 0 })).toBe(false);
+        expect(isSkippedEvaluate(null)).toBe(false);
     });
 });
