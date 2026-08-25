@@ -46,7 +46,7 @@ const GroupList = ({groups, groupMode, hasMore, loadingMore, onLoadMore}) => {
             <EvaluationListItemGroup key={key} examId={getExamId(groupMode, key)} label={getGroupLabel(groupMode, key)} items={groupRows} groupMode={groupMode} />
         ))}
         {(remainingLocal > 0 || hasMore) && (
-            <button type="button" className="btn btn-light btn-sm" data-testid="evaluation-groups-show-more"
+            <button type="button" className={`btn btn-light btn-sm ${styles.showMore}`} data-testid="evaluation-groups-show-more"
                     disabled={loadingMore}
                     onClick={handleShowMore}>
                 {loadingMore ? 'Загрузка...' : remainingLocal > 0 ? `Показать ещё (${remainingLocal})` : 'Показать ещё'}
