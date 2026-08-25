@@ -4,11 +4,11 @@ import { Link, useParams, useLocation } from 'react-router-dom';
 import sse from '../../libs/sse/sse';
 import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
-import ScoreDial from "./components/ScoreDial";
+import ScoreStrip from "./components/ScoreStrip";
 import AdviceSection from "./components/AdviceSection";
 import ExplainSection from "./components/ExplainSection";
 import MentorReviewSection from "./components/MentorReviewSection";
-import { buildGroupPercents, weakestGroup } from "./components/metricGroups";
+import { scoreVerdict } from "./components/scoreVerdict";
 import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
 
 // Короткое название вопроса/задания, если оно есть отдельно от самого текста
@@ -103,9 +103,6 @@ export default function EvaluationDetail() {
     const showQuestionTurn = questionText !== heroTitle;
     const answerText = result.text;
     const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
-    // Слабое место в шапке считается из тех же процентов, что рисует колонка
-    // метрик справа (см. metricGroups.js) - новых данных от бэкенда не нужно.
-    const weakest = score != null ? weakestGroup(buildGroupPercents(metricSchemas, result)) : null;
 
     // window.myPlayer() resolves and buffers the audio async (fetch + <audio> canplay)
     // before the player UI ever appears, so we bridge Player.js's myPlayerReady/Error
@@ -141,14 +138,11 @@ export default function EvaluationDetail() {
         <div className={styles.page}>
             <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
-            {/* Шапка: балл с вердиктом словом, сам вопрос и главные действия в
-                одной строке. Раньше балл стоял третьим блоком, после длинного
-                транскрипта, - на вопрос "как ответил?" экран отвечал только
-                после прокрутки. */}
+            {/* Шапка: вопрос и главные действия. Балл ушёл строкой ниже, в
+                линейку чипов (ScoreStrip), - там он стоит рядом с показателями,
+                из которых сложился, и меряется той же шкалой. */}
             <div className={`card ${styles.infoCardSpacing}`}>
                 <div className={`card-body ${styles.hero}`} data-testid="evaluation-hero">
-                    {score != null && <ScoreDial score={score} />}
-
                     <div className={styles.heroMain}>
                         <div className={styles.title}>Вопрос</div>
                         <div className={styles.questionText}>{heroTitle}</div>
@@ -159,9 +153,9 @@ export default function EvaluationDetail() {
                             {item.cd && (
                                 <span className={styles.chip}>{new Date(item.cd).toLocaleString('ru')}</span>
                             )}
-                            {weakest && (
-                                <span className={`${styles.chip} ${styles.chipWeak}`} data-testid="evaluation-weak-chip">
-                                    Слабое место: {weakest.label} · {weakest.pct}%
+                            {score != null && (
+                                <span className={`${styles.chip} ${styles.chipVerdict}`} data-testid="evaluate-verdict">
+                                    {scoreVerdict(score)}
                                 </span>
                             )}
                         </div>
@@ -190,6 +184,11 @@ export default function EvaluationDetail() {
                     ниже по странице. */}
                 <MentorReviewSection review={item.mentorReview} autoScore={score}/>
             </div>
+
+            {/* Линейка оценки: общий балл и показатели одинаковыми чипами.
+                Липнет к верху - при чтении длинного ответа видно, о какой
+                оценке идёт речь. */}
+            <ScoreStrip score={score} rules={adviceRules} schemas={metricSchemas} result={result}/>
 
             {(ev.status === 'pending' || ev.status === 'processing') && (
                 <div className={`card ${styles.infoCardSpacing}`} data-testid="evaluate-status-card" data-status={ev.status}>
