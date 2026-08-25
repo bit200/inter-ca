@@ -4,7 +4,7 @@ import MockInterviewEvaluationBlock from './MockInterviewEvaluationBlock';
 import MockInterviewDialogChat from './MockInterviewDialogChat';
 import MDEditor from "@uiw/react-md-editor";
 
-const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId }) => {
+const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId, onRetryEvaluate, retrying }) => {
     if (!turn) {
         return null;
     }
@@ -38,6 +38,9 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId
                 interviewId={interviewId}
                 evaluateId={turn.evaluateId}
                 evaluateExplain={turn.evaluateExplain}
+                evaluateStatus={turn.evaluateStatus}
+                retrying={retrying}
+                onRetry={onRetryEvaluate ? () => onRetryEvaluate(turn.question_id) : null}
             />
         </div>
     );
