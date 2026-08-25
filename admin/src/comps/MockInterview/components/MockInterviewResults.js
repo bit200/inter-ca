@@ -3,6 +3,7 @@ import styles from '../mockInterview.module.scss';
 import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
 import { groupAdvice } from '../../EvaluationDetail/components/adviceLogic';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions } from './evaluateJobState';
 
 // One dialog answer's advice, computed with the exact same rule-matching logic
 // as AdviceSection (see adviceLogic.js) - just re-targeted at that single
@@ -36,32 +37,48 @@ function withDialogAdvice(dialog, scoredTurns, rules, schemas) {
     });
 }
 
-const MockInterviewResults = ({ interview }) => {
+const MockInterviewResults = ({ interview, onRefresh }) => {
     const rawTurns = interview.turns || [];
     const evaluateByQuestion = {};
     (interview.evaluate || []).forEach(e => {
         evaluateByQuestion[e.questionId] = e.evaluate;
     });
-    const jobsByQuestion = {};
-    (interview.evaluateState?.jobs || []).forEach(job => {
-        jobsByQuestion[job.questionId] = job;
-    });
+    const jobs = jobsByQuestion(interview.evaluateState);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [retryingQuestion, setRetryingQuestion] = useState(null);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
 
     const turns = rawTurns.map(turn => {
         const evaluate = evaluateByQuestion[turn.question_id];
+        const job = jobs[turn.question_id];
         return {
             ...turn,
             evaluate,
-            evaluateId: jobsByQuestion[turn.question_id]?.evaluateId ?? null,
-            evaluateExplain: jobsByQuestion[turn.question_id]?.explain ?? null,
+            evaluateStatus: getQuestionEvaluateStatus(evaluate, job),
+            evaluateId: job?.evaluateId ?? null,
+            evaluateExplain: job?.explain ?? null,
             dialog: turn.dialog
                 ? withDialogAdvice(turn.dialog, evaluate?.turns, adviceRules, metricSchemas)
                 : turn.dialog,
         };
     });
+
+    // Точечный перезапуск оценки одного вопроса: остальные вопросы уже оценены,
+    // гонять всю пачку заново незачем. Ответ пользователя на бэкенде сохранён,
+    // перезапуск переоценивает именно его.
+    const retryQuestion = (questionId) => {
+        setRetryingQuestion(questionId);
+        return global.http.post(`/mock-interview/${interview._id}/evaluate-retry`, { questionId }, { wo_notify: true })
+            .then(() => {
+                global.notify.success('Оценка запущена. Результат появится через минуту.');
+                onRefresh && onRefresh();
+            })
+            .catch(() => {
+                global.notify.warning('Оценка снова не запустилась. Попробуйте позже.');
+            })
+            .finally(() => setRetryingQuestion(null));
+    };
 
     useEffect(() => {
         global.http.get('/eval-advice-rule', { per_page: 200 }).then(r => setAdviceRules(r.items || []));
@@ -84,6 +101,7 @@ const MockInterviewResults = ({ interview }) => {
             <div className="col-sm-3 sticky3">
                 <MockInterviewQuestionList
                     turns={turns}
+                    failedCount={countFailedQuestions(turns)}
                     selectedIndex={selectedIndex}
                     onSelect={setSelectedIndex}
                 />
@@ -94,6 +112,8 @@ const MockInterviewResults = ({ interview }) => {
                     adviceRules={adviceRules}
                     metricSchemas={metricSchemas}
                     interviewId={interview._id}
+                    onRetryEvaluate={retryQuestion}
+                    retrying={retryingQuestion === turns[selectedIndex]?.question_id}
                 />
             </div>
         </div>
