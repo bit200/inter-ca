@@ -40,7 +40,10 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId
                 evaluateExplain={turn.evaluateExplain}
                 evaluateStatus={turn.evaluateStatus}
                 retrying={retrying}
-                onRetry={onRetryEvaluate ? () => onRetryEvaluate(turn.question_id) : null}
+                audioLost={turn.audioLost}
+                onRetry={onRetryEvaluate
+                    ? () => onRetryEvaluate(turn.question_id, { textOnly: !!turn.audioLost })
+                    : null}
             />
         </div>
     );

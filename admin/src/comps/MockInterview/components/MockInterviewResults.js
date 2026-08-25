@@ -3,7 +3,7 @@ import styles from '../mockInterview.module.scss';
 import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
 import { groupAdvice } from '../../EvaluationDetail/components/adviceLogic';
-import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, resolveQuestionEvaluate } from './evaluateJobState';
+import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, resolveQuestionEvaluate, isAudioLostJob } from './evaluateJobState';
 
 // One dialog answer's advice, computed with the exact same rule-matching logic
 // as AdviceSection (see adviceLogic.js) - just re-targeted at that single
@@ -58,6 +58,7 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
             evaluateStatus: getQuestionEvaluateStatus(evaluate, job),
             evaluateId: job?.evaluateId ?? null,
             evaluateExplain: job?.explain ?? null,
+            audioLost: isAudioLostJob(job),
             dialog: turn.dialog
                 ? withDialogAdvice(turn.dialog, evaluate?.turns, adviceRules, metricSchemas)
                 : turn.dialog,
@@ -67,9 +68,13 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
     // Точечный перезапуск оценки одного вопроса: остальные вопросы уже оценены,
     // гонять всю пачку заново незачем. Ответ пользователя на бэкенде сохранён,
     // перезапуск переоценивает именно его.
-    const retryQuestion = (questionId) => {
+    // Когда аудио ответа потеряно (audioLost), гонять оценку с записью бессмысленно -
+    // просим сервис оценки посчитать балл по одному тексту (mode: 'text'), без
+    // аудио-метрик. Готовая оценка приходит помеченной как textOnly.
+    const retryQuestion = (questionId, { textOnly } = {}) => {
         setRetryingQuestion(questionId);
-        return global.http.post(`/mock-interview/${interview._id}/evaluate-retry`, { questionId }, { wo_notify: true })
+        const payload = textOnly ? { questionId, mode: 'text' } : { questionId };
+        return global.http.post(`/mock-interview/${interview._id}/evaluate-retry`, payload, { wo_notify: true })
             .then(() => {
                 global.notify.success('Оценка запущена. Результат появится через минуту.');
                 onRefresh && onRefresh();

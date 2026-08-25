@@ -259,6 +259,13 @@
 // === 'errored' при том, что соседние вопросы оценены). Держим тише соседних
 // блоков: не 36-пиксельный красный статус, а обычная карточка с тонкой
 // красной полосой слева - ошибка тут ожидаемая и чинится одной кнопкой.
+.evaluationTextOnlyNote {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bs-text-muted);
+  padding: 10px 16px 0;
+}
+
 .evaluationFailed {
   border-left: 3px solid var(--bs-danger);
 }
