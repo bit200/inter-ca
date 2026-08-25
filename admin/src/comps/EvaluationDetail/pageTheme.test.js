@@ -46,6 +46,19 @@ describe('тема страницы разбора ответа', () => {
         }
     });
 
+    it('карточки остаются проектными: --bs-secondary-bg страница не подменяет', () => {
+        // У бутстрапа фон карточки растёт из --bs-secondary-bg
+        // (.card{--bs-card-bg: var(--bs-secondary-bg)}), и подставленная сюда
+        // мягкая подложка красила серым все .card страницы - при том что по
+        // всему проекту они белые.
+        expect(css).not.toMatch(/--bs-secondary-bg\s*:/);
+    });
+
+    it('мягкие подложки страницы берут --ev-soft, а не проектный --bs-secondary-bg', () => {
+        expect(css).not.toMatch(/background:\s*var\(--bs-secondary-bg\)/);
+        expect(css).toMatch(/background:\s*var\(--ev-soft\)/);
+    });
+
     it('вёрстка не хардкодит цвета мимо темы, а берёт их из --ev-* и палитры оценки', () => {
         const body = css.slice(css.indexOf('// Палитра страницы'));
         // Белый на заливке зелёной кнопки - не цвет темы: он одинаков в обеих.

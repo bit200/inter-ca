@@ -24,12 +24,15 @@
 
   // Бутстраповские карточки, кнопки и поля внутри страницы берут цвета отсюда -
   // так тема страницы достаётся всей странице, а не только своей вёрстке.
+  // --bs-secondary-bg страница намеренно НЕ трогает: у бутстрапа из него растёт
+  // фон самой карточки (.card{--bs-card-bg: var(--bs-secondary-bg)}), и мягкая
+  // подложка врезок, подставленная сюда, красила серым все карточки страницы -
+  // при том что по всему проекту они белые. Свои подложки страница берёт из
+  // --ev-soft напрямую, а карточки остаются проектными.
   --bs-body-color: var(--ev-ink);
   --bs-heading-color: var(--ev-strong);
   --bs-text-muted: var(--ev-muted);
-  --bs-secondary-bg: var(--ev-soft);
   --bs-border-color: var(--ev-line);
-  --bs-card-bg: var(--ev-card);
   --bs-card-border-color: var(--ev-line);
   --bs-card-color: var(--ev-ink);
   --bs-card-shadow: var(--ev-shadow);
@@ -126,7 +129,7 @@
 .chip{
   font-size: 12px;
   color: var(--bs-text-muted);
-  background: var(--bs-secondary-bg);
+  background: var(--ev-soft);
   border: 1px solid var(--bs-border-color);
   border-radius: 20px;
   padding: 2px 10px;
@@ -414,7 +417,7 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--bs-text-muted);
-  background: var(--bs-secondary-bg);
+  background: var(--ev-soft);
   border: 1px solid var(--bs-border-color);
 }
 
@@ -451,7 +454,7 @@
 }
 
 .scoreBar {
-  background: var(--bs-secondary-bg);
+  background: var(--ev-soft);
   border-radius: 4px;
   height: 8px;
   margin-top: 6px;
@@ -531,7 +534,7 @@
 }
 
 .explainComponentItem {
-  background: var(--bs-secondary-bg);
+  background: var(--ev-soft);
   border-radius: 8px;
   padding: 10px 14px;
 }
@@ -706,10 +709,10 @@
   --bs-btn-bg: transparent;
   --bs-btn-border-color: var(--bs-border-color);
   --bs-btn-hover-color: var(--bs-heading-color);
-  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-bg: var(--ev-soft);
   --bs-btn-hover-border-color: var(--bs-border-color);
   --bs-btn-active-color: var(--bs-heading-color);
-  --bs-btn-active-bg: var(--bs-secondary-bg);
+  --bs-btn-active-bg: var(--ev-soft);
   --bs-btn-active-border-color: var(--bs-border-color);
   --bs-btn-disabled-color: var(--bs-text-muted);
   --bs-btn-disabled-bg: transparent;
