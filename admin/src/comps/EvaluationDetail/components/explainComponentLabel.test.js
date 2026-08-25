@@ -14,6 +14,13 @@ describe('explainComponentLabel', () => {
         expect(explainComponentLabel('fact_verify_score')).toBe('Факты');
     });
 
+    it('переводит критическую ошибку во всех формах, в которых её присылает LLM', () => {
+        expect(explainComponentLabel('critical_error')).toBe('Критическая ошибка');
+        expect(explainComponentLabel('CRITICAL_ERRORS')).toBe('Критическая ошибка');
+        expect(explainComponentLabel('evaluation.errors.is_critical')).toBe('Критическая ошибка');
+        expect(explainComponentLabel('is_critical_error')).toBe('Критическая ошибка');
+    });
+
     it('оставляет как есть то, что уже пришло по-русски или неизвестно', () => {
         expect(explainComponentLabel('Точность ответа')).toBe('Точность ответа');
         expect(explainComponentLabel('unknown_metric')).toBe('unknown_metric');
