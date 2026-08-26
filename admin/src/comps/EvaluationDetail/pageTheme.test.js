@@ -5,14 +5,18 @@ const css = fs.readFileSync(path.join(__dirname, 'evaluationDetail.module.scss')
 
 // Вырезает тело блока по заголовку селектора: скобки внутри считаем вручную,
 // потому что в scss встречаются вложенные правила.
+// Пробел перед скобкой в файле стоит не везде, поэтому ищем заголовок блока
+// регуляркой, а не подстрокой.
 const blockOf = (selector) => {
-    const at = css.indexOf(selector + '{');
-    expect(at).toBeGreaterThan(-1);
+    const head = new RegExp(selector.replace(/[.[\]()"=^$*+?|\\-]/g, '\\$&') + '\\s*\\{');
+    const found = css.match(head);
+    expect(found).not.toBe(null);
+    const at = found.index;
 
     let depth = 0;
-    for (let i = at + selector.length; i < css.length; i++) {
+    for (let i = at + found[0].length - 1; i < css.length; i++) {
         if (css[i] === '{') depth++;
-        if (css[i] === '}' && --depth === 0) return css.slice(at + selector.length + 1, i);
+        if (css[i] === '}' && --depth === 0) return css.slice(at + found[0].length, i);
     }
     throw new Error(`не закрыт блок ${selector}`);
 };
@@ -64,6 +68,14 @@ describe('тема страницы разбора ответа', () => {
         // Белый на заливке зелёной кнопки - не цвет темы: он одинаков в обеих.
         const hex = (body.match(/#[0-9a-fA-F]{3,8}\b/g) || []).filter(v => !/^#(fff|ffffff)$/i.test(v));
         expect(hex).toEqual([]);
+    });
+
+    it('разбор параметра в расшифровке идёт по белому фону карточки, без серой плашки', () => {
+        // Основной текст расшифровки красился мягкой подложкой и выглядел
+        // врезкой-сноской - параметры разделяет линия, а не заливка.
+        const item = blockOf('.explainComponentItem');
+        expect(item).not.toMatch(/background:/);
+        expect(item).toMatch(/border-top:\s*1px solid var\(--ev-line\)/);
     });
 });
 

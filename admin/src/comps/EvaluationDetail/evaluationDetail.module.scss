@@ -580,13 +580,24 @@
 .explainComponents {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
+// Разбор параметра - основной текст расшифровки, и серая плашка под ним делала
+// его похожим на врезку-сноску, хотя читают на этой карточке именно его.
+// Фон белый, как у самой карточки (по проекту карточки белые); параметры друг
+// от друга отделяет тот же волосяной разделитель, что и везде на странице, -
+// цветом на этой карточке помечено только одно, зелёная рекомендация ниже.
 .explainComponentItem {
-  background: var(--ev-soft);
-  border-radius: 8px;
-  padding: 10px 14px;
+  padding: 12px 0 0;
+
+  & + & {
+    border-top: 1px solid var(--ev-line);
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
 }
 
 .explainComponentHeader {
