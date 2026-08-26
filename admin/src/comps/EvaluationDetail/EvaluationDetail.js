@@ -208,15 +208,17 @@ export default function EvaluationDetail() {
                         <div className="card-body">
                             <div className={styles.title}>Как прошёл ответ</div>
 
+                            {/* Кто говорит - подписано словом, а не буквой в кружке:
+                                одиночная "О" читалась как ноль и выглядела оценкой. */}
                             {showQuestionTurn && (
                                 <div className={`${styles.turn} ${styles.turnAsk}`}>
-                                    <span className={styles.turnWho}>В</span>
+                                    <span className={styles.turnWho}>Вопрос</span>
                                     <div className={styles.turnBody}>{questionText}</div>
                                 </div>
                             )}
 
                             <div className={styles.turn}>
-                                <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>О</span>
+                                <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>Ответ</span>
                                 <div className={`${styles.turnBody} ${styles.answerText}`}>{answerText}</div>
                             </div>
                         </div>

@@ -399,32 +399,42 @@
 // Реплики "спросили - ответил" одной парой, а не двумя карточками врозь.
 .turn{
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
   margin-bottom: 16px;
 
   &:last-child{
     margin-bottom: 0;
   }
+
+  // На узком экране подпись встаёт над репликой: колонка в 56px съедала бы
+  // ширину текста, а сама реплика и так читается сверху вниз.
+  @media (max-width: 575px){
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
 }
 
+// Кто говорит - подписано словом ("Вопрос" / "Ответ") тем же надзаголовком,
+// что и остальные подписи страницы. Раньше здесь стояла буква в кружке, и
+// одиночная "О" читалась как ноль - то есть как балл за ответ.
 .turnWho{
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
   font-size: 11px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
   color: var(--bs-text-muted);
-  background: var(--ev-soft);
-  border: 1px solid var(--bs-border-color);
+  text-align: right;
+  padding-top: 5px;
+
+  @media (max-width: 575px){
+    text-align: left;
+    padding-top: 0;
+  }
 }
 
 .turnWhoAnswer{
   color: var(--score-good);
-  background: rgba(var(--score-good-rgb), .12);
-  border-color: rgba(var(--score-good-rgb), .35);
 }
 
 .turnBody{
