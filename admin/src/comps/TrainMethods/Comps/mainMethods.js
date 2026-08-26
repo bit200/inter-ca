@@ -136,7 +136,8 @@ export function getTopStatsNew({res, history}) {
     let questions = res?.questionIds?.length || res?.result?.questions?.length;
     return {modules,
      courses: res?.userCourses?.length,
-        questions, perc: Math.min(100, Math.round(100 * goodQuestions / (questions || 1)))}
+        questions, goodQuestions,
+        perc: Math.min(100, Math.round(100 * goodQuestions / (questions || 1)))}
 }
 
 export function getTotalStats({res, history}) {

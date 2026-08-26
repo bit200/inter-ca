@@ -2352,6 +2352,34 @@ export default {
         en: "Pluses",
         fr: `Plus`
     },
+    "passed": {
+        ru: "пройдено",
+        es: "completado",
+        de: "abgeschlossen",
+        en: "completed",
+        fr: `complété`
+    },
+    "ofWord": {
+        ru: "из",
+        es: "de",
+        de: "von",
+        en: "of",
+        fr: `sur`
+    },
+    "leftCount": {
+        ru: "Осталось",
+        es: "Quedan",
+        de: "Verbleibend",
+        en: "Left",
+        fr: `Restant`
+    },
+    "allTopicsDone": {
+        ru: "Все топики закрыты — подготовка завершена.",
+        es: "Todos los temas completados: la preparación ha terminado.",
+        de: "Alle Themen abgeschlossen — die Vorbereitung ist beendet.",
+        en: "All topics are done — preparation is complete.",
+        fr: `Tous les sujets sont terminés — la préparation est achevée.`
+    },
     "completionPerc": {
         ru: "% изучения",
         es: "% de completado",
