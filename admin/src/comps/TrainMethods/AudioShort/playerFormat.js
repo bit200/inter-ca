@@ -15,8 +15,9 @@ export function formatPlaybackRate(rate) {
     return `${String(rate).replace('.', ',')}×`;
 }
 
-// Стабильная псевдослучайная волна: у одной записи она всегда одна и та же
-export function waveformBars(seed, count = 40) {
+// Стабильная псевдослучайная волна: у одной записи она всегда одна и та же.
+// Столбиков немного — плеер узкий, при 40 волна не помещалась и обрезалась.
+export function waveformBars(seed, count = 22) {
     let state = 0;
     for (let char of String(seed || 'запись')) state = (state * 31 + char.charCodeAt(0)) % 2147483647;
     return Array.from({length: count}, (_, index) => {

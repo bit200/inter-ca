@@ -67,25 +67,21 @@ export default function Player(props) {
     }
 
     const hasSrc = !!src;
-    return <div className={'player' + (open ? ' opened' : '') + (hasSrc && !open ? ' loading' : '')}>
+    return <div className={'player' + (open ? ' opened' : '') + (hasSrc && !open ? ' loading' : '') + (text ? ' has-text' : '')}>
         <div className="iconoir-xmark fa fa-times player-close" onClick={() => {
             setSrc('')
             setOpen(false)
         }}></div>
-        <div className="row align-items-center player-body">
-            <div className={text ? "col-sm-7" : "col-sm-12"}>
-                {loading && src && <div className="player-spinner"><div className="player-spinner-inner"/></div>}
-                <CallPlayer
-                    ref={playerRef}
-                    key={playerKey}
-                    src={src}
-                    onLoadStart={() => setLoading(true)}
-                    onCanPlay={onCanPlay}
-                />
-            </div>
-            {text ? <div className="col-sm-5 text-muted player-text">
-                <div>{text}</div>
-            </div> : null}
+        <div className="player-body">
+            {loading && src && <div className="player-spinner"><div className="player-spinner-inner"/></div>}
+            <CallPlayer
+                ref={playerRef}
+                key={playerKey}
+                src={src}
+                onLoadStart={() => setLoading(true)}
+                onCanPlay={onCanPlay}
+            />
+            {text ? <div className="text-muted player-text">{text}</div> : null}
         </div>
     </div>
 };
