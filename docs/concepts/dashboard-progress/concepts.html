@@ -68,8 +68,50 @@ body{
 .sc-value{position:absolute;top:40%;left:0;width:100%;font-size:48px;font-weight:700;color:var(--strong)}
 
 /* ── Общее для дорожек ───────────────────────────────────────────────── */
-.track{position:relative;height:10px;border-radius:5px;background:var(--b0);overflow:hidden}
+.track{position:relative;height:12px;border-radius:5px;background:var(--b0);overflow:hidden}
 .track > i{display:block;height:100%;border-radius:5px;background:var(--c1)}
+.stepTrack{height:12px}
+
+/* ── Всплывающая панель над полосой ──────────────────────────────────
+   Замечание с ревью: у самих концептов процентов на экране нет — полоса
+   говорит «сколько» формой. Числа и разбор приходят на наведение: панель
+   встаёт над полосой и перекрывает плитки, пока курсор на дорожке. */
+.pbar{position:relative}
+.pbar:focus{outline:none}
+.pbar .track,.pbar .stepTrack{transition:box-shadow .12s ease}
+.pbar:hover .track,.pbar:focus .track,
+.pbar:hover .stepTrack,.pbar:focus .stepTrack{box-shadow:0 0 0 3px var(--c10)}
+.pop{
+  position:absolute;left:0;right:0;bottom:calc(100% + 11px);z-index:6;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:0 12px 30px rgba(16,26,51,.18);
+  padding:13px 16px;
+  opacity:0;visibility:hidden;transform:translateY(5px);
+  transition:opacity .14s ease,transform .14s ease,visibility .14s;
+}
+.pbar:hover .pop,.pbar:focus .pop,.pbar:focus-within .pop{opacity:1;visibility:visible;transform:none}
+.pop::after{
+  content:"";position:absolute;bottom:-5px;left:28px;width:9px;height:9px;
+  background:var(--card);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  transform:rotate(45deg);
+}
+.popRow{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.popVal{font-size:27px;font-weight:700;letter-spacing:-.02em;color:var(--strong);line-height:1}
+.popUnit{font-size:16px;font-weight:600;color:var(--c1);margin-left:2px}
+.popCap{font-size:13px;color:var(--muted);margin-left:6px}
+.popSide{font-size:13px;color:var(--muted)}
+.popSide b{color:var(--strong);font-weight:600}
+.popFoot{font-size:12.5px;color:var(--muted);margin:7px 0 0;padding-top:8px;border-top:1px solid var(--line)}
+.popDone .popVal,.popDone .popUnit{color:var(--c1)}
+/* панель у отдельной ступени уже полосы — держим её у своего края */
+.popStep{left:0;right:auto;min-width:210px}
+.popStepEnd{left:auto;right:0}
+.popStepEnd::after{left:auto;right:28px}
+.popName{font-size:14px;font-weight:600;color:var(--strong);margin-bottom:5px}
+/* панель у плитки всплывает вниз — над ней в шапке места нет */
+.popDown{top:calc(100% + 11px);bottom:auto}
+.popDown::after{top:-5px;bottom:auto;border:0;border-left:1px solid var(--line);border-top:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){.pop{transition:none}}
 
 /* Концепт А — «Дорожка» */
 .aRow{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:9px}
@@ -94,8 +136,12 @@ body{
 .stepNow .stepTrack{box-shadow:0 0 0 2px var(--c10)}
 
 /* Концепт В — «Четвёртая плитка» */
-.tileProg{border-style:solid;border-color:var(--c1);background:var(--c10)}
+.tileProg{border-style:solid;border-color:var(--c1);background:var(--c10);display:flex;flex-direction:column;justify-content:center}
 .tileProg .tileVal{color:var(--c1)}
+/* панель у плитки не должна быть уже своих строк — держим её шире плитки и
+   прижимаем к правому краю ряда */
+.tileProg .pop{left:auto;right:0;width:min(360px,80vw);padding:13px 16px}
+.tileProg .pop::after{left:auto;right:30px}
 .tileProg .track{margin-top:7px;height:6px;border-radius:3px;background:#ffffff}
 .tileProg .track > i{border-radius:3px}
 
@@ -143,8 +189,8 @@ body{
   <div class="boardHead">
     <div class="kicker">Концепт А</div>
     <h1 class="boardTitle">Дорожка во всю ширину</h1>
-    <p class="boardNote">Шапка делится надвое: слева во всю высоту — карточка разработчика и больше ничего, справа плитки и под ними полоса во всю ширину правой части. Слева процент, справа — то, из чего он посчитан («62 из 148 топиков»), между ними одна полоса. Дальность до края читается мгновенно, а число перестаёт быть единственным носителем смысла.</p>
-    <p class="boardNote">Данные уже есть: <code>perc</code>, <code>questions</code> и число отвеченных считает <code>getTopStatsNew</code>. Место полукруга занимает правая часть — плитки и полоса встают одной колонкой.</p>
+    <p class="boardNote">Шапка делится надвое: слева во всю высоту — карточка разработчика и больше ничего, справа плитки и под ними полоса во всю ширину правой части. Чисел у полосы нет вовсе: доля закрашенного и есть ответ. Процент, «62 из 148 топиков» и остаток приходят на наведение — панель встаёт над полосой и перекрывает плитки, пока курсор на дорожке.</p>
+    <p class="boardNote">Данные уже есть: <code>perc</code>, <code>questions</code> и число отвеченных считает <code>getTopStatsNew</code>. Место полукруга занимает правая часть — плитки и полоса встают одной колонкой. Панель открывается и с клавиатуры: полоса получает фокус.</p>
   </div>
   <div class="wrap">
     <div class="stateLabel">Состояние: 42 %</div>
@@ -157,10 +203,13 @@ body{
             <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
             <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
           </div>
-          <div>
-            <div class="aRow">
-              <div class="aLead"><span class="aVal num">42</span><span class="aValUnit">%</span><span class="aCap">пройдено</span></div>
-              <div class="aRest"><b class="num">62</b> из <b class="num">148</b> топиков</div>
+          <div class="pbar" tabindex="0">
+            <div class="pop">
+              <div class="popRow">
+                <div><span class="popVal num">42</span><span class="popUnit">%</span><span class="popCap">пройдено</span></div>
+                <div class="popSide"><b class="num">62</b> из <b class="num">148</b> топиков</div>
+              </div>
+              <p class="popFoot">Осталось 86 топиков в двух курсах — сейчас «React под нагрузкой».</p>
             </div>
             <div class="track"><i style="width:42%"></i></div>
           </div>
@@ -178,10 +227,13 @@ body{
             <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
             <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
           </div>
-          <div class="aDone">
-            <div class="aRow">
-              <div class="aLead"><span class="aVal num">100</span><span class="aValUnit">%</span><span class="aCap">пройдено — все топики закрыты</span></div>
-              <div class="aRest"><b class="num">148</b> из <b class="num">148</b> топиков</div>
+          <div class="pbar" tabindex="0">
+            <div class="pop popDone">
+              <div class="popRow">
+                <div><span class="popVal num">100</span><span class="popUnit">%</span><span class="popCap">пройдено</span></div>
+                <div class="popSide"><b class="num">148</b> из <b class="num">148</b> топиков</div>
+              </div>
+              <p class="popFoot">Все топики закрыты — подготовка завершена.</p>
             </div>
             <div class="track"><i style="width:100%"></i></div>
           </div>
@@ -196,7 +248,7 @@ body{
   <div class="boardHead">
     <div class="kicker">Концепт Б</div>
     <h1 class="boardTitle">Ступени по курсам</h1>
-    <p class="boardNote">Та же правая часть под плитками, но горизонталь разрезана по курсам: каждый отрезок — курс, заполнен ровно настолько, насколько закрыты его топики. Полоса начинает отвечать не только «сколько», но и «где именно застрял» — текущий курс подсвечен и подписан.</p>
+    <p class="boardNote">Та же правая часть под плитками, но горизонталь разрезана по курсам: каждый отрезок — курс, заполнен ровно настолько, насколько закрыты его топики. Цифр на экране снова нет — только подписи курсов; наведение на отрезок открывает панель поверх плиток с процентом этого курса и его топиками. Текущий курс подсвечен.</p>
     <p class="boardNote">Дороже А: нужен процент на курс, а не общий (<code>res.userCourses</code> с историей ответов уже приходит на дашборд, считать по нему). При числе курсов больше шести отрезки становятся уже подписей — тогда подписи прячутся в тултип.</p>
   </div>
   <div class="wrap">
@@ -211,14 +263,40 @@ body{
             <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
           </div>
           <div>
-            <div class="bLegend">
-              <div class="bVal"><b class="num">42 %</b> подготовки</div>
-              <div class="aRest">сейчас: <b>React под нагрузкой</b></div>
-            </div>
             <div class="steps">
-              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span></div>
-              <div class="step stepNow"><div class="stepTrack"><i style="width:34%"></i></div><span class="stepName">React под нагрузкой</span></div>
-              <div class="step"><div class="stepTrack"><i style="width:0"></i></div><span class="stepName">Системный дизайн</span></div>
+              <div class="step pbar" tabindex="0">
+                <div class="pop popStep">
+                  <div class="popName">JS: основы</div>
+                  <div class="popRow">
+                    <div><span class="popVal num">100</span><span class="popUnit">%</span></div>
+                    <div class="popSide"><b class="num">48</b> из <b class="num">48</b> топиков</div>
+                  </div>
+                  <p class="popFoot">Курс закрыт полностью.</p>
+                </div>
+                <div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span>
+              </div>
+              <div class="step pbar stepNow" tabindex="0">
+                <div class="pop popStep">
+                  <div class="popName">React под нагрузкой</div>
+                  <div class="popRow">
+                    <div><span class="popVal num">34</span><span class="popUnit">%</span></div>
+                    <div class="popSide"><b class="num">14</b> из <b class="num">41</b> топиков</div>
+                  </div>
+                  <p class="popFoot">Текущий курс — осталось 27 топиков.</p>
+                </div>
+                <div class="stepTrack"><i style="width:34%"></i></div><span class="stepName">React под нагрузкой</span>
+              </div>
+              <div class="step pbar" tabindex="0">
+                <div class="pop popStep popStepEnd">
+                  <div class="popName">Системный дизайн</div>
+                  <div class="popRow">
+                    <div><span class="popVal num">0</span><span class="popUnit">%</span></div>
+                    <div class="popSide"><b class="num">0</b> из <b class="num">59</b> топиков</div>
+                  </div>
+                  <p class="popFoot">Ещё не начат.</p>
+                </div>
+                <div class="stepTrack"><i style="width:0%"></i></div><span class="stepName">Системный дизайн</span>
+              </div>
             </div>
           </div>
         </div>
@@ -236,14 +314,40 @@ body{
             <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
           </div>
           <div>
-            <div class="bLegend">
-              <div class="bVal"><b class="num">100 %</b> подготовки</div>
-              <div class="aRest">все курсы закрыты</div>
-            </div>
             <div class="steps">
-              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span></div>
-              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">React под нагрузкой</span></div>
-              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">Системный дизайн</span></div>
+              <div class="step pbar" tabindex="0">
+                <div class="pop popStep popDone">
+                  <div class="popName">JS: основы</div>
+                  <div class="popRow">
+                    <div><span class="popVal num">100</span><span class="popUnit">%</span></div>
+                    <div class="popSide"><b class="num">48</b> из <b class="num">48</b> топиков</div>
+                  </div>
+                  <p class="popFoot">Курс закрыт полностью.</p>
+                </div>
+                <div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span>
+              </div>
+              <div class="step pbar" tabindex="0">
+                <div class="pop popStep popDone">
+                  <div class="popName">React под нагрузкой</div>
+                  <div class="popRow">
+                    <div><span class="popVal num">100</span><span class="popUnit">%</span></div>
+                    <div class="popSide"><b class="num">41</b> из <b class="num">41</b> топиков</div>
+                  </div>
+                  <p class="popFoot">Курс закрыт полностью.</p>
+                </div>
+                <div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">React под нагрузкой</span>
+              </div>
+              <div class="step pbar" tabindex="0">
+                <div class="pop popStep popStepEnd popDone">
+                  <div class="popName">Системный дизайн</div>
+                  <div class="popRow">
+                    <div><span class="popVal num">100</span><span class="popUnit">%</span></div>
+                    <div class="popSide"><b class="num">59</b> из <b class="num">59</b> топиков</div>
+                  </div>
+                  <p class="popFoot">Курс закрыт полностью.</p>
+                </div>
+                <div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">Системный дизайн</span>
+              </div>
             </div>
           </div>
         </div>
@@ -257,7 +361,7 @@ body{
   <div class="boardHead">
     <div class="kicker">Концепт В</div>
     <h1 class="boardTitle">Четвёртая плитка в ряду</h1>
-    <p class="boardNote">Прогресс встаёт в тот же ряд, что «Курсы / Модули / Топики», и получает под числом тонкую полосу. Отдельного блока в шапке не остаётся вовсе: цифры выстроены одной линией, прогресс отличается от соседей только заливкой и полосой.</p>
+    <p class="boardNote">Прогресс встаёт в тот же ряд, что «Курсы / Модули / Топики», но вместо числа у него полоса: подпись «Пройдено» и заливка. Наведение раскрывает панель с процентом и разбором — здесь она уходит вниз, места над плиткой в шапке нет.</p>
     <p class="boardNote">Самый дешёвый вариант — правка одной колонки в разметке шапки, данные те же. Взамен прогресс перестаёт быть главным: он ровно такой же по весу, как «12 модулей».</p>
   </div>
   <div class="wrap">
@@ -270,7 +374,16 @@ body{
             <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
             <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
             <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
-            <div class="tile tileProg"><div class="tileVal num">42 %</div><p class="tileCap">Пройдено</p><div class="track"><i style="width:42%"></i></div></div>
+            <div class="tile tileProg pbar" tabindex="0">
+              <div class="pop popDown">
+                <div class="popRow">
+                  <div><span class="popVal num">42</span><span class="popUnit">%</span><span class="popCap">пройдено</span></div>
+                  <div class="popSide"><b class="num">62</b> из <b class="num">148</b> топиков</div>
+                </div>
+                <p class="popFoot">Осталось 86 топиков в двух курсах — сейчас «React под нагрузкой».</p>
+              </div>
+              <p class="tileCap">Пройдено</p><div class="track"><i style="width:42%"></i></div>
+            </div>
           </div>
         </div>
       </div>
@@ -285,7 +398,16 @@ body{
             <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
             <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
             <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
-            <div class="tile tileProg"><div class="tileVal num">100 %</div><p class="tileCap">Пройдено</p><div class="track"><i style="width:100%"></i></div></div>
+            <div class="tile tileProg pbar" tabindex="0">
+              <div class="pop popDown popDone">
+                <div class="popRow">
+                  <div><span class="popVal num">100</span><span class="popUnit">%</span><span class="popCap">пройдено</span></div>
+                  <div class="popSide"><b class="num">148</b> из <b class="num">148</b> топиков</div>
+                </div>
+                <p class="popFoot">Все топики закрыты — подготовка завершена.</p>
+              </div>
+              <p class="tileCap">Пройдено</p><div class="track"><i style="width:100%"></i></div>
+            </div>
           </div>
         </div>
       </div>
@@ -302,12 +424,13 @@ body{
   <div class="wrap">
     <table class="tbl">
       <tr><th></th><th>А — Дорожка</th><th>Б — Ступени</th><th>В — Плитка</th></tr>
-      <tr><td>Отвечает на вопрос</td><td>сколько пройдено и сколько осталось</td><td>где именно я сейчас</td><td>ещё одно число о курсе</td></tr>
+      <tr><td>Отвечает на вопрос</td><td>сколько пройдено и сколько осталось</td><td>где именно я сейчас</td><td>ещё один показатель курса</td></tr>
       <tr><td>Вес на экране</td><td>главный, во всю ширину правой части</td><td>главный, во всю ширину правой части</td><td>наравне с соседями</td></tr>
+      <tr><td>Числа</td><td colspan="3">только на наведении: панель поверх плиток с процентом, топиками и остатком</td></tr>
       <tr><td>Данные</td><td>есть (<code>perc</code>, топики)</td><td>нужен процент по каждому курсу</td><td>есть</td></tr>
       <tr><td>Риск</td><td>—</td><td>много курсов — подписи не помещаются</td><td>прогресс теряется в ряду</td></tr>
     </table>
-    <p class="boardNote" style="margin-top:14px">Рекомендация — А: горизонталь в правой части шапки, число и остаток на одной строке. Б стоит держать как следующий шаг, когда на дашборд начнут приходить проценты по курсам.</p>
+    <p class="boardNote" style="margin-top:14px">Рекомендация — А: горизонталь в правой части шапки, а числа под наведением. Б стоит держать как следующий шаг, когда на дашборд начнут приходить проценты по курсам.</p>
   </div>
 </section>
 
