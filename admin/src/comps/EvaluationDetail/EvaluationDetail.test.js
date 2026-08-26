@@ -70,3 +70,23 @@ describe('EvaluationDetail: оценка куратора', () => {
         expect(queryByTestId('mentor-review')).toBe(null);
     });
 });
+
+describe('EvaluationDetail: кто говорит в блоке "Как прошёл ответ"', () => {
+    // Буква в кружке ("В" и "О") читалась как значок с числом: одиночная "О"
+    // на экране с баллами воспринималась как ноль. Подписываем словом.
+    it('подписывает реплики словами "Вопрос" и "Ответ", а не одной буквой', async () => {
+        const { container, findByText } = renderPage({
+            _id: 1042,
+            answerType: 'text',
+            evaluate: {
+                status: 'done',
+                result: { question: 'Что такое хуки?', text: 'Хуки нужны для состояния', score: 5.7 },
+            },
+            titleInfo: { title: 'Хуки React' },
+        });
+        await findByText('Хуки нужны для состояния');
+
+        const who = [...container.querySelectorAll('.turnWho')].map(n => n.textContent);
+        expect(who).toEqual(['Вопрос', 'Ответ']);
+    });
+});
