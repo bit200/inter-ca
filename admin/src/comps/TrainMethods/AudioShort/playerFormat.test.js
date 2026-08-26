@@ -29,9 +29,12 @@ describe('formatPlaybackRate', () => {
 });
 
 describe('waveformBars', () => {
-    it('даёт нужное число столбиков в пределах от 0 до 1', () => {
+    it('по умолчанию столбиков немного — волна помещается в узкий плеер', () => {
+        // Плеер снизу шириной ~340px, на волну остаётся ~90px:
+        // при столбике 2px и зазоре 1px больше 24 столбиков туда не влезет
         let bars = waveformBars('/audio/1.mp3');
-        expect(bars).toHaveLength(40);
+        expect(bars.length).toBeLessThanOrEqual(24);
+        expect(bars.length).toBeGreaterThanOrEqual(16);
         bars.forEach(height => {
             expect(height).toBeGreaterThan(0);
             expect(height).toBeLessThanOrEqual(1);
