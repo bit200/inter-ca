@@ -4,7 +4,7 @@ import UseLocalStorage from '../../libs/UseLocalStorage';
 import styles from './evaluationList.module.scss'
 import EvaluationListItemGroup from "./components/EvaluationListItemGroup";
 import EvaluationListEmpty from "./components/EvaluationListEmpty";
-import {groupItems} from "./evaluate-list.utils";
+import {groupItems, sortByDictationDate} from "./evaluate-list.utils";
 
 const GROUPS_PAGE_SIZE = 25;
 const ITEMS_PER_PAGE = 100;
@@ -56,6 +56,19 @@ const GroupList = ({groups, groupMode, hasMore, loadingMore, onLoadMore, onSwitc
     </>
 }
 
+// Сортировка - по дате диктовки, поэтому и подпись про ответы, а не про оценки:
+// иначе "сначала новые" читается как "недавно оценённые". Стрелка справа от
+// надписи - как у сортировок на остальных экранах.
+const SortSwitch = ({ sortOrder, setSortOrder }) => (
+    <button type="button" className="btn btn-sm btn-light"
+            data-testid="evaluation-sort-date"
+            title="Сортировка по дате ответа"
+            onClick={() => setSortOrder(sortOrder === 'new' ? 'old' : 'new')}>
+        {sortOrder === 'new' ? 'Сначала новые' : 'Сначала старые'}
+        <i className={`iconoir-sort-${sortOrder === 'new' ? 'down' : 'up'} ${styles.sortIcon}`}/>
+    </button>
+)
+
 const GroupModeSwitch = ({ groupMode,  setGroupMode}) => {
     return <div>
         {['exam', 'module'].map(mode => (
@@ -85,7 +98,11 @@ function EvaluationList() {
     const [searchParams, setSearchParams] = useSearchParams();
     const groupMode = searchParams.get('mode') === 'exam' ? 'exam' : 'module';
     const setGroupMode = (mode) => setSearchParams(mode === 'module' ? {} : { mode });
-    const groups = groupItems(items, groupMode);
+    // Сортируем ДО группировки: groupItems сохраняет порядок появления, значит
+    // одна сортировка задаёт и порядок строк внутри группы, и порядок самих групп
+    // (группа с самым свежим ответом идёт первой).
+    const [sortOrder, setSortOrder] = useState('new');
+    const groups = groupItems(sortByDictationDate(items, sortOrder), groupMode);
     const hasMore = items.length < stats.total;
 
     // groupMode is a server-side filter now (?mode=exam|module - QuizHistory.exam is only
@@ -127,7 +144,10 @@ function EvaluationList() {
             <div className={styles.header}>
                 <h4>Оценки ИИ</h4>
                 <span>{stats.done}/{stats.total} оценено</span>
-                <GroupModeSwitch groupMode={groupMode} setGroupMode={setGroupMode} />
+                <div className={styles.headerControls}>
+                    <SortSwitch sortOrder={sortOrder} setSortOrder={setSortOrder} />
+                    <GroupModeSwitch groupMode={groupMode} setGroupMode={setGroupMode} />
+                </div>
             </div>
             <GroupList groupMode={groupMode} groups={groups} hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore} onSwitchMode={setGroupMode} />
         </div>
