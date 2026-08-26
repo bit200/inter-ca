@@ -23,7 +23,7 @@ describe('озвучка вопроса готовым файлом', () => {
         delete global.http;
     });
 
-    it('берёт presigned url у бэкенда и играет файл, робота не зовёт', async () => {
+    it('берёт presigned url у бэкенда и играет файл', async () => {
         const post = jest.fn(() => Promise.resolve({url: 'https://s3/q.wav?sig=1', durationSec: 12}));
         global.http = {post};
         const onEnd = jest.fn();
@@ -41,7 +41,7 @@ describe('озвучка вопроса готовым файлом', () => {
         expect(onEnd).toHaveBeenCalled();
     });
 
-    it('без готового аудио отдаёт вопрос роботу', async () => {
+    it('без готового аудио сообщает, что озвучки не будет', async () => {
         global.http = {post: () => Promise.resolve({reason: 'missing'})};
         const onFallback = jest.fn();
 
@@ -66,7 +66,7 @@ describe('озвучка вопроса готовым файлом', () => {
         expect(FakeAudio.last.paused).toBe(true);
     });
 
-    it('ошибка проигрывания переключает на робота один раз', async () => {
+    it('ошибка проигрывания сообщается один раз', async () => {
         global.http = {post: () => Promise.resolve({url: 'https://s3/q.wav'})};
         const onFallback = jest.fn();
 

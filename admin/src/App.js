@@ -66,23 +66,19 @@ export const stopAnyPlay = (key) => {
     try {
         myPlayer({src: ''})
         stopQuestionAudio();
-        if (window.speechSynthesis && window.speechSynthesis.speaking) {
-            window.speechSynthesis.cancel();
-        }
     } catch (e) {
 
     }
 }
 
 window.textToVoice = (params, cb, delay = 5) => {
-    let {text, lng = 'en-EN', textToVoiceTimeoutMS} = params || {};
-    // let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
+    let {text, textToVoiceTimeoutMS} = params || {};
 
     let speed = params.textToVoiceSpeedMSPerSymbolLimit || 100
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');
 
-    // страховка: если озвучка не сообщит о конце (файл завис, робот молчит) -
+    // страховка: если озвучка не сообщит о конце (файл завис или его нет) -
     // всё равно двигаем сценарий дальше
     let armTimeout = (ms) => {
         clearTimeout(timeout)
@@ -100,26 +96,11 @@ window.textToVoice = (params, cb, delay = 5) => {
 
     armTimeout(delay);
 
-    // сперва пробуем заранее сгенерированный на бэкенде файл, робот - запасной
-    // вариант, когда озвучки для этого текста ещё нет
-    let speakByRobot = () => {
-        if ('speechSynthesis' in window) {
-
-            const synth = window.speechSynthesis;
-
-            text = (text || '').replace(/\`\`\`([\s\S]*?)\`\`\`/gi, '')
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.0; // Speech rate (1.0 is the default)
-            utterance.pitch = 1.0; // Speech pitch (1.0 is the default)
-            utterance.lang = lng;
-            utterance.onend = done;
-            synth.speak(utterance);
-        } else {
-            alert("Your browser does not support the Web Speech API. Please use a modern browser.");
-        }
-    }
-
-    playQuestionAudio({text}, {onEnd: done, onFallback: speakByRobot})
+    // озвучка только заранее сгенерированным файлом: робот браузера звучит
+    // плохо и больше не используется. Нет файла или он не проигрался -
+    // вопрос просто остаётся на экране, а сценарий двигает страховочный таймаут
+    // по длине текста.
+    playQuestionAudio({text}, {onEnd: done})
         .then(played => {
             // длинный вопрос голосом-образцом звучит дольше, чем оценка по
             // числу символов - продлеваем страховку по реальной длительности
@@ -127,7 +108,7 @@ window.textToVoice = (params, cb, delay = 5) => {
                 armTimeout((played.durationSec * 1000) + 2000)
             }
         })
-        .catch(() => speakByRobot())
+        .catch(() => {})
 }
 
 // тесты и моки рядом с компонентами в бандл не тянем: иначе их require("fs") и
