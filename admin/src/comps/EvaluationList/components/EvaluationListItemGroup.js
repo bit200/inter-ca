@@ -3,6 +3,20 @@ import {Link} from "react-router-dom";
 import s from '../evaluationList.module.scss';
 import { STATUS_LABEL, STATUS_COLOR } from '../../EvaluationDetail/evaluationStatus';
 
+// Дата ответа - короткая ("14 мая"), год только у прошлых лет: в списке она
+// нужна как ориентир при сортировке, а не как точный штамп. Полная дата - в
+// подсказке и на самой странице разбора.
+function formatDictationDate(cd) {
+    const ms = Date.parse(cd ?? '');
+    if (Number.isNaN(ms)) return null;
+    const date = new Date(ms);
+    const sameYear = date.getFullYear() === new Date().getFullYear();
+    return {
+        short: date.toLocaleDateString('ru', sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: '2-digit' }),
+        full: date.toLocaleString('ru'),
+    };
+}
+
 function getQuestionTitle(item) {
     const ti = item.titleInfo || {};
     return ti.title || ti.smallTitle || ti.desc || `Вопрос #${item.question}`;
@@ -48,6 +62,7 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                         {visibleItems.map(item => {
                             const ev = item.evaluate || {};
                             const score = ev.result?.score;
+                            const dictatedAt = formatDictationDate(item.cd);
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                             return (
                                 <div key={item._id} className={s.groupItem}>
@@ -64,6 +79,12 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                                         <span className={s.groupItemStatus}
                                               style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
                                             {STATUS_LABEL[ev.status] || ev.status}
+                                        </span>
+                                    )}
+                                    {dictatedAt && (
+                                        <span className={s.groupItemDate} title={dictatedAt.full}
+                                              data-testid="evaluation-group-item-date">
+                                            {dictatedAt.short}
                                         </span>
                                     )}
                                     {score != null && (

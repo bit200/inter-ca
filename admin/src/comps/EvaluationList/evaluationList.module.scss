@@ -173,3 +173,28 @@
 .emptyAction {
   margin-top: 18px;
 }
+
+// Кнопки шапки: сортировка и группировка - две отдельные пары, между ними
+// воздуха чуть больше, чем между кнопками одной пары.
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sortIcon {
+  font-size: 13px;
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+
+// Дата ответа - самая тихая колонка строки: ориентир для сортировки, а не
+// содержание. Ширина фиксирована, чтобы баллы стояли ровным столбцом.
+.groupItemDate {
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 58px;
+  text-align: right;
+}
