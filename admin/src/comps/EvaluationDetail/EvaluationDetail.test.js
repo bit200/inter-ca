@@ -89,4 +89,20 @@ describe('EvaluationDetail: кто говорит в блоке "Как прош
         const who = [...container.querySelectorAll('.turnWho')].map(n => n.textContent);
         expect(who).toEqual(['Вопрос', 'Ответ']);
     });
+
+    it('у одиночного ответа подписи нет, а заголовок карточки - просто "Ответ"', async () => {
+        const { container, findByText, queryByText } = renderPage({
+            _id: 1042,
+            answerType: 'text',
+            evaluate: {
+                status: 'done',
+                result: { question: 'Что такое хуки?', text: 'Хуки нужны для состояния', score: 5.7 },
+            },
+        });
+        await findByText('Хуки нужны для состояния');
+
+        expect(container.querySelectorAll('.turnWho').length).toBe(0);
+        expect(queryByText('Как прошёл ответ')).toBe(null);
+        expect(queryByText('Ответ')).not.toBe(null);
+    });
 });
