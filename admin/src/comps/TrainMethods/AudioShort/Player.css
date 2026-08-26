@@ -18,7 +18,8 @@
     border-radius: 18px;
 }
 .player-close:hover {
-    opacity: 1;
+    color: var(--bs-emphasis-color, #000);
+    border-color: var(--bs-secondary-color);
     cursor: pointer;
 }
 .player-close {
@@ -35,9 +36,9 @@
     background: var(--bs-theme-white-color);
     font-size: 9px;
     line-height: 1;
-    color: var(--bs-secondary-color);
-    transition: opacity .2s ease;
-    opacity: .55;
+    color: var(--bs-body-color);
+    transition: color .2s ease, border-color .2s ease;
+    opacity: 1;
 }
 .player.opened {
     transform: translateY(0);
