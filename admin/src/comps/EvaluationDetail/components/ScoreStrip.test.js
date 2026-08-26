@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
-import ScoreStrip from './ScoreStrip';
+import ScoreStrip, { OVERALL_GROUP } from './ScoreStrip';
 
 const rules = [
     { key: 'evaluation.speech.clarity', from: 0, to: 10, advice: 'Говорите чётче' },
@@ -62,5 +62,36 @@ describe('ScoreStrip: общая оценка в линейке показате
 
         expect(chipByGroup('Речь').dataset.clickable).toBe('false');
         expect(chipByGroup('Речь').querySelector('[data-testid="metric-breakdown-row-hint"]')).toBe(null);
+    });
+
+    // Группа "Итог" - это сам итоговый балл (schema key 'score'), и её чип
+    // показывал то же число, что и "Общая оценка" рядом.
+    describe('итоговый балл не дублируется отдельным чипом', () => {
+        const totalSchemas = [...schemas, { key: 'score', group: OVERALL_GROUP, min: 0, max: 10 }];
+        const totalRules = [...rules, { key: 'score', from: 0, to: 10, advice: 'Разберите ответ целиком' }];
+        const result = { score: 7, evaluation: { speech: { clarity: 8 }, practice: { count: 3 } } };
+
+        it('не рисует чип группы «Итог» рядом с общей оценкой', () => {
+            render(<ScoreStrip score={7} rules={totalRules} schemas={totalSchemas} result={result}/>);
+
+            expect(chipByGroup(OVERALL_GROUP)).toBeUndefined();
+            expect(screen.getByTestId('evaluate-score')).toHaveTextContent('Общая оценка');
+        });
+
+        it('по клику на общую оценку открывает модалку «Итога»', () => {
+            render(<ScoreStrip score={7} rules={totalRules} schemas={totalSchemas} result={result}/>);
+
+            const total = screen.getByTestId('evaluate-score');
+            expect(total.dataset.clickable).toBe('true');
+            fireEvent.click(total);
+
+            expect(screen.getByTestId('metric-breakdown-modal')).toHaveTextContent('Разберите ответ целиком');
+        });
+
+        it('без рекомендаций по итогу общая оценка не зовёт нажать', () => {
+            render(<ScoreStrip score={7} rules={rules} schemas={totalSchemas} result={result}/>);
+
+            expect(screen.getByTestId('evaluate-score').dataset.clickable).toBe('false');
+        });
     });
 });
