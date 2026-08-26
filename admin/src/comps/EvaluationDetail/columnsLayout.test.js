@@ -19,24 +19,34 @@ const blockOf = (selector) => {
 
 describe('колонки разбора ответа', () => {
     const columns = blockOf('.columns');
-    const answerColumn = blockOf('.answerColumn');
-    const sideColumn = blockOf('.sideColumn');
+    const answerCard = blockOf('.answerColumn > :global(.card)');
+    const summaryCard = blockOf('.summarySlot > :global(.card)');
+    const sideCard = blockOf('.sideColumn > :global(.card)');
 
-    it('колонки тянутся до общего низа, а не обрываются каждая по своему', () => {
-        expect(columns).toMatch(/align-items:\s*stretch/);
-        expect(columns).not.toMatch(/align-items:\s*(start|flex-start)/);
+    it('карточки стоят в общей сетке, обёртки колонок для неё прозрачны', () => {
+        expect(columns).toMatch(/display:\s*grid/);
+        expect(blockOf('.answerColumn,\n.sideColumn,\n.summarySlot')).toMatch(/display:\s*contents/);
+
+        expect(answerCard).toMatch(/grid-column:\s*1/);
+        expect(answerCard).toMatch(/grid-row:\s*1/);
+        expect(summaryCard).toMatch(/grid-column:\s*1/);
+        expect(summaryCard).toMatch(/grid-row:\s*2/);
+        expect(sideCard).toMatch(/grid-column:\s*2/);
     });
 
-    it('в каждой колонке карточка добирает остаток высоты', () => {
-        expect(answerColumn).toMatch(/flex:\s*1/);
-        expect(sideColumn).toMatch(/flex:\s*1/);
+    it('разбор занимает оба ряда - его низ совпадает с низом вывода', () => {
+        expect(sideCard).toMatch(/grid-row:\s*1\s*\/\s*-1/);
+        // Лишнюю высоту забирает первый ряд (ответ), а не пустое место под
+        // выводом - иначе при длинном разборе низ ответа обрывается выше.
+        expect(columns).toMatch(/grid-template-rows:\s*1fr\s+auto/);
     });
 
-    it('промежуток между ответом и выводом держит gap - свой margin карточек снят', () => {
-        // У проектной .card есть margin-bottom: 1.5rem, и вместе с gap колонки
-        // он давал под ответом разрыв вдвое шире остальных.
-        expect(answerColumn).toMatch(/gap:\s*16px/);
-        expect(answerColumn).toMatch(/margin-bottom:\s*0/);
-        expect(sideColumn).toMatch(/margin-bottom:\s*0/);
+    it('промежуток между ответом и выводом держит сама карточка вывода', () => {
+        // row-gap рисуется и над пустым рядом: без вывода разбор кончался бы
+        // на 16px ниже ответа. Поэтому отступ - на карточке.
+        expect(columns).toMatch(/row-gap:\s*0/);
+        expect(summaryCard).toMatch(/margin-top:\s*16px/);
+        // У проектной .card свой margin-bottom: 1.5rem - в сетке он лишний.
+        expect(blockOf('.columns :global(.card)')).toMatch(/margin-bottom:\s*0/);
     });
 });
