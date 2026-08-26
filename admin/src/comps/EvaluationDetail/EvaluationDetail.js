@@ -211,7 +211,10 @@ export default function EvaluationDetail() {
                     <div className={styles.answerColumn}>
                         <div className={'card'}>
                             <div className="card-body">
-                                <div className={styles.title}>Как прошёл ответ</div>
+                                {/* Одиночная реплика: пары "спросили - ответил" нет,
+                                    поэтому слово "Ответ" стоит заголовком карточки, а
+                                    подпись у самой реплики его не повторяет. */}
+                                <div className={styles.title}>{showQuestionTurn ? 'Как прошёл ответ' : 'Ответ'}</div>
 
                                 {/* Кто говорит - подписано словом, а не буквой в кружке:
                                     одиночная "О" читалась как ноль и выглядела оценкой. */}
@@ -222,8 +225,10 @@ export default function EvaluationDetail() {
                                     </div>
                                 )}
 
-                                <div className={styles.turn}>
-                                    <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>Ответ</span>
+                                <div className={`${styles.turn} ${showQuestionTurn ? '' : styles.turnSolo}`}>
+                                    {showQuestionTurn && (
+                                        <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>Ответ</span>
+                                    )}
                                     <div className={`${styles.turnBody} ${styles.answerText}`}>{answerText}</div>
                                 </div>
                             </div>
