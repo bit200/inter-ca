@@ -33,6 +33,21 @@ describe('ScoreStrip: общая оценка в линейке показате
         expect(chipByGroup('Речь').className).toContain('mchip');
     });
 
+    // Раньше чипы лежали прямо на подложке страницы и распадались на отдельные
+    // пилюли - оценка ответа не читалась как один блок.
+    it('собирает всю линейку в белую карточку страницы', () => {
+        render(<ScoreStrip score={7} rules={rules} schemas={schemas} result={{
+            evaluation: { speech: { clarity: 8 }, practice: { count: 3 } },
+        }}/>);
+
+        const card = screen.getByTestId('evaluation-strip-card');
+        expect(card).toHaveClass('card');
+        expect(card.querySelector('.card-body')).toBe(screen.getByTestId('evaluation-strip'));
+        expect(card).toContainElement(screen.getByTestId('evaluate-score'));
+        expect(card).toContainElement(chipByGroup('Речь'));
+        expect(card).toContainElement(chipByGroup('Практика'));
+    });
+
     it('меряет общую оценку и показатели одной шкалой делений', () => {
         // 7 из 10 и 80% различаются, а вот 7/10 и 70% должны гореть одинаково -
         // ради этого чипы и приведены к одному виду.
