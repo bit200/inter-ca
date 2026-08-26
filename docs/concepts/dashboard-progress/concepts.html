@@ -46,8 +46,12 @@ body{
 
 /* ── Общая шапка дашборда (одинаковая во всех артбордах) ─────────────── */
 .head{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,1.5fr) minmax(220px,.9fr);gap:22px;align-items:center}
-.headWide{grid-template-columns:minmax(220px,1fr) minmax(0,1fr)}
+.headWide{grid-template-columns:minmax(210px,.8fr) minmax(0,2fr);align-items:stretch}
 .who{display:flex;align-items:center;gap:14px}
+/* Замечание с ревью: полоса прогресса уезжает в правую часть, слева остаётся
+   только карточка разработчика — во всю высоту блока и отчёркнутая от правой. */
+.headWide .who{height:100%;padding-right:24px;border-right:1px solid var(--line)}
+.headMain{display:flex;flex-direction:column;justify-content:center;gap:16px;min-width:0}
 .ava{width:56px;height:56px;border-radius:50%;background:var(--c10);border:1px solid var(--c1);flex:none}
 .whoName{font-size:19px;font-weight:600;color:var(--strong);line-height:1.2}
 .whoRole{font-size:13px;color:var(--muted);margin-top:2px}
@@ -103,6 +107,7 @@ body{
 .tbl td:first-child{white-space:nowrap;font-weight:600;color:var(--strong)}
 @media(max-width:820px){
   .head,.headWide{grid-template-columns:1fr}
+  .headWide .who{height:auto;padding:0 0 16px;border-right:0;border-bottom:1px solid var(--line)}
   .board{padding:22px 16px 26px}
 }
 </style>
@@ -138,26 +143,28 @@ body{
   <div class="boardHead">
     <div class="kicker">Концепт А</div>
     <h1 class="boardTitle">Дорожка во всю ширину</h1>
-    <p class="boardNote">Прогресс уходит из правой колонки вниз и растягивается на всю карточку: слева процент, справа — то, из чего он посчитан («62 из 148 топиков»), между ними одна полоса. Дальность до края читается мгновенно, а число перестаёт быть единственным носителем смысла.</p>
-    <p class="boardNote">Данные уже есть: <code>perc</code>, <code>questions</code> и число отвеченных считает <code>getTopStatsNew</code>. Верхняя строка шапки при этом освобождается — плитки занимают её целиком.</p>
+    <p class="boardNote">Шапка делится надвое: слева во всю высоту — карточка разработчика и больше ничего, справа плитки и под ними полоса во всю ширину правой части. Слева процент, справа — то, из чего он посчитан («62 из 148 топиков»), между ними одна полоса. Дальность до края читается мгновенно, а число перестаёт быть единственным носителем смысла.</p>
+    <p class="boardNote">Данные уже есть: <code>perc</code>, <code>questions</code> и число отвеченных считает <code>getTopStatsNew</code>. Место полукруга занимает правая часть — плитки и полоса встают одной колонкой.</p>
   </div>
   <div class="wrap">
     <div class="stateLabel">Состояние: 42 %</div>
     <div class="card"><div class="cardBody">
       <div class="head headWide">
         <div class="who"><div class="ava"></div><div><div class="whoName">Игорь Т.</div><div class="whoRole">Frontend-разработчик</div></div></div>
-        <div class="tiles">
-          <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
-          <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
-          <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+        <div class="headMain">
+          <div class="tiles">
+            <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
+            <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
+            <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+          </div>
+          <div>
+            <div class="aRow">
+              <div class="aLead"><span class="aVal num">42</span><span class="aValUnit">%</span><span class="aCap">пройдено</span></div>
+              <div class="aRest"><b class="num">62</b> из <b class="num">148</b> топиков</div>
+            </div>
+            <div class="track"><i style="width:42%"></i></div>
+          </div>
         </div>
-      </div>
-      <div style="margin-top:18px">
-        <div class="aRow">
-          <div class="aLead"><span class="aVal num">42</span><span class="aValUnit">%</span><span class="aCap">пройдено</span></div>
-          <div class="aRest"><b class="num">62</b> из <b class="num">148</b> топиков</div>
-        </div>
-        <div class="track"><i style="width:42%"></i></div>
       </div>
     </div></div>
 
@@ -165,18 +172,20 @@ body{
     <div class="card"><div class="cardBody">
       <div class="head headWide">
         <div class="who"><div class="ava"></div><div><div class="whoName">Игорь Т.</div><div class="whoRole">Frontend-разработчик</div></div></div>
-        <div class="tiles">
-          <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
-          <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
-          <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+        <div class="headMain">
+          <div class="tiles">
+            <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
+            <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
+            <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+          </div>
+          <div class="aDone">
+            <div class="aRow">
+              <div class="aLead"><span class="aVal num">100</span><span class="aValUnit">%</span><span class="aCap">пройдено — все топики закрыты</span></div>
+              <div class="aRest"><b class="num">148</b> из <b class="num">148</b> топиков</div>
+            </div>
+            <div class="track"><i style="width:100%"></i></div>
+          </div>
         </div>
-      </div>
-      <div style="margin-top:18px" class="aDone">
-        <div class="aRow">
-          <div class="aLead"><span class="aVal num">100</span><span class="aValUnit">%</span><span class="aCap">пройдено — все топики закрыты</span></div>
-          <div class="aRest"><b class="num">148</b> из <b class="num">148</b> топиков</div>
-        </div>
-        <div class="track"><i style="width:100%"></i></div>
       </div>
     </div></div>
   </div>
@@ -187,7 +196,7 @@ body{
   <div class="boardHead">
     <div class="kicker">Концепт Б</div>
     <h1 class="boardTitle">Ступени по курсам</h1>
-    <p class="boardNote">Та же горизонталь, но разрезанная по курсам: каждый отрезок — курс, заполнен ровно настолько, насколько закрыты его топики. Полоса начинает отвечать не только «сколько», но и «где именно застрял» — текущий курс подсвечен и подписан.</p>
+    <p class="boardNote">Та же правая часть под плитками, но горизонталь разрезана по курсам: каждый отрезок — курс, заполнен ровно настолько, насколько закрыты его топики. Полоса начинает отвечать не только «сколько», но и «где именно застрял» — текущий курс подсвечен и подписан.</p>
     <p class="boardNote">Дороже А: нужен процент на курс, а не общий (<code>res.userCourses</code> с историей ответов уже приходит на дашборд, считать по нему). При числе курсов больше шести отрезки становятся уже подписей — тогда подписи прячутся в тултип.</p>
   </div>
   <div class="wrap">
@@ -195,21 +204,23 @@ body{
     <div class="card"><div class="cardBody">
       <div class="head headWide">
         <div class="who"><div class="ava"></div><div><div class="whoName">Игорь Т.</div><div class="whoRole">Frontend-разработчик</div></div></div>
-        <div class="tiles">
-          <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
-          <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
-          <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
-        </div>
-      </div>
-      <div style="margin-top:18px">
-        <div class="bLegend">
-          <div class="bVal"><b class="num">42 %</b> подготовки</div>
-          <div class="aRest">сейчас: <b>React под нагрузкой</b></div>
-        </div>
-        <div class="steps">
-          <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span></div>
-          <div class="step stepNow"><div class="stepTrack"><i style="width:34%"></i></div><span class="stepName">React под нагрузкой</span></div>
-          <div class="step"><div class="stepTrack"><i style="width:0"></i></div><span class="stepName">Системный дизайн</span></div>
+        <div class="headMain">
+          <div class="tiles">
+            <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
+            <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
+            <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+          </div>
+          <div>
+            <div class="bLegend">
+              <div class="bVal"><b class="num">42 %</b> подготовки</div>
+              <div class="aRest">сейчас: <b>React под нагрузкой</b></div>
+            </div>
+            <div class="steps">
+              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span></div>
+              <div class="step stepNow"><div class="stepTrack"><i style="width:34%"></i></div><span class="stepName">React под нагрузкой</span></div>
+              <div class="step"><div class="stepTrack"><i style="width:0"></i></div><span class="stepName">Системный дизайн</span></div>
+            </div>
+          </div>
         </div>
       </div>
     </div></div>
@@ -218,21 +229,23 @@ body{
     <div class="card"><div class="cardBody">
       <div class="head headWide">
         <div class="who"><div class="ava"></div><div><div class="whoName">Игорь Т.</div><div class="whoRole">Frontend-разработчик</div></div></div>
-        <div class="tiles">
-          <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
-          <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
-          <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
-        </div>
-      </div>
-      <div style="margin-top:18px">
-        <div class="bLegend">
-          <div class="bVal"><b class="num">100 %</b> подготовки</div>
-          <div class="aRest">все курсы закрыты</div>
-        </div>
-        <div class="steps">
-          <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span></div>
-          <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">React под нагрузкой</span></div>
-          <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">Системный дизайн</span></div>
+        <div class="headMain">
+          <div class="tiles">
+            <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
+            <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
+            <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+          </div>
+          <div>
+            <div class="bLegend">
+              <div class="bVal"><b class="num">100 %</b> подготовки</div>
+              <div class="aRest">все курсы закрыты</div>
+            </div>
+            <div class="steps">
+              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">JS: основы</span></div>
+              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">React под нагрузкой</span></div>
+              <div class="step"><div class="stepTrack"><i style="width:100%"></i></div><span class="stepName">Системный дизайн</span></div>
+            </div>
+          </div>
         </div>
       </div>
     </div></div>
@@ -252,11 +265,13 @@ body{
     <div class="card"><div class="cardBody">
       <div class="head headWide">
         <div class="who"><div class="ava"></div><div><div class="whoName">Игорь Т.</div><div class="whoRole">Frontend-разработчик</div></div></div>
-        <div class="tiles">
-          <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
-          <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
-          <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
-          <div class="tile tileProg"><div class="tileVal num">42 %</div><p class="tileCap">Пройдено</p><div class="track"><i style="width:42%"></i></div></div>
+        <div class="headMain">
+          <div class="tiles">
+            <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
+            <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
+            <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+            <div class="tile tileProg"><div class="tileVal num">42 %</div><p class="tileCap">Пройдено</p><div class="track"><i style="width:42%"></i></div></div>
+          </div>
         </div>
       </div>
     </div></div>
@@ -265,11 +280,13 @@ body{
     <div class="card"><div class="cardBody">
       <div class="head headWide">
         <div class="who"><div class="ava"></div><div><div class="whoName">Игорь Т.</div><div class="whoRole">Frontend-разработчик</div></div></div>
-        <div class="tiles">
-          <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
-          <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
-          <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
-          <div class="tile tileProg"><div class="tileVal num">100 %</div><p class="tileCap">Пройдено</p><div class="track"><i style="width:100%"></i></div></div>
+        <div class="headMain">
+          <div class="tiles">
+            <div class="tile"><div class="tileVal num">3</div><p class="tileCap">Курса</p></div>
+            <div class="tile"><div class="tileVal num">12</div><p class="tileCap">Модулей</p></div>
+            <div class="tile"><div class="tileVal num">148</div><p class="tileCap">Топиков</p></div>
+            <div class="tile tileProg"><div class="tileVal num">100 %</div><p class="tileCap">Пройдено</p><div class="track"><i style="width:100%"></i></div></div>
+          </div>
         </div>
       </div>
     </div></div>
@@ -286,11 +303,11 @@ body{
     <table class="tbl">
       <tr><th></th><th>А — Дорожка</th><th>Б — Ступени</th><th>В — Плитка</th></tr>
       <tr><td>Отвечает на вопрос</td><td>сколько пройдено и сколько осталось</td><td>где именно я сейчас</td><td>ещё одно число о курсе</td></tr>
-      <tr><td>Вес на экране</td><td>главный, во всю ширину</td><td>главный, во всю ширину</td><td>наравне с соседями</td></tr>
+      <tr><td>Вес на экране</td><td>главный, во всю ширину правой части</td><td>главный, во всю ширину правой части</td><td>наравне с соседями</td></tr>
       <tr><td>Данные</td><td>есть (<code>perc</code>, топики)</td><td>нужен процент по каждому курсу</td><td>есть</td></tr>
       <tr><td>Риск</td><td>—</td><td>много курсов — подписи не помещаются</td><td>прогресс теряется в ряду</td></tr>
     </table>
-    <p class="boardNote" style="margin-top:14px">Рекомендация — А: горизонталь во всю ширину, число и остаток на одной строке. Б стоит держать как следующий шаг, когда на дашборд начнут приходить проценты по курсам.</p>
+    <p class="boardNote" style="margin-top:14px">Рекомендация — А: горизонталь в правой части шапки, число и остаток на одной строке. Б стоит держать как следующий шаг, когда на дашборд начнут приходить проценты по курсам.</p>
   </div>
 </section>
 
