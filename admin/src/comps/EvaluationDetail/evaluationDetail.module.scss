@@ -373,15 +373,29 @@
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  // Колонки тянутся до общего низа: рваный край под разбором читался как
+  // недовёрстанный экран, а какая из двух окажется длиннее - заранее неизвестно.
+  align-items: stretch;
   margin-bottom: 20px;
 }
 
 // Левая колонка: сам ответ и вывод расшифровки под ним - одной стопкой.
 .answerColumn{
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  align-content: start;
+
+  // Карточки проекта носят свой margin-bottom; в стопке промежуток держит
+  // gap, иначе между ответом и выводом разрыв вдвое шире соседних.
+  > :global(.card){
+    margin-bottom: 0;
+  }
+
+  // Остаток высоты добирает карточка ответа - самая крупная в стопке; низ
+  // колонки совпадает с низом разбора, вывод под ней остаётся по содержимому.
+  > :global(.card):first-child{
+    flex: 1 1 auto;
+  }
 }
 
 // Вывода ещё нет (расшифровку не заказывали) - и промежутка под ответом тоже.
@@ -405,18 +419,21 @@
   margin-bottom: 6px;
 }
 
-// Разбор не уезжает вверх, пока читаешь длинный ответ.
+// Разбор занимает свою колонку целиком - его карточка дотягивается до низа
+// ответа, а не обрывается посередине.
 .sideColumn{
-  position: sticky;
-  top: 16px;
+  display: flex;
+  flex-direction: column;
+
+  > :global(.card){
+    margin-bottom: 0;
+    flex: 1 1 auto;
+  }
 }
 
 @media (max-width: 1200px){
   .columns{
     grid-template-columns: minmax(0, 1fr);
-  }
-  .sideColumn{
-    position: static;
   }
 }
 
