@@ -28,7 +28,7 @@ import {
 import {stopAnyPlay} from "../../App";
 import {recognitionInit, recognitionStart, recognitionStop} from "./AudioShort/AudioShort";
 import Skeleton from "../../libs/Skeleton";
-import SemiCircle from "./Comps/SemiCircle";
+import ProgressTrack from "./Comps/ProgressTrack";
 import {UserImg} from "../Header/Header1";
 import EvaluationWidget from "../EvaluationWidget";
 import MockInterviewWidget from "../MockInterviewWidget";
@@ -466,8 +466,8 @@ function Layout2(props) {
                     <div className="card">
                         <div className="card-body">
                             <div className="row animChild">
-                                <div className="col-lg-4 align-self-center mb-3 mb-lg-0">
-                                    <div className="d-flex align-items-center flex-row flex-wrap">
+                                <div className="col-lg-4 mb-3 mb-lg-0">
+                                    <div className="d-flex align-items-center flex-row flex-wrap headWho">
                                         <div className="position-relative me-3">
 
                                             <Link to="/profile" className="profile-circle">
@@ -492,7 +492,7 @@ function Layout2(props) {
                                 </div>
 
 
-                                <div className="col-lg-5 ms-auto align-self-center">
+                                <div className="col-lg-8 ms-auto align-self-center">
                                     <div className="d-flex justify-content-center">
                                         <div
                                             className="rel border-dashed rounded border-theme-color p-2 me-2 flex-grow-1 flex-basis-0">
@@ -536,51 +536,20 @@ function Layout2(props) {
 
                                             </p>
                                         </div>
-
                                     </div>
-                                </div>
-                                <div className="col-lg-3 ms-auto align-self-center">
-                                    <div className="row">
-                                        <div className="col-sm-12 align-self-center">
-                                            {loading2 && <Skeleton count={1} abs={true}></Skeleton>}
 
-                                            <SemiCircle
-                                                title={t('completionPerc')}
-                                                value={topStatasNew?.perc} zoom={2.8}></SemiCircle>
-                                            {/*<CircleProgress></CircleProgress>*/}
-                                        </div>
-                                        {/*<div className="col-sm-6 align-self-center text-center text-center">*/}
-                                        {/*    <Link to={'/courses'} type="button" className="btn btn-light">*/}
-                                        {/*        <i className="iconoir-arcade"></i>*/}
-                                        {/*        <br/>*/}
-                                        {/*        Продложить подготовку*/}
-                                        {/*    </Link>*/}
-                                        {/*</div>*/}
+                                    <div className="rel mt-3">
+                                        {loading2 && <Skeleton count={1} abs={true}></Skeleton>}
+                                        <ProgressTrack
+                                            title={t('completionPerc')}
+                                            value={topStatasNew?.perc}
+                                            done={topStatasNew?.goodQuestions}
+                                            total={topStatasNew?.questions}
+                                            unit={lng == 'ru'
+                                                ? 'топик' + endWord('ов', topStatasNew?.questions)
+                                                : t('topic') + endWord2('s', topStatasNew?.questions)}
+                                        ></ProgressTrack>
                                     </div>
-                                    {/*<div className="d-flex justify-content-center">*/}
-
-                                    {/*    <div*/}
-                                    {/*        className="rel border-dashed rounded border-theme-color p-2 me-2 flex-grow-1 flex-basis-0">*/}
-                                    {/*        {loading2 && <Skeleton count={1} abs={true}></Skeleton>}*/}
-
-                                    {/*        <h5 className="fw-semibold fs-22 mb-1">{topStatasNew.modules || '-'}</h5>*/}
-                                    {/*        <p className="text-muted mb-0 fw-medium">Модулей</p>*/}
-                                    {/*    </div>*/}
-                                    {/*    <div*/}
-                                    {/*        className="rel border-dashed rounded border-theme-color p-2 me-2 flex-grow-1 flex-basis-0">*/}
-                                    {/*        {loading2 && <Skeleton count={1} abs={true}></Skeleton>}*/}
-
-                                    {/*        <h5 className="fw-semibold fs-22 mb-1">{topStatasNew.questions || '-'}</h5>*/}
-                                    {/*        <p className="text-muted mb-0 fw-medium">Вопросов</p>*/}
-                                    {/*    </div>*/}
-                                    {/*    <div*/}
-                                    {/*        className="rel border-dashed rounded border-theme-color p-2 me-2 flex-grow-1 flex-basis-0">*/}
-                                    {/*        {loading2 && <Skeleton count={1} abs={true}></Skeleton>}*/}
-
-                                    {/*        <h5 className="fw-semibold fs-22 mb-1">{topStatasNew.perc}%</h5>*/}
-                                    {/*        <p className="text-muted mb-0 fw-medium">Пройдено</p>*/}
-                                    {/*    </div>*/}
-                                    {/*</div>*/}
                                 </div>
 
                             </div>
