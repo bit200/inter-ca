@@ -14,10 +14,15 @@ let isAcademy = window.location.href.indexOf('itk.academy') > -1;
 // Домен стейджинга (staging-app.itk.academy) сам по себе попал бы под isAcademy ниже и
 // молча стучался бы в боевой api-razvitie.itk.academy — проверяем его первым.
 let isStaging = /^staging/i.test(window.location.hostname);
+// Прод-хост (portal.itk.academy) тоже содержит "itk.academy" и попал бы под isAcademy,
+// уйдя мимо nginx-прокси этого же хоста прямо на api-razvitie.itk.academy — проверяем его
+// раньше isAcademy и ходим по относительному /api, который nginx проксирует на бэкенд.
+let isProd = /^portal\./i.test(window.location.hostname);
 
 let servers = {
     local: local,
     staging: 'https://staging-api-razvitie.itk.academy',
+    prod: window.location.origin + '/api',
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
     academy:  'https://api-razvitie.itk.academy',
@@ -47,7 +52,7 @@ let logoImgs = {
     academy: Demo,
 }
 
-let serverKey = global.is_local ? 'local' : isStaging ? 'staging' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
+let serverKey = global.is_local ? 'local' : isStaging ? 'staging' : isProd ? 'prod' : isDemo ? 'demo' : isAcademy ? 'academy': isAqa ? 'aqa' : isKedu ? 'kedu' : 'def'
 if (global?.is_local) {
     // serverKey = 'academy'
     // isDemo = true;
@@ -64,6 +69,10 @@ let videoUploaders = {
 
 window.env = {
     domain: servers[serverKey] || servers.def,
+    // Хэш коммита и время сборки — прокидываются в билд деплой-скриптом (REACT_APP_BUILD_SHA/
+    // REACT_APP_BUILD_TIME) для отображения версии на экране логина и в логах при деплое.
+    buildSha: process.env.REACT_APP_BUILD_SHA || 'dev',
+    buildTime: process.env.REACT_APP_BUILD_TIME || '',
     isDemo,
     isAcademy,
     serverKey,

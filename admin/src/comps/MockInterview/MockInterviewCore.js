@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './mockInterview.module.scss';
+import sse from '../../libs/sse/sse';
 import MockInterviewIframe from "./components/MockInterviewIframe";
 import MockInterviewResults from "./components/MockInterviewResults";
 import MockInterviewStartCard from "./components/MockInterviewStartCard";
@@ -32,6 +33,16 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         setItem(null);
         autoStartedRef.current = false;
         global.http.get(`/mock-interview/my-list/${attemptId}`).then(setItem);
+    }, [attemptId]);
+
+    // Live per-question статус оценки (pending/processing/done/error), без перезагрузки
+    // страницы - та же схема, что EvaluationDetail.js для QuizHistory. Первичную полную
+    // загрузку item по-прежнему делает effect выше, здесь только патчим evaluate/evaluateState.
+    useEffect(() => {
+        if (!attemptId) return;
+        return sse.subscribe(`/mock-interview/${attemptId}/evaluate-events`, ({evaluate, evaluateState}) => {
+            setItem(prev => prev && {...prev, evaluate, evaluateState});
+        });
     }, [attemptId]);
 
     // История прошлых попыток по этому interviewId - грузим отдельно от самой
