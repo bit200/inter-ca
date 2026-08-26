@@ -21,17 +21,15 @@ export default function MentorReviewSection({ review, autoScore }) {
         return null;
     }
 
-    const color = score == null ? 'var(--bs-border-color)' : getScoreRGB(score);
     const delta = score == null ? '' : mentorReviewDelta(score, autoScore);
 
     return (
         <div
             className={styles.mentorBand + (score == null ? ' ' + styles.mentorBandFlat : '')}
-            style={{ borderLeftColor: color }}
             data-testid="mentor-review"
         >
             {score != null && (
-                <div className={styles.mentorScore} style={{ color }}>
+                <div className={styles.mentorScore} style={{ color: getScoreRGB(score) }}>
                     {formatScore(score)}<span>/10</span>
                 </div>
             )}
