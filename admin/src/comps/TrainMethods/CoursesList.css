@@ -124,6 +124,51 @@
   outline: none;
 }
 
+/* Подпись и счёт над полосой (задача #634): значение видно сразу, без
+   наведения - слева тихая метка, справа процент и «сколько из скольких». */
+.pbarHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.pbarLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.pbarCount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+.pbarPerc {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bs-body-color);
+}
+
+.pbarOf {
+  font-size: 12.5px;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pbarDone .pbarPerc {
+  color: var(--c1);
+}
+
 .pbarTrack {
   position: relative;
   height: 12px;
