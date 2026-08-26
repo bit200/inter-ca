@@ -38,3 +38,36 @@ describe('EvaluationList: пустой список', () => {
         });
     });
 });
+
+describe('EvaluationList: переключатель сортировки по оценке', () => {
+    it('по кругу переключает направление и держит его в адресе страницы', async () => {
+        const { findByTestId } = renderList();
+
+        const btn = await findByTestId('evaluation-sort-score');
+        expect(btn).toHaveAttribute('data-sort', 'none');
+        expect(btn.textContent).toContain('По оценке');
+
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'desc'));
+        expect(btn.textContent).toContain('Сначала высокие');
+
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'asc'));
+        expect(btn.textContent).toContain('Сначала низкие');
+
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'none'));
+    });
+
+    it('сортировка не слетает при переключении вкладки', async () => {
+        const { findByTestId } = renderList('exam');
+
+        const btn = await findByTestId('evaluation-sort-score');
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'desc'));
+
+        fireEvent.click(await findByTestId('evaluation-group-mode-module'));
+
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'desc'));
+    });
+});

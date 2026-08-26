@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import EvaluationListItemGroup from './EvaluationListItemGroup';
 
-const renderGroup = (items) => render(
+const renderGroup = (items, sort) => render(
     <MemoryRouter>
-        <EvaluationListItemGroup examId={null} label="Без модуля" items={items} groupMode="module"/>
+        <EvaluationListItemGroup examId={null} label="Без модуля" items={items} groupMode="module" sort={sort}/>
     </MemoryRouter>
 );
 
@@ -38,5 +38,33 @@ describe('EvaluationListItemGroup: строки группы', () => {
         expect(card).toHaveClass('card');
         expect(card).toHaveClass('groupCard');
         expect(container.querySelector('.card-body')).toBeNull();
+    });
+});
+
+describe('EvaluationListItemGroup: сортировка по оценке', () => {
+    const items = [
+        { _id: 1, titleInfo: { title: 'Средний' }, evaluate: { status: 'done', result: { score: 5.7 } } },
+        { _id: 2, titleInfo: { title: 'Низкий' }, evaluate: { status: 'done', result: { score: 3.5 } } },
+        { _id: 3, titleInfo: { title: 'Высокий' }, evaluate: { status: 'done', result: { score: 9 } } },
+    ];
+    const rowIds = container => [...container.querySelectorAll('[data-testid="evaluation-group-item"]')]
+        .map(el => Number(el.dataset.itemId));
+
+    it('по убыванию строки идут от высокого балла к низкому', () => {
+        const { container } = renderGroup(items, 'desc');
+
+        expect(rowIds(container)).toEqual([3, 1, 2]);
+    });
+
+    it('по возрастанию - наоборот', () => {
+        const { container } = renderGroup(items, 'asc');
+
+        expect(rowIds(container)).toEqual([2, 1, 3]);
+    });
+
+    it('без сортировки порядок остаётся исходным', () => {
+        const { container } = renderGroup(items);
+
+        expect(rowIds(container)).toEqual([1, 2, 3]);
     });
 });
