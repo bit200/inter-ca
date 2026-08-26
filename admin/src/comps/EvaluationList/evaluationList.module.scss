@@ -24,6 +24,41 @@
     margin-left: auto;
     display: flex;
     gap: 6px;
+
+    div {
+      display: flex;
+      gap: 6px;
+    }
+  }
+}
+
+// Сортировка стоит слева от вкладок и отделена от них тонкой чертой: это не
+// третий режим группировки, а фильтр порядка внутри выбранного.
+.headerActions {
+  align-items: center;
+
+  &::after {
+    content: '';
+    width: 1px;
+    align-self: stretch;
+    margin: 2px 2px;
+    background: var(--bs-border-color);
+    order: 1;
+  }
+
+  & > div {
+    order: 2;
+  }
+}
+
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  i {
+    font-size: 15px;
+    line-height: 1;
   }
 }
 

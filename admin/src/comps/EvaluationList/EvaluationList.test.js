@@ -75,3 +75,56 @@ describe('EvaluationList: сортировка по дате диктовки', 
         expect(dates[0].textContent).toContain('9');
     });
 });
+
+describe('EvaluationList: переключатель сортировки по оценке', () => {
+    it('по кругу переключает направление и держит его в адресе страницы', async () => {
+        const { findByTestId } = renderList();
+
+        const btn = await findByTestId('evaluation-sort-score');
+        expect(btn).toHaveAttribute('data-sort', 'none');
+        expect(btn.textContent).toContain('По оценке');
+
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'desc'));
+        expect(btn.textContent).toContain('Сначала высокие');
+
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'asc'));
+        expect(btn.textContent).toContain('Сначала низкие');
+
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'none'));
+    });
+
+    it('сортировка не слетает при переключении вкладки', async () => {
+        const { findByTestId } = renderList('exam');
+
+        const btn = await findByTestId('evaluation-sort-score');
+        fireEvent.click(btn);
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'desc'));
+
+        fireEvent.click(await findByTestId('evaluation-group-mode-module'));
+
+        await waitFor(() => expect(btn).toHaveAttribute('data-sort', 'desc'));
+    });
+
+    // Две сортировки об разном: дата держит порядок групп, балл переставляет
+    // строки внутри группы. Включение балла не должно ломать порядок по дате
+    // среди равных.
+    it('сортирует строки по баллу поверх сортировки по дате', async () => {
+        const items = [
+            { _id: 1, cd: '2026-05-02T10:00:00Z', titleInfo: { title: 'Средний', moduleInfo: { name: 'Модуль' } }, evaluate: { status: 'done', result: { score: 5 } } },
+            { _id: 2, cd: '2026-05-09T10:00:00Z', titleInfo: { title: 'Низкий', moduleInfo: { name: 'Модуль' } }, evaluate: { status: 'done', result: { score: 2 } } },
+            { _id: 3, cd: '2026-04-20T10:00:00Z', titleInfo: { title: 'Высокий', moduleInfo: { name: 'Модуль' } }, evaluate: { status: 'done', result: { score: 9 } } },
+        ];
+        const utils = renderList('module', items);
+        const ids = () => utils.getAllByTestId('evaluation-group-item').map(el => el.dataset.itemId);
+
+        await utils.findAllByTestId('evaluation-group-item');
+        expect(ids()).toEqual(['2', '1', '3']);
+
+        fireEvent.click(utils.getByTestId('evaluation-sort-score'));
+
+        await waitFor(() => expect(ids()).toEqual(['3', '1', '2']));
+    });
+});
