@@ -26,4 +26,11 @@ describe('пилюля плеера записи', () => {
         expect(ruleOf('.player')).toMatch(/background:\s*var\(--bs-theme-white-color\)/);
         expect(css).not.toMatch(/--bs-body-bg/);
     });
+
+    it('крестик закрытия не полупрозрачный и виден', () => {
+        const close = ruleOf('.player-close');
+        expect(close).not.toMatch(/opacity:\s*0?\.\d/);
+        expect(close).toMatch(/opacity:\s*1;/);
+        expect(close).toMatch(/color:\s*var\(--bs-body-color\)/);
+    });
 });
