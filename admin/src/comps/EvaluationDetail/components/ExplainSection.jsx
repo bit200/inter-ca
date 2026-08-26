@@ -30,11 +30,15 @@ function isNotReady(err) {
 // exists (from `initialExplain` or a fresh click) there is deliberately no button
 // to trigger another run. `initialExplain` lets a caller that already has it (from
 // its own details fetch) show it immediately on page load, with no click required.
+// `summarySlot` - DOM-узел для общего вывода расшифровки. На странице разбора
+// ответа вывод - это фраза про сам ответ, поэтому он стоит отдельной карточкой
+// прямо под "Как прошёл ответ", а не шапкой над вкладками параметров. Без слота
+// вывод, как и раньше, остаётся первой строкой карточки расшифровки.
 // `buttonSlot` - DOM-узел, в который отрендерить саму кнопку. На странице
 // разбора ответа она стоит в шапке, рядом с баллом (главное действие экрана
 // не должно теряться в конце ленты), а расшифровка появляется здесь же, на
 // своём месте. Без слота кнопка, как и раньше, рендерится по месту.
-const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку', initialExplain = null, buttonSlot = null, buttonClassName = 'btn btn-outline-primary btn-sm' }) => {
+const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать оценку', initialExplain = null, buttonSlot = null, summarySlot = null, buttonClassName = 'btn btn-outline-primary btn-sm' }) => {
     const [status, setStatus] = useState(initialExplain ? 'done' : 'idle'); // idle | loading | done | not_ready | error
     const [explain, setExplain] = useState(initialExplain);
     // null - вкладка "Все"; иначе индекс компонента в explain.components
@@ -86,9 +90,24 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                 </button>
     );
 
+    const summary = explain?.summary && (
+        <div className={styles.explainSummary} data-testid="evaluate-explain-summary">{explain.summary}</div>
+    );
+    // Вынесённый вывод - самостоятельный блок, поэтому в слоте он едет вместе
+    // с карточкой и подписью; по месту он остаётся строкой внутри чужой карточки.
+    const summaryCard = summary && (
+        <div className={`card ${styles.summaryCard}`}>
+            <div className="card-body">
+                <div className={styles.summaryTitle}>Вывод</div>
+                {summary}
+            </div>
+        </div>
+    );
+
     return (
         <div className={styles.explainWrapper}>
             {button && (buttonSlot ? createPortal(button, buttonSlot) : button)}
+            {summaryCard && summarySlot && createPortal(summaryCard, summarySlot)}
 
             {status === 'not_ready' && (
                 <div className={styles.explainNotReady} data-testid="evaluate-explain-not-ready">
@@ -101,12 +120,12 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                 </div>
             )}
 
-            {explain && (
+            {/* Вывод мог уехать в слот - тогда карточка расшифровки нужна
+                только ради разбора по параметрам. */}
+            {explain && (components.length > 0 || (!summarySlot && explain.summary)) && (
                 <div className={`card ${styles.explainCard}`} data-testid="evaluate-explain-result">
                     <div className="card-body">
-                        {explain.summary && (
-                            <div className={styles.explainSummary}>{explain.summary}</div>
-                        )}
+                        {!summarySlot && summary}
                         {components.length > 0 && (
                             <>
                                 {components.length > 1 && (

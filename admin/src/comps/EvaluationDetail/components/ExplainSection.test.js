@@ -57,6 +57,26 @@ describe('ExplainSection', () => {
         expect(screen.queryByText('0.7777777777777778')).not.toBeInTheDocument();
     });
 
+    it('переносит общий вывод в слот под ответом, а не оставляет его над вкладками', () => {
+        const slot = document.createElement('div');
+        document.body.appendChild(slot);
+        render(<ExplainSection onExplain={() => Promise.resolve({ explain })}
+                               initialExplain={explain} summarySlot={slot}/>);
+
+        const summary = screen.getByTestId('evaluate-explain-summary');
+        expect(summary).toHaveTextContent(explain.summary);
+        expect(slot.contains(summary)).toBe(true);
+        // в карточке расшифровки, над вкладками, вывода больше нет
+        expect(within(screen.getByTestId('evaluate-explain-result')).queryByTestId('evaluate-explain-summary'))
+            .toBeNull();
+    });
+
+    it('без слота оставляет вывод на прежнем месте - в карточке расшифровки', () => {
+        renderIt();
+        const result = screen.getByTestId('evaluate-explain-result');
+        expect(within(result).getByTestId('evaluate-explain-summary')).toHaveTextContent(explain.summary);
+    });
+
     it('выделяет рекомендацию отдельным акцентным блоком, а не просто текстом', () => {
         renderIt();
         const suggestion = screen.getByText(explain.components[0].suggestion).closest('div');
