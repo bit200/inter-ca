@@ -15,6 +15,7 @@ import CodeRun from "./comps/Suggest/CodeRun";
 import RunExam from "./comps/RunExam";
 import Meter from "./comps/Suggest/MeterFn";
 import AudioShort, {mediaInit, recognitionInit} from "./comps/TrainMethods/AudioShort/AudioShort"
+import {playQuestionAudio, stopQuestionAudio} from "./comps/TrainMethods/questionAudio"
 import './comps/ColorTheme'
 import './scss/myStyleLow.scss'
 import './scss/index.scss'
@@ -64,6 +65,7 @@ export const stopAnyPlay = (key) => {
 
     try {
         myPlayer({src: ''})
+        stopQuestionAudio();
         if (window.speechSynthesis && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
         }
@@ -80,32 +82,52 @@ window.textToVoice = (params, cb, delay = 5) => {
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');
 
-    // console.log("qqqqq delaydelaydelay", delay);
-    timeout = setTimeout(() => {
-        stopAnyPlay('textToVoice');
-        cb && cb();
-    }, delay)
-
-    if ('speechSynthesis' in window) {
-
-        const synth = window.speechSynthesis;
-
-        text = (text || '').replace(/\`\`\`([\s\S]*?)\`\`\`/gi, '')
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0; // Speech rate (1.0 is the default)
-        utterance.pitch = 1.0; // Speech pitch (1.0 is the default)
-        utterance.lang = lng;
-        utterance.onend = () => {
-            clearTimeout(timeout)
-            setTimeout(() => {
-                // console.log("qqqqq titlttl CALLBACK");
-                cb && cb();
-            }, 0)
-        }
-        synth.speak(utterance);
-    } else {
-        alert("Your browser does not support the Web Speech API. Please use a modern browser.");
+    // страховка: если озвучка не сообщит о конце (файл завис, робот молчит) -
+    // всё равно двигаем сценарий дальше
+    let armTimeout = (ms) => {
+        clearTimeout(timeout)
+        timeout = setTimeout(() => {
+            stopAnyPlay('textToVoice');
+            cb && cb();
+        }, ms)
     }
+    let done = () => {
+        clearTimeout(timeout)
+        setTimeout(() => {
+            cb && cb();
+        }, 0)
+    }
+
+    armTimeout(delay);
+
+    // сперва пробуем заранее сгенерированный на бэкенде файл, робот - запасной
+    // вариант, когда озвучки для этого текста ещё нет
+    let speakByRobot = () => {
+        if ('speechSynthesis' in window) {
+
+            const synth = window.speechSynthesis;
+
+            text = (text || '').replace(/\`\`\`([\s\S]*?)\`\`\`/gi, '')
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0; // Speech rate (1.0 is the default)
+            utterance.pitch = 1.0; // Speech pitch (1.0 is the default)
+            utterance.lang = lng;
+            utterance.onend = done;
+            synth.speak(utterance);
+        } else {
+            alert("Your browser does not support the Web Speech API. Please use a modern browser.");
+        }
+    }
+
+    playQuestionAudio({text}, {onEnd: done, onFallback: speakByRobot})
+        .then(played => {
+            // длинный вопрос голосом-образцом звучит дольше, чем оценка по
+            // числу символов - продлеваем страховку по реальной длительности
+            if (played && played.durationSec) {
+                armTimeout((played.durationSec * 1000) + 2000)
+            }
+        })
+        .catch(() => speakByRobot())
 }
 
 // тесты и моки рядом с компонентами в бандл не тянем: иначе их require("fs") и
