@@ -113,6 +113,9 @@ class Login extends React.Component {
               </form>
             </div>
           </div>
+          <div className="tc" style={{fontSize: '11px', opacity: .4, marginTop: '10px'}}>
+            {this.env.buildSha}
+          </div>
           {/*<div className="card" style={{maxWidth: '300px', margin: '0 auto', marginTop: '10px'}}>*/}
           {/*  <div className="card-body">*/}
           {/*    asdf*/}
