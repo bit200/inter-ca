@@ -36,6 +36,10 @@ export default function EvaluationDetail() {
     // на своём месте. callback-ref через useState, чтобы после монтирования
     // шапки произошёл ререндер и портал получил живой узел.
     const [explainSlot, setExplainSlot] = useState(null);
+    // Узел под карточкой "Как прошёл ответ": туда ExplainSection порталом кладёт
+    // общий вывод расшифровки. Это фраза про сам ответ, и её место - сразу под
+    // ответом, а не подзаголовком над вкладками отдельных показателей.
+    const [summarySlot, setSummarySlot] = useState(null);
 
     const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id }, { wo_notify: true })
         .then(data => setItem(data))
@@ -204,22 +208,25 @@ export default function EvaluationDetail() {
                 подряд, а метрики стоят рядом с текстом, а не под ним. */}
             <div className={styles.columns}>
                 {answerText && (
-                    <div className={'card'}>
-                        <div className="card-body">
-                            <div className={styles.title}>Как прошёл ответ</div>
+                    <div className={styles.answerColumn}>
+                        <div className={'card'}>
+                            <div className="card-body">
+                                <div className={styles.title}>Как прошёл ответ</div>
 
-                            {showQuestionTurn && (
-                                <div className={`${styles.turn} ${styles.turnAsk}`}>
-                                    <span className={styles.turnWho}>В</span>
-                                    <div className={styles.turnBody}>{questionText}</div>
+                                {showQuestionTurn && (
+                                    <div className={`${styles.turn} ${styles.turnAsk}`}>
+                                        <span className={styles.turnWho}>В</span>
+                                        <div className={styles.turnBody}>{questionText}</div>
+                                    </div>
+                                )}
+
+                                <div className={styles.turn}>
+                                    <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>О</span>
+                                    <div className={`${styles.turnBody} ${styles.answerText}`}>{answerText}</div>
                                 </div>
-                            )}
-
-                            <div className={styles.turn}>
-                                <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>О</span>
-                                <div className={`${styles.turnBody} ${styles.answerText}`}>{answerText}</div>
                             </div>
                         </div>
+                        <div ref={setSummarySlot} className={styles.summarySlot}/>
                     </div>
                 )}
 
@@ -232,7 +239,7 @@ export default function EvaluationDetail() {
 
             {score != null && (
                 <ExplainSection onExplain={explainSingle} initialExplain={ev.explain}
-                                buttonSlot={explainSlot}
+                                buttonSlot={explainSlot} summarySlot={summarySlot}
                                 buttonClassName={`btn btn-sm ${styles.explainAction}`} />
             )}
         </div>
