@@ -243,15 +243,15 @@
 // Провалившийся показатель - единственный подкрашенный чип: линейку читают
 // боковым зрением, и красная рамка говорит, куда смотреть.
 .mchipBad{
-  border-color: rgba(var(--score-bad-rgb), .45);
-  background: rgba(var(--score-bad-rgb), .12);
+  border-color: rgba(var(--score-bad-rgb), .30);
+  background: rgba(var(--score-bad-rgb), .07);
 }
 
 // Ноль - это не "мало", а "ничего": делений не горит вовсе, поэтому цвет
 // берёт на себя сам чип, иначе строка читается как пустая.
 .mchipZero{
-  border-color: rgba(var(--score-bad-rgb), .55);
-  background: rgba(var(--score-bad-rgb), .16);
+  border-color: rgba(var(--score-bad-rgb), .38);
+  background: rgba(var(--score-bad-rgb), .10);
 
   .mchipName{
     color: var(--score-bad);
