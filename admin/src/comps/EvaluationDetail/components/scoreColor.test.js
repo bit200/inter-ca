@@ -41,4 +41,24 @@ describe('палитра оценки', () => {
             expect(colors).toContain(`${name}-rgb:`);
         }
     });
+
+    // Цвета шкалы стоят рядом в одной строке чипов, поэтому чистые сигнальные
+    // тона (красный 230,25,25 и салатовый 28,190,28) рябили и спорили с
+    // серо-синими нейтралями страницы. Держим палитру приглушённой.
+    it('держит приглушённые тона: без чистых сигнальных цветов', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const colors = fs.readFileSync(path.join(__dirname, '../../../scss/colors.scss'), 'utf8');
+
+        for (const name of ['--score-bad', '--score-mid', '--score-good']) {
+            const m = new RegExp(`${name}-rgb:\\s*(\\d+),\\s*(\\d+),\\s*(\\d+)`).exec(colors);
+            expect(m).toBeTruthy();
+
+            const rgb = m.slice(1).map(Number);
+            // Ни один канал не выкручен в максимум - иначе цвет светится.
+            expect(Math.max(...rgb)).toBeLessThanOrEqual(200);
+            // Разброс каналов - мера насыщенности: чем он меньше, тем спокойнее цвет.
+            expect(Math.max(...rgb) - Math.min(...rgb)).toBeLessThanOrEqual(140);
+        }
+    });
 });
