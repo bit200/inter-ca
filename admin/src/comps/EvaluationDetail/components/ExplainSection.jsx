@@ -90,6 +90,16 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                 </button>
     );
 
+    // Ненавязчивая сноска: разбор пишет модель, и ученик должен читать его как
+    // подсказку, а не как приговор. Стоит подвалом карточки - её видно, когда
+    // текст дочитан, и она не спорит с самим разбором.
+    const aiNote = (
+        <div className={styles.explainAiNote} data-testid="evaluate-explain-ai-note">
+            <i className="iconoir-sparks"/>
+            <span>Разбор и рекомендации составил ИИ — он может ошибаться</span>
+        </div>
+    );
+
     const summary = explain?.summary && (
         <div className={styles.explainSummary} data-testid="evaluate-explain-summary">{explain.summary}</div>
     );
@@ -100,6 +110,9 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
             <div className="card-body">
                 <div className={styles.summaryTitle}>Вывод</div>
                 {summary}
+                {/* Одна сноска на экран: если рядом стоит карточка разбора,
+                    подпись живёт там, под всем текстом сразу. */}
+                {components.length === 0 && aiNote}
             </div>
         </div>
     );
@@ -176,6 +189,7 @@ const ExplainSection = ({ onExplain, buttonLabel = 'Расшифровать о�
                                 </div>
                             </>
                         )}
+                        {aiNote}
                     </div>
                 </div>
             )}
