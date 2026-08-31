@@ -11,11 +11,16 @@ export default function Player(props) {
     let [loading, setLoading] = useState(false)
     let playerRef = useRef(null)
     let autoplayTimerRef = useRef(null)
+    // Плеер открывается только по canplay от свежего src. Браузер шлёт canplay и
+    // после перемотки - в том числе от сброса currentTime при закрытии, поэтому
+    // без этого флага крестик тут же снова открывал плеер и включал запись.
+    let awaitingOpenRef = useRef(false)
 
     // Закрытие плейера должно глушить звук: снятие src с <audio> само по себе
     // воспроизведение не прерывает, а отложенный autoplay может стартовать уже
     // после закрытия - поэтому и таймер, и сам элемент гасим явно.
     let stopPlayback = () => {
+        awaitingOpenRef.current = false
         clearTimeout(autoplayTimerRef.current)
         autoplayTimerRef.current = null
         let player = playerRef.current
@@ -28,6 +33,7 @@ export default function Player(props) {
         if (!newSrc && newSrc !== '') {
             return;
         }
+        awaitingOpenRef.current = !!newSrc;
         setLoading(true);
         setPlayerKey(k => k + 1);
         console.log('LOOOG newSrc', newSrc);
@@ -36,6 +42,8 @@ export default function Player(props) {
     }
 
     let onCanPlay = () => {
+        if (!awaitingOpenRef.current) return;
+        awaitingOpenRef.current = false;
         setLoading(false);
         setOpen(true);
         window.dispatchEvent(new Event('myPlayerReady'));

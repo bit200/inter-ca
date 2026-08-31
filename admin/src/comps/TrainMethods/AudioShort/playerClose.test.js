@@ -55,6 +55,19 @@ describe('плеер записи: закрытие', () => {
         expect(container.querySelector('audio').paused).toBe(true);
     });
 
+    it('canplay после закрытия не открывает плеер заново и не включает запись', () => {
+        const { container } = openWithAudio();
+        media.play.mockClear();
+
+        act(() => { fireEvent.click(container.querySelector('.player-close')); });
+        // Сброс currentTime при закрытии заставляет браузер прислать canplay ещё раз
+        act(() => { fireEvent.canPlay(container.querySelector('audio')); });
+        act(() => { jest.advanceTimersByTime(3000); });
+
+        expect(container.querySelector('.player').className).not.toContain('opened');
+        expect(media.play).not.toHaveBeenCalled();
+    });
+
     it('отложенный autoplay не стартует, если плеер закрыли до его срабатывания', () => {
         const view = render(<Player/>);
         act(() => { window.myPlayer({ src: 'http://example.com/a.mp3' }); });
