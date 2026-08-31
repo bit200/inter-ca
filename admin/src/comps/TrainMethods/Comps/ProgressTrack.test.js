@@ -18,24 +18,23 @@ describe('ProgressTrack - полоса прогресса в шапке дашб
         expect(head.querySelector('.pbarOf')).toHaveTextContent('62 из 148 топиков');
     });
 
-    it('панель на наведении показывает процент и сколько топиков из скольких', () => {
-        render(<ProgressTrack value={42} done={62} total={148} unit="топиков"/>);
-        expect(screen.getByText('42')).toBeInTheDocument();
-        expect(screen.getByText('62')).toBeInTheDocument();
-        expect(screen.getByText('148')).toBeInTheDocument();
-        expect(screen.getByText(/Осталось 86 топиков/)).toBeInTheDocument();
-    });
-
-    it('на 100 % вместо остатка пишет, что подготовка завершена', () => {
-        render(<ProgressTrack value={100} done={148} total={148} unit="топиков"/>);
-        expect(screen.getByText(/подготовка завершена/)).toBeInTheDocument();
+    it('не показывает всплывающую панель при наведении', () => {
+        const { container } = render(<ProgressTrack value={42} done={62} total={148} unit="топиков"/>);
+        expect(container.querySelector('.pbarPop')).not.toBeInTheDocument();
         expect(screen.queryByText(/Осталось/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/подготовка завершена/)).not.toBeInTheDocument();
     });
 
-    it('полоса доступна с клавиатуры и объявляет значение', () => {
+    it('на 100 % тоже обходится без панели', () => {
+        const { container } = render(<ProgressTrack value={100} done={148} total={148} unit="топиков"/>);
+        expect(container.querySelector('.pbarPop')).not.toBeInTheDocument();
+        expect(container.querySelector('.pbarPerc')).toHaveTextContent('100%');
+    });
+
+    it('полоса объявляет значение и не ловит фокус', () => {
         const { container } = render(<ProgressTrack value={42} done={62} total={148} unit="топиков"/>);
         const bar = container.querySelector('.pbar');
-        expect(bar).toHaveAttribute('tabindex', '0');
+        expect(bar).not.toHaveAttribute('tabindex');
         expect(bar).toHaveAttribute('aria-valuenow', '42');
     });
 });
