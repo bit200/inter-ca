@@ -19,6 +19,7 @@ import WorkSessions from "./Comps/WorkSessions";
 import Statistics from "./Comps/Statistics";
 import {
     pickRepeatQuizes,
+    filterQuestionsForRepeat,
     createAutoInterview,
     getAllQuestions,
     getDBQuizes,
@@ -119,7 +120,7 @@ function Layout2(props) {
                 })
             })
 
-            let { calcQuestion = {} } = r.result || {};
+            let { calcQuestion = {}, questionsWithQuizes = {} } = r.result || {};
             let questions = ((r.result || {}).questions || []).map(it => {
                 return { ...it, ...calcQuestion[it._id] || {}, isRead: !!qhistory[it._id]?.isRead }
             });
@@ -130,7 +131,9 @@ function Layout2(props) {
                     ...it
                 }
             }), {});
-            let visibleQuestions = questions.filter(it => it.isRead);
+            // В список на повторение берём только прочитанные вопросы, к которым есть квизы:
+            // у вопроса без квизов клик открывал заглушку "вы повторили все задания".
+            let visibleQuestions = filterQuestionsForRepeat(questions.filter(it => it.isRead), questionsWithQuizes);
             let visibleQuestionsObj = visibleQuestions.reduce((acc, it) => {
                 return { ...acc, [it._id]: true }
             }, {});

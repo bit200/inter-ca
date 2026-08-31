@@ -60,6 +60,19 @@ export function getPercByIds(questions, res) {
 }
 
 
+// Вкладка "На повторение" показывает прочитанные вопросы, но квизы к ним заводятся
+// отдельно: у части вопросов их нет вовсе, а бэкенд /load-by-any умеет отдавать квиз
+// только по _id (ветка загрузки общего квиза по question там отключена). Клик по такому
+// вопросу открывал заглушку "На данный момент вы повторили все задания" - вопрос виден,
+// а повторять нечего. Не показываем такие вопросы в списке вовсе.
+export function hasRepeatQuizes(questionsWithQuizes, _id) {
+    return (((questionsWithQuizes || {})[_id]) || []).some(it => it && it._id != null);
+}
+
+export function filterQuestionsForRepeat(questions = [], questionsWithQuizes = {}) {
+    return (questions || []).filter(it => hasRepeatQuizes(questionsWithQuizes, it && it._id));
+}
+
 // Вопрос попадает в список "На повторение" по факту прочтения (isRead), а квизы к нему
 // заводятся отдельно - у части вопросов их нет вовсе. Раньше выборка шла строго по
 // questionsWithQuizes, поэтому клик по такому вопросу давал пустой список и заглушку
