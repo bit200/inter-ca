@@ -15,7 +15,8 @@ import Check from "../../StarRating";
 import {startAudioStream, sendAudioChunk, stopAudioStream, abortAudioStream} from './audioStream';
 import fixWebmDuration from 'fix-webm-duration';
 import {createSilenceWatcher, isEmptyRecording} from "./silenceCheck";
-import {questionSpeechText} from "../questionAudio";
+import {questionSpeechText, playQuestionAudio, getLastQuestionAudioProbe, questionAudioLog} from "../questionAudio";
+import Button from "../../../libs/Button";
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -92,6 +93,8 @@ let AudioShort = forwardRef((props, ref) => {
     let [cd, setCd] = useState(new Date());
     let [count, setCount] = useState(0)
     let [src, setSrc] = useState('/test.mp3')
+    // ВРЕМЕННО: состояние отладочной кнопки озвучки (см. блок «Отладка озвучки» ниже)
+    let [audioDebug, setAudioDebug] = useState('')
     let {item, woNext, isExam} = props || {}
     let {attemptsForNextIfNot5 = 0} = props?.opts || {};
     let {desc, specialTitle, title, lng, smallTitle} = titleInfo || {};
@@ -652,6 +655,35 @@ console.log('LOOOG', 'COMPLETE');
                 </div>}
                 {specialTitle && <div className={'specialTitleInAudio'}>{specialTitle}</div>}
                 {desc && <MdPreview source={desc}/>}
+
+                {/* ВРЕМЕННО, для отладки {reason: 'missing'}: ручной прогон озвучки
+                    текущего вопроса. Подробности пути - в консоли по префиксу
+                    [question-audio]. Убрать вместе с логами, когда причина найдётся. */}
+                {!!title && <div style={{marginTop: '12px', opacity: .55, fontSize: '12px'}}>
+                    <Button color={4} size={'xs'} onClick={() => {
+                        let text = questionSpeechText(titleInfo || {});
+                        setAudioDebug('Спрашиваю озвучку...');
+                        questionAudioLog('ручной прогон по кнопке', {text});
+                        playQuestionAudio({text}, {
+                            onEnd: () => setAudioDebug('Файл доиграл до конца'),
+                            onFallback: () => {
+                                let probe = getLastQuestionAudioProbe() || {};
+                                setAudioDebug('Озвучки нет: ' + (probe.reason || 'файл не проигрался'));
+                            },
+                        }).then(played => {
+                            if (played) {
+                                setAudioDebug('Играю файл' + (played.durationSec ? ', ' + played.durationSec + ' сек' : ''));
+                            }
+                        });
+                    }}>Озвучить вопрос</Button>
+                    <div style={{marginTop: '6px'}}>
+                        Отладка озвучки, подробности в консоли: [question-audio]
+                    </div>
+                    {!!audioDebug && <div style={{marginTop: '2px'}}>{audioDebug}</div>}
+                    <div style={{marginTop: '2px', wordBreak: 'break-word'}}>
+                        Текст запроса: {JSON.stringify(questionSpeechText(titleInfo || {}))}
+                    </div>
+                </div>}
             </div>}
         </div>
         <div>
