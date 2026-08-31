@@ -18,6 +18,7 @@ import Interviews from "./Comps/Interviews";
 import WorkSessions from "./Comps/WorkSessions";
 import Statistics from "./Comps/Statistics";
 import {
+    pickRepeatQuizes,
     createAutoInterview,
     getAllQuestions,
     getDBQuizes,
@@ -193,76 +194,24 @@ function Layout2(props) {
             query,
         } = opts || {};
         let sortKey = opts.sortKey || isExam ? 'nextCd' : 'nextCd'
-        let questionsObj = questions.reduce((acc, it) => ({ ...acc, [it._id || it]: true }), {})
-
         let { result, userCourses } = res || {};
         let { calcQuestion, questionsWithQuizes, calcQuiz = {} } = result || {};
         // let visibleQuestionsObj = userCourses.reduce((acc, it, ind) => {
         //     return {...acc, ...it.qHistory || {}}
         // }, {})
         // let visibleQuestions = questions.filter(it => (visibleQuestionsObj[it._id] || {})?.status == 'ok')
-        console.log("qqqqq quiestions 00", questionsWithQuizes);
-
-        function isNotInQList(key) {
-            return !questionsObj[key]
-        }
-
-        let allQuizes = Object.keys(questionsWithQuizes).reduce((acc, key) => {
-            if (isNotInQList(key)) {
-                return acc;
-            }
-            let it = questionsWithQuizes[key] || []
-            return [...acc, ...it.map(it => {
-                return { ...it, question: key, ...calcQuiz[it._id] || {} }
-            })]
-        }, [])
-
-        let sortedAllQuizes = _.sortBy(allQuizes, (it) => {
-            let cd = it.nextCd || 0;
-
-            let v = cd || getRecentlyOpenCd(it) || 0;
-            return isExam ? v : cd;
+        // Выборка квизов вынесена в pickRepeatQuizes (mainMethods.js): у вопроса из списка
+        // "На повторение" может не быть собственных квизов, тогда берётся общий квиз
+        // по самому вопросу - иначе открывалась заглушка "вы повторили все задания".
+        let filteredQuizes = pickRepeatQuizes({
+            questionsWithQuizes,
+            calcQuiz,
+            questionIds: questions,
+            visibleQuestionsObj,
+            total,
+            isExam,
+            getRecentCd: getRecentlyOpenCd,
         });
-        console.log("qqqqq allQuizesallQuizesallQuizes", isExam, questionsWithQuizes, questionsObj, questions, allQuizes);
-
-        let orders = {}
-        _.each(sortedAllQuizes, (item, ind) => {
-            let questionId = item.question;
-            orders[questionId] = orders[questionId] || 0;
-            item.order = ++orders[questionId]
-        })
-
-        // console.log("qqqqq quiestions 0", visibleQuestions, res);
-        // // let grouppedQuizes = _.groupBy(calcQuiz, 'question')
-        // console.log("qqqqq quiestions 2", {calcQuestion, calcQuiz});
-        console.log("qqqqq quiestions 3", sortedAllQuizes.map(it => it.nextCd));
-        console.log("qqqqq quiestions 3", sortedAllQuizes.map(it => it._id));
-
-
-        let days = 1000 * 24 * 3600;
-        let _lastCd = Math.round((new Date().getTime() - 1 * days) / 1000)
-
-        function insertIterations(sortedAllQuizes, { total = 9, quizes = [], order = 1, alreadyQuizes = {} }) {
-            let localQuestions = {}
-            _.each(sortedAllQuizes, (item, ind) => {
-                let { _id, question, order, lastCd } = item;
-                if (
-                    _lastCd > lastCd &&
-                    visibleQuestionsObj[question] && order == 1 && !alreadyQuizes[_id] && !localQuestions[question] && quizes.length < total) {
-                    quizes.push(item)
-                }
-            })
-            _.each(sortedAllQuizes, (item, ind) => {
-                let { _id, question, order } = item;
-
-                if (visibleQuestionsObj[question] && !alreadyQuizes[_id] && quizes.length < total) {
-                    quizes.push(item)
-                }
-            })
-            return quizes;
-        }
-
-        let filteredQuizes = insertIterations(sortedAllQuizes, { total })
         console.log("qqqqq quiestions 3.5", filteredQuizes);
         setModalOpts({ loading: true, quizes: [] })
         setOpen(true)
