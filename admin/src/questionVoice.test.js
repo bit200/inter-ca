@@ -12,6 +12,6 @@ describe('озвучка вопроса в App.js', () => {
     });
 
     it('играет заранее сгенерированный файл', () => {
-        expect(src).toMatch(/playQuestionAudio\(\{text\}/);
+        expect(src).toMatch(/playQuestionAudio\(\{text, quizId\}/);
     });
 });

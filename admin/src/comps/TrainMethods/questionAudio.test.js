@@ -146,3 +146,43 @@ describe('отладочные логи озвучки', () => {
         expect(getLastQuestionAudioProbe()).toMatchObject({ok: false, reason: 'request-failed'});
     });
 });
+
+// Кандидату показывается не то же поле вопроса, из которого сгенерирован файл,
+// поэтому по тексту с экрана на озвученный вопрос приходило {reason: 'missing'}.
+// Озвучку спрашиваем по id квиза - текст собирает сам бэкенд.
+describe('озвучка по id квиза', () => {
+    afterEach(() => {
+        stopQuestionAudio();
+        delete global.http;
+    });
+
+    it('спрашивает озвучку по квизу, а не по тексту с экрана', async () => {
+        const get = jest.fn(() => Promise.resolve({url: 'https://s3/q.wav?sig=2', durationSec: 7}));
+        const post = jest.fn(() => Promise.resolve({reason: 'missing'}));
+        global.http = {get, post};
+
+        const played = await playQuestionAudio({text: 'Осветите тему', quizId: 2814}, {AudioCtor: FakeAudio});
+
+        expect(get).toHaveBeenCalledWith('/question-audio/quiz/2814', {}, {wo_notify: true});
+        expect(post).not.toHaveBeenCalled();
+        expect(FakeAudio.last.src).toBe('https://s3/q.wav?sig=2');
+        expect(played).toEqual({durationSec: 7});
+    });
+
+    it('без озвучки по квизу пробует по тексту', async () => {
+        const get = jest.fn(() => Promise.resolve({reason: 'missing'}));
+        const post = jest.fn(() => Promise.resolve({url: 'https://s3/by-text.wav'}));
+        global.http = {get, post};
+
+        const info = await requestQuestionAudioUrl({text: 'Что такое замыкание?', quizId: 77});
+
+        expect(post).toHaveBeenCalledWith('/question-audio/url', {text: 'Что такое замыкание?'}, {wo_notify: true});
+        expect(info.url).toBe('https://s3/by-text.wav');
+    });
+
+    it('упавший запрос по квизу не ломает сценарий', async () => {
+        global.http = {get: () => Promise.reject(new Error('boom')), post: () => Promise.resolve({reason: 'missing'})};
+
+        await expect(requestQuestionAudioUrl({text: 'вопрос', quizId: 5})).resolves.toBe(null);
+    });
+});
