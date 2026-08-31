@@ -1,16 +1,9 @@
 import React from 'react';
 import styles from '../mockInterview.module.scss';
 import { attemptScoreSummary } from './evaluateJobState';
+import { attemptStatusLabel } from './attemptStatus';
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
-
-const STATUS_LABEL = {
-    draft: 'Ожидает',
-    active: 'Ожидает',
-    started: 'Начато',
-    completed: 'Завершено',
-    evaluated: 'Завершено',
-};
 
 // Балл попытки агрегируем сами: отдельного поля с итогом на попытке нет
 // (см. mockInterview.md), а часть вопросов может остаться без оценки, если
@@ -49,7 +42,7 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                                 {isCurrent && <span className={styles.cardMode}>{t('currentAttempt') || 'Текущая'}</span>}
                                             </div>
                                             <div className={styles.cardMeta}>
-                                                <span>{STATUS_LABEL[attempt.status] || attempt.status}</span>
+                                                <span>{attemptStatusLabel(attempt)}</span>
                                                 {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
                                             </div>
                                             {score != null && <div>{'Балл: ' + score + '/10'}</div>}

@@ -5,6 +5,7 @@ import MockInterviewIframe from "./components/MockInterviewIframe";
 import MockInterviewResults from "./components/MockInterviewResults";
 import MockInterviewStartCard from "./components/MockInterviewStartCard";
 import MockInterviewAttemptHistory from "./components/MockInterviewAttemptHistory";
+import { isStaleStarted } from './components/attemptStatus';
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
 
@@ -29,10 +30,20 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     const itemRef = useRef(null);
     itemRef.current = item;
 
+    // Брошенная попытка ("начато" больше 5 часов назад) сама не закрывается -
+    // закрываем её тем же PUT, что и обычное завершение, и дальше работаем уже
+    // с завершённой попыткой. Сетевую ошибку глушим: на экране попытка всё
+    // равно показывается завершённой, следующая загрузка попробует снова.
+    const closeIfStale = (attempt) => {
+        if (!isStaleStarted(attempt)) return attempt;
+        global.http.put(`/mock-interview/my-list/${attempt._id}`, { status: 'completed' }, { wo_notify: true }).catch(() => {});
+        return { ...attempt, status: 'completed' };
+    };
+
     useEffect(() => {
         setItem(null);
         autoStartedRef.current = false;
-        global.http.get(`/mock-interview/my-list/${attemptId}`).then(setItem);
+        global.http.get(`/mock-interview/my-list/${attemptId}`).then(loaded => setItem(closeIfStale(loaded)));
     }, [attemptId]);
 
     // Live per-question статус оценки (pending/processing/done/error), без перезагрузки
@@ -51,7 +62,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     useEffect(() => {
         if (!item || !item.interviewId) return;
         global.http.get('/mock-interview/my-list', { filter: { interviewId: item.interviewId } }, { wo_notify: true })
-            .then(r => setHistory(r.items || []))
+            .then(r => setHistory((r.items || []).map(closeIfStale)))
             .catch(() => {});
     }, [item?.interviewId]);
 
@@ -59,7 +70,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     // перезапуска оценки одного вопроса.
     const reloadItem = () => global.http
         .get(`/mock-interview/my-list/${attemptId}`, {}, { wo_notify: true })
-        .then(setItem)
+        .then(loaded => setItem(closeIfStale(loaded)))
         .catch(() => {});
 
     const isPassed = !!item && (PASSED_STATUSES.includes(item.status) || completedLocally);
