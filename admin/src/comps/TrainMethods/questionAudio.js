@@ -20,6 +20,26 @@ export function questionSpeechText(info) {
 
 let currentAudio = null;
 
+// ВРЕМЕННО (отладка задачи про {reason: 'missing'}): подробный лог всего пути
+// озвучки - какой текст ушёл на бэкенд, что он ответил, что случилось с файлом.
+// Когда причина найдётся, логи и кнопку "Озвучить вопрос" из AudioShort убрать.
+const LOG_PREFIX = '[question-audio]';
+
+export function questionAudioLog(...args) {
+    try {
+        console.log(LOG_PREFIX, ...args);
+    } catch (e) {
+    }
+}
+
+// Последний ответ бэкенда - чтобы отладочная кнопка могла показать причину
+// прямо на экране, не заставляя человека открывать консоль.
+let lastProbe = null;
+
+export function getLastQuestionAudioProbe() {
+    return lastProbe;
+}
+
 // Останавливает проигрывание готового файла - зовётся из stopAnyPlay, чтобы
 // предыдущий вопрос не звучал поверх нового.
 export function stopQuestionAudio() {
@@ -27,6 +47,7 @@ export function stopQuestionAudio() {
     if (!audio) {
         return;
     }
+    questionAudioLog('останавливаю проигрывание');
     currentAudio = null;
     try {
         audio.pause();
@@ -41,12 +62,24 @@ export function stopQuestionAudio() {
 export function requestQuestionAudioUrl(text, http) {
     http = http || global.http;
     if (!text || !http || !http.post) {
+        lastProbe = {ok: false, reason: !text ? 'empty-text' : 'no-http', text: text || ''};
+        questionAudioLog('запрос не отправлен', lastProbe);
         return Promise.resolve(null);
     }
 
+    questionAudioLog('запрашиваю ссылку', {text, length: text.length});
+
     return http.post('/question-audio/url', {text}, {wo_notify: true})
-        .then(r => (r && r.url ? r : null))
-        .catch(() => null);
+        .then(r => {
+            lastProbe = {ok: !!(r && r.url), reason: (r && r.reason) || null, text, answer: r || null};
+            questionAudioLog('ответ бэкенда', lastProbe);
+            return (r && r.url ? r : null);
+        })
+        .catch(e => {
+            lastProbe = {ok: false, reason: 'request-failed', text, error: (e && e.message) || String(e)};
+            questionAudioLog('запрос упал', lastProbe);
+            return null;
+        });
 }
 
 // Проигрывает готовую озвучку вопроса.
@@ -73,6 +106,7 @@ export function playQuestionAudio(params, opts) {
 
     return requestQuestionAudioUrl(text, http).then(info => {
         if (!info || !AudioCtor) {
+            questionAudioLog('озвучки не будет', {hasInfo: !!info, hasAudioCtor: !!AudioCtor});
             return finish(onFallback)(), null;
         }
 
@@ -80,18 +114,30 @@ export function playQuestionAudio(params, opts) {
         try {
             audio = new AudioCtor(info.url);
         } catch (e) {
+            questionAudioLog('Audio не создался', {error: (e && e.message) || String(e)});
             return finish(onFallback)(), null;
         }
         currentAudio = audio;
-        audio.onended = finish(onEnd);
-        audio.onerror = finish(onFallback);
+        audio.onended = () => {
+            questionAudioLog('файл доиграл до конца');
+            finish(onEnd)();
+        };
+        audio.onerror = () => {
+            questionAudioLog('ошибка проигрывания файла', {url: info.url});
+            finish(onFallback)();
+        };
 
         try {
+            questionAudioLog('играю файл', {url: info.url, durationSec: info.durationSec || null});
             let played = audio.play();
             if (played && played.catch) {
-                played.catch(finish(onFallback));
+                played.catch(e => {
+                    questionAudioLog('play() отклонён браузером', {error: (e && e.message) || String(e)});
+                    finish(onFallback)();
+                });
             }
         } catch (e) {
+            questionAudioLog('play() бросил ошибку', {error: (e && e.message) || String(e)});
             finish(onFallback)();
             return null;
         }

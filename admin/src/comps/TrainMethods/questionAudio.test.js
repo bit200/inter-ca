@@ -1,4 +1,10 @@
-import {playQuestionAudio, questionSpeechText, requestQuestionAudioUrl, stopQuestionAudio} from './questionAudio';
+import {
+    playQuestionAudio,
+    questionSpeechText,
+    requestQuestionAudioUrl,
+    stopQuestionAudio,
+    getLastQuestionAudioProbe,
+} from './questionAudio';
 
 class FakeAudio {
     constructor(src) {
@@ -94,5 +100,49 @@ describe('текст запроса озвучки', () => {
     it('без вопроса отдаёт пустую строку', () => {
         expect(questionSpeechText({smallTitle: 'Раскройте вопрос'})).toBe('');
         expect(questionSpeechText()).toBe('');
+    });
+});
+
+
+// Временная отладка: на озвученном вопросе приходит {reason: 'missing'}, и на
+// боевом стенде это не воспроизводится. Путь озвучки пишет лог с префиксом
+// [question-audio], а последний ответ бэкенда доступен отладочной кнопке.
+describe('отладочные логи озвучки', () => {
+    let log;
+
+    beforeEach(() => {
+        log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        log.mockRestore();
+        delete global.http;
+    });
+
+    it('пишет в консоль текст запроса и ответ бэкенда', async () => {
+        global.http = {post: () => Promise.resolve({reason: 'missing'})};
+
+        await requestQuestionAudioUrl('Что такое замыкание?');
+
+        let lines = log.mock.calls.filter(args => args[0] === '[question-audio]');
+        expect(lines.length).toBeGreaterThanOrEqual(2);
+        expect(JSON.stringify(lines)).toContain('Что такое замыкание?');
+        expect(JSON.stringify(lines)).toContain('missing');
+    });
+
+    it('запоминает причину отказа для отладочной кнопки', async () => {
+        global.http = {post: () => Promise.resolve({reason: 'missing'})};
+
+        await requestQuestionAudioUrl('вопрос');
+
+        expect(getLastQuestionAudioProbe()).toMatchObject({ok: false, reason: 'missing', text: 'вопрос'});
+    });
+
+    it('упавший запрос тоже попадает в отладку', async () => {
+        global.http = {post: () => Promise.reject(new Error('boom'))};
+
+        await requestQuestionAudioUrl('вопрос');
+
+        expect(getLastQuestionAudioProbe()).toMatchObject({ok: false, reason: 'request-failed'});
     });
 });
