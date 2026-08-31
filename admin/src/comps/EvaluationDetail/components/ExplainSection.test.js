@@ -91,6 +91,9 @@ describe('ExplainSection', () => {
         const note = screen.getByTestId('evaluate-explain-ai-note');
         expect(note).toBeInTheDocument();
         expect(note.textContent).toMatch(/ИИ/);
+        // Подпись мягкая: подсказываем, как читать разбор, а не пугаем ошибками
+        expect(note.textContent).toMatch(/подсказк/i);
+        expect(note.textContent).not.toMatch(/ошиб/i);
     });
 
     it('не повторяет подпись про ИИ дважды, когда вывод вынесен в слот', () => {
