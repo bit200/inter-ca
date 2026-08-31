@@ -121,7 +121,6 @@
 
 .pbar {
   position: relative;
-  outline: none;
 }
 
 /* Подпись и счёт над полосой (задача #634): значение видно сразу, без
@@ -175,7 +174,6 @@
   border-radius: 5px;
   background: var(--b0);
   overflow: hidden;
-  transition: box-shadow .12s ease;
 }
 
 .pbarTrack > i {
@@ -186,104 +184,7 @@
   transition: width .3s ease;
 }
 
-.pbar:hover .pbarTrack,
-.pbar:focus .pbarTrack,
-.pbar:focus-within .pbarTrack {
-  box-shadow: 0 0 0 3px var(--c10);
-}
-
-.pbarPop {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(100% + 11px);
-  z-index: 6;
-  padding: 13px 16px;
-  background: var(--bs-secondary-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  box-shadow: 0 12px 30px rgba(16, 26, 51, .18);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(5px);
-  transition: opacity .14s ease, transform .14s ease, visibility .14s;
-}
-
-.pbar:hover .pbarPop,
-.pbar:focus .pbarPop,
-.pbar:focus-within .pbarPop {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-}
-
-.pbarPop::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 28px;
-  width: 9px;
-  height: 9px;
-  background: var(--bs-secondary-bg);
-  border-right: 1px solid var(--bs-border-color);
-  border-bottom: 1px solid var(--bs-border-color);
-  transform: rotate(45deg);
-}
-
-.pbarPopRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.pbarPopVal {
-  font-size: 27px;
-  font-weight: 700;
-  letter-spacing: -.02em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.pbarPopUnit {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--c1);
-  margin-left: 2px;
-}
-
-.pbarPopCap {
-  font-size: 13px;
-  color: var(--bs-secondary-color);
-  margin-left: 6px;
-}
-
-.pbarPopSide {
-  font-size: 13px;
-  color: var(--bs-secondary-color);
-  font-variant-numeric: tabular-nums;
-}
-
-.pbarPopSide b {
-  font-weight: 600;
-}
-
-.pbarPopFoot {
-  font-size: 12.5px;
-  color: var(--bs-secondary-color);
-  margin: 7px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--bs-border-color);
-}
-
-.pbarDone .pbarPopVal,
-.pbarDone .pbarPopUnit {
-  color: var(--c1);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .pbarPop,
-  .pbarTrack,
   .pbarTrack > i {
     transition: none;
   }
