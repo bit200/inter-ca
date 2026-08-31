@@ -1,4 +1,4 @@
-import {playQuestionAudio, requestQuestionAudioUrl, stopQuestionAudio} from './questionAudio';
+import {playQuestionAudio, questionSpeechText, requestQuestionAudioUrl, stopQuestionAudio} from './questionAudio';
 
 class FakeAudio {
     constructor(src) {
@@ -75,5 +75,24 @@ describe('озвучка вопроса готовым файлом', () => {
         FakeAudio.last.onerror();
 
         expect(onFallback).toHaveBeenCalledTimes(1);
+    });
+});
+
+// Бэкенд озвучивает текст самого вопроса, поэтому спрашивать озвучку надо
+// ровно по нему: с приклеенной подсказкой под вопросом хэш не сходится и на
+// озвученный вопрос приходит {reason: 'missing'}.
+describe('текст запроса озвучки', () => {
+    it('не добавляет к вопросу подсказку под ним', () => {
+        let text = questionSpeechText({
+            title: 'Что выведет в консоль, почему?',
+            smallTitle: 'Расскажите возможные алгоритмы решения, подводные камни, плюсы и минусы',
+        });
+
+        expect(text).toBe('Что выведет в консоль, почему?');
+    });
+
+    it('без вопроса отдаёт пустую строку', () => {
+        expect(questionSpeechText({smallTitle: 'Раскройте вопрос'})).toBe('');
+        expect(questionSpeechText()).toBe('');
     });
 });

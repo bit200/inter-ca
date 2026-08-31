@@ -15,6 +15,7 @@ import Check from "../../StarRating";
 import {startAudioStream, sendAudioChunk, stopAudioStream, abortAudioStream} from './audioStream';
 import fixWebmDuration from 'fix-webm-duration';
 import {createSilenceWatcher, isEmptyRecording} from "./silenceCheck";
+import {questionSpeechText} from "../questionAudio";
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -236,7 +237,7 @@ let AudioShort = forwardRef((props, ref) => {
 
         console.log("qqqqq smallTitle", {smallTitle});
         textToVoice({
-            text: title + (/расскажите возможные а/gi.test(smallTitle) && smallTitle != title ? `. ${smallTitle}` : ``),
+            text: questionSpeechText(info),
             lng,
             textToVoiceSpeedMSPerSymbolLimit: opts.textToVoiceSpeedMSPerSymbolLimit,
             textToVoiceTimeoutMS: opts.textToVoiceTimeoutMS,
