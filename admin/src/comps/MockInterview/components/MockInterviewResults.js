@@ -91,15 +91,12 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
         global.http.get('/eval-metric-schemas').then(r => setMetricSchemas(r.items || []));
     }, []);
 
+    // Пустой попытке отдельная карточка-заглушка не нужна: она занимала целый
+    // экран ради одной серой строки и висела в отрыве от того, к чему относится.
+    // Про отсутствие результатов теперь пишет история попыток - прямо у той
+    // попытки, у которой их нет (см. MockInterviewAttemptHistory).
     if (!turns.length) {
-        return (
-            <div className="card">
-                <div className={`card-body ${styles.cardBody}`}>
-                    <p className={styles.cardName}>{interview.name}</p>
-                    <div className={styles.noInfo}>Результаты пока недоступны</div>
-                </div>
-            </div>
-        );
+        return null;
     }
 
     return (

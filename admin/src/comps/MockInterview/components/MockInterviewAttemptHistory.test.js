@@ -27,6 +27,29 @@ describe('MockInterviewAttemptHistory', () => {
         expect(screen.getByText('Оценено 2 из 3 вопросов')).toBeInTheDocument();
     });
 
+    it('у завершённой попытки без единой оценки пишет, что результатов пока нет', () => {
+        const empty = { _id: 2, status: 'completed', attemptNumber: 2, turns: [], evaluate: [] };
+        render(<MockInterviewAttemptHistory
+            history={[empty, attempt(1, [{ evaluate: { score: 5 } }], 1)]}
+            currentItem={empty}
+            latestCompleted={true}
+            onRetake={() => {}}
+        />);
+        expect(screen.getByText('Результаты пока недоступны')).toBeInTheDocument();
+    });
+
+    it('единственную попытку без результатов подписывает над кнопкой "Пройти заново"', () => {
+        const empty = { _id: 2, status: 'completed', attemptNumber: 1, turns: [], evaluate: [] };
+        render(<MockInterviewAttemptHistory
+            history={[empty]}
+            currentItem={empty}
+            latestCompleted={true}
+            onRetake={() => {}}
+        />);
+        expect(screen.getByText('Результаты пока недоступны')).toBeInTheDocument();
+        expect(screen.queryByText('История попыток')).not.toBeInTheDocument();
+    });
+
     it('на полностью оценённой попытке лишней подписи нет', () => {
         const full = attempt(2, [{ evaluate: { score: 8 } }, { evaluate: { score: 6 } }], 2);
         render(<MockInterviewAttemptHistory
@@ -36,5 +59,6 @@ describe('MockInterviewAttemptHistory', () => {
             onRetake={() => {}}
         />);
         expect(screen.queryByText(/Оценено \d+ из/)).not.toBeInTheDocument();
+        expect(screen.queryByText('Результаты пока недоступны')).not.toBeInTheDocument();
     });
 });

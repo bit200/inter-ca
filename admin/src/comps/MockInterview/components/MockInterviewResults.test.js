@@ -42,3 +42,18 @@ describe('MockInterviewResults - перезапуск оценки вопрос�
         );
     });
 });
+
+describe('MockInterviewResults - попытка без ответов', () => {
+    beforeEach(() => {
+        global.http = { post: jest.fn(() => Promise.resolve({})), get: jest.fn(() => Promise.resolve({ items: [] })) };
+        global.notify = { success: jest.fn(), warning: jest.fn() };
+    });
+
+    it('не рисует карточку-заглушку - про отсутствие результатов пишет история попыток', async () => {
+        let container;
+        await act(async () => {
+            ({ container } = render(<MockInterviewResults interview={{ _id: 1000, name: 'Интервью', turns: [] }}/>));
+        });
+        expect(container).toBeEmptyDOMElement();
+    });
+});
