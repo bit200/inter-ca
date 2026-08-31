@@ -3,16 +3,25 @@
 // Раньше вопрос читал робот браузера (speechSynthesis) - звучало плохо, и от
 // него отказались совсем. Теперь бэкенд заранее генерирует WAV голосом-образцом
 // через адаптер audio.tts_generate.v1, кладёт файл в закрытый бакет S3 и по
-// запросу отдаёт короткоживущий presigned URL: POST /api/question-audio/url {text}.
+// запросу отдаёт короткоживущий presigned URL.
+//
+// Спрашиваем озвучку ПО ID КВИЗА: GET /api/question-audio/quiz/:id. Бэкенд сам
+// собирает текст из полей квиза - ровно так же, как при генерации файла и в
+// карточке вопроса админки. Пока фронт спрашивал по тексту с экрана, на
+// озвученный вопрос приходило {reason: 'missing'}: кандидату показывается не то
+// же поле, из которого озвучка генерилась (audioName/name/specialTitle/
+// specialName, часть которых сервер вообще не отдаёт в карточке вопроса), и
+// хэш не сходился.
+//
+// Запрос по тексту остаётся страховкой на случай, когда id квиза до плеера не
+// доехал (старые экраны, ручной вызов textToVoice).
 //
 // Готового файла может не быть (новый или только что отредактированный вопрос,
 // выключенная на сервере озвучка) - тогда вопрос просто не озвучивается.
 
-// Текст, по которому спрашивается озвучка. Бэкенд генерирует файлы по тексту
-// самого вопроса (audioName/name/specialTitle), поэтому подсказку под вопросом
-// (smallTitle, например "Расскажите возможные алгоритмы решения...") в запрос
-// не добавляем: с ней хэш не сходится и на озвученный вопрос приходит
-// {reason: 'missing'}. Подсказка и так видна кандидату на экране.
+// Текст, по которому спрашивается озвучка, когда id квиза неизвестен. Подсказку
+// под вопросом (smallTitle) в запрос не добавляем: бэкенд озвучивает текст
+// самого вопроса, с подсказкой хэш не сойдётся.
 export function questionSpeechText(info) {
     let {title} = info || {};
     return String(title || '').trim();
@@ -59,15 +68,46 @@ export function stopQuestionAudio() {
 // null значит "готового файла нет" - в том числе когда сервер ответил
 // {reason: 'missing'} или запрос не удался. Ошибку не показываем кандидату:
 // для него это не сбой, вопрос виден на экране.
-export function requestQuestionAudioUrl(text, http) {
+export function requestQuestionAudioUrl(params, http) {
+    let {text, quizId} = typeof params === 'string' ? {text: params} : (params || {});
     http = http || global.http;
-    if (!text || !http || !http.post) {
-        lastProbe = {ok: false, reason: !text ? 'empty-text' : 'no-http', text: text || ''};
+    if (!http || (!http.post && !http.get)) {
+        lastProbe = {ok: false, reason: 'no-http', text: text || '', quizId: quizId || null};
         questionAudioLog('запрос не отправлен', lastProbe);
         return Promise.resolve(null);
     }
 
-    questionAudioLog('запрашиваю ссылку', {text, length: text.length});
+    // По id квиза - основной путь: бэкенд знает, из какого поля озвучен вопрос.
+    if (quizId && http.get) {
+        questionAudioLog('запрашиваю ссылку по квизу', {quizId});
+        return http.get('/question-audio/quiz/' + quizId, {}, {wo_notify: true})
+            .then(r => {
+                lastProbe = {ok: !!(r && r.url), reason: (r && r.reason) || null, quizId, text: text || '', answer: r || null};
+                questionAudioLog('ответ бэкенда по квизу', lastProbe);
+                if (r && r.url) {
+                    return r;
+                }
+                return requestAudioUrlByText(text, http);
+            })
+            .catch(e => {
+                lastProbe = {ok: false, reason: 'request-failed', quizId, text: text || '', error: (e && e.message) || String(e)};
+                questionAudioLog('запрос по квизу упал', lastProbe);
+                return requestAudioUrlByText(text, http);
+            });
+    }
+
+    return requestAudioUrlByText(text, http);
+}
+
+// Страховка: озвучка по тексту вопроса, когда id квиза неизвестен.
+function requestAudioUrlByText(text, http) {
+    if (!text || !http || !http.post) {
+        lastProbe = {ok: false, reason: !text ? 'empty-text' : 'no-http', text: text || '', answer: (lastProbe || {}).answer || null};
+        questionAudioLog('запрос по тексту не отправлен', lastProbe);
+        return Promise.resolve(null);
+    }
+
+    questionAudioLog('запрашиваю ссылку по тексту', {text, length: text.length});
 
     return http.post('/question-audio/url', {text}, {wo_notify: true})
         .then(r => {
@@ -87,7 +127,7 @@ export function requestQuestionAudioUrl(text, http) {
 // (озвучки не будет, сценарий двигает страховочный таймаут вызывающего).
 // Возвращает промис с {durationSec} при удачном старте и null иначе.
 export function playQuestionAudio(params, opts) {
-    let {text} = params || {};
+    let {text, quizId} = params || {};
     let {onEnd, onFallback, http, AudioCtor} = opts || {};
     AudioCtor = AudioCtor || (typeof window !== 'undefined' ? window.Audio : null);
 
@@ -104,7 +144,7 @@ export function playQuestionAudio(params, opts) {
     };
     let audio = null;
 
-    return requestQuestionAudioUrl(text, http).then(info => {
+    return requestQuestionAudioUrl({text, quizId}, http).then(info => {
         if (!info || !AudioCtor) {
             questionAudioLog('озвучки не будет', {hasInfo: !!info, hasAudioCtor: !!AudioCtor});
             return finish(onFallback)(), null;

@@ -240,6 +240,9 @@ let AudioShort = forwardRef((props, ref) => {
 
         console.log("qqqqq smallTitle", {smallTitle});
         textToVoice({
+            // озвучку спрашиваем по id квиза: бэкенд сам знает текст, из
+            // которого сгенерирован файл (см. questionAudio.js)
+            quizId: props.quizId,
             text: questionSpeechText(info),
             lng,
             textToVoiceSpeedMSPerSymbolLimit: opts.textToVoiceSpeedMSPerSymbolLimit,
@@ -663,8 +666,8 @@ console.log('LOOOG', 'COMPLETE');
                     <Button color={4} size={'xs'} onClick={() => {
                         let text = questionSpeechText(titleInfo || {});
                         setAudioDebug('Спрашиваю озвучку...');
-                        questionAudioLog('ручной прогон по кнопке', {text});
-                        playQuestionAudio({text}, {
+                        questionAudioLog('ручной прогон по кнопке', {text, quizId: props.quizId});
+                        playQuestionAudio({text, quizId: props.quizId}, {
                             onEnd: () => setAudioDebug('Файл доиграл до конца'),
                             onFallback: () => {
                                 let probe = getLastQuestionAudioProbe() || {};
@@ -681,7 +684,7 @@ console.log('LOOOG', 'COMPLETE');
                     </div>
                     {!!audioDebug && <div style={{marginTop: '2px'}}>{audioDebug}</div>}
                     <div style={{marginTop: '2px', wordBreak: 'break-word'}}>
-                        Текст запроса: {JSON.stringify(questionSpeechText(titleInfo || {}))}
+                        Квиз: {String(props.quizId || '-')}, текст запроса: {JSON.stringify(questionSpeechText(titleInfo || {}))}
                     </div>
                 </div>}
             </div>}

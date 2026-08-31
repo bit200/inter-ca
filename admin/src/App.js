@@ -72,7 +72,7 @@ export const stopAnyPlay = (key) => {
 }
 
 window.textToVoice = (params, cb, delay = 5) => {
-    let {text, textToVoiceTimeoutMS} = params || {};
+    let {text, quizId, textToVoiceTimeoutMS} = params || {};
 
     let speed = params.textToVoiceSpeedMSPerSymbolLimit || 100
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
@@ -100,7 +100,7 @@ window.textToVoice = (params, cb, delay = 5) => {
     // плохо и больше не используется. Нет файла или он не проигрался -
     // вопрос просто остаётся на экране, а сценарий двигает страховочный таймаут
     // по длине текста.
-    playQuestionAudio({text}, {onEnd: done})
+    playQuestionAudio({text, quizId}, {onEnd: done})
         .then(played => {
             // длинный вопрос голосом-образцом звучит дольше, чем оценка по
             // числу символов - продлеваем страховку по реальной длительности
