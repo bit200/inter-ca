@@ -18,6 +18,10 @@
   --ev-ink: #2b2d3b;
   --ev-muted: #656d9a;
   --ev-strong: #101a33;
+  // Погасшее деление шкалы. Это не разделительная линия, а часть графика:
+  // на --ev-line пустой хвост шкалы сливался с подложкой чипа, и "17%"
+  // читалось как одинокий штрих в пустоте, а не как одно деление из пяти.
+  --ev-seg-off: #c6cedb;
   // На светлом карточки отделяет от подложки тень, на тёмном - контраст самой
   // поверхности, поэтому тень там снимается.
   --ev-shadow: 0 3px 16px rgba(142, 134, 171, .05);
@@ -64,6 +68,7 @@
   --ev-ink: #d9e1ec;
   --ev-muted: #aab0b9;
   --ev-strong: #f0f4fa;
+  --ev-seg-off: #414658;
   --ev-shadow: none;
 }
 
@@ -164,7 +169,7 @@
 .strip{
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   padding: 12px 14px;
 }
 
@@ -172,13 +177,16 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 14px 5px 10px;
+  padding: 6px 14px 6px 10px;
   border: 1px solid var(--ev-line);
   border-radius: 20px;
   // Внутри белой карточки белый чип не читался бы совсем: подложка чипа -
   // мягкая, а белым остаётся только общая оценка (см. .mchipLead).
   background: var(--ev-soft);
-  font-size: 12px;
+  // 12px были самым мелким текстом на экране: линейку читают первой, и
+  // присматриваться к ней не должно быть нужно. 13px укладываются в те же
+  // две строки чипов.
+  font-size: 13px;
   white-space: nowrap;
 
   &[data-clickable="true"]{
@@ -195,15 +203,19 @@
   gap: 2px;
 
   i{
-    width: 6px;
-    height: 13px;
+    width: 7px;
+    height: 15px;
     border-radius: 1px;
-    background: var(--ev-line);
+    background: var(--ev-seg-off);
   }
 }
 
+// Название показателя - не подпись к цифре, а половина смысла чипа: читают
+// пару "что" + "сколько". Приглушённый --ev-muted на мягкой подложке чипа
+// давал 4.2:1 на 12px, поэтому название набрано основным цветом текста.
 .mchipName{
-  color: var(--ev-muted);
+  color: var(--ev-ink);
+  font-weight: 500;
 }
 
 .mchipValue{
@@ -222,7 +234,7 @@
 // меряется той же шкалой, что и показатели, и стоит в том же ряду.
 .mchipLead{
   background: var(--ev-card);
-  border-color: var(--ev-muted);
+  border-color: var(--ev-strong);
   padding-right: 16px;
 
   .mchipName{
@@ -235,8 +247,8 @@
   }
 
   .mchipSeg i{
-    height: 15px;
-    width: 7px;
+    height: 17px;
+    width: 8px;
   }
 }
 
@@ -254,15 +266,22 @@
   background: rgba(var(--score-bad-rgb), .10);
 
   .mchipName{
-    color: var(--score-bad);
+    color: var(--score-bad-text);
     font-weight: 600;
   }
 }
 
+// Лампочка говорит "здесь есть рекомендация", а не "здесь хорошо". Зелёный
+// цвет шкалы её с оценкой и путал, поэтому значок нейтральный - и не спорит
+// с цифрой, ради которой чип и читают.
 .mchipHint{
-  font-size: 13px;
-  color: var(--score-good);
+  font-size: 14px;
+  color: var(--ev-muted);
   margin-left: -2px;
+}
+
+.mchip[data-clickable="true"]:hover .mchipHint{
+  color: var(--ev-strong);
 }
 
 @media (max-width: 820px){

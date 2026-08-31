@@ -110,3 +110,46 @@ describe('ScoreStrip: общая оценка в линейке показате
         });
     });
 });
+
+// Читаемость линейки: подписи и цифры чипов - самый мелкий текст экрана, и
+// раньше и то, и другое было бледным (название приглушённым --ev-muted,
+// цифра - насыщенным тоном заливки).
+describe('линейка читается: контрастные подписи и цифры', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const scss = () => fs.readFileSync(path.join(__dirname, '../evaluationDetail.module.scss'), 'utf8');
+    const rule = (name) => new RegExp(`\\n\\.${name}\\{([^}]*)\\}`).exec(scss())[1];
+
+    // Цвет текста jsdom не отдаёт (inline var() он не хранит), поэтому уровень
+    // шкалы чип объявляет атрибутом - из него растут и тон цифры, и заливка.
+    it('объявляет уровень шкалы у каждого чипа', () => {
+        render(<ScoreStrip score={5.7} rules={rules} schemas={schemas} result={{
+            evaluation: { speech: { clarity: 2 }, practice: { count: 8 } },
+        }}/>);
+
+        expect(screen.getByTestId('evaluate-score').dataset.level).toBe('mid');
+        expect(chipByGroup('Речь').dataset.level).toBe('bad');
+        expect(chipByGroup('Практика').dataset.level).toBe('good');
+    });
+
+    it('берёт цифре тёмный тон шкалы, а насыщенный оставляет делениям', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const chip = fs.readFileSync(path.join(__dirname, 'MetricChip.jsx'), 'utf8');
+
+        expect(chip).toMatch(/mchipValue[^]*color: textColor/);
+        expect(chip).toContain('getScoreTextColor(pct, max)');
+    });
+
+    it('набирает название показателя основным цветом текста, а не приглушённым', () => {
+        expect(rule('mchipName')).toContain('var(--ev-ink)');
+        expect(rule('mchipName')).not.toContain('var(--ev-muted)');
+    });
+
+    // Погасшие деления на цвете линий сливались с подложкой чипа, и низкий
+    // процент читался как пустое место, а не как одно деление из пяти.
+    it('гасит деления отдельным цветом шкалы, а не цветом линий', () => {
+        expect(rule('mchipSeg')).toContain('var(--ev-seg-off)');
+        expect(scss()).toContain('--ev-seg-off:');
+    });
+});
