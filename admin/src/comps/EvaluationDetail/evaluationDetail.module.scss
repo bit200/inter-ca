@@ -700,6 +700,27 @@
   }
 }
 
+// Сноска про происхождение разбора. Тише всего, что есть на карточке: 11px,
+// приглушённый цвет и та же искра, что стоит на кнопке расшифровки, - её
+// читают один раз и больше не замечают. Отделена волосяным разделителем
+// страницы, чтобы не слиться с последней рекомендацией.
+.explainAiNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ev-line);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--bs-text-muted);
+
+  i {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+}
+
 .advice {
   &Wrapper{
     margin-bottom: 16px;
