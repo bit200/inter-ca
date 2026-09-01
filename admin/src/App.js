@@ -15,6 +15,7 @@ import CodeRun from "./comps/Suggest/CodeRun";
 import RunExam from "./comps/RunExam";
 import Meter from "./comps/Suggest/MeterFn";
 import AudioShort, {mediaInit, recognitionInit} from "./comps/TrainMethods/AudioShort/AudioShort"
+import {playQuestionAudio, stopQuestionAudio} from "./comps/TrainMethods/questionAudio"
 import './comps/ColorTheme'
 import './scss/myStyleLow.scss'
 import './scss/index.scss'
@@ -64,51 +65,56 @@ export const stopAnyPlay = (key) => {
 
     try {
         myPlayer({src: ''})
-        if (window.speechSynthesis && window.speechSynthesis.speaking) {
-            window.speechSynthesis.cancel();
-        }
+        stopQuestionAudio();
     } catch (e) {
 
     }
 }
 
 window.textToVoice = (params, cb, delay = 5) => {
-    let {text, lng = 'en-EN', textToVoiceTimeoutMS} = params || {};
-    // let {text, lng = 'ru-RU', textToVoiceTimeoutMS} = params || {};
+    let {text, textToVoiceTimeoutMS} = params || {};
 
     let speed = params.textToVoiceSpeedMSPerSymbolLimit || 100
     delay = textToVoiceTimeoutMS || (((text || '').length * speed) + 2000)
     stopAnyPlay('speech start');
 
-    // console.log("qqqqq delaydelaydelay", delay);
-    timeout = setTimeout(() => {
-        stopAnyPlay('textToVoice');
-        cb && cb();
-    }, delay)
-
-    if ('speechSynthesis' in window) {
-
-        const synth = window.speechSynthesis;
-
-        text = (text || '').replace(/\`\`\`([\s\S]*?)\`\`\`/gi, '')
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0; // Speech rate (1.0 is the default)
-        utterance.pitch = 1.0; // Speech pitch (1.0 is the default)
-        utterance.lang = lng;
-        utterance.onend = () => {
-            clearTimeout(timeout)
-            setTimeout(() => {
-                // console.log("qqqqq titlttl CALLBACK");
-                cb && cb();
-            }, 0)
-        }
-        synth.speak(utterance);
-    } else {
-        alert("Your browser does not support the Web Speech API. Please use a modern browser.");
+    // страховка: если озвучка не сообщит о конце (файл завис или его нет) -
+    // всё равно двигаем сценарий дальше
+    let armTimeout = (ms) => {
+        clearTimeout(timeout)
+        timeout = setTimeout(() => {
+            stopAnyPlay('textToVoice');
+            cb && cb();
+        }, ms)
     }
+    let done = () => {
+        clearTimeout(timeout)
+        setTimeout(() => {
+            cb && cb();
+        }, 0)
+    }
+
+    armTimeout(delay);
+
+    // озвучка только заранее сгенерированным файлом: робот браузера звучит
+    // плохо и больше не используется. Нет файла или он не проигрался -
+    // вопрос просто остаётся на экране, а сценарий двигает страховочный таймаут
+    // по длине текста.
+    playQuestionAudio({text}, {onEnd: done})
+        .then(played => {
+            // длинный вопрос голосом-образцом звучит дольше, чем оценка по
+            // числу символов - продлеваем страховку по реальной длительности
+            if (played && played.durationSec) {
+                armTimeout((played.durationSec * 1000) + 2000)
+            }
+        })
+        .catch(() => {})
 }
 
-let files = require.context("./comps", true, /\.(js|jsx)$/).keys();
+// тесты и моки рядом с компонентами в бандл не тянем: иначе их require("fs") и
+// прочие node-модули валят сборку webpack и вешают оверлей ошибки поверх страницы
+const componentsContext = require.context("./comps", true, /^(?!.*\.(test|spec)\.(js|jsx)$)(?!.*\/__tests__\/).*\.(js|jsx)$/);
+let files = componentsContext.keys();
 global.Fetcher = Fetcher;
 
 global.question_statuses = [
@@ -608,7 +614,7 @@ function Loader(path) {
             path.replace(".js", "").replace("./", "").replace(/^\//gi, "") +
             ".js";
         if (files.indexOf(_path) > -1) {
-            let Comp = require("./comps/" + path).default;
+            let Comp = componentsContext(_path).default;
             return function (props) {
                 return <Comp props={props}></Comp>;
             };

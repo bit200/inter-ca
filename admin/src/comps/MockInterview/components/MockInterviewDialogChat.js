@@ -13,7 +13,10 @@ const AdvicesModal = ({ activeAdvice, setActiveAdvice }) => {
     >
         <div className={styles.chatAdviceModalList}>
             {(activeAdvice || []).map((tip, i) => (
-                <div key={i} className={styles.chatAdviceModalItem}>{tip}</div>
+                <div key={i} className={styles.chatAdviceModalItem}>
+                    <i className="iconoir-sparks"/>
+                    <span>{tip}</span>
+                </div>
             ))}
         </div>
     </MyModal>

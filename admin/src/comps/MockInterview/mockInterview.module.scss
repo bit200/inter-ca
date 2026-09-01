@@ -170,10 +170,11 @@
   flex-direction: column;
 }
 
+// Полоска над iframe осталась только подписью "где я" - выход живёт внутри
+// самого itk-live, своей кнопки "Выйти" здесь больше нет.
 .iframeHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 12px 20px;
   background: #1a1a2e;
   color: #fff;
@@ -181,22 +182,6 @@
   span {
     font-size: 15px;
     font-weight: 600;
-  }
-}
-
-.iframeClose {
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 4px;
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 6px 14px;
-
-  &:hover {
-    color: #ff6b6b;
-    border-color: #ff6b6b;
   }
 }
 
@@ -262,10 +247,120 @@
   gap: 10px;
 }
 
+// Советы приходят отдельными репликами, но одинаковым 16-пиксельным текстом
+// подряд читались как один сплошной абзац. Разводим их той же акцентной
+// врезкой, что принята на экране оценки для рекомендаций
+// (см. .explainComponentSuggestion в evaluationDetail): мягкая зелёная
+// подложка + полоса слева + иконка - "что делать" видно с одного взгляда,
+// и границы совета не приходится искать глазами.
 .chatAdviceModalItem {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--bs-secondary-bg);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  background: rgba(var(--score-good-rgb), .10);
+  border-left: 3px solid var(--score-good);
   font-size: 14px;
+  line-height: 1.55;
+  color: var(--bs-body-color);
+
+  i {
+    color: var(--score-good);
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+}
+
+// Вопрос, который сервис оценки не смог посчитать (evaluateState.jobs[].status
+// === 'errored' при том, что соседние вопросы оценены). Держим тише соседних
+// блоков: не 36-пиксельный красный статус, а обычная карточка с тонкой
+// красной полосой слева - ошибка тут ожидаемая и чинится одной кнопкой.
+.evaluationTextOnlyNote {
+  font-size: 13px;
   line-height: 1.5;
+  color: var(--bs-text-muted);
+  padding: 10px 16px 0;
+}
+
+// Пропущенный вопрос - не сбой оценки, а факт: ответа не было. Поэтому метка
+// приглушённая, а не красная, как у "Без оценки", и рядом с ней обычная шкала
+// с нулём - балл за пропуск честно виден на той же шкале, что и остальные.
+.evaluationSkipped {
+  border-left: 3px solid var(--bs-border-color);
+}
+
+.evaluationSkippedNote {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bs-text-muted);
+  padding: 10px 16px 0;
+}
+
+.evaluationFailed {
+  border-left: 3px solid var(--bs-danger);
+}
+
+.evaluationFailedLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-danger);
+  margin-bottom: 6px;
+}
+
+.evaluationFailedTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--bs-heading-color);
+  margin-bottom: 8px;
+}
+
+.evaluationFailedText {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--bs-text-muted);
+  max-width: 62ch;
+  margin-bottom: 16px;
+}
+
+.questionListNote {
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  padding: 2px 0 8px;
+}
+
+.questionItemFailed {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-danger);
+  white-space: nowrap;
+}
+
+.questionItemSkipped {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-text-muted);
+  white-space: nowrap;
+}
+
+// В выбранном пункте списка фон уже залит акцентом - красный по нему не читается,
+// поэтому там метка живёт цветом самого пункта.
+:global(.activeList) .questionItemFailed,
+:global(.activeList) .questionItemSkipped {
+  color: inherit;
+  opacity: 0.85;
+}
+
+// Подпись под баллом попытки, когда часть вопросов осталась без оценки.
+// Держим её тише самого балла - это уточнение, а не второй показатель.
+.cardScoreNote {
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  margin-top: 2px;
 }

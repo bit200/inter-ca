@@ -20,6 +20,10 @@ export function startAudioStream({ audioHash, userId, token }) {
         if (msg.type === 'complete') {
             completeResolve && completeResolve(msg);
         }
+        if (msg.type === 'aborted') {
+            // сервер подтвердил, что запись в S3 не попала
+            completeResolve && completeResolve(null);
+        }
     };
 
     socket.onerror = (err) => {
@@ -43,6 +47,15 @@ export function stopAudioStream() {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'stop' }));
     }
+}
+
+// Отмена уже начатой заливки: чанки на сервер летят по ходу записи, поэтому
+// при автостопе по тишине сервер надо явно попросить не класть их в S3.
+export function abortAudioStream(reason) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({type: 'abort', reason: reason || 'silence'}));
+    }
+    completeResolve && completeResolve(null);
 }
 
 export function waitForStreamComplete() {

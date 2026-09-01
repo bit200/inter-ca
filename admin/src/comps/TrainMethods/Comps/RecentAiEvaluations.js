@@ -4,6 +4,10 @@ import { STATUS_LABEL, STATUS_COLOR } from '../../EvaluationDetail/evaluationSta
 
 const RECENT_COUNT = 10;
 
+// Только для подписи статуса в этом виджете - в полном списке (/evaluations) цвета
+// статусов не трогаем.
+const LABEL_COLOR = { done: 'var(--bs-primary)' };
+
 function getQuestionTitle(item) {
     const ti = item.titleInfo || {};
     return ti.title || ti.smallTitle || ti.desc || `Вопрос #${item.question}`;
@@ -57,9 +61,15 @@ function RecentAiEvaluations() {
                             <Link to={`/evaluations/${item._id}`} className="text-truncate" style={{ flex: 1, marginRight: 10 }}>
                                 {getQuestionTitle(item)}
                             </Link>
-                            <span className="fs-12 fw-semibold me-2" style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
-                                {STATUS_LABEL[ev.status] || ev.status}
-                            </span>
+                            {/* Готовая оценка говорит сама за собой: подпись "Оценено"
+                                дублировала балл рядом, поэтому у done показываем только
+                                балл. Незавершённым статусам (в очереди/оценивается)
+                                показывать нечего, кроме подписи - её и оставляем. */}
+                            {score == null && (
+                                <span className="fs-12 fw-semibold" style={{ color: LABEL_COLOR[ev.status] || STATUS_COLOR[ev.status] || STATUS_COLOR.pending, whiteSpace: 'nowrap' }}>
+                                    {STATUS_LABEL[ev.status] || ev.status}
+                                </span>
+                            )}
                             {score != null && (
                                 <span className="fw-bold" style={{ color: scoreColor, whiteSpace: 'nowrap' }}>
                                     {score}/10

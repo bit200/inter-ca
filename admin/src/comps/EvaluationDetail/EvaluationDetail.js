@@ -4,18 +4,20 @@ import { Link, useParams, useLocation } from 'react-router-dom';
 import sse from '../../libs/sse/sse';
 import Button from '../../libs/Button';
 import styles from './evaluationDetail.module.scss';
-import ScoreBar from "./components/ScoreBar";
+import ScoreStrip from "./components/ScoreStrip";
 import AdviceSection from "./components/AdviceSection";
 import ExplainSection from "./components/ExplainSection";
+import MentorReviewSection from "./components/MentorReviewSection";
+import { scoreVerdict } from "./components/scoreVerdict";
 import { STATUS_LABEL, STATUS_COLOR } from "./evaluationStatus";
 
-function getQuestionTitle(item) {
+// Короткое название вопроса/задания, если оно есть отдельно от самого текста
+// вопроса: в шапке стоит именно оно, а полный текст вопроса - репликой над
+// ответом. Так вопрос не печатается на экране дважды.
+function getContextTitle(item) {
     const ti = item.titleInfo || {};
-    if (ti.title || ti.smallTitle || ti.desc) {
-        return ti.title || ti.smallTitle || ti.desc;
-    }
     const qi = item.questionInfo || {};
-    return qi.title || qi.name || `Вопрос #${item.question}`;
+    return ti.title || ti.smallTitle || ti.desc || qi.title || qi.name || null;
 }
 
 export default function EvaluationDetail() {
@@ -29,6 +31,15 @@ export default function EvaluationDetail() {
     const [loadingOriginalAudio, setLoadingOriginalAudio] = useState(false);
     const [adviceRules, setAdviceRules] = useState([]);
     const [metricSchemas, setMetricSchemas] = useState([]);
+    // Узел в шапке, куда ExplainSection порталом кладёт свою кнопку: главное
+    // действие экрана стоит рядом с баллом, а результат расшифровки - ниже,
+    // на своём месте. callback-ref через useState, чтобы после монтирования
+    // шапки произошёл ререндер и портал получил живой узел.
+    const [explainSlot, setExplainSlot] = useState(null);
+    // Узел под карточкой "Как прошёл ответ": туда ExplainSection порталом кладёт
+    // общий вывод расшифровки. Это фраза про сам ответ, и её место - сразу под
+    // ответом, а не подзаголовком над вкладками отдельных показателей.
+    const [summarySlot, setSummarySlot] = useState(null);
 
     const loadItem = () => global.http.get('/evaluate-details', { quizHistoryId: id }, { wo_notify: true })
         .then(data => setItem(data))
@@ -78,17 +89,22 @@ export default function EvaluationDetail() {
     const explainSingle = () => global.http.post('/evaluate-explain', { quizHistoryId: id }, { wo_notify: true });
 
     if (loading) {
-        return <div style={{ padding: 20 }}>Загрузка...</div>;
+        return <div className={styles.page}>Загрузка...</div>;
     }
     if (!item || item.error) {
-        return <div style={{ padding: 20, color: STATUS_COLOR.error }}>Не найдено</div>;
+        return <div className={styles.page} style={{ color: STATUS_COLOR.error }}>Не найдено</div>;
     }
 
     const ev = item.evaluate || {};
     const result = ev.result || {};
     const score = result.score;
 
-    const questionText = result.question || getQuestionTitle(item);
+    const contextTitle = getContextTitle(item);
+    const questionText = result.question || contextTitle || `Вопрос #${item.question}`;
+    // Заголовок шапки: короткое название, а если его нет - сам вопрос (тогда
+    // реплики с вопросом над ответом не будет, чтобы не дублировать текст).
+    const heroTitle = contextTitle || questionText;
+    const showQuestionTurn = questionText !== heroTitle;
     const answerText = result.text;
     const hasOriginalAudio = item.answerType === 'audio' && item.hash && item.user;
 
@@ -97,12 +113,17 @@ export default function EvaluationDetail() {
     // events back here to keep the button visibly "loading" for that whole stretch
     // instead of it looking clickable-but-dead for several seconds.
     const playOriginalAudio = (scb, errCb) => {
-        setLoadingOriginalAudio(true);
+        // Аудио часто отдаётся почти мгновенно, и если включать "Загрузка..."
+        // сразу, кнопка на долю секунды меняет подпись и тут же возвращает
+        // прежнюю - на экране это выглядит как моргание. Показываем состояние
+        // загрузки, только если ожидание реально затянулось.
+        const showLoadingId = setTimeout(() => setLoadingOriginalAudio(true), 400);
 
         const finish = (cb) => {
             window.removeEventListener('myPlayerReady', onReady);
             window.removeEventListener('myPlayerError', onError);
             clearTimeout(timeoutId);
+            clearTimeout(showLoadingId);
             setLoadingOriginalAudio(false);
             cb && cb();
         };
@@ -118,15 +139,60 @@ export default function EvaluationDetail() {
     };
 
     return (
-        <div style={{ padding: 20 }}>
+        <div className={styles.page}>
             <Link to={backTo} style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
 
+            {/* Шапка: вопрос и главные действия. Балл ушёл строкой ниже, в
+                линейку чипов (ScoreStrip), - там он стоит рядом с показателями,
+                из которых сложился, и меряется той же шкалой. */}
             <div className={`card ${styles.infoCardSpacing}`}>
-                <div className="card-body">
-                    <div className={styles.title}>Вопрос</div>
-                    <div className={styles.questionText}>{questionText}</div>
+                <div className={`card-body ${styles.hero}`} data-testid="evaluation-hero">
+                    <div className={styles.heroMain}>
+                        <div className={styles.title}>Вопрос</div>
+                        <div className={styles.questionText}>{heroTitle}</div>
+                        <div className={styles.chips}>
+                            <span className={styles.chip}>
+                                {item.answerType === 'audio' ? 'Голосовой ответ' : 'Текстовый ответ'}
+                            </span>
+                            {item.cd && (
+                                <span className={styles.chip}>{new Date(item.cd).toLocaleString('ru')}</span>
+                            )}
+                            {score != null && (
+                                <span className={`${styles.chip} ${styles.chipVerdict}`} data-testid="evaluate-verdict">
+                                    {scoreVerdict(score)}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={styles.heroActions}>
+                        {/* Сюда ExplainSection порталом кладёт "Расшифровать оценку" */}
+                        <div ref={setExplainSlot} className={styles.heroSlot}/>
+                        {hasOriginalAudio && (
+                            <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
+                                    disabled={loadingOriginalAudio}
+                                    className={styles.playOriginal}
+                                    color={3} size="sm"
+                                    icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
+                                {loadingOriginalAudio
+                                    ? <span className="spinner-border spinner-border-sm" role="status"/>
+                                    : null}
+                                {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
+                            </Button>
+                        )}
+                    </div>
                 </div>
+
+                {/* Оценка куратора - вторым ярусом той же карточки: она про тот
+                    же ответ, что и балл выше, и её нельзя было потерять где-то
+                    ниже по странице. */}
+                <MentorReviewSection review={item.mentorReview} autoScore={score}/>
             </div>
+
+            {/* Линейка оценки: общий балл и показатели одинаковыми чипами.
+                Липнет к верху - при чтении длинного ответа видно, о какой
+                оценке идёт речь. */}
+            <ScoreStrip score={score} rules={adviceRules} schemas={metricSchemas} result={result}/>
 
             {(ev.status === 'pending' || ev.status === 'processing') && (
                 <div className={`card ${styles.infoCardSpacing}`} data-testid="evaluate-status-card" data-status={ev.status}>
@@ -138,45 +204,51 @@ export default function EvaluationDetail() {
                 </div>
             )}
 
-            {answerText && (
-                <div className={`card ${styles.infoCardSpacing}`}>
-                    <div className="card-body">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <div className={styles.title}>Распознанный текст ответа</div>
-                            {hasOriginalAudio && (
-                                <Button id="evaluate-play-original-audio" onClick={playOriginalAudio}
-                                        disabled={loadingOriginalAudio}
-                                        color={loadingOriginalAudio ? 4 : 3} size="sm"
-                                        icon={loadingOriginalAudio ? '' : 'iconoir-play'}>
-                                    {loadingOriginalAudio
-                                        ? <span className="spinner-border spinner-border-sm" role="status"/>
-                                        : null}
-                                    {' '}{loadingOriginalAudio ? 'Загрузка...' : 'Прослушать оригинал'}
-                                </Button>
-                            )}
+            {/* Ответ слева, разбор справа: пара "спросили - ответил" читается
+                подряд, а метрики стоят рядом с текстом, а не под ним. */}
+            <div className={styles.columns}>
+                {answerText && (
+                    <div className={styles.answerColumn}>
+                        <div className={'card'}>
+                            <div className="card-body">
+                                {/* Одиночная реплика: пары "спросили - ответил" нет,
+                                    поэтому слово "Ответ" стоит заголовком карточки, а
+                                    подпись у самой реплики его не повторяет. */}
+                                <div className={styles.title}>{showQuestionTurn ? 'Как прошёл ответ' : 'Ответ'}</div>
+
+                                {/* Кто говорит - подписано словом, а не буквой в кружке:
+                                    одиночная "О" читалась как ноль и выглядела оценкой. */}
+                                {showQuestionTurn && (
+                                    <div className={`${styles.turn} ${styles.turnAsk}`}>
+                                        <span className={styles.turnWho}>Вопрос</span>
+                                        <div className={styles.turnBody}>{questionText}</div>
+                                    </div>
+                                )}
+
+                                <div className={`${styles.turn} ${showQuestionTurn ? '' : styles.turnSolo}`}>
+                                    {showQuestionTurn && (
+                                        <span className={`${styles.turnWho} ${styles.turnWhoAnswer}`}>Ответ</span>
+                                    )}
+                                    <div className={`${styles.turnBody} ${styles.answerText}`}>{answerText}</div>
+                                </div>
+                            </div>
                         </div>
-                        <div className={styles.answerText} >{answerText}</div>
+                        <div ref={setSummarySlot} className={styles.summarySlot}/>
                     </div>
-                </div>
-            )}
+                )}
 
-            {score != null && (
-                <div style={{ marginBottom: 20 }} className={'card'}>
-                    <ScoreBar score={score} />
-                </div>
-            )}
-
-            {score != null && (
-                <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
-            )}
-
-            {score != null && (
-                <ExplainSection onExplain={explainSingle} initialExplain={ev.explain} />
-            )}
-
-            <div className={styles.bottomInfo}>
-                {item.cd && <span>Дата ответа: {new Date(item.cd).toLocaleString('ru')}</span>}
+                {score != null && (
+                    <div className={styles.sideColumn}>
+                        <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
+                    </div>
+                )}
             </div>
+
+            {score != null && (
+                <ExplainSection onExplain={explainSingle} initialExplain={ev.explain}
+                                buttonSlot={explainSlot} summarySlot={summarySlot}
+                                buttonClassName={`btn btn-sm ${styles.explainAction}`} />
+            )}
         </div>
     );
 }

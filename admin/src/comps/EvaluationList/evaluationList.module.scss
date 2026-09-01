@@ -1,5 +1,7 @@
 .container {
-  padding: 20px;
+  // Боковые отступы - на раскладке (.container-xxl + .mainWrapPadd2), как на
+  // дашборде, чтобы ширина контента не менялась при переходе между экранами.
+  padding: 0 0 20px;
 }
 
 .header {
@@ -22,16 +24,55 @@
     margin-left: auto;
     display: flex;
     gap: 6px;
+
+    div {
+      display: flex;
+      gap: 6px;
+    }
   }
 }
 
-.noInfo {
-  color: var(--bs-text-muted);
+// Сортировка стоит слева от вкладок и отделена от них тонкой чертой: это не
+// третий режим группировки, а фильтр порядка внутри выбранного.
+.headerActions {
+  align-items: center;
+
+  &::after {
+    content: '';
+    width: 1px;
+    align-self: stretch;
+    margin: 2px 2px;
+    background: var(--bs-border-color);
+    order: 1;
+  }
+
+  & > div {
+    order: 2;
+  }
+}
+
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  i {
+    font-size: 15px;
+    line-height: 1;
+  }
 }
 
 // EvaluationListItemGroup
+// Расстояние между группами держит сама карточка, а не её содержимое: пока
+// margin-bottom висел на .group внутри .card-body, он превращался в пустую
+// белую полосу ВНУТРИ карточки под последней строкой - отсюда и ощущение
+// "снизу отступ больше, чем сверху".
+.groupCard {
+  margin-bottom: 12px;
+}
+
 .group {
-  margin-bottom: 24px;
+  padding: 12px 18px;
 }
 
 .groupHeader {
@@ -39,36 +80,72 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  padding: 8px 0;
-  border-bottom: 2px solid var(--bs-border-color);
+  padding: 4px 0;
+  user-select: none;
+
+  &:hover .groupHeaderLabel {
+    color: var(--bs-primary);
+  }
 }
 
 .groupHeaderArrow {
   font-size: 13px;
   color: var(--bs-text-muted);
+  transition: color .15s;
 }
 
 .groupHeaderLabel {
   font-weight: 600;
   font-size: 15px;
+  transition: color .15s;
 }
 
+// Прогресс группы - чип, как в разборе ответа: цифра читается сразу, а не
+// теряется среди строк одинаковым мелким текстом.
 .groupHeaderProgress {
   font-size: 12px;
   font-weight: 600;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 20px;
+  padding: 1px 10px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .groupBody {
-  padding-left: 20px;
+  margin-top: 8px;
+  border-top: 1px solid var(--bs-border-color);
 }
 
+// Разделители - только МЕЖДУ строками. Нижней границы у последней строки нет:
+// иначе под ней остаётся висящая линия и лишний воздух до края карточки.
 .groupItem {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--bs-border-color);
+  padding: 9px 8px;
+  margin: 0 -8px;
+  border-radius: 6px;
   flex-wrap: wrap;
+  position: relative;
+  transition: background-color .15s;
+
+  // Разделитель - псевдоэлементом, а не border: подсветка строки при наведении
+  // выходит за колонку на 8px, и обычная граница тянулась бы шире линии под
+  // заголовком. Так обе линии стоят ровно по одной вертикали.
+  & + &::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 0;
+    height: 1px;
+    background: var(--bs-border-color);
+  }
+
+  &:hover {
+    background: var(--bs-secondary-bg);
+  }
 }
 
 .groupItemLink {
@@ -87,4 +164,72 @@
   font-weight: 700;
   font-size: 14px;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+}
+
+.showMore {
+  margin-top: 4px;
+}
+
+// EvaluationListEmpty
+.empty {
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-primary);
+  font-size: 22px;
+}
+
+.emptyTitle {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.emptyDesc {
+  color: var(--bs-text-muted);
+  font-size: 14px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.emptyAction {
+  margin-top: 18px;
+}
+
+// Кнопки шапки: сортировка и группировка - две отдельные пары, между ними
+// воздуха чуть больше, чем между кнопками одной пары.
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sortIcon {
+  font-size: 13px;
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+
+// Дата ответа - самая тихая колонка строки: ориентир для сортировки, а не
+// содержание. Ширина фиксирована, чтобы баллы стояли ровным столбцом.
+.groupItemDate {
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 58px;
+  text-align: right;
 }

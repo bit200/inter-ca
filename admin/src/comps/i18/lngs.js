@@ -2352,6 +2352,34 @@ export default {
         en: "Pluses",
         fr: `Plus`
     },
+    "passed": {
+        ru: "пройдено",
+        es: "completado",
+        de: "abgeschlossen",
+        en: "completed",
+        fr: `complété`
+    },
+    "ofWord": {
+        ru: "из",
+        es: "de",
+        de: "von",
+        en: "of",
+        fr: `sur`
+    },
+    "leftCount": {
+        ru: "Осталось",
+        es: "Quedan",
+        de: "Verbleibend",
+        en: "Left",
+        fr: `Restant`
+    },
+    "allTopicsDone": {
+        ru: "Все топики закрыты — подготовка завершена.",
+        es: "Todos los temas completados: la preparación ha terminado.",
+        de: "Alle Themen abgeschlossen — die Vorbereitung ist beendet.",
+        en: "All topics are done — preparation is complete.",
+        fr: `Tous les sujets sont terminés — la préparation est achevée.`
+    },
     "completionPerc": {
         ru: "% изучения",
         es: "% de completado",
@@ -3824,6 +3852,20 @@ export default {
         "en": "Rating",
         "fr": "Évaluation"
     },
+    "noSoundErrTitle": {
+        "ru": "Ваш ответ не записался — микрофон молчал",
+        "es": "No se grabó tu respuesta: el micrófono no captó sonido",
+        "de": "Deine Antwort wurde nicht aufgezeichnet – das Mikrofon blieb stumm",
+        "en": "Your answer was not recorded — the microphone stayed silent",
+        "fr": "Votre réponse n'a pas été enregistrée : le micro est resté muet"
+    },
+    "noSoundErrHint": {
+        "ru": "Включите микрофон, проверьте громкость и запишите ответ заново.",
+        "es": "Activa el micrófono, comprueba el volumen y graba la respuesta de nuevo.",
+        "de": "Schalte das Mikrofon ein, prüfe die Lautstärke und nimm die Antwort erneut auf.",
+        "en": "Turn the microphone on, check the volume and record your answer again.",
+        "fr": "Activez le micro, vérifiez le volume et enregistrez à nouveau votre réponse."
+    },
     "micProblemErr": {
         "ru": "Проблемы с подключением микрофона! Сделайте отладку на странице тестирования микрофона",
         "es": "Problemas con la conexión del micrófono. Realice una depuración en la página de prueba de micrófono.",
@@ -3872,6 +3914,27 @@ export default {
     "de": "Laden Sie die Seite nicht neu",
     "en": "Do not reload the page",
     "fr": "Ne rechargez pas la page"
+},
+"mockInterviewStep": {
+    ru: "Мок-интервью",
+    es: "Entrevista simulada",
+    de: "Mock-Interview",
+    en: "Mock interview",
+    fr: `Entretien simulé`
+},
+"preparingMockInterview": {
+    ru: "Готовим интервью...",
+    es: "Preparando la entrevista...",
+    de: "Interview wird vorbereitet...",
+    en: "Preparing the interview...",
+    fr: `Préparation de l'entretien...`
+},
+"mockInterviewNotStarted": {
+    ru: "Интервью не открылось. Обновите страницу и попробуйте ещё раз.",
+    es: "La entrevista no se abrió. Actualiza la página e inténtalo de nuevo.",
+    de: "Das Interview wurde nicht geöffnet. Aktualisiere die Seite und versuche es erneut.",
+    en: "The interview did not open. Reload the page and try again.",
+    fr: `L'entretien ne s'est pas ouvert. Rechargez la page et réessayez.`
 },
 "by_exam": {ru: 'По экзамену'},
 "by_module": {ru: 'По модулю'},

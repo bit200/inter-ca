@@ -55,6 +55,13 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
             .catch(() => {});
     }, [item?.interviewId]);
 
+    // Перечитать попытку целиком - нужен результатам после точечного
+    // перезапуска оценки одного вопроса.
+    const reloadItem = () => global.http
+        .get(`/mock-interview/my-list/${attemptId}`, {}, { wo_notify: true })
+        .then(setItem)
+        .catch(() => {});
+
     const isPassed = !!item && (PASSED_STATUSES.includes(item.status) || completedLocally);
 
     // history может быть чуть более старым снимком, чем текущий item (например
@@ -184,7 +191,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
 
     return (
         <>
-            {isPassed && <MockInterviewResults interview={item}/>}
+            {isPassed && <MockInterviewResults interview={item} onRefresh={reloadItem}/>}
             {!isPassed && <MockInterviewStartCard item={item} error={startError} busy={botBusy} onStart={() => startAttempt(item)}/>}
             <MockInterviewAttemptHistory
                 history={mergedHistory}

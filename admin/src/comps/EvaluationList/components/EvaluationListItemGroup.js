@@ -2,6 +2,21 @@ import React, {useState} from 'react';
 import {Link} from "react-router-dom";
 import s from '../evaluationList.module.scss';
 import { STATUS_LABEL, STATUS_COLOR } from '../../EvaluationDetail/evaluationStatus';
+import { sortItemsByScore } from '../evaluate-list.utils';
+
+// Дата ответа - короткая ("14 мая"), год только у прошлых лет: в списке она
+// нужна как ориентир при сортировке, а не как точный штамп. Полная дата - в
+// подсказке и на самой странице разбора.
+function formatDictationDate(cd) {
+    const ms = Date.parse(cd ?? '');
+    if (Number.isNaN(ms)) return null;
+    const date = new Date(ms);
+    const sameYear = date.getFullYear() === new Date().getFullYear();
+    return {
+        short: date.toLocaleDateString('ru', sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: '2-digit' }),
+        full: date.toLocaleString('ru'),
+    };
+}
 
 function getQuestionTitle(item) {
     const ti = item.titleInfo || {};
@@ -9,13 +24,13 @@ function getQuestionTitle(item) {
 }
 
 
-const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
+const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
     const [collapsed, setCollapsed] = useState(false);
     // error-записи молча ретраятся сами (см. EvaluationDetail.js/бэкенд) и нигде
     // не отображаются - значит и в "X/Y" их учитывать не надо: иначе "2/7" с
     // 5 невидимыми error-записями читается как "ещё 5 не оценено", хотя на самом
     // деле их просто не видно. Считаем total/done только по видимым записям.
-    const visibleItems = items.filter(item => item.evaluate?.status !== 'error');
+    const visibleItems = sortItemsByScore(items.filter(item => item.evaluate?.status !== 'error'), sort);
     const done = visibleItems.filter(it => it.evaluate?.status === 'done').length;
     const total = visibleItems.length;
     const allDone = total > 0 && done === total;
@@ -24,8 +39,8 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
     const progressColor = allDone ? STATUS_COLOR.done : hasProcessing ? STATUS_COLOR.processing : STATUS_COLOR.pending;
 
     return (
-        <div className={'card'}>
-            <div className={`${s.group} card-body`}>
+        <div className={`card ${s.groupCard}`}>
+            <div className={s.group}>
                 <div className={s.groupHeader} onClick={() => setCollapsed(c => !c)}
                      data-testid="evaluation-group-header" data-group-label={label}>
                     <i className={`iconoir-nav-arrow-${collapsed ? 'right' : 'down'} ${s.groupHeaderArrow}`}/>
@@ -48,6 +63,7 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                         {visibleItems.map(item => {
                             const ev = item.evaluate || {};
                             const score = ev.result?.score;
+                            const dictatedAt = formatDictationDate(item.cd);
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                             return (
                                 <div key={item._id} className={s.groupItem}>
@@ -57,10 +73,21 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode }) => {
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}
                                     </Link>
-                                    <span className={s.groupItemStatus}
-                                          style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
-                                        {STATUS_LABEL[ev.status] || ev.status}
-                                    </span>
+                                    {/* Слово "Оценено" рядом с баллом ничего не добавляет:
+                                        балл сам по себе и есть признак готовности.
+                                        Подпись оставлена только для незавершённых статусов. */}
+                                    {ev.status !== 'done' && (
+                                        <span className={s.groupItemStatus}
+                                              style={{ color: STATUS_COLOR[ev.status] || STATUS_COLOR.pending }}>
+                                            {STATUS_LABEL[ev.status] || ev.status}
+                                        </span>
+                                    )}
+                                    {dictatedAt && (
+                                        <span className={s.groupItemDate} title={dictatedAt.full}
+                                              data-testid="evaluation-group-item-date">
+                                            {dictatedAt.short}
+                                        </span>
+                                    )}
                                     {score != null && (
                                         <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10

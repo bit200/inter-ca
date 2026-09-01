@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Разбор ответа — концепты</title>
+<style>
+/* Токены взяты из evaluationDetail.module.scss и scss/colors.scss проекта:
+   концепты должны быть проверяемы на живом экране, а не жить в своей палитре. */
+:root{
+  --score-bad:  rgb(230,25,25);
+  --score-mid:  rgb(234,161,5);
+  --score-good: rgb(28,190,28);
+  --score-bad-rgb: 230,25,25;
+  --score-mid-rgb: 234,161,5;
+  --score-good-rgb: 28,190,28;
+}
+.dark{
+  --bg:#0f1411; --card:#202221; --soft:#25282d; --line:#333547;
+  --ink:#d9e1ec; --muted:#aab0b9; --strong:#f0f4fa; --shadow:none;
+}
+.light{
+  --bg:#f7f9fb; --card:#ffffff; --soft:#f1f4f9; --line:#dee2e6;
+  --ink:#2b2d3b; --muted:#656d9a; --strong:#101a33;
+  --shadow:0 3px 16px rgba(142,134,171,.05);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:#111; color:#ddd;
+  -webkit-font-smoothing:antialiased;
+}
+.board{padding:28px 32px 36px; background:var(--bg); color:var(--ink)}
+.boardHead{max-width:1180px;margin:0 auto 18px}
+.boardKicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.boardTitle{font-size:20px;font-weight:700;color:var(--strong);margin:2px 0 4px}
+.boardNote{font-size:13px;line-height:1.55;color:var(--muted);max-width:80ch}
+.wrap{max-width:1180px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── Реконструкция текущего экрана ──────────────────────────────────── */
+.nowHero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:20px}
+.nowQ{font-size:18px;font-weight:600;color:var(--strong);max-width:52ch;line-height:1.35}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.chip{font-size:12px;color:var(--muted);background:var(--soft);border:1px solid var(--line);border-radius:20px;padding:2px 10px}
+.btnMain{background:var(--score-good);color:#fff;border:0;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:500;min-width:190px}
+.btnGhost{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-size:13px;min-width:190px;margin-top:8px}
+.strip{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;margin-top:12px}
+.mchip{display:inline-flex;align-items:center;gap:8px;padding:5px 14px 5px 10px;border:1px solid var(--line);border-radius:20px;background:var(--soft);font-size:12px}
+.mchipLead{background:var(--card);border-color:var(--muted)}
+.mchipLead .mname{color:var(--strong);font-weight:600}
+.mname{color:var(--muted)}
+.mval{font-weight:600;font-variant-numeric:tabular-nums}
+.seg{display:flex;gap:2px}
+.seg i{width:6px;height:13px;border-radius:1px;background:var(--line)}
+.mchipBad{border-color:rgba(var(--score-bad-rgb),.45);background:rgba(var(--score-bad-rgb),.12)}
+.cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin-top:12px;align-items:start}
+.body{padding:18px 20px}
+.turn{display:grid;grid-template-columns:56px minmax(0,1fr);gap:14px;margin-bottom:16px}
+.turnWho{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);text-align:right;padding-top:5px}
+.turnBody{font-size:14px;line-height:1.7;max-width:66ch}
+.ask .turnBody{font-size:13.5px;color:var(--muted)}
+.adviceItem{display:flex;gap:9px;background:rgba(var(--score-good-rgb),.10);border-left:3px solid var(--score-good);border-radius:0 6px 6px 0;padding:8px 12px;margin-top:8px}
+.adviceItem b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--score-good);margin-bottom:2px}
+.adviceItem p{margin:0;font-size:13px;line-height:1.5}
+
+/* ── Концепт А: «Ось разбора» ───────────────────────────────────────── */
+.aHero{display:grid;grid-template-columns:minmax(0,1fr) 236px;gap:28px;padding:22px 24px;align-items:stretch}
+.aQ{font-size:22px;font-weight:650;line-height:1.3;color:var(--strong);max-width:46ch;letter-spacing:-.01em}
+.aMeta{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+.aMeta span{display:inline-flex;align-items:center;gap:6px}
+.aVerdict{
+  border-left:1px solid var(--line);padding-left:22px;
+  display:flex;flex-direction:column;justify-content:center;gap:2px;
+}
+.aScore{font-size:46px;font-weight:700;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--score-mid)}
+.aScore u{text-decoration:none;font-size:18px;font-weight:500;color:var(--muted)}
+.aVerdictWord{font-size:14px;font-weight:600;color:var(--strong);margin-top:6px}
+.aVerdictSub{font-size:12px;color:var(--muted);line-height:1.45;margin-top:2px}
+.aActions{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.aActions .btnMain,.aActions .btnGhost{min-width:0;width:100%;margin:0}
+
+/* ось критериев: одна общая шкала 0-100 и порог 70 сквозной линией */
+.axis{margin-top:12px;padding:16px 24px 14px}
+.axisHead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.axisRows{display:grid;gap:9px}
+.axisRow{display:grid;grid-template-columns:140px minmax(0,1fr) 52px;align-items:center;gap:14px}
+.axisName{font-size:13px;color:var(--ink)}
+.axisTrack{position:relative;height:10px;border-radius:2px;background:var(--soft);overflow:visible}
+.axisFill{position:absolute;left:0;top:0;bottom:0;border-radius:2px}
+.axisTick{position:absolute;top:-5px;bottom:-5px;width:1px;background:repeating-linear-gradient(to bottom,var(--muted) 0 3px,transparent 3px 6px);opacity:.85}
+.axisPct{font-size:13px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.axisScale{display:grid;grid-template-columns:140px minmax(0,1fr) 52px;gap:14px;margin-top:10px;font-size:11px;color:var(--muted)}
+.axisScaleInner{display:flex;justify-content:space-between}
+.axisWeak{color:var(--score-bad);font-weight:600}
+.axisLegend{font-size:11px;color:var(--muted)}
+
+/* транскрипт с пометками на полях */
+.aCols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;margin-top:12px;align-items:start}
+.aTurn{display:grid;grid-template-columns:14px minmax(0,1fr);gap:14px;margin-bottom:18px}
+.aRail{width:2px;border-radius:1px;background:var(--line);margin-left:6px}
+.aRailAnswer{background:var(--score-good)}
+.aWho{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.aText{font-size:15px;line-height:1.75;max-width:64ch;color:var(--ink)}
+.aText mark{background:rgba(var(--score-mid-rgb),.16);color:inherit;border-bottom:1px solid rgba(var(--score-mid-rgb),.55);padding:1px 0;border-radius:2px}
+.aText mark.bad{background:rgba(var(--score-bad-rgb),.14);border-bottom-color:rgba(var(--score-bad-rgb),.6)}
+.noteCard{padding:14px 16px}
+.note{border-left:3px solid var(--line);padding:2px 0 2px 12px;margin-bottom:14px}
+.noteMid{border-left-color:var(--score-mid)}
+.noteBad{border-left-color:var(--score-bad)}
+.noteHead{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:3px}
+.noteText{font-size:13px;line-height:1.55;color:var(--ink)}
+.noteQuote{font-size:12px;color:var(--muted);font-style:italic;margin-top:4px}
+
+/* ── Концепт Б: «Паспорт ответа» ────────────────────────────────────── */
+.bGrid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.pass{padding:20px}
+.passScore{display:flex;align-items:baseline;gap:8px}
+.passScore b{font-size:40px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--score-mid)}
+.passScore span{font-size:15px;color:var(--muted)}
+.passWord{font-size:14px;font-weight:600;color:var(--strong);margin-top:8px}
+.passBars{position:relative;display:flex;align-items:flex-end;gap:10px;height:96px;margin:18px 0 8px}
+.passThreshold{position:absolute;left:0;right:0;bottom:70%;height:1px;background:repeating-linear-gradient(to right,var(--muted) 0 3px,transparent 3px 6px);opacity:.7}
+.passThreshold em{position:absolute;right:0;bottom:3px;font-style:normal;font-size:10px;color:var(--muted)}
+.passBar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%}
+.passBar i{display:block;width:22px;border-radius:2px 2px 0 0}
+.passBar em{font-style:normal;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.passLabels{display:flex;gap:8px}
+.passLabels{gap:10px}
+.passLabels span{flex:1;font-size:10px;line-height:1.25;color:var(--muted);text-align:center}
+.passWeak{margin-top:16px;padding:10px 12px;background:rgba(var(--score-bad-rgb),.10);border-left:3px solid var(--score-bad);border-radius:0 6px 6px 0}
+.passWeak b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--score-bad);margin-bottom:2px}
+.passWeak p{margin:0;font-size:13px;line-height:1.5}
+.passMeta{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.passMeta div{display:flex;justify-content:space-between;gap:12px}
+.passMeta b{font-weight:600;color:var(--ink)}
+.passActions{margin-top:16px;display:grid;gap:8px}
+.passActions .btnMain,.passActions .btnGhost{min-width:0;width:100%;margin:0}
+
+.feed{display:grid;gap:12px}
+.feedCard{padding:18px 20px}
+.feedQ{font-size:13.5px;line-height:1.6;color:var(--muted);max-width:70ch}
+.feedA{font-size:15px;line-height:1.75;max-width:68ch;margin-top:4px}
+.critRow{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+.critRow:first-of-type{border-top:0}
+.critName{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--strong)}
+.critDot{width:8px;height:8px;border-radius:50%;flex:none}
+.critVal{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:4px;padding-left:16px}
+.critText{font-size:13px;line-height:1.6;color:var(--ink)}
+.critText b{color:var(--strong)}
+.mentor{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center;padding:14px 20px;border-top:1px solid var(--line)}
+.mentorScore{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.mentorScore span{font-size:13px;font-weight:400;color:var(--muted)}
+.mentorText{font-size:14px;line-height:1.6;max-width:66ch}
+</style>
+</head>
+<body>
+
+<!-- ══ 0. Как сейчас ══════════════════════════════════════════════════ -->
+<section class="board dark" id="board-now">
+  <div class="boardHead">
+    <div class="boardKicker">Как сейчас</div>
+    <div class="boardTitle">Разбор ответа — текущий экран</div>
+    <div class="boardNote">Пять пилюль-показателей стоят в ряд равными по весу; чтобы сравнить «Практику 30» с «Речью 82», приходится считать деления. Балл ответа спрятан в такой же пилюле, а слабое место не названо словами — экран показывает числа, но не выводы.</div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="nowHero">
+        <div>
+          <div class="eyebrow">Вопрос</div>
+          <div class="nowQ">Клиент просит скидку сверх матрицы. Ваши действия?</div>
+          <div class="chips">
+            <span class="chip">Голосовой ответ</span>
+            <span class="chip">25.08.2026, 15:04</span>
+            <span class="chip" style="color:var(--strong);font-weight:600">Есть куда расти</span>
+          </div>
+        </div>
+        <div>
+          <button class="btnMain">Расшифровать оценку</button>
+          <button class="btnGhost">▶ Прослушать оригинал</button>
+        </div>
+      </div>
+    </div>
+    <div class="card strip">
+      <span class="mchip mchipLead"><span class="seg"><i style="background:var(--score-mid)"></i><i style="background:var(--score-mid)"></i><i style="background:var(--score-mid)"></i><i></i><i></i></span><span class="mname">Общая оценка</span><span class="mval">6,4<small style="color:var(--muted);font-weight:400"> /10</small></span></span>
+      <span class="mchip"><span class="seg"><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i></i></span><span class="mname">Речь</span><span class="mval" style="color:var(--score-good)">82</span></span>
+      <span class="mchip"><span class="seg"><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i></i></span><span class="mname">Релевантность</span><span class="mval" style="color:var(--score-good)">74</span></span>
+      <span class="mchip"><span class="seg"><i style="background:var(--score-mid)"></i><i style="background:var(--score-mid)"></i><i style="background:var(--score-mid)"></i><i></i><i></i></span><span class="mname">Структура</span><span class="mval" style="color:var(--score-mid)">58</span></span>
+      <span class="mchip mchipBad"><span class="seg"><i style="background:var(--score-bad)"></i><i style="background:var(--score-bad)"></i><i></i><i></i><i></i></span><span class="mname">Практика</span><span class="mval" style="color:var(--score-bad)">30</span></span>
+      <span class="mchip"><span class="seg"><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i><i style="background:var(--score-good)"></i></span><span class="mname">Без ошибок</span><span class="mval" style="color:var(--score-good)">100</span></span>
+    </div>
+    <div class="cols">
+      <div class="card body">
+        <div class="eyebrow" style="margin-bottom:10px">Как прошёл ответ</div>
+        <div class="turn ask"><span class="turnWho">Вопрос</span><div class="turnBody">Клиент просит скидку сверх матрицы. Ваши действия?</div></div>
+        <div class="turn"><span class="turnWho" style="color:var(--score-good)">Ответ</span><div class="turnBody">Я бы сначала выслушал клиента и уточнил, почему цена кажется высокой. Дальше посмотрел бы, что можно предложить внутри матрицы: рассрочку, другой объём, сервисный пакет. Если совсем не сходимся, эскалирую руководителю.</div></div>
+      </div>
+      <div class="card body">
+        <div class="eyebrow" style="margin-bottom:10px">Советы</div>
+        <div class="adviceItem"><p><b>Практика</b>Приведите конкретный случай из работы: что сделали, чем закончилось.</p></div>
+        <div class="adviceItem"><p><b>Структура</b>Начните с вывода, потом разложите шаги по порядку.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ A. Концепт «Ось разбора» ═══════════════════════════════════════ -->
+<section class="board dark" id="board-a">
+  <div class="boardHead">
+    <div class="boardKicker">Концепт А</div>
+    <div class="boardTitle">Ось разбора</div>
+    <div class="boardNote">Пилюли заменены одной общей осью 0–100: у каждого критерия своя дорожка, но шкала одна на всех, и сквозной пунктир «порог 70» сразу отделяет норму от провала. Балл ответа уходит из ряда показателей в шапку и наконец звучит словом. Сам ответ — главный текст экрана: места, за которые снижен балл, подсвечены прямо в реплике, а на полях — короткие пометки со ссылкой на цитату.</div>
+  </div>
+  <div class="wrap">
+    <div class="card aHero">
+      <div>
+        <div class="eyebrow">Вопрос · Продажи · Модуль «Возражения»</div>
+        <div class="aQ">Клиент просит скидку сверх матрицы. Ваши действия?</div>
+        <div class="aMeta">
+          <span>Голосовой ответ · 1 мин 12 сек</span>
+          <span>25 августа, 15:04</span>
+          <span>Кандидат: Пётр Соколов</span>
+        </div>
+      </div>
+      <div class="aVerdict">
+        <div class="eyebrow">Оценка ИИ</div>
+        <div class="aScore">6,4<u> /10</u></div>
+        <div class="aVerdictWord">Есть куда расти</div>
+        <div class="aVerdictSub">Ниже порога — «Практика»: ответ остался в теории.</div>
+        <div class="aActions">
+          <button class="btnMain">Расшифровать оценку</button>
+          <button class="btnGhost">▶ Прослушать оригинал</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card axis">
+      <div class="axisHead">
+        <span class="eyebrow">Показатели</span>
+        <span class="axisLegend">пунктир — порог 70 %</span>
+      </div>
+      <div class="axisRows">
+        <div class="axisRow">
+          <div class="axisName">Без ошибок</div>
+          <div class="axisTrack"><span class="axisFill" style="width:100%;background:var(--score-good)"></span><span class="axisTick" style="left:70%"></span></div>
+          <div class="axisPct">100</div>
+        </div>
+        <div class="axisRow">
+          <div class="axisName">Речь</div>
+          <div class="axisTrack"><span class="axisFill" style="width:82%;background:var(--score-good)"></span><span class="axisTick" style="left:70%"></span></div>
+          <div class="axisPct">82</div>
+        </div>
+        <div class="axisRow">
+          <div class="axisName">Релевантность</div>
+          <div class="axisTrack"><span class="axisFill" style="width:74%;background:var(--score-good)"></span><span class="axisTick" style="left:70%"></span></div>
+          <div class="axisPct">74</div>
+        </div>
+        <div class="axisRow">
+          <div class="axisName">Структура</div>
+          <div class="axisTrack"><span class="axisFill" style="width:58%;background:var(--score-mid)"></span><span class="axisTick" style="left:70%"></span></div>
+          <div class="axisPct" style="color:var(--score-mid)">58</div>
+        </div>
+        <div class="axisRow">
+          <div class="axisName axisWeak">Практика</div>
+          <div class="axisTrack"><span class="axisFill" style="width:30%;background:var(--score-bad)"></span><span class="axisTick" style="left:70%"></span></div>
+          <div class="axisPct" style="color:var(--score-bad)">30</div>
+        </div>
+      </div>
+      <div class="axisScale"><span></span><span class="axisScaleInner"><i style="font-style:normal">0</i><i style="font-style:normal">50</i><i style="font-style:normal">100</i></span><span></span></div>
+    </div>
+
+    <div class="aCols">
+      <div class="card body">
+        <div class="aTurn">
+          <div class="aRail"></div>
+          <div>
+            <div class="aWho">Вопрос</div>
+            <div class="aText" style="color:var(--muted);font-size:14px">Клиент просит скидку сверх матрицы. Ваши действия?</div>
+          </div>
+        </div>
+        <div class="aTurn">
+          <div class="aRail aRailAnswer"></div>
+          <div>
+            <div class="aWho">Ответ · расшифровка</div>
+            <div class="aText">Я бы сначала выслушал клиента и уточнил, почему цена кажется высокой. <mark>Дальше посмотрел бы, что можно предложить внутри матрицы: рассрочку, другой объём, сервисный пакет.</mark> <mark class="bad">Ну, в общем, как-то так обычно и делают.</mark> Если совсем не сходимся, эскалирую руководителю.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card noteCard">
+        <div class="eyebrow" style="margin-bottom:12px">Что снизило балл</div>
+        <div class="note noteMid">
+          <div class="noteHead">Структура · 58</div>
+          <div class="noteText">Шаги перечислены, но без вывода в начале — слушатель до конца не знает, к чему всё идёт.</div>
+          <div class="noteQuote">«Дальше посмотрел бы, что можно предложить…»</div>
+        </div>
+        <div class="note noteBad">
+          <div class="noteHead">Практика · 30</div>
+          <div class="noteText">Ни одного случая из работы: что сделали, чем закончилось. Ответ остался описанием правила.</div>
+          <div class="noteQuote">«Ну, в общем, как-то так обычно и делают»</div>
+        </div>
+        <div class="note">
+          <div class="noteHead">Речь · 82</div>
+          <div class="noteText">Темп ровный, слов-паразитов почти нет — тут снимать нечего.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Б. Концепт «Паспорт ответа» ════════════════════════════════════ -->
+<section class="board light" id="board-b">
+  <div class="boardHead">
+    <div class="boardKicker">Концепт Б</div>
+    <div class="boardTitle">Паспорт ответа</div>
+    <div class="boardNote">Сводка съезжает из липкой строки в липкую колонку слева: балл, вердикт, столбики показателей и названное слабое место стоят рядом, пока справа листается разбор. Правая колонка становится одной лентой чтения — вопрос, ответ, разбор по критериям строками «показатель → что с ним не так», оценка куратора внизу той же ленты. Показан на светлой теме: приём и токены одни, значения разные.</div>
+  </div>
+  <div class="wrap bGrid">
+    <div class="card pass">
+      <div class="eyebrow">Оценка ИИ</div>
+      <div class="passScore"><b>6,4</b><span>/10</span></div>
+      <div class="passWord">Есть куда расти</div>
+
+      <div class="passBars">
+        <span class="passThreshold"><em>порог 70</em></span>
+        <div class="passBar"><em>100</em><i style="height:100%;background:var(--score-good)"></i></div>
+        <div class="passBar"><em>82</em><i style="height:82%;background:var(--score-good)"></i></div>
+        <div class="passBar"><em>74</em><i style="height:74%;background:var(--score-good)"></i></div>
+        <div class="passBar"><em>58</em><i style="height:58%;background:var(--score-mid)"></i></div>
+        <div class="passBar"><em>30</em><i style="height:30%;background:var(--score-bad)"></i></div>
+      </div>
+      <div class="passLabels">
+        <span>Без<br>ошибок</span><span>Речь</span><span>Релевант.</span><span>Структура</span><span>Практика</span>
+      </div>
+
+      <div class="passWeak">
+        <b>Слабое место</b>
+        <p>Практика — 30 %. Ответ остался в теории.</p>
+      </div>
+
+      <div class="passMeta">
+        <div><span>Ответ</span><b>Голосовой, 1:12</b></div>
+        <div><span>Дата</span><b>25.08.2026, 15:04</b></div>
+        <div><span>Кандидат</span><b>Пётр Соколов</b></div>
+      </div>
+
+      <div class="passActions">
+        <button class="btnMain">Расшифровать оценку</button>
+        <button class="btnGhost">▶ Прослушать оригинал</button>
+      </div>
+    </div>
+
+    <div class="feed">
+      <div class="card feedCard">
+        <div class="eyebrow" style="margin-bottom:8px">Вопрос</div>
+        <div class="feedQ">Клиент просит скидку сверх матрицы. Ваши действия?</div>
+        <div class="eyebrow" style="margin:18px 0 8px">Ответ</div>
+        <div class="feedA">Я бы сначала выслушал клиента и уточнил, почему цена кажется высокой. Дальше посмотрел бы, что можно предложить внутри матрицы: рассрочку, другой объём, сервисный пакет. Если совсем не сходимся, эскалирую руководителю.</div>
+      </div>
+
+      <div class="card feedCard">
+        <div class="eyebrow" style="margin-bottom:6px">Разбор по показателям</div>
+        <div class="critRow">
+          <div>
+            <div class="critName"><i class="critDot" style="background:var(--score-bad)"></i>Практика</div>
+            <div class="critVal">30 % · ниже порога</div>
+          </div>
+          <div class="critText">Ни одного случая из работы. <b>Приведите пример:</b> что за клиент, что вы сделали, чем закончилось — на этом показателе прибавка самая большая.</div>
+        </div>
+        <div class="critRow">
+          <div>
+            <div class="critName"><i class="critDot" style="background:var(--score-mid)"></i>Структура</div>
+            <div class="critVal">58 % · ниже порога</div>
+          </div>
+          <div class="critText">Шаги перечислены, но вывода в начале нет. <b>Начните с решения,</b> потом разложите шаги по порядку.</div>
+        </div>
+        <div class="critRow">
+          <div>
+            <div class="critName"><i class="critDot" style="background:var(--score-good)"></i>Релевантность</div>
+            <div class="critVal">74 % · норма</div>
+          </div>
+          <div class="critText">Ответ про то, о чём спрашивали, отклонений от темы нет.</div>
+        </div>
+        <div class="critRow">
+          <div>
+            <div class="critName"><i class="critDot" style="background:var(--score-good)"></i>Речь</div>
+            <div class="critVal">82 % · норма</div>
+          </div>
+          <div class="critText">Темп ровный, слов-паразитов почти нет.</div>
+        </div>
+        <div class="critRow">
+          <div>
+            <div class="critName"><i class="critDot" style="background:var(--score-good)"></i>Без ошибок</div>
+            <div class="critVal">100 % · норма</div>
+          </div>
+          <div class="critText">Критических ошибок в ответе не нашли.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="mentor" style="border-top:0">
+          <div class="mentorScore" style="color:var(--score-good)">7,5<span>/10</span></div>
+          <div>
+            <div class="eyebrow" style="color:var(--strong);letter-spacing:.5px">Оценка куратора · Анна Лебедева · выше ИИ на 1,1</div>
+            <div class="mentorText">Логика верная, клиента слышит. Не хватило одного живого примера — на встрече проговорили, к следующему разбору обещал принести.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

@@ -18,6 +18,11 @@ import {useExamData} from "./useExamData";
 import ExamLoader from "./ExamLoader";
 import IncorrectExamView from "./IncorrectExamView";
 import SubmittedExamPreview from "./SubmittedExamPreview";
+import RunExamInterviewStep from "./RunExamInterviewStep";
+
+// Индекс шага "Мок-интервью" в левой навигации экзамена: задачи занимают 0..n,
+// общие вопросы -1, мок-интервью идёт последним пунктом и живёт на -2.
+const INTERVIEW_IND = -2;
 // import Editor from './Suggest/LazyEditor/LazyEditor'
 let timer = {}
 
@@ -270,6 +275,14 @@ function RunExam(props) {
                     </div>} */}
                     </div>)
                 })}
+                {!!exam.interviewId && <div
+                    onClick={() => {
+                        setSelectedInd(INTERVIEW_IND)
+                    }}
+                    className={'nav-link waves-effect waves-light ' + (selectedInd == INTERVIEW_IND ? 'active' : '')}>
+                    <i className="iconoir-brain" style={{marginRight: '5px'}}></i>
+                    {t('mockInterviewStep')}
+                </div>}
             </div>
             <hr/>
             {canSubmit() && <Button forceDisabled={!canSubmit()}
@@ -571,7 +584,12 @@ function RunExam(props) {
                 </div>
             </div>
             }
-            {selectedInd !== -1 && <CodeRun
+            {selectedInd === INTERVIEW_IND && <div className="card">
+                <div className="card-body">
+                    <RunExamInterviewStep interviewId={exam.interviewId}/>
+                </div>
+            </div>}
+            {selectedInd !== -1 && selectedInd !== INTERVIEW_IND && <CodeRun
                 isNewExam={true}
                 question={selectedTask}
                 onChangeCurStr={(v) => {
