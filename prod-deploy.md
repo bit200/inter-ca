@@ -49,7 +49,7 @@ ssh root@<VPS_IP> "bash /root/prod-init.sh"
 |---|---|---|
 | `DOMAIN` | `portal.itk.academy` | Прод-домен (A-запись должна уже указывать на VPS) |
 | `LETSENCRYPT_EMAIL` | `paulpetrash1@gmail.com` | Email для certbot |
-| `BACKEND_UPSTREAM` | `https://api-razvitie.itk.academy` | Куда nginx проксирует `/api` |
+| `BACKEND_UPSTREAM` | `http://127.0.0.1:5200` | Куда nginx проксирует `/api` (локальный бэкенд на этом же VPS) |
 | `GIT_REPO` | `git@github.com:bit200/inter-ca.git` | Репозиторий |
 | `GIT_BRANCH` | `master` | Ветка для прода |
 | `APP_DIR` | `/var/www/inter-ca` | Корень releases/current/shared |
@@ -85,7 +85,7 @@ ssh root@<VPS_IP> "bash /root/prod-deploy.sh"
 1. Клонирует свежий коммит ветки `master` в новый `releases/<timestamp>`, отдельно от
    текущего работающего релиза — сайт продолжает отдавать старую версию во время сборки.
 2. Переиспользует `node_modules` предыдущего релиза, если `package-lock.json` не менялся,
-   иначе выполняет `npm install`.
+   иначе выполняет `npm ci` (ставит версии строго по `package-lock.json`).
 3. Собирает фронт (`npm run build`) с `REACT_APP_BUILD_SHA` и `REACT_APP_BUILD_TIME`.
 4. Health-check билда: проверяет, что `build/index.html` создан и `build/static` не пуст.
    Если нет — новый релиз не применяется, старая версия остаётся рабочей.

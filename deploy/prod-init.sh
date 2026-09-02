@@ -27,7 +27,7 @@ set -euo pipefail
 # ==================== CONFIG — отредактировать перед запуском ====================
 DOMAIN="${DOMAIN:-portal.itk.academy}"                          # прод-домен (A-запись должна уже указывать на этот VPS)
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-paulpetrash1@gmail.com}" # для certbot
-BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-https://api-razvitie.itk.academy}" # куда nginx проксирует /api
+BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:5200}"          # куда nginx проксирует /api (локальный бэкенд на этом же VPS)
 GIT_REPO="${GIT_REPO:-git@github.com:bit200/inter-ca.git}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 APP_DIR="${APP_DIR:-/var/www/inter-ca}"                          # APP_DIR/current -> APP_DIR/releases/<ts>
