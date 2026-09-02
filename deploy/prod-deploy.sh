@@ -73,8 +73,8 @@ if [ -f "${PREVIOUS_RELEASE}/admin/package-lock.json" ] && cmp -s package-lock.j
   log "package-lock.json не менялся — переиспользую node_modules предыдущего релиза"
   cp -a "${PREVIOUS_RELEASE}/admin/node_modules" node_modules
 else
-  log "npm install (может занять пару минут)"
-  npm install --no-audit --no-fund
+  log "npm ci (может занять пару минут)"
+  npm ci --no-audit --no-fund
 fi
 
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -105,7 +105,7 @@ log "Health-check билда пройден: index.html есть, статики
 if [ "${RUN_LOCAL_API}" = "1" ] && [ -d "${RELEASE_DIR}/api" ]; then
   log "Обновляю зависимости api/ в новом релизе"
   cd "${RELEASE_DIR}/api"
-  npm install --no-audit --no-fund --omit=dev || npm install --no-audit --no-fund
+  npm ci --no-audit --no-fund --omit=dev || npm ci --no-audit --no-fund
 fi
 
 log "Атомарно переключаю ${CURRENT_LINK} -> ${RELEASE_DIR}"

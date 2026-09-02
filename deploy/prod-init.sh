@@ -78,8 +78,8 @@ log "Клонирую ${GIT_REPO} (${GIT_BRANCH}) в ${RELEASE_DIR}"
 git clone --branch "${GIT_BRANCH}" --depth 1 "${GIT_REPO}" "${RELEASE_DIR}"
 
 cd "${RELEASE_DIR}/admin"
-log "npm install (может занять пару минут)"
-npm install --no-audit --no-fund
+log "npm ci (может занять пару минут)"
+npm ci --no-audit --no-fund
 
 BUILD_SHA="$(git -C "${RELEASE_DIR}" rev-parse --short HEAD)"
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -168,7 +168,7 @@ fi
 if [ "${RUN_LOCAL_API}" = "1" ]; then
   log "Поднимаю api/serve-admin.js через pm2"
   cd "${CURRENT_LINK}/api"
-  npm install --no-audit --no-fund --omit=dev || npm install --no-audit --no-fund
+  npm ci --no-audit --no-fund --omit=dev || npm ci --no-audit --no-fund
   pm2 startOrReload ecosystem.config.js --update-env
   pm2 save
 
