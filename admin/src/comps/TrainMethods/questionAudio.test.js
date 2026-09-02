@@ -1,4 +1,9 @@
-import {playQuestionAudio, requestQuestionAudioUrl, stopQuestionAudio} from './questionAudio';
+import {
+    playQuestionAudio,
+    questionSpeechText,
+    requestQuestionAudioUrl,
+    stopQuestionAudio,
+} from './questionAudio';
 
 class FakeAudio {
     constructor(src) {
@@ -75,5 +80,65 @@ describe('озвучка вопроса готовым файлом', () => {
         FakeAudio.last.onerror();
 
         expect(onFallback).toHaveBeenCalledTimes(1);
+    });
+});
+
+// Бэкенд озвучивает текст самого вопроса, поэтому спрашивать озвучку надо
+// ровно по нему: с приклеенной подсказкой под вопросом хэш не сходится и на
+// озвученный вопрос приходит {reason: 'missing'}.
+describe('текст запроса озвучки', () => {
+    it('не добавляет к вопросу подсказку под ним', () => {
+        let text = questionSpeechText({
+            title: 'Что выведет в консоль, почему?',
+            smallTitle: 'Расскажите возможные алгоритмы решения, подводные камни, плюсы и минусы',
+        });
+
+        expect(text).toBe('Что выведет в консоль, почему?');
+    });
+
+    it('без вопроса отдаёт пустую строку', () => {
+        expect(questionSpeechText({smallTitle: 'Раскройте вопрос'})).toBe('');
+        expect(questionSpeechText()).toBe('');
+    });
+});
+
+
+// Кандидату показывается не то же поле вопроса, из которого сгенерирован файл,
+// поэтому по тексту с экрана на озвученный вопрос приходило {reason: 'missing'}.
+// Озвучку спрашиваем по id квиза - текст собирает сам бэкенд.
+describe('озвучка по id квиза', () => {
+    afterEach(() => {
+        stopQuestionAudio();
+        delete global.http;
+    });
+
+    it('спрашивает озвучку по квизу, а не по тексту с экрана', async () => {
+        const get = jest.fn(() => Promise.resolve({url: 'https://s3/q.wav?sig=2', durationSec: 7}));
+        const post = jest.fn(() => Promise.resolve({reason: 'missing'}));
+        global.http = {get, post};
+
+        const played = await playQuestionAudio({text: 'Осветите тему', quizId: 2814}, {AudioCtor: FakeAudio});
+
+        expect(get).toHaveBeenCalledWith('/question-audio/quiz/2814', {}, {wo_notify: true});
+        expect(post).not.toHaveBeenCalled();
+        expect(FakeAudio.last.src).toBe('https://s3/q.wav?sig=2');
+        expect(played).toEqual({durationSec: 7});
+    });
+
+    it('без озвучки по квизу пробует по тексту', async () => {
+        const get = jest.fn(() => Promise.resolve({reason: 'missing'}));
+        const post = jest.fn(() => Promise.resolve({url: 'https://s3/by-text.wav'}));
+        global.http = {get, post};
+
+        const info = await requestQuestionAudioUrl({text: 'Что такое замыкание?', quizId: 77});
+
+        expect(post).toHaveBeenCalledWith('/question-audio/url', {text: 'Что такое замыкание?'}, {wo_notify: true});
+        expect(info.url).toBe('https://s3/by-text.wav');
+    });
+
+    it('упавший запрос по квизу не ломает сценарий', async () => {
+        global.http = {get: () => Promise.reject(new Error('boom')), post: () => Promise.resolve({reason: 'missing'})};
+
+        await expect(requestQuestionAudioUrl({text: 'вопрос', quizId: 5})).resolves.toBe(null);
     });
 });

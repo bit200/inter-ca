@@ -4,6 +4,11 @@ import { attemptScoreSummary } from './evaluateJobState';
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
 
+// Завершённая попытка без единой оценки: раньше про это писала отдельная
+// карточка-заглушка над историей (MockInterviewResults), оторванная от самой
+// попытки. Теперь строка стоит там же, где у остальных попыток стоит балл.
+const NO_RESULTS_NOTE = 'Результаты пока недоступны';
+
 const STATUS_LABEL = {
     draft: 'Ожидает',
     active: 'Ожидает',
@@ -26,6 +31,12 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
     if (!showList && !latestCompleted) {
         return null;
     }
+
+    // Единственная попытка списком не показывается - но сказать, что результатов
+    // по ней ещё нет, всё равно надо: строку ставим над кнопкой "Пройти заново".
+    const soloWithoutResults = !showList
+        && PASSED_STATUSES.includes(currentItem.status)
+        && attemptScoreSummary(currentItem).score == null;
 
     return (
         <div className="card" style={{ marginBottom: 20 }}>
@@ -58,12 +69,18 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                                     {'Оценено ' + scored + ' из ' + total + ' вопросов'}
                                                 </div>
                                             )}
+                                            {passed && score == null && (
+                                                <div className={styles.cardScoreNote}>{NO_RESULTS_NOTE}</div>
+                                            )}
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     </>
+                )}
+                {soloWithoutResults && (
+                    <div className={styles.cardScoreNote}>{NO_RESULTS_NOTE}</div>
                 )}
                 {latestCompleted && (
                     <div className={styles.cardBtn}>

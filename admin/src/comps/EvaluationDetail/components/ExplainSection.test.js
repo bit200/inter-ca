@@ -85,4 +85,23 @@ describe('ExplainSection', () => {
         // тем, что рекомендация осталась врезкой с иконкой, а не сноской
         expect(suggestion.querySelector('i.iconoir-light-bulb-on')).not.toBeNull();
     });
+
+    it('подписывает разбор как сделанный ИИ', () => {
+        renderIt();
+        const note = screen.getByTestId('evaluate-explain-ai-note');
+        expect(note).toBeInTheDocument();
+        expect(note.textContent).toMatch(/ИИ/);
+        // Подпись мягкая: подсказываем, как читать разбор, а не пугаем ошибками
+        expect(note.textContent).toMatch(/подсказк/i);
+        expect(note.textContent).not.toMatch(/ошиб/i);
+    });
+
+    it('не повторяет подпись про ИИ дважды, когда вывод вынесен в слот', () => {
+        const slot = document.createElement('div');
+        document.body.appendChild(slot);
+        render(<ExplainSection onExplain={() => Promise.resolve({ explain })}
+                               initialExplain={explain} summarySlot={slot}/>);
+        expect(screen.getAllByTestId('evaluate-explain-ai-note')).toHaveLength(1);
+    });
+
 });

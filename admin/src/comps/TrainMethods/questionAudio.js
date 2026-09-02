@@ -3,10 +3,29 @@
 // Раньше вопрос читал робот браузера (speechSynthesis) - звучало плохо, и от
 // него отказались совсем. Теперь бэкенд заранее генерирует WAV голосом-образцом
 // через адаптер audio.tts_generate.v1, кладёт файл в закрытый бакет S3 и по
-// запросу отдаёт короткоживущий presigned URL: POST /api/question-audio/url {text}.
+// запросу отдаёт короткоживущий presigned URL.
+//
+// Спрашиваем озвучку ПО ID КВИЗА: GET /api/question-audio/quiz/:id. Бэкенд сам
+// собирает текст из полей квиза - ровно так же, как при генерации файла и в
+// карточке вопроса админки. Пока фронт спрашивал по тексту с экрана, на
+// озвученный вопрос приходило {reason: 'missing'}: кандидату показывается не то
+// же поле, из которого озвучка генерилась (audioName/name/specialTitle/
+// specialName, часть которых сервер вообще не отдаёт в карточке вопроса), и
+// хэш не сходился.
+//
+// Запрос по тексту остаётся страховкой на случай, когда id квиза до плеера не
+// доехал (старые экраны, ручной вызов textToVoice).
 //
 // Готового файла может не быть (новый или только что отредактированный вопрос,
 // выключенная на сервере озвучка) - тогда вопрос просто не озвучивается.
+
+// Текст, по которому спрашивается озвучка, когда id квиза неизвестен. Подсказку
+// под вопросом (smallTitle) в запрос не добавляем: бэкенд озвучивает текст
+// самого вопроса, с подсказкой хэш не сойдётся.
+export function questionSpeechText(info) {
+    let {title} = info || {};
+    return String(title || '').trim();
+}
 
 let currentAudio = null;
 
@@ -28,8 +47,25 @@ export function stopQuestionAudio() {
 // null значит "готового файла нет" - в том числе когда сервер ответил
 // {reason: 'missing'} или запрос не удался. Ошибку не показываем кандидату:
 // для него это не сбой, вопрос виден на экране.
-export function requestQuestionAudioUrl(text, http) {
+export function requestQuestionAudioUrl(params, http) {
+    let {text, quizId} = typeof params === 'string' ? {text: params} : (params || {});
     http = http || global.http;
+    if (!http || (!http.post && !http.get)) {
+        return Promise.resolve(null);
+    }
+
+    // По id квиза - основной путь: бэкенд знает, из какого поля озвучен вопрос.
+    if (quizId && http.get) {
+        return http.get('/question-audio/quiz/' + quizId, {}, {wo_notify: true})
+            .then(r => (r && r.url ? r : requestAudioUrlByText(text, http)))
+            .catch(() => requestAudioUrlByText(text, http));
+    }
+
+    return requestAudioUrlByText(text, http);
+}
+
+// Страховка: озвучка по тексту вопроса, когда id квиза неизвестен.
+function requestAudioUrlByText(text, http) {
     if (!text || !http || !http.post) {
         return Promise.resolve(null);
     }
@@ -44,7 +80,7 @@ export function requestQuestionAudioUrl(text, http) {
 // (озвучки не будет, сценарий двигает страховочный таймаут вызывающего).
 // Возвращает промис с {durationSec} при удачном старте и null иначе.
 export function playQuestionAudio(params, opts) {
-    let {text} = params || {};
+    let {text, quizId} = params || {};
     let {onEnd, onFallback, http, AudioCtor} = opts || {};
     AudioCtor = AudioCtor || (typeof window !== 'undefined' ? window.Audio : null);
 
@@ -61,7 +97,7 @@ export function playQuestionAudio(params, opts) {
     };
     let audio = null;
 
-    return requestQuestionAudioUrl(text, http).then(info => {
+    return requestQuestionAudioUrl({text, quizId}, http).then(info => {
         if (!info || !AudioCtor) {
             return finish(onFallback)(), null;
         }
@@ -79,7 +115,7 @@ export function playQuestionAudio(params, opts) {
         try {
             let played = audio.play();
             if (played && played.catch) {
-                played.catch(finish(onFallback));
+                played.catch(() => finish(onFallback)());
             }
         } catch (e) {
             finish(onFallback)();
