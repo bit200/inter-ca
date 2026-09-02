@@ -35,6 +35,7 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-portal.itk.academy}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 APP_DIR="${APP_DIR:-/var/www/inter-ca}"
+NODE_MAJOR="${NODE_MAJOR:-20}"                                    # см. NODE_MAJOR в prod-init.sh — версия, которую переключает nvm
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1/}"          # проверяется локально, чтобы не зависеть от внешнего DNS/файрвола
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-10}"
 HEALTHCHECK_DELAY="${HEALTHCHECK_DELAY:-2}"                       # секунд между попытками
@@ -67,9 +68,18 @@ if [ ! -d "${BUILD_DIR}" ]; then
   exit 1
 fi
 
-# npm cache verify чинит повреждённые записи в кэше (например "Cannot read
-# property '@babel/core' of undefined" при npm ci) — не даёт им копиться
-# и ломать сборку от деплоя к деплою.
+# Если на сервере есть nvm, он подменяет node/npm в PATH при каждом новом shell'е —
+# без явного nvm use здесь может оказаться активна старая версия (например Node 14 /
+# npm 6, который не умеет lockfileVersion 3 и падает на npm ci с "Cannot read
+# property '@babel/core' of undefined"), даже если prod-init.sh ставил Node 20.
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ -s "${NVM_DIR}/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "${NVM_DIR}/nvm.sh"
+  nvm use "${NODE_MAJOR}" >/dev/null
+  log "nvm: активна версия $(node -v)"
+fi
+
 log "Проверяю кэш npm"
 npm cache verify
 

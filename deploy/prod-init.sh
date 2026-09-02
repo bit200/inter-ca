@@ -55,7 +55,22 @@ log "Обновляю пакеты и ставлю базовые зависим
 apt-get update -y
 apt-get install -y curl git nginx software-properties-common ca-certificates gnupg
 
-if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/v//;s/\..*//')" -lt "$NODE_MAJOR" ]; then
+# Если на сервере есть nvm, он подменяет node/npm в PATH при каждом новом shell'е —
+# системный Node от NodeSource окажется недостижим, пока не выбрана нужная версия
+# через nvm явно (иначе npm ci молча падает на старом npm с lockfileVersion 3:
+# "Cannot read property '@babel/core' of undefined").
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ -s "${NVM_DIR}/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "${NVM_DIR}/nvm.sh"
+  if ! nvm use "${NODE_MAJOR}" >/dev/null 2>&1; then
+    log "Ставлю Node.js ${NODE_MAJOR}.x через nvm"
+    nvm install "${NODE_MAJOR}"
+    nvm use "${NODE_MAJOR}"
+  fi
+  nvm alias default "${NODE_MAJOR}"
+  log "nvm: активна версия $(node -v)"
+elif ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/v//;s/\..*//')" -lt "$NODE_MAJOR" ]; then
   log "Ставлю Node.js ${NODE_MAJOR}.x (NodeSource)"
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash -
   apt-get install -y nodejs
