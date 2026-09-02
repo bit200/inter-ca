@@ -39,7 +39,6 @@ NODE_MAJOR="${NODE_MAJOR:-20}"                                    # см. NODE_M
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1/}"          # проверяется локально, чтобы не зависеть от внешнего DNS/файрвола
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-10}"
 HEALTHCHECK_DELAY="${HEALTHCHECK_DELAY:-2}"                       # секунд между попытками
-RUN_LOCAL_API="${RUN_LOCAL_API:-0}"                               # 1 = переустановить зависимости и перезапустить api/ через pm2
 # ============================================================================================
 
 log()  { echo -e "\033[1;32m==>\033[0m $*"; }
@@ -117,12 +116,6 @@ if [ "${STATIC_FILE_COUNT}" -lt 1 ]; then
 fi
 log "Health-check билда пройден: index.html есть, статики файлов: ${STATIC_FILE_COUNT}"
 
-if [ "${RUN_LOCAL_API}" = "1" ] && [ -d "${APP_DIR}/api" ]; then
-  log "Обновляю зависимости api/"
-  cd "${APP_DIR}/api"
-  npm ci --no-audit --no-fund --omit=dev || npm ci --no-audit --no-fund
-fi
-
 log "Атомарно подменяю ${BUILD_DIR}: старый билд -> build-old, build-new -> build"
 rm -rf "${BUILD_OLD_DIR}"
 mv "${BUILD_DIR}" "${BUILD_OLD_DIR}"
@@ -140,13 +133,6 @@ if ! nginx -t; then
   exit 1
 fi
 systemctl reload nginx
-
-if [ "${RUN_LOCAL_API}" = "1" ] && [ -d "${APP_DIR}/api" ]; then
-  log "Перезапускаю api/ через pm2 (zero-downtime reload)"
-  cd "${APP_DIR}/api"
-  pm2 startOrReload ecosystem.config.js --update-env
-  pm2 save
-fi
 
 log "Проверяю доступность сайта после подмены (${HEALTHCHECK_URL})"
 HEALTHY=0

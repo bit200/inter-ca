@@ -12,28 +12,29 @@
 #   3. Дальше для выкладки изменений использовать deploy/prod-deploy.sh.
 #
 # Что делает:
-#   - ставит Node.js, nginx, certbot, pm2;
+#   - ставит Node.js, nginx, certbot;
 #   - клонирует репозиторий в APP_DIR, собирает фронт в APP_DIR/admin/build;
 #   - настраивает nginx: раздача статики из APP_DIR/admin/build (путь постоянный —
-#     деплой подменяет содержимое папки, а не сам путь) + reverse-proxy /api ->
-#     BACKEND_UPSTREAM;
+#     деплой подменяет содержимое папки, а не сам путь). API-трафик (/api/v1/) этот
+#     скрипт не проксирует — им владеет include-фрагмент от itk-platform-en (см.
+#     комментарий у `include ... portal-itk-platform-en.conf*` ниже): это тот же
+#     бэкенд, что и у их собственной админки, просто другой UI (кандидат vs ментор);
 #   - выпускает TLS через certbot;
-#   - включает автозапуск nginx при перезагрузке сервера (systemctl enable);
-#   - если включён локальный API (RUN_LOCAL_API=1) — поднимает api/serve-admin.js
-#     через pm2 и настраивает pm2 startup, чтобы процесс поднимался сам после reboot.
+#   - включает автозапуск nginx при перезагрузке сервера (systemctl enable).
+#
+# Этот репозиторий — только фронт, бэкенд (включая api/) больше не разворачивается
+# отсюда на проде — им целиком владеет itk-platform-en.
 
 set -euo pipefail
 
 # ==================== CONFIG — отредактировать перед запуском ====================
 DOMAIN="${DOMAIN:-portal.itk.academy}"                          # прод-домен (A-запись должна уже указывать на этот VPS)
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-paulpetrash1@gmail.com}" # для certbot
-BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:5200}"   # куда nginx проксирует /api (локальный бэкенд на этом же VPS)
 GIT_REPO="${GIT_REPO:-git@github.com:bit200/inter-ca.git}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 APP_DIR="${APP_DIR:-/var/www/inter-ca}"                          # рабочая копия репозитория
 NODE_MAJOR="${NODE_MAJOR:-20}"
 SKIP_TLS="${SKIP_TLS:-0}"                                        # 1 = пропустить certbot (например, домен ещё не резолвится)
-RUN_LOCAL_API="${RUN_LOCAL_API:-0}"                               # 1 = поднять api/serve-admin.js через pm2 на этом сервере
 # ===================================================================================
 
 log()  { echo -e "\033[1;32m==>\033[0m $*"; }
@@ -78,13 +79,6 @@ else
   log "Node.js уже установлен: $(node -v)"
 fi
 
-if ! command -v pm2 >/dev/null 2>&1; then
-  log "Ставлю pm2 глобально"
-  npm install -g pm2 --no-audit --no-fund
-else
-  log "pm2 уже установлен: $(pm2 -v)"
-fi
-
 # npm cache verify чинит повреждённые записи в кэше (например "Cannot read
 # property '@babel/core' of undefined" при npm ci) — не даёт им копиться
 # и ломать сборку от деплоя к деплою.
@@ -122,15 +116,6 @@ server {
     gzip on;
     gzip_types text/css application/javascript application/json image/svg+xml;
 
-    location /api {
-        proxy_set_header X-Forwarded-For \$remote_addr;
-        proxy_set_header Host \$http_host;
-        proxy_connect_timeout 5s;
-        proxy_read_timeout 60s;
-        proxy_next_upstream error timeout http_502 http_503 http_504;
-        proxy_pass ${BACKEND_UPSTREAM};
-    }
-
     # SPA-фоллбек: все остальные пути отдаём index.html, роутинг решает react-router.
     # index.html — всегда no-cache: он ссылается на хэшированные JS/CSS, и после деплоя
     # браузер должен каждый раз перепроверять, не переехали ли ссылки на новую версию.
@@ -147,14 +132,19 @@ server {
         access_log off;
     }
 
-    # itk-platform-en (админка/API для менторов - отдельный репозиторий, тот же
-    # ${DOMAIN}) добавляет свои /admin/, /api/v1/, /upload/ через отдельный
-    # инклюд-файл, а не прямо в этот heredoc - этот скрипт перезаписывает
-    # NGINX_CONF целиком при каждом запуске, а инклюд-файл управляется тем
-    # репозиторием (см. deploy/prod-portal.include.conf.template там) и не
-    # трогается отсюда. include на путь без glob и с wildcard-суффиксом ("*")
-    # не ошибается, если файла ещё нет - itk-platform-en, возможно, ещё не
-    # развёрнут на этом сервере на момент первого запуска этого скрипта.
+    # itk-platform-en (отдельный репозиторий, тот же ${DOMAIN}) добавляет
+    # /admin/, /api/v1/, /upload/ через отдельный инклюд-файл, а не прямо в этот
+    # heredoc - этот скрипт перезаписывает NGINX_CONF целиком при каждом запуске,
+    # а инклюд-файл управляется тем репозиторием (см.
+    # deploy/prod-portal.include.conf.template там) и не трогается отсюда. include
+    # на путь без glob и с wildcard-суффиксом ("*") не ошибается, если файла ещё
+    # нет - itk-platform-en, возможно, ещё не развёрнут на этом сервере на момент
+    # первого запуска этого скрипта.
+    #
+    # inter-ca (этот репозиторий) — только фронт, весь его API-трафик идёт на
+    # /api/v1/ - тот же бэкенд, что и у itk-platform-en'овской админки для
+    # менторов, просто другой UI (кандидат сдаёт экзамен vs ментор его
+    # проверяет). Свой отдельный location /api этот скрипт не создаёт.
     include /etc/nginx/sites-available/portal-itk-platform-en.conf*;
 }
 EOF
@@ -177,23 +167,7 @@ else
   warn "SKIP_TLS=1 — сертификат не выпускаю, сайт доступен только по http://${DOMAIN}"
 fi
 
-if [ "${RUN_LOCAL_API}" = "1" ]; then
-  log "Поднимаю api/serve-admin.js через pm2"
-  cd "${APP_DIR}/api"
-  npm ci --no-audit --no-fund --omit=dev || npm ci --no-audit --no-fund
-  pm2 startOrReload ecosystem.config.js --update-env
-  pm2 save
-
-  log "Настраиваю автозапуск pm2 при перезагрузке сервера"
-  PM2_STARTUP_CMD="$(pm2 startup systemd -u root --hp /root | tail -n 1)"
-  if [[ "${PM2_STARTUP_CMD}" == *systemctl* ]]; then
-    eval "${PM2_STARTUP_CMD}"
-  else
-    warn "Не удалось автоматически распарсить команду pm2 startup — выполните её вручную (см. вывод pm2 startup выше)"
-  fi
-fi
-
 log "Готово. Прод фронта: http://${DOMAIN} (или https, если certbot отработал)"
 log "Рабочая копия: ${APP_DIR}, версия ${BUILD_SHA}"
-warn "Проверьте, что ${BACKEND_UPSTREAM}/... реально отвечает — иначе фронт будет грузиться пустым"
+warn "Проверьте, что https://${DOMAIN}/api/v1/... реально отвечает (itk-platform-en) — иначе фронт будет грузиться пустым"
 warn "Для последующих деплоев изменений используйте deploy/prod-deploy.sh"
