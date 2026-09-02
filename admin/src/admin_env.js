@@ -12,20 +12,20 @@ local = 'http://localhost:6057'
 let isDemo = window.location.href.indexOf('demo.') > -1;
 let isAcademy = window.location.href.indexOf('itk.academy') > -1;
 // Домен стейджинга (staging-app.itk.academy) сам по себе попал бы под isAcademy ниже и
-// молча стучался бы в боевой api-razvitie.itk.academy — проверяем его первым.
+// молча стучался бы не в тот сервер — проверяем его первым.
 let isStaging = /^staging/i.test(window.location.hostname);
-// Прод-хост (portal.itk.academy) тоже содержит "itk.academy" и попал бы под isAcademy,
-// уйдя мимо nginx-прокси этого же хоста прямо на api-razvitie.itk.academy — проверяем его
-// раньше isAcademy и ходим по относительному /api, который nginx проксирует на бэкенд.
+// Прод-хост (portal.itk.academy) тоже содержит "itk.academy" и попал бы под isAcademy —
+// проверяем его раньше isAcademy. Бэкенд на проде — тот же itk-platform-en, что и у
+// их собственной админки для менторов (просто другой UI: кандидат vs ментор), путь
+// туда — /api/v1/ (nginx-инклюд от itk-platform-en, см. inter-ca/deploy/prod-init.sh).
 let isProd = /^portal\./i.test(window.location.hostname);
 
 let servers = {
     local: local,
     staging: 'https://staging-api-razvitie.itk.academy',
-    prod: window.location.origin + '/api',
+    prod: window.location.origin + '/api/v1',
     aqa: 'https://aqa-api.javacode.ru',
     demo: 'https://demo-api.itk.academy',
-    academy:  'https://api-razvitie.itk.academy',
     kedu:  'https://api.itkedu.com',
     def:  'https://api-razvitie.itrum.ru'
 }
