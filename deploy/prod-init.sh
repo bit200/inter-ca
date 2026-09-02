@@ -71,6 +71,12 @@ else
   log "pm2 уже установлен: $(pm2 -v)"
 fi
 
+# npm cache verify чинит повреждённые записи в кэше (например "Cannot read
+# property '@babel/core' of undefined" при npm ci) — не даёт им копиться
+# и ломать сборку от релиза к релизу.
+log "Проверяю кэш npm"
+npm cache verify
+
 log "Готовлю структуру каталогов ${APP_DIR} (releases/current/shared)"
 mkdir -p "${RELEASES_DIR}" "${SHARED_DIR}"
 

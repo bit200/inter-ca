@@ -59,6 +59,12 @@ fi
 PREVIOUS_RELEASE="$(readlink -f "${CURRENT_LINK}")"
 log "Текущий релиз (для отката, если что-то пойдёт не так): ${PREVIOUS_RELEASE}"
 
+# npm cache verify чинит повреждённые записи в кэше (например "Cannot read
+# property '@babel/core' of undefined" при npm ci) — не даёт им копиться
+# и ломать сборку от релиза к релизу.
+log "Проверяю кэш npm"
+npm cache verify
+
 RELEASE_TS="$(date +%Y%m%d%H%M%S)"
 RELEASE_DIR="${RELEASES_DIR}/${RELEASE_TS}"
 
