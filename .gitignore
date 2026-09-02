@@ -10,3 +10,6 @@ up
 api/data
 api/conv/node_modules
 api/conv/task_remainder/node_modules
+admin/build
+admin/build-new
+admin/build-old

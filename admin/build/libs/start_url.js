@@ -1,1 +1,0 @@
-window.start_url = '/images/417.png'
