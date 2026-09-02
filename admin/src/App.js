@@ -2,8 +2,8 @@ import reportWebVitals from "./reportWebVitals";
 import {createRoot} from "react-dom/client";
 import React, {lazy, useEffect, useState, Suspense} from "react";
 import _ from "underscore";
-import env from "./admin_env";
-import nFn from "./comps/i18/NameFn";
+import "./admin_env";
+import "./comps/i18/NameFn";
 
 import Skeleton from "./libs/Skeleton";
 import Login from "./libs/Login/Login";

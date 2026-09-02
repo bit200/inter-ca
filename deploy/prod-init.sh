@@ -134,6 +134,16 @@ server {
         add_header Cache-Control "public, immutable";
         access_log off;
     }
+
+    # itk-platform-en (админка/API для менторов - отдельный репозиторий, тот же
+    # ${DOMAIN}) добавляет свои /admin/, /api/v1/, /upload/ через отдельный
+    # инклюд-файл, а не прямо в этот heredoc - этот скрипт перезаписывает
+    # NGINX_CONF целиком при каждом запуске, а инклюд-файл управляется тем
+    # репозиторием (см. deploy/prod-portal.include.conf.template там) и не
+    # трогается отсюда. include на путь без glob и с wildcard-суффиксом ("*")
+    # не ошибается, если файла ещё нет - itk-platform-en, возможно, ещё не
+    # развёрнут на этом сервере на момент первого запуска этого скрипта.
+    include /etc/nginx/sites-available/portal-itk-platform-en.conf*;
 }
 EOF
 

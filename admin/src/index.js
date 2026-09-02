@@ -1,5 +1,5 @@
 
-import App from './App'
+import './App'
 // import './scss/old/App.scss'
 // import './scss/old/NewDesign.css'
 // import './scss/old/CustomCheckbox.css'
