@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 # Первичное развёртывание inter-ca/admin (прод-фронтенд) на чистый Ubuntu/Debian VPS.
-# Запускать один раз сразу после первого git clone (или вообще без локального клона —
-# скрипт сам клонирует репозиторий на сервере).
+# Запускать один раз. На сервере код не правится руками, поэтому APP_DIR — это
+# просто одна рабочая копия репозитория (git pull при каждом деплое), без
+# releases/current — см. deploy/prod-deploy.sh для последующих деплоев.
 #
 # Использование:
 #   1. Заполнить переменные в блоке CONFIG ниже (или передать через env перед вызовом).
 #   2. Скопировать на VPS и выполнить от root:
 #        scp deploy/prod-init.sh root@<VPS_IP>:/root/
 #        ssh root@<VPS_IP> "bash /root/prod-init.sh"
-#   3. Дальше для выкладки изменений использовать deploy/prod-deploy.sh — он живёт уже
-#      внутри APP_DIR/current и просто раскатывает новые релизы поверх этой базы.
+#   3. Дальше для выкладки изменений использовать deploy/prod-deploy.sh.
 #
 # Что делает:
 #   - ставит Node.js, nginx, certbot, pm2;
-#   - клонирует репозиторий в APP_DIR/releases/<timestamp>, собирает фронт;
-#   - переключает APP_DIR/current на свежий релиз через symlink (для будущих
-#     zero-downtime деплоев и rollback скриптом prod-deploy.sh);
-#   - настраивает nginx: раздача статики + reverse-proxy /api -> BACKEND_UPSTREAM;
+#   - клонирует репозиторий в APP_DIR, собирает фронт в APP_DIR/admin/build;
+#   - настраивает nginx: раздача статики из APP_DIR/admin/build (путь постоянный —
+#     деплой подменяет содержимое папки, а не сам путь) + reverse-proxy /api ->
+#     BACKEND_UPSTREAM;
 #   - выпускает TLS через certbot;
 #   - включает автозапуск nginx при перезагрузке сервера (systemctl enable);
 #   - если включён локальный API (RUN_LOCAL_API=1) — поднимает api/serve-admin.js
@@ -27,14 +27,13 @@ set -euo pipefail
 # ==================== CONFIG — отредактировать перед запуском ====================
 DOMAIN="${DOMAIN:-portal.itk.academy}"                          # прод-домен (A-запись должна уже указывать на этот VPS)
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-paulpetrash1@gmail.com}" # для certbot
-BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:5200}"          # куда nginx проксирует /api (локальный бэкенд на этом же VPS)
+BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:5200}"   # куда nginx проксирует /api (локальный бэкенд на этом же VPS)
 GIT_REPO="${GIT_REPO:-git@github.com:bit200/inter-ca.git}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
-APP_DIR="${APP_DIR:-/var/www/inter-ca}"                          # APP_DIR/current -> APP_DIR/releases/<ts>
+APP_DIR="${APP_DIR:-/var/www/inter-ca}"                          # рабочая копия репозитория
 NODE_MAJOR="${NODE_MAJOR:-20}"
 SKIP_TLS="${SKIP_TLS:-0}"                                        # 1 = пропустить certbot (например, домен ещё не резолвится)
 RUN_LOCAL_API="${RUN_LOCAL_API:-0}"                               # 1 = поднять api/serve-admin.js через pm2 на этом сервере
-KEEP_RELEASES="${KEEP_RELEASES:-5}"                               # сколько старых релизов хранить для быстрого rollback
 # ===================================================================================
 
 log()  { echo -e "\033[1;32m==>\033[0m $*"; }
@@ -46,11 +45,11 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-RELEASES_DIR="${APP_DIR}/releases"
-CURRENT_LINK="${APP_DIR}/current"
-SHARED_DIR="${APP_DIR}/shared"
-RELEASE_TS="$(date +%Y%m%d%H%M%S)"
-RELEASE_DIR="${RELEASES_DIR}/${RELEASE_TS}"
+if [ -e "${APP_DIR}" ]; then
+  err "${APP_DIR} уже существует — prod-init.sh запускается один раз для первичной настройки."
+  err "Для выкладки изменений используйте deploy/prod-deploy.sh."
+  exit 1
+fi
 
 log "Обновляю пакеты и ставлю базовые зависимости"
 apt-get update -y
@@ -73,35 +72,27 @@ fi
 
 # npm cache verify чинит повреждённые записи в кэше (например "Cannot read
 # property '@babel/core' of undefined" при npm ci) — не даёт им копиться
-# и ломать сборку от релиза к релизу.
+# и ломать сборку от деплоя к деплою.
 log "Проверяю кэш npm"
 npm cache verify
 
-log "Готовлю структуру каталогов ${APP_DIR} (releases/current/shared)"
-mkdir -p "${RELEASES_DIR}" "${SHARED_DIR}"
+log "Клонирую ${GIT_REPO} (${GIT_BRANCH}) в ${APP_DIR}"
+git clone --branch "${GIT_BRANCH}" "${GIT_REPO}" "${APP_DIR}"
 
-log "Клонирую ${GIT_REPO} (${GIT_BRANCH}) в ${RELEASE_DIR}"
-git clone --branch "${GIT_BRANCH}" --depth 1 "${GIT_REPO}" "${RELEASE_DIR}"
-
-cd "${RELEASE_DIR}/admin"
+cd "${APP_DIR}/admin"
 log "npm ci (может занять пару минут)"
 npm ci --no-audit --no-fund
 
-BUILD_SHA="$(git -C "${RELEASE_DIR}" rev-parse --short HEAD)"
+BUILD_SHA="$(git -C "${APP_DIR}" rev-parse --short HEAD)"
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 log "Собираю прод-бандл (npm run build), версия ${BUILD_SHA}"
 DISABLE_ESLINT=true NODE_ENV=production REACT_APP_BUILD_SHA="${BUILD_SHA}" REACT_APP_BUILD_TIME="${BUILD_TIME}" npm run build
 
-BUILD_DIR="${RELEASE_DIR}/admin/build"
+BUILD_DIR="${APP_DIR}/admin/build"
 if [ ! -f "${BUILD_DIR}/index.html" ]; then
   err "Сборка не создала ${BUILD_DIR}/index.html — проверьте вывод npm run build выше."
   exit 1
 fi
-
-log "Переключаю ${CURRENT_LINK} -> ${RELEASE_DIR}"
-ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
-
-CURRENT_BUILD_DIR="${CURRENT_LINK}/admin/build"
 
 log "Настраиваю nginx для ${DOMAIN}"
 NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}.conf"
@@ -110,7 +101,7 @@ server {
     listen 80;
     server_name ${DOMAIN};
 
-    root ${CURRENT_BUILD_DIR};
+    root ${BUILD_DIR};
     index index.html;
 
     gzip on;
@@ -173,7 +164,7 @@ fi
 
 if [ "${RUN_LOCAL_API}" = "1" ]; then
   log "Поднимаю api/serve-admin.js через pm2"
-  cd "${CURRENT_LINK}/api"
+  cd "${APP_DIR}/api"
   npm ci --no-audit --no-fund --omit=dev || npm ci --no-audit --no-fund
   pm2 startOrReload ecosystem.config.js --update-env
   pm2 save
@@ -187,13 +178,7 @@ if [ "${RUN_LOCAL_API}" = "1" ]; then
   fi
 fi
 
-log "Чищу старые релизы, оставляю последние ${KEEP_RELEASES}"
-cd "${RELEASES_DIR}"
-ls -1t | tail -n +"$((KEEP_RELEASES + 1))" | while read -r old; do
-  rm -rf "${RELEASES_DIR:?}/${old}"
-done
-
 log "Готово. Прод фронта: http://${DOMAIN} (или https, если certbot отработал)"
-log "Текущий релиз: ${RELEASE_DIR} (симлинк ${CURRENT_LINK}), версия ${BUILD_SHA}"
+log "Рабочая копия: ${APP_DIR}, версия ${BUILD_SHA}"
 warn "Проверьте, что ${BACKEND_UPSTREAM}/... реально отвечает — иначе фронт будет грузиться пустым"
 warn "Для последующих деплоев изменений используйте deploy/prod-deploy.sh"
