@@ -1,9 +1,34 @@
 # Деплой на прод
 
-Прод фронтенда (`admin/`) разворачивается по схеме releases/current/shared (как в Capistrano):
-каждый релиз клонируется в отдельную папку, а symlink `current` атомарно переключается на
-новый релиз после успешной сборки и health-check. Это даёт zero-downtime деплой и мгновенный
-откат при проблемах.
+Прод фронтенда (`admin/`) — это одна рабочая копия репозитория на сервере (`APP_DIR`).
+Деплой делает `git pull` (fetch + reset --hard) на месте, собирает новую версию в отдельную
+папку `admin/build-new` (пока идёт сборка, сайт продолжает отдавать старую статику из
+`admin/build`), а затем атомарно подменяет билд: `build -> build-old`, `build-new -> build`.
+Путь `admin/build`, прописанный в nginx как `root`, никогда не меняется — реген nginx-конфига
+не нужен. Это даёт zero-downtime деплой и откат на один шаг назад при проблемах.
+
+Код на сервере руками не правится — если билд после деплоя не проходит health-check, скрипт
+откатывает статику на `build-old`, но git-состояние оставляет как есть (следующий деплой всё
+равно подтянет актуальный `master`).
+
+## Архитектура: только фронт, бэкенд — в itk-platform-en
+
+Этот репозиторий на проде — **только фронт** (кандидатская форма экзамена). Бэкенд для него —
+тот же сервис, что обслуживает и админку для менторов, живёт в отдельном репозитории
+`itk-platform-en` (Docker) и разворачивается полностью его собственными скриптами
+(`initial_setup_prod.sh`/`deploy.sh` там) — эти скрипты их не трогают и не заменяют.
+
+`itk-platform-en` владеет на `portal.itk.academy` путями `/api/v1/`, `/admin/`, `/upload/`
+через отдельный nginx include-фрагмент (`/etc/nginx/sites-available/portal-itk-platform-en.conf`),
+который `prod-init.sh` подключает в свой `server {}` блок (`include ... portal-itk-platform-en.conf*`).
+Фронт inter-ca ходит на бэкенд по `/api/v1/...` — так же, как их собственная админка, просто
+с другим UI. `prod-init.sh` не создаёт свой `location /api` — весь API-трафик идёт через этот
+include.
+
+На VPS сейчас также крутится отдельный, не связанный с этими скриптами **старый прод**
+(pm2-процесс `PROD-itk-academy-api`, порт 6057) — он обслуживает текущих учеников на старом
+стеке и не имеет отношения к `itk-platform-en`/`inter-ca`. Оба прода временно сосуществуют на
+одном VPS на период миграции.
 
 Скрипты лежат в `deploy/`:
 
@@ -26,7 +51,8 @@ git push
 
 ## 1. Первичная настройка сервера (один раз)
 
-Выполняется один раз на чистом Ubuntu/Debian VPS.
+Выполняется один раз на чистом Ubuntu/Debian VPS. `prod-init.sh` отказывается запускаться,
+если `APP_DIR` уже существует — он не предназначен для повторного запуска.
 
 ```bash
 scp deploy/prod-init.sh root@<VPS_IP>:/root/
@@ -35,13 +61,15 @@ ssh root@<VPS_IP> "bash /root/prod-init.sh"
 
 Что делает `prod-init.sh`:
 
-1. Ставит Node.js, nginx, certbot, pm2.
-2. Клонирует репозиторий в `APP_DIR/releases/<timestamp>`, собирает фронт (`npm run build`).
-3. Переключает `APP_DIR/current` на этот релиз через symlink.
-4. Настраивает nginx: раздача статики + reverse-proxy `/api` -> `BACKEND_UPSTREAM`.
+1. Ставит Node.js, nginx, certbot.
+2. Проверяет кэш npm (`npm cache verify`).
+3. Клонирует репозиторий прямо в `APP_DIR` (без releases/current), собирает фронт
+   (`npm run build`) в `APP_DIR/admin/build`.
+4. Настраивает nginx: `root` указывает напрямую на `APP_DIR/admin/build`, плюс `include`
+   на nginx-фрагмент от `itk-platform-en` (владеет `/api/v1/`, `/admin/`, `/upload/` —
+   см. «Архитектура» выше). Свой `location /api` этот скрипт не создаёт.
 5. Выпускает TLS-сертификат через certbot.
 6. Включает автозапуск nginx при перезагрузке сервера.
-7. Если `RUN_LOCAL_API=1` — поднимает `api/serve-admin.js` через pm2 и настраивает pm2 startup.
 
 ### Переменные окружения (можно переопределить перед запуском)
 
@@ -49,19 +77,16 @@ ssh root@<VPS_IP> "bash /root/prod-init.sh"
 |---|---|---|
 | `DOMAIN` | `portal.itk.academy` | Прод-домен (A-запись должна уже указывать на VPS) |
 | `LETSENCRYPT_EMAIL` | `paulpetrash1@gmail.com` | Email для certbot |
-| `BACKEND_UPSTREAM` | `https://api-razvitie.itk.academy` | Куда nginx проксирует `/api` |
 | `GIT_REPO` | `git@github.com:bit200/inter-ca.git` | Репозиторий |
 | `GIT_BRANCH` | `master` | Ветка для прода |
-| `APP_DIR` | `/var/www/inter-ca` | Корень releases/current/shared |
-| `NODE_MAJOR` | `20` | Мажорная версия Node.js |
+| `APP_DIR` | `/var/www/inter-ca` | Рабочая копия репозитория |
+| `NODE_MAJOR` | `20` | Мажорная версия Node.js (используется и для `nvm use`, если nvm есть на сервере) |
 | `SKIP_TLS` | `0` | `1` — пропустить certbot (например, домен ещё не резолвится) |
-| `RUN_LOCAL_API` | `0` | `1` — поднять `api/serve-admin.js` через pm2 на этом сервере |
-| `KEEP_RELEASES` | `5` | Сколько старых релизов хранить для быстрого rollback |
 
 Пример с переопределением:
 
 ```bash
-ssh root@<VPS_IP> "DOMAIN=portal.itk.academy RUN_LOCAL_API=1 bash /root/prod-init.sh"
+ssh root@<VPS_IP> "DOMAIN=portal.itk.academy bash /root/prod-init.sh"
 ```
 
 ## 2. Деплой новой версии (при каждом релизе)
@@ -82,61 +107,63 @@ ssh root@<VPS_IP> "bash /root/prod-deploy.sh"
 
 ### Что делает `prod-deploy.sh`
 
-1. Клонирует свежий коммит ветки `master` в новый `releases/<timestamp>`, отдельно от
-   текущего работающего релиза — сайт продолжает отдавать старую версию во время сборки.
-2. Переиспользует `node_modules` предыдущего релиза, если `package-lock.json` не менялся,
-   иначе выполняет `npm install`.
-3. Собирает фронт (`npm run build`) с `REACT_APP_BUILD_SHA` и `REACT_APP_BUILD_TIME`.
-4. Health-check билда: проверяет, что `build/index.html` создан и `build/static` не пуст.
-   Если нет — новый релиз не применяется, старая версия остаётся рабочей.
-5. Атомарно переключает symlink `current -> releases/<новый>` и релоадит nginx
-   (`nginx -t` перед релоадом — если конфиг невалиден, откат на предыдущий релиз).
-6. Если `RUN_LOCAL_API=1` — обновляет зависимости `api/` и делает zero-downtime reload
-   через `pm2 startOrReload`.
-7. Проверяет HTTP-доступность сайта после переключения (curl по `HEALTHCHECK_URL`,
-   несколько попыток с задержкой).
-8. Если сайт не отвечает `200` — автоматически откатывает symlink назад на предыдущий
-   релиз, релоадит nginx и (если применимо) поднимает api предыдущего релиза через pm2.
-9. Чистит старые релизы, оставляя последние `KEEP_RELEASES`.
+1. Проверяет кэш npm (`npm cache verify`).
+2. `git fetch` + `git checkout` + `git reset --hard origin/master` в `APP_DIR` — рабочая
+   копия подтягивается на месте, без переклонирования.
+3. `npm ci` (ставит версии строго по `package-lock.json`).
+4. Собирает фронт в `admin/build-new` (`npm run build` с `BUILD_PATH=build-new`,
+   `REACT_APP_BUILD_SHA`, `REACT_APP_BUILD_TIME`) — текущий `admin/build` не трогается, сайт
+   продолжает отдавать старую версию во время сборки.
+5. Health-check билда: проверяет, что `build-new/index.html` создан и `build-new/static` не
+   пуст. Если нет — новая версия не применяется, старая статика остаётся рабочей.
+6. Атомарно подменяет билд: `build -> build-old`, `build-new -> build`, релоадит nginx
+   (`nginx -t` перед релоадом — если конфиг невалиден, откат на `build-old`).
+7. Проверяет HTTP-доступность сайта после подмены (curl по `HEALTHCHECK_URL`, несколько
+   попыток с задержкой).
+8. Если сайт не отвечает `200` — автоматически откатывает `build` обратно на `build-old`
+   и релоадит nginx. Git-состояние при этом не откатывается — код никто не читает и не
+   правит на сервере, а следующий деплой всё равно подтянет актуальный `master`.
 
 ### Переменные окружения
 
 | Переменная | По умолчанию | Назначение |
 |---|---|---|
 | `DOMAIN` | `portal.itk.academy` | Домен для health-check (`Host`-заголовок) |
-| `GIT_REPO` | `git@github.com:bit200/inter-ca.git` | Репозиторий |
 | `GIT_BRANCH` | `master` | Ветка для прода |
-| `APP_DIR` | `/var/www/inter-ca` | Корень releases/current/shared |
-| `KEEP_RELEASES` | `5` | Сколько старых релизов хранить |
+| `APP_DIR` | `/var/www/inter-ca` | Рабочая копия репозитория |
+| `NODE_MAJOR` | `20` | Версия Node для `nvm use`, если nvm есть на сервере (см. `prod-init.sh`) |
 | `HEALTHCHECK_URL` | `http://127.0.0.1/` | Локальный health-check (без зависимости от внешнего DNS) |
 | `HEALTHCHECK_RETRIES` | `10` | Число попыток health-check |
 | `HEALTHCHECK_DELAY` | `2` | Секунд между попытками |
-| `RUN_LOCAL_API` | `0` | `1` — переустановить зависимости и перезапустить `api/` через pm2 |
 
-Требования: скрипт нужно запускать от `root`, и на сервере уже должна быть готовая
-структура `APP_DIR/{releases,current,shared}` и nginx-конфиг (то есть `prod-init.sh` уже
-выполнялся).
+Требования: скрипт нужно запускать от `root`, и на сервере уже должна быть готовая рабочая
+копия `APP_DIR` (с `.git`) и nginx-конфиг (то есть `prod-init.sh` уже выполнялся).
 
 ## Откат (rollback)
 
-Откат на предыдущий релиз происходит автоматически внутри `prod-deploy.sh`, если:
+Откат на предыдущий билд происходит автоматически внутри `prod-deploy.sh`, если:
 
-- сборка не создала `index.html` или статику;
-- `nginx -t` не прошёл после переключения символической ссылки;
-- сайт не ответил `HTTP 200` после переключения (в пределах `HEALTHCHECK_RETRIES`).
+- сборка не создала `build-new/index.html` или статику;
+- `nginx -t` не прошёл после подмены билда;
+- сайт не ответил `HTTP 200` после подмены (в пределах `HEALTHCHECK_RETRIES`).
 
-Ручной откат на конкретный старый релиз (если он ещё не вычищен):
+Хранится только один предыдущий билд (`admin/build-old`) — откат возможен на один шаг назад.
+Ручной откат вручную (если что-то пошло не так уже после успешного health-check скрипта):
 
 ```bash
 ssh root@<VPS_IP>
-ls -1t /var/www/inter-ca/releases        # найти нужный timestamp
-ln -sfn /var/www/inter-ca/releases/<timestamp> /var/www/inter-ca/current
+cd /var/www/inter-ca/admin
+rm -rf build && mv build-old build
 nginx -t && systemctl reload nginx
 ```
+
+Если нужно откатить дальше, чем на один билд назад, — код придётся собрать заново со старого
+коммита вручную (`git checkout <sha>`, `npm ci`, `npm run build`), схема этого автоматически
+не хранит.
 
 ## Проверка после деплоя
 
 - Открыть `https://<DOMAIN>` в браузере и убедиться, что сайт грузится.
-- Проверить, что `BACKEND_UPSTREAM` отвечает на нужные API-эндпоинты (например,
-  `/api/mock-interview/ping`) — иначе фронт может загрузиться пустым.
-- При `RUN_LOCAL_API=1` — проверить процесс: `pm2 status`, `pm2 logs`.
+- Проверить, что бэкенд отвечает: `curl https://<DOMAIN>/api/v1/test-ping` — если не
+  отвечает, дело в `itk-platform-en` (см. его собственный README/deploy), не в этом
+  репозитории.
