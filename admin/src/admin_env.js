@@ -61,9 +61,12 @@ if (global?.is_local) {
 // Аплоадер аудио-надиктовок (AudioShort/Player) — свой сервис на каждое окружение,
 // т.к. домены разные и live-запись должна писаться не в общий прод-сторедж.
 // Статика (уже загруженные файлы) отдаётся отдельно через S3 — сюда не относится.
+// prod: /upload/ — multer внутри itk-platform-en (тот же бэкенд, что и /api/v1/,
+// см. servers.prod выше), проксируется nginx-инклюдом с /upload/ префиксом.
 let videoUploaders = {
     local: 'http://localhost:1111',
     staging: 'https://staging-api-razvitie.itk.academy/uploader',
+    prod: window.location.origin + '/upload',
     def: 'https://uploader.itconsult-web.ru',
 }
 
