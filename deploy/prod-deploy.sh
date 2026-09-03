@@ -36,7 +36,12 @@ DOMAIN="${DOMAIN:-portal.itk.academy}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 APP_DIR="${APP_DIR:-/var/www/inter-ca}"
 NODE_MAJOR="${NODE_MAJOR:-20}"                                    # см. NODE_MAJOR в prod-init.sh — версия, которую переключает nvm
-HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1/}"          # проверяется локально, чтобы не зависеть от внешнего DNS/файрвола
+# https, не http: certbot --nginx --redirect (prod-init.sh) переводит порт 80 в
+# 301 -> https, так что HTTP_CODE на порту 80 всегда был бы 301, даже когда сайт
+# полностью здоров. Проверяется локально (127.0.0.1), чтобы не зависеть от
+# внешнего DNS/файрвола — curl -k принимает сертификат несмотря на несовпадение
+# имени хоста с IP.
+HEALTHCHECK_URL="${HEALTHCHECK_URL:-https://127.0.0.1/}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-10}"
 HEALTHCHECK_DELAY="${HEALTHCHECK_DELAY:-2}"                       # секунд между попытками
 # ============================================================================================
