@@ -270,6 +270,15 @@ function CourseQuiz(props) {
                             attemptId={interviewAttemptId}
                             onRetake={setInterviewAttemptId}
                             onComplete={(completedId) => {
+                                // Интервью - альтернатива итоговому квизу, а не
+                                // довесок к нему: пройденное интервью закрывает
+                                // модуль ровно так же, как сданный квиз - тем же
+                                // /save-course-module-results со status "ok" и тем
+                                // же onSuccess, который обновляет mHistory. Без
+                                // этого модуль оставался незакрытым и курс,
+                                // пройденный через интервью, показывал не 100%.
+                                saveResults(100);
+                                onSuccess && onSuccess({status: 'ok'});
                                 // Модалка курса тесновата для полного экрана
                                 // результатов интервью (список вопросов + разбор
                                 // ответа) - как только интервью завершено, закрываем
