@@ -1,15 +1,30 @@
+// Модуль считается пройденным, если в mHistory стоит "ok" (ученик закрыл модуль
+// итоговым квизом) ЛИБО если пройдены все его топики. Второе нужно потому, что
+// последний модуль курса закрывается финальным интервью, а оно пишет свой
+// результат мимо mHistory - без этого полностью пройденный курс из одного модуля
+// и шести топиков показывал 6 из 7, то есть 86% вместо 100% (задача #1038).
+export function isModuleDone(item, mHistory, qHistory) {
+    if ((((mHistory || {})[(item || {}).module]) || {}).status === "ok") {
+        return true;
+    }
+    let questions = (item || {}).questions || [];
+    if (!questions.length) {
+        return false;
+    }
+    return _.every(questions, (qId) => ((qHistory || {})[qId] || {}).status === "ok");
+}
+
 export function getCoursePerc(course, history) {
-    let hist = (history || {})[course._id];
+    let hist = (history || {})[(course || {})._id];
     let {qHistory = {}, mHistory = {}} = hist || {};
     let total = 0;
     let goodCount = 0;
-    //console.log("qqqqq course333333333", hist);
 
     let activeInd = 0;
     let isBad = false;
-    _.each(hist.modules, (item, ind) => {
+    _.each((hist || {}).modules, (item, ind) => {
         total++;
-        if (((mHistory || {})[item.module] || {}).status === "ok") {
+        if (isModuleDone(item, mHistory, qHistory)) {
             goodCount++;
         }
         _.each(item.questions, (qId, ind) => {
@@ -22,12 +37,8 @@ export function getCoursePerc(course, history) {
                 isBad = true;
             }
         });
-
-        // let hist = history[item.module]
-        // console.log("qqqqq hist", hist, item.module, history);
     });
-    //console.log("qqqqq goodCount", mHistory, hist, goodCount, total);
-    return Math.round((100 * goodCount) / total);
+    return Math.round((100 * goodCount) / (total || 1));
 }
 
 
