@@ -132,7 +132,7 @@ ssh root@<VPS_IP> "bash /root/prod-deploy.sh"
 | `GIT_BRANCH` | `master` | Ветка для прода |
 | `APP_DIR` | `/var/www/inter-ca` | Рабочая копия репозитория |
 | `NODE_MAJOR` | `20` | Версия Node для `nvm use`, если nvm есть на сервере (см. `prod-init.sh`) |
-| `HEALTHCHECK_URL` | `http://127.0.0.1/` | Локальный health-check (без зависимости от внешнего DNS) |
+| `HEALTHCHECK_URL` | `https://127.0.0.1/` | Локальный health-check (без зависимости от внешнего DNS); https, т.к. certbot --redirect переводит порт 80 в 301 |
 | `HEALTHCHECK_RETRIES` | `10` | Число попыток health-check |
 | `HEALTHCHECK_DELAY` | `2` | Секунд между попытками |
 
