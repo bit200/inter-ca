@@ -91,6 +91,11 @@ ssh root@<VPS_IP> "DOMAIN=portal.itk.academy bash /root/prod-init.sh"
 
 ## 2. Деплой новой версии (при каждом релизе)
 
+Руками запускать не обязательно: мерж в `master` дергает
+`.github/workflows/deploy-prod.yml` на self-hosted runner'е, стоящем на самом ВПС, и тот
+выполняет ровно тот же `prod-deploy.sh` (установка и настройка runner'а —
+`deploy/self-hosted-runner.md`). Ниже — как то же самое сделать вручную.
+
 После того как сервер инициализирован `prod-init.sh`, для выкладки изменений используется
 `prod-deploy.sh`. Проще всего один раз положить его на сервер и запускать оттуда:
 
