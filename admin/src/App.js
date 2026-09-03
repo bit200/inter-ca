@@ -1,4 +1,5 @@
 import reportWebVitals from "./reportWebVitals";
+import suppressExternalWebVitalsError from "./suppressExternalWebVitalsError";
 import {createRoot} from "react-dom/client";
 import React, {lazy, useEffect, useState, Suspense} from "react";
 import _ from "underscore";
@@ -705,6 +706,9 @@ createRoot(document.querySelector('body')).render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+// Гасим ошибку стороннего скрипта про 'startTime', чтобы не засоряла консоль
+suppressExternalWebVitalsError();
 
 function Team(props) {
     return <div>Commented</div>;
