@@ -7,6 +7,7 @@ import Perc from "./../Suggest/Perc";
 import Button from "libs/Button";
 import CircularProgress2 from "./Comps/CircularProgress2";
 import Skeleton from "../../libs/Skeleton";
+import {getCoursePerc} from "./Comps/mainMethods";
 
 export function NewPerc({perc}) {
     let _perc = +perc;
@@ -47,38 +48,6 @@ function Layout2(props) {
     }]
     let [activeInd, setActiveInd] = useState(Math.round(Math.random() * topics.length))
     console.log("*........ ## ROOT RENDER", props);
-
-    function getCoursePerc(course, history) {
-        let hist = (history || {})[course._id];
-        let {qHistory = {}, mHistory = {}} = hist || {};
-        let total = 0;
-        let goodCount = 0;
-        console.log("qqqqq course333333333", hist);
-
-        let activeInd = 0;
-        let isBad = false;
-        _.each(hist.modules, (item, ind) => {
-            total++;
-            if (((mHistory || {})[item.module] || {}).status === "ok") {
-                goodCount++;
-            }
-            _.each(item.questions, (qId, ind) => {
-                total++;
-
-                if (!isBad && hist && (qHistory[qId] || {}).status === "ok") {
-                    activeInd = ind + 1;
-                    goodCount++;
-                } else {
-                    isBad = true;
-                }
-            });
-
-            // let hist = history[item.module]
-            // console.log("qqqqq hist", hist, item.module, history);
-        });
-        console.log("qqqqq goodCount", mHistory, hist, goodCount, total);
-        return Math.round((100 * goodCount) / total);
-    }
 
     useEffect(() => {
         global.http.get("/load-my-courses").then(({courses, userCourses}) => {
