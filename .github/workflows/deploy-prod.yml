@@ -1,0 +1,34 @@
+# Автодеплой прода после мержа в master.
+# Выполняется на self-hosted runner'е, который стоит на самом ВПС 212.8.247.141 —
+# SSH-ключей от прода в GitHub нет, деплой запускается локально.
+# Установка и настройка runner'а: deploy/self-hosted-runner.md
+name: Deploy prod
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# На этом же ВПС и через этот же nginx деплоится itk-platform-en. concurrency
+# защищает от параллельных запусков внутри репозитория, flock в шаге ниже — от
+# пересечения с деплоем itk-platform-en.
+concurrency:
+  group: deploy-prod-inter-ca
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, itk-vps]
+    # environment даёт историю деплоев в GitHub и, при желании, ручной approve
+    # (Settings -> Environments -> production -> Required reviewers).
+    environment: production
+    steps:
+      - name: Deploy
+        # Скрипт берётся из рабочей копии на сервере, а не из checkout'а runner'а:
+        # prod-deploy.sh сам делает git fetch/reset в этой копии, собирает build-new,
+        # атомарно подменяет build и откатывается, если health-check не прошёл.
+        # sudo -n: скрипту нужен root (nginx), пароля не спрашиваем — см. sudoers в
+        # deploy/self-hosted-runner.md.
+        run: flock /var/lock/itk-deploy.lock sudo -n "${APP_DIR}/deploy/prod-deploy.sh"
+        env:
+          APP_DIR: ${{ vars.PROD_APP_DIR || '/var/www/inter-ca' }}
