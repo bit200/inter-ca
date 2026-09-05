@@ -5,6 +5,7 @@ import MockInterviewIframe from "./components/MockInterviewIframe";
 import MockInterviewResults from "./components/MockInterviewResults";
 import MockInterviewStartCard from "./components/MockInterviewStartCard";
 import MockInterviewAttemptHistory from "./components/MockInterviewAttemptHistory";
+import {jobsByQuestion} from "./components/evaluateJobState";
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
 
@@ -38,10 +39,25 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     // Live per-question статус оценки (pending/processing/done/error), без перезагрузки
     // страницы - та же схема, что EvaluationDetail.js для QuizHistory. Первичную полную
     // загрузку item по-прежнему делает effect выше, здесь только патчим evaluate/evaluateState.
+    //
+    // evaluate-events шлёт снапшот статуса джобов (pending/processing/done/error), а не
+    // расшифровку - explain на джобу кладётся только начальной загрузкой /my-list/:id
+    // (после клика "Расшифровать оценку" или если она была сгенерирована раньше). Если
+    // просто заменить evaluateState целиком, любое SSE-событие после монтирования сотрёт
+    // уже показанный explain и заставит расшифровку нажимать заново - поэтому мёржим jobs
+    // по questionId и сохраняем explain из предыдущего состояния там, где SSE его не прислало.
     useEffect(() => {
         if (!attemptId) return;
         return sse.subscribe(`/mock-interview/${attemptId}/evaluate-events`, ({evaluate, evaluateState}) => {
-            setItem(prev => prev && {...prev, evaluate, evaluateState});
+            setItem(prev => {
+                if (!prev) return prev;
+                const prevJobs = jobsByQuestion(prev.evaluateState);
+                const mergedJobs = (evaluateState?.jobs || []).map(job => ({
+                    ...job,
+                    explain: job.explain ?? prevJobs[job.questionId]?.explain ?? null,
+                }));
+                return {...prev, evaluate, evaluateState: {...evaluateState, jobs: mergedJobs}};
+            });
         });
     }, [attemptId]);
 
