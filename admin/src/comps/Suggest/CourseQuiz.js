@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react';
 import _ from 'underscore';
 import './PreviewCourseModule.css'
 import QuestionDetails from "./QuestionDetails";
@@ -19,7 +19,7 @@ import MockInterviewCore from "../MockInterview/MockInterviewCore";
 
 let quizIteration = 0;
 
-function CourseQuiz(props) {
+function CourseQuiz(props, ref) {
     let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId} = props;
     let navigate = useNavigate();
 
@@ -198,6 +198,14 @@ function CourseQuiz(props) {
         //console.log("qqqqq ]]]]]]]]]]", args);
     }
     let isEmptyQuiz = !isLastModule && !_quizes.length;
+
+    useImperativeHandle(ref, () => ({
+        // "Проверка знаний" не нужна, если для темы нет квиз-вопросов (isEmptyQuiz
+        // сам себя закрывает без модалки) - готовность самих квизов проверяет
+        // вызывающая сторона по qHistory, тут только доступность списка.
+        hasPendingQuiz: () => !loading && !isEmptyQuiz && !!_quizes.length,
+        openQuiz: () => reGenerateQuiz(),
+    }));
 
     return <div>
         {!!loading &&
@@ -384,5 +392,7 @@ function CourseQuiz(props) {
 function ResultCourseQuizPage(props) {
     return <div>Result Page333!!!!!</div>
 }
+
+CourseQuiz = forwardRef(CourseQuiz);
 
 export default CourseQuiz

@@ -47,19 +47,20 @@ const MockInterviewDialogMsg = ({
     );
 }
 
-// dialog-записи бэкенда не содержат текста вопроса (ни основного, ни
-// follow-up) - есть только transcript ответа. Основной вопрос берём из
-// mainQuestion (turn.question родительского turn), а перед follow-up-ответом
+// Основной вопрос берём из mainQuestion (turn.question родительского turn).
+// Follow-up-реплики несут собственный question (текст уточняющего вопроса
+// бота) начиная с backend-фикса в mockInterviewHistoryQueue.js - для записей,
+// сохранённых до фикса, этого поля в БД ещё нет, тогда как запасной вариант
 // показываем mini_evaluation.feedback предыдущей реплики - это реакция бота,
-// которая фактически предшествует уточняющему вопросу, а самого текста
-// follow-up-вопроса в данных нет. Мета-реплики вроде "Начнём."
-// (mini_evaluation.action === 'start_interview') из отображения исключаем целиком.
+// которая фактически предшествует уточняющему вопросу. Мета-реплики вроде
+// "Начнём." (mini_evaluation.action === 'start_interview') из отображения
+// исключаем целиком.
 function buildMessages(dialog, mainQuestion) {
     const entries = dialog.filter(entry => entry.mini_evaluation?.action !== 'start_interview'
         && entry.mini_evaluation?.quality !== 'meta');
 
     return entries.flatMap((entry, i) => {
-        const questionText = i === 0 ? mainQuestion : entries[i - 1].mini_evaluation?.feedback;
+        const questionText = i === 0 ? mainQuestion : (entry.question || entries[i - 1].mini_evaluation?.feedback);
         const messages = [];
         if (questionText) {
             messages.push({ type: 'question', text: questionText });
