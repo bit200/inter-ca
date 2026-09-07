@@ -197,6 +197,21 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         startAttempt(attempt);
     };
 
+    // Переход к результатам прошлой попытки прямо из истории: раньше экран
+    // умел показывать только ту попытку, что пришла в attemptId, и вернуться к
+    // оценке предыдущей было нечем. Переключаем экран на выбранную попытку -
+    // на странице /mock-interviews/:id onRetake заодно поправит адрес, и попытка
+    // перечитается целиком; во встроенном табе хватает записи из истории.
+    const handleOpenResults = (attempt) => {
+        setActive(null);
+        setStartError(null);
+        setBotBusy(false);
+        setCompletedLocally(false);
+        autoStartedRef.current = true;
+        setItem(attempt);
+        onRetake && onRetake(attempt._id);
+    };
+
     //todo use loader from project
     if (!item) {
         return <div className={styles.container}>Loading...</div>;
@@ -213,6 +228,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 retaking={retaking}
                 onRetake={handleRetake}
                 onContinue={handleContinue}
+                onOpenResults={handleOpenResults}
             />
             {active && <MockInterviewIframe
                 interview={active}

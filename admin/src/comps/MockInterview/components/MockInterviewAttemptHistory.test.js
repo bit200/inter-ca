@@ -77,6 +77,36 @@ describe('MockInterviewAttemptHistory', () => {
         expect(screen.queryByTestId('mock-interview-continue-button')).not.toBeInTheDocument();
     });
 
+    it('у завершённой попытки из списка даёт кнопку "Смотреть результаты"', () => {
+        const past = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        const current = attempt(2, [{ evaluate: { score: 8 } }], 1);
+        const onOpenResults = jest.fn();
+        render(<MockInterviewAttemptHistory
+            history={[current, past]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+            onOpenResults={onOpenResults}
+        />);
+        const buttons = screen.getAllByTestId('mock-interview-results-button');
+        expect(buttons).toHaveLength(1);
+        fireEvent.click(buttons[0]);
+        expect(onOpenResults).toHaveBeenCalledWith(past);
+    });
+
+    it('у незавершённой попытки кнопки "Смотреть результаты" нет', () => {
+        const started = { _id: 3, status: 'started', attemptNumber: 2, turns: [], evaluate: [] };
+        const current = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        render(<MockInterviewAttemptHistory
+            history={[started, current]}
+            currentItem={current}
+            latestCompleted={false}
+            onRetake={() => {}}
+            onOpenResults={() => {}}
+        />);
+        expect(screen.queryByTestId('mock-interview-results-button')).not.toBeInTheDocument();
+    });
+
     it('на полностью оценённой попытке лишней подписи нет', () => {
         const full = attempt(2, [{ evaluate: { score: 8 } }, { evaluate: { score: 6 } }], 2);
         render(<MockInterviewAttemptHistory
