@@ -135,4 +135,27 @@ describe('MockInterviewAttemptHistory', () => {
         expect(screen.queryByText(/Оценено \d+ из/)).not.toBeInTheDocument();
         expect(screen.queryByText('Результаты пока недоступны')).not.toBeInTheDocument();
     });
+
+    it('показывает название интервью и сколько всего попыток', () => {
+        const current = { ...attempt(2, [{ evaluate: { score: 8 } }], 1), name: 'Java Junior' };
+        render(<MockInterviewAttemptHistory
+            history={[current, attempt(1, [{ evaluate: { score: 5 } }], 1)]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+        />);
+        expect(screen.getByText('Java Junior')).toBeInTheDocument();
+        expect(screen.getByTestId('mock-interview-attempt-counter')).toHaveTextContent('Попытка 2 из 2');
+    });
+
+    it('счётчик считает попытки от первой к последней', () => {
+        const previous = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        render(<MockInterviewAttemptHistory
+            history={[attempt(2, [{ evaluate: { score: 8 } }], 1), previous]}
+            currentItem={previous}
+            latestCompleted={true}
+            onRetake={() => {}}
+        />);
+        expect(screen.getByTestId('mock-interview-attempt-counter')).toHaveTextContent('Попытка 1 из 2');
+    });
 });

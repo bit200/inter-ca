@@ -44,6 +44,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
         return null;
     }
 
+    // Позиция текущей попытки в списке: history отсортирована свежими вперёд,
+    // а человеку привычнее счёт от первой попытки к последней.
+    const currentIndex = history.findIndex(attempt => attempt._id === currentItem._id);
+    const currentPosition = currentIndex === -1 ? 0 : history.length - currentIndex;
+
     // Единственная попытка списком не показывается - но сказать, что результатов
     // по ней ещё нет, всё равно надо: строку ставим над кнопкой "Пройти заново".
     const soloWithoutResults = !showList
@@ -55,7 +60,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
             <div className={`card-body ${styles.cardBody}`}>
                 {showList && (
                     <>
-                        <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
+                        <p className={styles.cardName}>{currentItem.name || (t('attemptHistory') || 'История попыток')}</p>
+                        <p className={styles.attemptCounter} data-testid="mock-interview-attempt-counter">
+                            {'Попытка ' + (currentPosition || 1) + ' из ' + history.length
+                                + ' \u2014 результаты любой из них открываются кнопкой в её карточке'}
+                        </p>
                         <div className={styles.list}>
                             {history.map((attempt, ind) => {
                                 const passed = PASSED_STATUSES.includes(attempt.status);

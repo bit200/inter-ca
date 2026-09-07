@@ -462,3 +462,11 @@
   min-width: 56px;
   text-align: right;
 }
+
+// Сколько всего попыток и какая открыта сейчас. Стоит подписью под названием
+// интервью - это ориентир, а не заголовок, поэтому набран тише .cardName.
+.attemptCounter {
+  font-size: 13px;
+  color: var(--bs-text-muted);
+  margin: -4px 0 4px;
+}

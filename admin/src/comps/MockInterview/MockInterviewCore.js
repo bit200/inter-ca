@@ -18,6 +18,11 @@ const PASSED_STATUSES = ['completed', 'evaluated'];
 // интервью (см. onComplete, опционален - используется CourseQuiz, чтобы
 // закрыть модалку курса и увести на полноценную страницу результатов).
 function MockInterviewCore({attemptId, onRetake, onComplete}) {
+    // Какую попытку показываем сейчас. Приходит извне (id из URL или из таба
+    // курса), но экран умеет переключаться на другую попытку того же интервью
+    // сам (см. handleOpenResults) - и тогда за ней должны пойти и подписка на
+    // live-оценку, и перечитывание, иначе они остались бы на прошлой попытке.
+    const [activeAttemptId, setActiveAttemptId] = useState(attemptId);
     const [item, setItem] = useState(null);
     const [history, setHistory] = useState([]);
     const [active, setActive] = useState(null);
@@ -32,20 +37,28 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     itemRef.current = item;
 
     useEffect(() => {
+        setActiveAttemptId(attemptId);
+    }, [attemptId]);
+
+    useEffect(() => {
+        // Ту попытку, что уже показана, не перечитываем: переключение из истории
+        // и ретейк сами кладут в item нужный документ, а сброс item в null тут
+        // моргнул бы экраном загрузки поверх уже готовых результатов.
+        if (itemRef.current && itemRef.current._id === activeAttemptId) return;
         setItem(null);
         autoStartedRef.current = false;
-        global.http.get(`/mock-interview/my-list/${attemptId}`).then(setItem);
-    }, [attemptId]);
+        global.http.get(`/mock-interview/my-list/${activeAttemptId}`).then(setItem);
+    }, [activeAttemptId]);
 
     // Live per-question статус оценки (pending/processing/done/error), без перезагрузки
     // страницы - та же схема, что EvaluationDetail.js для QuizHistory. Первичную полную
     // загрузку item по-прежнему делает effect выше, здесь только патчим evaluate/evaluateState.
     useEffect(() => {
-        if (!attemptId) return;
-        return sse.subscribe(`/mock-interview/${attemptId}/evaluate-events`, ({evaluate, evaluateState}) => {
+        if (!activeAttemptId) return;
+        return sse.subscribe(`/mock-interview/${activeAttemptId}/evaluate-events`, ({evaluate, evaluateState}) => {
             setItem(prev => prev && {...prev, evaluate, evaluateState});
         });
-    }, [attemptId]);
+    }, [activeAttemptId]);
 
     // История прошлых попыток по этому interviewId - грузим отдельно от самой
     // попытки, т.к. /my-list/:id отдаёт только один документ. filter[...] -
@@ -61,7 +74,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     // Перечитать попытку целиком - нужен результатам после точечного
     // перезапуска оценки одного вопроса.
     const reloadItem = () => global.http
-        .get(`/mock-interview/my-list/${attemptId}`, {}, { wo_notify: true })
+        .get(`/mock-interview/my-list/${activeAttemptId}`, {}, { wo_notify: true })
         .then(setItem)
         .catch(() => {});
 
@@ -165,6 +178,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 setHistory(prev => [newItem, ...prev.filter(attempt => attempt._id !== newItem._id)]);
                 setCompletedLocally(false);
                 setItem(newItem);
+                setActiveAttemptId(newItem._id);
                 onRetake && onRetake(newItem._id);
                 return startAttempt(newItem);
             })
@@ -183,6 +197,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         setCompletedLocally(false);
         setStartError(null);
         setItem(attempt);
+        setActiveAttemptId(attempt._id);
         onRetake && onRetake(attempt._id);
         startAttempt(attempt);
     };
@@ -199,6 +214,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         setCompletedLocally(false);
         autoStartedRef.current = true;
         setItem(attempt);
+        setActiveAttemptId(attempt._id);
         onRetake && onRetake(attempt._id);
     };
 
