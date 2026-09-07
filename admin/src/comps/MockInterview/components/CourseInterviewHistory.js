@@ -58,12 +58,12 @@ function CourseInterviewHistory({interviewId, reloadKey}) {
                                 <span className={styles.attemptRowNum}>
                                     {(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (items.length - ind))}
                                 </span>
-                                <span className={unfinished ? styles.cardStatusUnfinished : styles.attemptRowStatus}>
+                                <span className={`${styles.attemptRowStatus} ${unfinished ? styles.cardStatusUnfinished : ''}`}>
                                     {STATUS_LABEL[attempt.status] || attempt.status}
                                 </span>
-                                {attempt.cd && <span className={styles.attemptRowDate}>
-                                    {new Date(attempt.cd).toLocaleString('ru')}
-                                </span>}
+                                <span className={styles.attemptRowDate}>
+                                    {attempt.cd ? new Date(attempt.cd).toLocaleString('ru') : ''}
+                                </span>
                                 <span className={styles.attemptRowScore}>
                                     {score != null
                                         ? (score + '/10' + (partial ? ' · ' + scored + ' из ' + total : ''))
