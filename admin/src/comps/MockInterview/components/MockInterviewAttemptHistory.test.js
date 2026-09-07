@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import MockInterviewAttemptHistory from './MockInterviewAttemptHistory';
 
 // t() в проекте лежит в global (см. _global.js) - в тесте компонента её
@@ -48,6 +48,33 @@ describe('MockInterviewAttemptHistory', () => {
         />);
         expect(screen.getByText('Результаты пока недоступны')).toBeInTheDocument();
         expect(screen.queryByText('История попыток')).not.toBeInTheDocument();
+    });
+
+    it('у начатой попытки из списка даёт кнопку "Продолжить"', () => {
+        const started = { _id: 3, status: 'started', attemptNumber: 2, turns: [], evaluate: [] };
+        const current = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        const onContinue = jest.fn();
+        render(<MockInterviewAttemptHistory
+            history={[started, current]}
+            currentItem={current}
+            latestCompleted={false}
+            onRetake={() => {}}
+            onContinue={onContinue}
+        />);
+        fireEvent.click(screen.getByTestId('mock-interview-continue-button'));
+        expect(onContinue).toHaveBeenCalledWith(started);
+    });
+
+    it('у текущей и у завершённых попыток кнопки "Продолжить" нет', () => {
+        const started = { _id: 3, status: 'started', attemptNumber: 2, turns: [], evaluate: [] };
+        render(<MockInterviewAttemptHistory
+            history={[started, attempt(1, [{ evaluate: { score: 5 } }], 1)]}
+            currentItem={started}
+            latestCompleted={false}
+            onRetake={() => {}}
+            onContinue={() => {}}
+        />);
+        expect(screen.queryByTestId('mock-interview-continue-button')).not.toBeInTheDocument();
     });
 
     it('на полностью оценённой попытке лишней подписи нет', () => {

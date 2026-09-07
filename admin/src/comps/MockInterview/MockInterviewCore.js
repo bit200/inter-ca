@@ -184,6 +184,19 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
             .finally(() => setRetaking(false));
     };
 
+    // Продолжение ранее начатой попытки из списка истории: попытка со статусом
+    // "Начато" остаётся живой на стороне бота, но открыть её было нечем - экран
+    // всегда показывал только ту попытку, что пришла в attemptId. Делаем ровно
+    // то же, что handleRetake, только без создания новой попытки: переключаем
+    // экран на выбранную и заводим её в тот же reserve -> embed-session поток.
+    const handleContinue = (attempt) => {
+        setCompletedLocally(false);
+        setStartError(null);
+        setItem(attempt);
+        onRetake && onRetake(attempt._id);
+        startAttempt(attempt);
+    };
+
     //todo use loader from project
     if (!item) {
         return <div className={styles.container}>Loading...</div>;
@@ -199,6 +212,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 latestCompleted={latestCompleted}
                 retaking={retaking}
                 onRetake={handleRetake}
+                onContinue={handleContinue}
             />
             {active && <MockInterviewIframe
                 interview={active}
