@@ -5,6 +5,7 @@ import MockInterviewIframe from "./components/MockInterviewIframe";
 import MockInterviewResults from "./components/MockInterviewResults";
 import MockInterviewStartCard from "./components/MockInterviewStartCard";
 import MockInterviewAttemptHistory from "./components/MockInterviewAttemptHistory";
+import {startInterviewAttempt} from "./startInterviewAttempt";
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
 
@@ -106,37 +107,18 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         };
     }, []);
 
-    // Бэкенд создаёт одноразовый embed_url через issuer-токен ITK_EMBED_API_KEY
-    // (см. docs/contracts/embed-interview-iframe.md в itk-live) — сам токен
-    // на фронт никогда не попадает, iframe открывается сразу на готовый embed_url.
     const startAttempt = (attemptItem) => {
         setStartError(null);
         setBotBusy(false);
-        return global.http.post(`/mock-interview/my-list/${attemptItem._id}/reserve`, {}, { wo_notify: true })
-            .then(() => {
-                reservedRef.current = true;
-                return global.http.post(`/mock-interview/my-list/${attemptItem._id}/embed-session`, {
-                    parentOrigin: window.location.origin,
-                }, { wo_notify: true });
-            })
-            .then((session) => {
-                global.http.put(`/mock-interview/my-list/${attemptItem._id}`, {
-                    sessionId: session.sessionId,
-                    status: 'started',
-                }, { wo_notify: true });
-                setActive({ ...attemptItem, embedUrl: session.embedUrl, sessionId: session.sessionId });
-            })
-            .catch(e => {
-                if (reservedRef.current) {
-                    releaseReservation();
-                }
-                const isBusy = e?.error === 'busy';
-                const message = isBusy
-                    ? 'Интервью сейчас занято другим пользователем. Попробуйте открыть позже.'
-                    : 'Не удалось забронировать интервью. Попробуйте ещё раз.';
-                global.notify.warning(message);
-                setStartError(message);
-                setBotBusy(isBusy);
+        return startInterviewAttempt(attemptItem, {
+            onReserve: () => { reservedRef.current = true; },
+            onRelease: releaseReservation,
+        })
+            .then(setActive)
+            .catch(err => {
+                global.notify.warning(err.message);
+                setStartError(err.message);
+                setBotBusy(!!err.busy);
             });
     };
 

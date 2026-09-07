@@ -367,3 +367,56 @@
   font-weight: 600;
   color: var(--bs-warning-text-emphasis);
 }
+
+// Компактная история попыток на странице курса (CourseInterviewHistory).
+// В отличие от списка на /mock-interviews/:id это не карточки с действиями, а
+// строки-ссылки: одна попытка - одна строка, разделённая волосяной линией.
+.attemptsRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.attemptRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--bs-border-color);
+  color: var(--bs-body-color);
+  text-decoration: none;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &:hover {
+    color: var(--bs-body-color);
+    background: var(--light-hover);
+  }
+}
+
+.attemptRowNum {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.attemptRowStatus,
+.attemptRowDate {
+  font-size: 13px;
+  color: var(--bs-text-muted);
+}
+
+.attemptRowDate {
+  margin-left: auto;
+}
+
+// Балл - единственное число в строке, поэтому набран моноширинным: колонка
+// баллов читается сверху вниз, не сбиваясь на разной ширине цифр.
+.attemptRowScore {
+  font-family: monospace;
+  font-size: 13px;
+  flex: 0 0 auto;
+  min-width: 56px;
+  text-align: right;
+}
