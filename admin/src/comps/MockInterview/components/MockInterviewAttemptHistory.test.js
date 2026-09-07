@@ -88,4 +88,50 @@ describe('MockInterviewAttemptHistory', () => {
         expect(screen.queryByText(/Оценено \d+ из/)).not.toBeInTheDocument();
         expect(screen.queryByText('Результаты пока недоступны')).not.toBeInTheDocument();
     });
+
+    it('показывает название интервью и сколько всего попыток', () => {
+        const current = { ...attempt(2, [{ evaluate: { score: 8 } }], 1), name: 'Java Junior' };
+        render(<MockInterviewAttemptHistory
+            history={[current, attempt(1, [{ evaluate: { score: 5 } }], 1)]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+        />);
+        expect(screen.getByText('Java Junior')).toBeInTheDocument();
+        expect(screen.getByTestId('mock-interview-attempt-counter')).toHaveTextContent('Попытка 2 из 2');
+    });
+
+    it('по клику на прошлую завершённую попытку переключает на неё', () => {
+        const current = attempt(2, [{ evaluate: { score: 8 } }], 1);
+        const previous = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        const onSelect = jest.fn();
+        render(<MockInterviewAttemptHistory
+            history={[current, previous]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+            onSelect={onSelect}
+        />);
+        const rows = screen.getAllByTestId('mock-interview-attempt-row');
+        fireEvent.click(rows[1]);
+        expect(onSelect).toHaveBeenCalledWith(previous);
+    });
+
+    it('текущую и незавершённую попытку кликом не переключает', () => {
+        const current = attempt(2, [{ evaluate: { score: 8 } }], 1);
+        const started = { _id: 1, status: 'started', attemptNumber: 1, turns: [], evaluate: [] };
+        const onSelect = jest.fn();
+        render(<MockInterviewAttemptHistory
+            history={[current, started]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+            onContinue={() => {}}
+            onSelect={onSelect}
+        />);
+        const rows = screen.getAllByTestId('mock-interview-attempt-row');
+        fireEvent.click(rows[0]);
+        fireEvent.click(rows[1]);
+        expect(onSelect).not.toHaveBeenCalled();
+    });
 });

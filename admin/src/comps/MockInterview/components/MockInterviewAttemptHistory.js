@@ -28,7 +28,7 @@ const STATUS_LABEL = {
 // карточка старта над историей, второй кнопки там не нужно.
 const UNFINISHED_STATUSES = ['draft', 'active', 'started'];
 
-const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake, onContinue }) => {
+const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake, onContinue, onSelect }) => {
     // Список прошлых попыток показываем только когда их реально больше одной -
     // сама первая попытка и так видна как основной экран выше. Кнопка "Пройти
     // заново" от этого не зависит: она нужна уже после самой первой завершённой
@@ -37,6 +37,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
     if (!showList && !latestCompleted) {
         return null;
     }
+
+    // Позиция текущей попытки в списке: history отсортирована свежими вперёд,
+    // а человеку привычнее счёт от первой попытки к последней.
+    const currentIndex = history.findIndex(attempt => attempt._id === currentItem._id);
+    const currentPosition = currentIndex === -1 ? 0 : history.length - currentIndex;
 
     // Единственная попытка списком не показывается - но сказать, что результатов
     // по ней ещё нет, всё равно надо: строку ставим над кнопкой "Пройти заново".
@@ -49,7 +54,10 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
             <div className={`card-body ${styles.cardBody}`}>
                 {showList && (
                     <>
-                        <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
+                        <p className={styles.cardName}>{currentItem.name || (t('attemptHistory') || 'История попыток')}</p>
+                        <p className={styles.attemptCounter} data-testid="mock-interview-attempt-counter">
+                            {'Попытка ' + (currentPosition || 1) + ' из ' + history.length + ' \u2014 выберите любую, чтобы посмотреть её результат'}
+                        </p>
                         <div className={styles.list}>
                             {history.map((attempt, ind) => {
                                 const passed = PASSED_STATUSES.includes(attempt.status);
@@ -61,12 +69,38 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                 const canContinue = !isCurrent
                                     && !!onContinue
                                     && UNFINISHED_STATUSES.includes(attempt.status);
+                                // Переключаться даём только на завершённые попытки: у
+                                // незавершённой своя кнопка "Продолжить", которая заодно
+                                // бронирует бота.
+                                const canSelect = !isCurrent && !!onSelect && passed;
+                                const rowClass = [
+                                    'card',
+                                    styles.attemptRow,
+                                    canSelect ? styles.attemptRowSelectable : '',
+                                    isCurrent ? styles.attemptRowCurrent : '',
+                                ].filter(Boolean).join(' ');
                                 return (
-                                    <div key={attempt._id} className="card" data-testid="mock-interview-attempt-row">
+                                    <div key={attempt._id} className={rowClass}
+                                         data-testid="mock-interview-attempt-row"
+                                         data-current={isCurrent || undefined}
+                                         role={canSelect ? 'button' : undefined}
+                                         tabIndex={canSelect ? 0 : undefined}
+                                         onClick={canSelect ? () => onSelect(attempt) : undefined}
+                                         onKeyDown={canSelect ? (e) => {
+                                             if (e.key === 'Enter' || e.key === ' ') {
+                                                 e.preventDefault();
+                                                 onSelect(attempt);
+                                             }
+                                         } : undefined}>
                                         <div className={`card-body ${styles.cardBody}`}>
                                             <div className={styles.cardMeta}>
                                                 <span>{(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (history.length - ind))}</span>
                                                 {isCurrent && <span className={styles.cardMode}>{t('currentAttempt') || 'Текущая'}</span>}
+                                                {canSelect && (
+                                                    <span className={styles.attemptOpenHint} data-testid="mock-interview-attempt-open">
+                                                        Смотреть
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className={styles.cardMeta}>
                                                 <span className={canContinue ? styles.cardStatusUnfinished : undefined}>

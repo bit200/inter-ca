@@ -367,3 +367,59 @@
   font-weight: 600;
   color: var(--bs-warning-text-emphasis);
 }
+
+// Сколько всего попыток и какая открыта сейчас. Стоит подписью под названием
+// интервью - это ориентир, а не заголовок, поэтому набран тише .cardName.
+.attemptCounter {
+  font-size: 13px;
+  color: var(--bs-text-muted);
+  margin: -4px 0 4px;
+}
+
+// Строка истории. Прошлые завершённые попытки кликабельны - по ним экран
+// переключается на их результат, поэтому у них курсор и отклик на наведение;
+// у текущей отклика нет, она уже открыта и помечена рамкой акцента.
+.attemptRow {
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.attemptRowSelectable {
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--c1);
+    background: var(--light-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c1);
+    outline-offset: 2px;
+  }
+}
+
+.attemptRowCurrent {
+  // outline, а не border/box-shadow: у бутстраповской .card своя тень и своя
+  // рамка, и они перебивают модульные - обводка же ничем не занята.
+  outline: 2px solid var(--c1);
+  outline-offset: -2px;
+}
+
+// "Смотреть" у кликабельной строки: не кнопка, а подсказка, что вся строка
+// открывает эту попытку. Проявляется только под курсором - в спокойном
+// состоянии список остаётся списком фактов.
+.attemptOpenHint {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--c1);
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+
+.attemptRowSelectable:hover .attemptOpenHint,
+.attemptRowSelectable:focus-visible .attemptOpenHint {
+  opacity: 1;
+}
