@@ -2884,6 +2884,13 @@ export default {
         en: "Attempt",
         fr: `Tentative`
     },
+    "openAttemptResults": {
+        ru: "Смотреть результаты",
+        es: "Ver resultados",
+        de: "Ergebnisse ansehen",
+        en: "View results",
+        fr: `Voir les résultats`
+    },
     "currentAttempt": {
         ru: "Текущая",
         es: "Actual",

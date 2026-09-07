@@ -25,6 +25,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     const [startError, setStartError] = useState(null);
     const [botBusy, setBotBusy] = useState(false);
     const [retaking, setRetaking] = useState(false);
+    const [historyLoaded, setHistoryLoaded] = useState(false);
     const autoStartedRef = useRef(false);
     const reservedRef = useRef(false);
     const itemRef = useRef(null);
@@ -53,7 +54,8 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         if (!item || !item.interviewId) return;
         global.http.get('/mock-interview/my-list', { filter: { interviewId: item.interviewId } }, { wo_notify: true })
             .then(r => setHistory(r.items || []))
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setHistoryLoaded(true));
     }, [item?.interviewId]);
 
     // Перечитать попытку целиком - нужен результатам после точечного
@@ -122,12 +124,18 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
             });
     };
 
+    // Автостарт - удобство только для самой первой попытки: человек открыл
+    // интервью, и оно сразу пошло. Когда попыток уже несколько, он пришёл на
+    // экран за историей и результатами, и самозапуск повторного интервью тут
+    // мешает - решение принимает он сам кнопкой на карточке старта. Ждём
+    // загрузки истории, иначе автостарт успеет сработать на пустом списке.
     useEffect(() => {
+        if (!historyLoaded || history.length > 1) return;
         if (item && item.interviewId && !isPassed && !autoStartedRef.current) {
             autoStartedRef.current = true;
             startAttempt(item);
         }
-    }, [item, isPassed]);
+    }, [item, isPassed, historyLoaded, history.length]);
 
     const handleComplete = () => {
         releaseReservation();

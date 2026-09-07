@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import MockInterviewAttemptHistory from './MockInterviewAttemptHistory';
+import lngs from '../../i18/lngs';
 
 // t() в проекте лежит в global (см. _global.js) - в тесте компонента её
 // достаточно свести к ключу, подписи берутся из фолбэков самого компонента.
@@ -92,6 +93,22 @@ describe('MockInterviewAttemptHistory', () => {
         expect(buttons).toHaveLength(1);
         fireEvent.click(buttons[0]);
         expect(onOpenResults).toHaveBeenCalledWith(past);
+    });
+
+    it('подпись кнопки результатов берёт из словаря переводов', () => {
+        const past = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        const current = attempt(2, [{ evaluate: { score: 8 } }], 1);
+        global.t = (key) => lngs[key] && lngs[key].ru;
+        render(<MockInterviewAttemptHistory
+            history={[current, past]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+            onOpenResults={() => {}}
+        />);
+        expect(screen.getByTestId('mock-interview-results-button')).toHaveTextContent('Смотреть результаты');
+        expect(Object.keys(lngs.openAttemptResults)).toEqual(['ru', 'es', 'de', 'en', 'fr']);
+        global.t = () => null;
     });
 
     it('у незавершённой попытки кнопки "Смотреть результаты" нет', () => {
