@@ -21,6 +21,9 @@ import {startInterviewAttempt} from "../MockInterview/startInterviewAttempt";
 
 let quizIteration = 0;
 
+// Статусы попытки, которую человек начал, но не досдал - такую продолжаем.
+const UNFINISHED_INTERVIEW_STATUSES = ['draft', 'active', 'started'];
+
 function CourseQuiz(props) {
     let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId} = props;
     let navigate = useNavigate();
@@ -60,12 +63,29 @@ function CourseQuiz(props) {
 
     useEffect(() => releaseInterviewReservation, []);
 
+    // Незавершённая попытка (draft/active/started) - это то же самое интервью,
+    // которое человек уже начал и не досдал: его надо продолжить, а не плодить
+    // на каждое нажатие новую попытку. Ищем самую свежую такую в списке по
+    // этому interviewId; нет ни одной - только тогда заводим новую.
+    function resolveInterviewAttempt() {
+        return global.http.get('/mock-interview/my-list', {filter: {interviewId}}, {wo_notify: true})
+            .catch(() => ({}))
+            .then(r => {
+                let unfinished = (r?.items || [])
+                    .filter(attempt => UNFINISHED_INTERVIEW_STATUSES.includes(attempt.status))
+                    .sort((a, b) => new Date(b.cd) - new Date(a.cd))[0];
+                if (unfinished) {
+                    return unfinished;
+                }
+                return global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
+                    .then(({item: attempt}) => attempt);
+            });
+    }
+
     function launchInterview(scb) {
         setLaunchingInterview(true);
-        // POST /mock-interview/my-list резолвит уже начатую попытку по этому
-        // interviewId или создаёт новую (см. контракт в itk-platform-en).
-        return global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
-            .then(({item: attempt}) => {
+        return resolveInterviewAttempt()
+            .then((attempt) => {
                 interviewAttemptRef.current = attempt;
                 return startInterviewAttempt(attempt, {
                     onReserve: () => { interviewReservedRef.current = true; },
