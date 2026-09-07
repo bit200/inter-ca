@@ -56,4 +56,31 @@ describe('MockInterviewIframe', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
         expect(onComplete).not.toHaveBeenCalled();
     });
+
+    it('кнопка "Выйти" внутри iframe (itk.interview.exit) закрывает оверлей', () => {
+        const {onClose, onComplete} = setup();
+        emit('itk.interview.exit', {});
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(onComplete).not.toHaveBeenCalled();
+    });
+
+    it('itk.interview.exit, пока ждём прощальную реплику бота, завершает попытку сразу', () => {
+        const {onClose, onComplete} = setup();
+
+        emit('itk.interview.state', {aiPlaying: true});
+        emit('itk.interview.session_closed', {status: 'completed'});
+        expect(onComplete).not.toHaveBeenCalled();
+
+        emit('itk.interview.exit', {});
+        expect(onComplete).toHaveBeenCalledTimes(1);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('itk.interview.exit и следом session_closed закрывают оверлей один раз', () => {
+        const {onClose, onComplete} = setup();
+        emit('itk.interview.exit', {});
+        emit('itk.interview.session_closed', {status: 'cancelled'});
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(onComplete).not.toHaveBeenCalled();
+    });
 });
