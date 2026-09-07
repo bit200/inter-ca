@@ -22,7 +22,19 @@ const STATUS_LABEL = {
 // сервис оценки упал по ним - тогда средний балл считается по оставшимся,
 // и сколько их было, показываем строкой рядом (см. attemptScoreSummary).
 
-const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake }) => {
+// Незавершённая попытка (её видно в списке как "Начато"/"Ожидает") - это не
+// тупик: бот по ней ещё ждёт, и её надо дать открыть заново. Кнопка стоит
+// только у чужих строк списка: для текущей попытки то же самое делает большая
+// карточка старта над историей, второй кнопки там не нужно.
+const UNFINISHED_STATUSES = ['draft', 'active', 'started'];
+
+// Завершённая попытка из списка - это готовая оценка, но открыть её было
+// нечем: экран показывал результаты только той попытки, что пришла в
+// attemptId, и вернуться к прошлой можно было разве что через адресную строку.
+// Кнопка переводит экран результатов на выбранную попытку (см. onOpenResults
+// в MockInterviewCore). У текущей попытки её нет - её результаты и так выше.
+
+const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake, onContinue, onOpenResults }) => {
     // Список прошлых попыток показываем только когда их реально больше одной -
     // сама первая попытка и так видна как основной экран выше. Кнопка "Пройти
     // заново" от этого не зависит: она нужна уже после самой первой завершённой
@@ -31,6 +43,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
     if (!showList && !latestCompleted) {
         return null;
     }
+
+    // Позиция текущей попытки в списке: history отсортирована свежими вперёд,
+    // а человеку привычнее счёт от первой попытки к последней.
+    const currentIndex = history.findIndex(attempt => attempt._id === currentItem._id);
+    const currentPosition = currentIndex === -1 ? 0 : history.length - currentIndex;
 
     // Единственная попытка списком не показывается - но сказать, что результатов
     // по ней ещё нет, всё равно надо: строку ставим над кнопкой "Пройти заново".
@@ -43,7 +60,11 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
             <div className={`card-body ${styles.cardBody}`}>
                 {showList && (
                     <>
-                        <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
+                        <p className={styles.cardName}>{currentItem.name || (t('attemptHistory') || 'История попыток')}</p>
+                        <p className={styles.attemptCounter} data-testid="mock-interview-attempt-counter">
+                            {'Попытка ' + (currentPosition || 1) + ' из ' + history.length
+                                + ' \u2014 результаты любой из них открываются кнопкой в её карточке'}
+                        </p>
                         <div className={styles.list}>
                             {history.map((attempt, ind) => {
                                 const passed = PASSED_STATUSES.includes(attempt.status);
@@ -52,18 +73,28 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                     : { score: null, scored: 0, total: 0 };
                                 const partial = score != null && total > 0 && scored < total;
                                 const isCurrent = attempt._id === currentItem._id;
+                                const canContinue = !isCurrent
+                                    && !!onContinue
+                                    && UNFINISHED_STATUSES.includes(attempt.status);
+                                const canOpenResults = !isCurrent && !!onOpenResults && passed;
                                 return (
-                                    <div key={attempt._id} className="card" data-testid="mock-interview-attempt-row">
+                                    <div
+                                        key={attempt._id}
+                                        className={`card ${styles.attemptCard} ${isCurrent ? styles.attemptCardCurrent : ''}`}
+                                        data-testid="mock-interview-attempt-row"
+                                    >
                                         <div className={`card-body ${styles.cardBody}`}>
                                             <div className={styles.cardMeta}>
-                                                <span>{(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (history.length - ind))}</span>
+                                                <span className={styles.attemptTitle}>{(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (history.length - ind))}</span>
                                                 {isCurrent && <span className={styles.cardMode}>{t('currentAttempt') || 'Текущая'}</span>}
                                             </div>
                                             <div className={styles.cardMeta}>
-                                                <span>{STATUS_LABEL[attempt.status] || attempt.status}</span>
+                                                <span className={canContinue ? styles.cardStatusUnfinished : undefined}>
+                                                    {STATUS_LABEL[attempt.status] || attempt.status}
+                                                </span>
                                                 {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
                                             </div>
-                                            {score != null && <div>{'Балл: ' + score + '/10'}</div>}
+                                            {score != null && <div className={styles.attemptScore}>{'Балл: ' + score + '/10'}</div>}
                                             {partial && (
                                                 <div className={styles.cardScoreNote}>
                                                     {'Оценено ' + scored + ' из ' + total + ' вопросов'}
@@ -71,6 +102,28 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                             )}
                                             {passed && score == null && (
                                                 <div className={styles.cardScoreNote}>{NO_RESULTS_NOTE}</div>
+                                            )}
+                                            {(canContinue || canOpenResults) && (
+                                                <div className={styles.cardBtn}>
+                                                    {canContinue && (
+                                                        <button
+                                                            className="btn btn-outline-primary btn-sm"
+                                                            data-testid="mock-interview-continue-button"
+                                                            onClick={() => onContinue(attempt)}
+                                                        >
+                                                            {t('continueMockInterview') || 'Продолжить'}
+                                                        </button>
+                                                    )}
+                                                    {canOpenResults && (
+                                                        <button
+                                                            className="btn btn-outline-secondary btn-sm"
+                                                            data-testid="mock-interview-results-button"
+                                                            onClick={() => onOpenResults(attempt)}
+                                                        >
+                                                            {t('openAttemptResults') || 'Смотреть результаты'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>

@@ -2863,6 +2863,13 @@ export default {
         en: "Retake",
         fr: `Retenter`
     },
+    "continueMockInterview": {
+        ru: "Продолжить",
+        es: "Continuar",
+        de: "Fortsetzen",
+        en: "Continue",
+        fr: `Continuer`
+    },
     "attemptHistory": {
         ru: "История попыток",
         es: "Historial de intentos",
@@ -2876,6 +2883,13 @@ export default {
         de: "Versuch",
         en: "Attempt",
         fr: `Tentative`
+    },
+    "openAttemptResults": {
+        ru: "Смотреть результаты",
+        es: "Ver resultados",
+        de: "Ergebnisse ansehen",
+        en: "View results",
+        fr: `Voir les résultats`
     },
     "currentAttempt": {
         ru: "Текущая",

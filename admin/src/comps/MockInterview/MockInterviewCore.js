@@ -5,6 +5,7 @@ import MockInterviewIframe from "./components/MockInterviewIframe";
 import MockInterviewResults from "./components/MockInterviewResults";
 import MockInterviewStartCard from "./components/MockInterviewStartCard";
 import MockInterviewAttemptHistory from "./components/MockInterviewAttemptHistory";
+import {startInterviewAttempt} from "./startInterviewAttempt";
 import {jobsByQuestion} from "./components/evaluateJobState";
 
 const PASSED_STATUSES = ['completed', 'evaluated'];
@@ -18,6 +19,11 @@ const PASSED_STATUSES = ['completed', 'evaluated'];
 // интервью (см. onComplete, опционален - используется CourseQuiz, чтобы
 // закрыть модалку курса и увести на полноценную страницу результатов).
 function MockInterviewCore({attemptId, onRetake, onComplete}) {
+    // Какую попытку показываем сейчас. Приходит извне (id из URL или из таба
+    // курса), но экран умеет переключаться на другую попытку того же интервью
+    // сам (см. handleOpenResults) - и тогда за ней должны пойти и подписка на
+    // live-оценку, и перечитывание, иначе они остались бы на прошлой попытке.
+    const [activeAttemptId, setActiveAttemptId] = useState(attemptId);
     const [item, setItem] = useState(null);
     const [history, setHistory] = useState([]);
     const [active, setActive] = useState(null);
@@ -25,16 +31,25 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     const [startError, setStartError] = useState(null);
     const [botBusy, setBotBusy] = useState(false);
     const [retaking, setRetaking] = useState(false);
+    const [historyLoaded, setHistoryLoaded] = useState(false);
     const autoStartedRef = useRef(false);
     const reservedRef = useRef(false);
     const itemRef = useRef(null);
     itemRef.current = item;
 
     useEffect(() => {
+        setActiveAttemptId(attemptId);
+    }, [attemptId]);
+
+    useEffect(() => {
+        // Ту попытку, что уже показана, не перечитываем: переключение из истории
+        // и ретейк сами кладут в item нужный документ, а сброс item в null тут
+        // моргнул бы экраном загрузки поверх уже готовых результатов.
+        if (itemRef.current && itemRef.current._id === activeAttemptId) return;
         setItem(null);
         autoStartedRef.current = false;
-        global.http.get(`/mock-interview/my-list/${attemptId}`).then(setItem);
-    }, [attemptId]);
+        global.http.get(`/mock-interview/my-list/${activeAttemptId}`).then(setItem);
+    }, [activeAttemptId]);
 
     // Live per-question статус оценки (pending/processing/done/error), без перезагрузки
     // страницы - та же схема, что EvaluationDetail.js для QuizHistory. Первичную полную
@@ -47,8 +62,8 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     // уже показанный explain и заставит расшифровку нажимать заново - поэтому мёржим jobs
     // по questionId и сохраняем explain из предыдущего состояния там, где SSE его не прислало.
     useEffect(() => {
-        if (!attemptId) return;
-        return sse.subscribe(`/mock-interview/${attemptId}/evaluate-events`, ({evaluate, evaluateState}) => {
+        if (!activeAttemptId) return;
+        return sse.subscribe(`/mock-interview/${activeAttemptId}/evaluate-events`, ({evaluate, evaluateState}) => {
             setItem(prev => {
                 if (!prev) return prev;
                 const prevJobs = jobsByQuestion(prev.evaluateState);
@@ -59,7 +74,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 return {...prev, evaluate, evaluateState: {...evaluateState, jobs: mergedJobs}};
             });
         });
-    }, [attemptId]);
+    }, [activeAttemptId]);
 
     // История прошлых попыток по этому interviewId - грузим отдельно от самой
     // попытки, т.к. /my-list/:id отдаёт только один документ. filter[...] -
@@ -68,13 +83,14 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         if (!item || !item.interviewId) return;
         global.http.get('/mock-interview/my-list', { filter: { interviewId: item.interviewId } }, { wo_notify: true })
             .then(r => setHistory(r.items || []))
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setHistoryLoaded(true));
     }, [item?.interviewId]);
 
     // Перечитать попытку целиком - нужен результатам после точечного
     // перезапуска оценки одного вопроса.
     const reloadItem = () => global.http
-        .get(`/mock-interview/my-list/${attemptId}`, {}, { wo_notify: true })
+        .get(`/mock-interview/my-list/${activeAttemptId}`, {}, { wo_notify: true })
         .then(setItem)
         .catch(() => {});
 
@@ -122,46 +138,33 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         };
     }, []);
 
-    // Бэкенд создаёт одноразовый embed_url через issuer-токен ITK_EMBED_API_KEY
-    // (см. docs/contracts/embed-interview-iframe.md в itk-live) — сам токен
-    // на фронт никогда не попадает, iframe открывается сразу на готовый embed_url.
     const startAttempt = (attemptItem) => {
         setStartError(null);
         setBotBusy(false);
-        return global.http.post(`/mock-interview/my-list/${attemptItem._id}/reserve`, {}, { wo_notify: true })
-            .then(() => {
-                reservedRef.current = true;
-                return global.http.post(`/mock-interview/my-list/${attemptItem._id}/embed-session`, {
-                    parentOrigin: window.location.origin,
-                }, { wo_notify: true });
-            })
-            .then((session) => {
-                global.http.put(`/mock-interview/my-list/${attemptItem._id}`, {
-                    sessionId: session.sessionId,
-                    status: 'started',
-                }, { wo_notify: true });
-                setActive({ ...attemptItem, embedUrl: session.embedUrl, sessionId: session.sessionId });
-            })
-            .catch(e => {
-                if (reservedRef.current) {
-                    releaseReservation();
-                }
-                const isBusy = e?.error === 'busy';
-                const message = isBusy
-                    ? 'Интервью сейчас занято другим пользователем. Попробуйте открыть позже.'
-                    : 'Не удалось забронировать интервью. Попробуйте ещё раз.';
-                global.notify.warning(message);
-                setStartError(message);
-                setBotBusy(isBusy);
+        return startInterviewAttempt(attemptItem, {
+            onReserve: () => { reservedRef.current = true; },
+            onRelease: releaseReservation,
+        })
+            .then(setActive)
+            .catch(err => {
+                global.notify.warning(err.message);
+                setStartError(err.message);
+                setBotBusy(!!err.busy);
             });
     };
 
+    // Автостарт - удобство только для самой первой попытки: человек открыл
+    // интервью, и оно сразу пошло. Когда попыток уже несколько, он пришёл на
+    // экран за историей и результатами, и самозапуск повторного интервью тут
+    // мешает - решение принимает он сам кнопкой на карточке старта. Ждём
+    // загрузки истории, иначе автостарт успеет сработать на пустом списке.
     useEffect(() => {
+        if (!historyLoaded || history.length > 1) return;
         if (item && item.interviewId && !isPassed && !autoStartedRef.current) {
             autoStartedRef.current = true;
             startAttempt(item);
         }
-    }, [item, isPassed]);
+    }, [item, isPassed, historyLoaded, history.length]);
 
     const handleComplete = () => {
         releaseReservation();
@@ -191,6 +194,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 setHistory(prev => [newItem, ...prev.filter(attempt => attempt._id !== newItem._id)]);
                 setCompletedLocally(false);
                 setItem(newItem);
+                setActiveAttemptId(newItem._id);
                 onRetake && onRetake(newItem._id);
                 return startAttempt(newItem);
             })
@@ -198,6 +202,36 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 global.notify.warning('Не удалось начать новую попытку. Попробуйте ещё раз.');
             })
             .finally(() => setRetaking(false));
+    };
+
+    // Продолжение ранее начатой попытки из списка истории: попытка со статусом
+    // "Начато" остаётся живой на стороне бота, но открыть её было нечем - экран
+    // всегда показывал только ту попытку, что пришла в attemptId. Делаем ровно
+    // то же, что handleRetake, только без создания новой попытки: переключаем
+    // экран на выбранную и заводим её в тот же reserve -> embed-session поток.
+    const handleContinue = (attempt) => {
+        setCompletedLocally(false);
+        setStartError(null);
+        setItem(attempt);
+        setActiveAttemptId(attempt._id);
+        onRetake && onRetake(attempt._id);
+        startAttempt(attempt);
+    };
+
+    // Переход к результатам прошлой попытки прямо из истории: раньше экран
+    // умел показывать только ту попытку, что пришла в attemptId, и вернуться к
+    // оценке предыдущей было нечем. Переключаем экран на выбранную попытку -
+    // на странице /mock-interviews/:id onRetake заодно поправит адрес, и попытка
+    // перечитается целиком; во встроенном табе хватает записи из истории.
+    const handleOpenResults = (attempt) => {
+        setActive(null);
+        setStartError(null);
+        setBotBusy(false);
+        setCompletedLocally(false);
+        autoStartedRef.current = true;
+        setItem(attempt);
+        setActiveAttemptId(attempt._id);
+        onRetake && onRetake(attempt._id);
     };
 
     //todo use loader from project
@@ -215,6 +249,8 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
                 latestCompleted={latestCompleted}
                 retaking={retaking}
                 onRetake={handleRetake}
+                onContinue={handleContinue}
+                onOpenResults={handleOpenResults}
             />
             {active && <MockInterviewIframe
                 interview={active}

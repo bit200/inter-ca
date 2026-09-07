@@ -1,4 +1,4 @@
-import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import _ from 'underscore';
 import './PreviewCourseModule.css'
 import QuestionDetails from "./QuestionDetails";
@@ -15,9 +15,14 @@ import Train from "../TrainMethods/Train";
 import {getDefaultQuizTime, getStartTimers} from "../RunExam";
 import TrainPageCourse from "../TrainMethods/TrainPageCourse";
 import quiz from "../Quiz";
-import MockInterviewCore from "../MockInterview/MockInterviewCore";
+import MockInterviewIframe from "../MockInterview/components/MockInterviewIframe";
+import CourseInterviewHistory from "../MockInterview/components/CourseInterviewHistory";
+import {startInterviewAttempt} from "../MockInterview/startInterviewAttempt";
 
 let quizIteration = 0;
+
+// Статусы попытки, которую человек начал, но не досдал - такую продолжаем.
+const UNFINISHED_INTERVIEW_STATUSES = ['draft', 'active', 'started'];
 
 function CourseQuiz(props, ref) {
     let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId} = props;
@@ -31,32 +36,106 @@ function CourseQuiz(props, ref) {
     let [pubQuizes, setPubQuizes] = useState([]);
     let [quizPerc, setQuizPerc] = useState(0);
 
-    // Для последнего модуля курса с настроенным interviewId модалка "Проверить
-    // знания" получает второй таб - мок-интервью вместо обычного текстового
-    // квиза (см. обсуждение "два таба бот/надиктовка"). Активен по умолчанию,
-    // как только он есть - отдельной кнопки-подмены на "Молодец!" при этом
-    // не делаем, сам квиз-таб остаётся доступен рядом как раньше.
-    let hasInterviewTab = isLastModule && !!interviewId;
-    let [activeTab, setActiveTab] = useState(hasInterviewTab ? 'interview' : 'quiz');
-    let [interviewAttemptId, setInterviewAttemptId] = useState(null);
-    let [creatingAttempt, setCreatingAttempt] = useState(false);
+    // Для последнего модуля курса с настроенным interviewId кнопка "Проверить
+    // знания" больше не открывает модалку с табами: интервью и есть проверка,
+    // поэтому по нажатию сразу заводим попытку и открываем iframe записи. Ни
+    // карточки старта, ни истории попыток по дороге не показываем - история
+    // живёт отдельным блоком ниже на самой странице (CourseInterviewHistory).
+    // Если попытку не удалось создать или забронировать (бот занят, ошибка
+    // брони) - это не тупик: открываем обычную модалку с квизом, как раньше.
+    let hasInterview = isLastModule && !!interviewId;
+    let [interviewActive, setInterviewActive] = useState(null);
+    let [launchingInterview, setLaunchingInterview] = useState(false);
+    let [historyReloadKey, setHistoryReloadKey] = useState(0);
+    let interviewAttemptRef = useRef(null);
+    let interviewReservedRef = useRef(false);
 
-    // Ту же занятость бота (reserve -> busy), что уже проверяется на странице
-    // /mock-interviews/:id, переиспользуем через MockInterviewCore - тут только
-    // создаём "первую" попытку для этого interviewId, дальше всё (старт, замочек
-    // если бот занят, ретейк) ведёт сам Core.
-    useEffect(() => {
-        if (open && activeTab === 'interview' && interviewId && !interviewAttemptId && !creatingAttempt) {
-            setCreatingAttempt(true);
-            global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
-                .then(({item: newItem}) => setInterviewAttemptId(newItem._id))
-                .catch(() => {
-                    window.notify.warning('Не удалось начать интервью. Попробуйте ещё раз.');
-                    setActiveTab('quiz');
-                })
-                .finally(() => setCreatingAttempt(false));
+    // Бронь бота надо отпускать всегда, когда мы ушли с интервью (закрыли iframe,
+    // завершили попытку, закрыли вкладку) - иначе бот останется "занят" для всех.
+    function releaseInterviewReservation() {
+        if (!interviewReservedRef.current || !interviewAttemptRef.current) {
+            return;
         }
-    }, [open, activeTab, interviewId, interviewAttemptId, creatingAttempt]);
+        interviewReservedRef.current = false;
+        global.http.post(`/mock-interview/my-list/${interviewAttemptRef.current._id}/release`, {}, {wo_notify: true})
+            .catch(() => {});
+    }
+
+    useEffect(() => releaseInterviewReservation, []);
+
+    // Незавершённая попытка (draft/active/started) - это то же самое интервью,
+    // которое человек уже начал и не досдал: его надо продолжить, а не плодить
+    // на каждое нажатие новую попытку. Ищем самую свежую такую в списке по
+    // этому interviewId; нет ни одной - только тогда заводим новую.
+    function resolveInterviewAttempt() {
+        return global.http.get('/mock-interview/my-list', {filter: {interviewId}}, {wo_notify: true})
+            .catch(() => ({}))
+            .then(r => {
+                let unfinished = (r?.items || [])
+                    .filter(attempt => UNFINISHED_INTERVIEW_STATUSES.includes(attempt.status))
+                    .sort((a, b) => new Date(b.cd) - new Date(a.cd))[0];
+                if (unfinished) {
+                    return unfinished;
+                }
+                return global.http.post('/mock-interview/my-list', {interviewId}, {wo_notify: true})
+                    .then(({item: attempt}) => attempt);
+            });
+    }
+
+    function launchInterview(scb) {
+        setLaunchingInterview(true);
+        return resolveInterviewAttempt()
+            .then((attempt) => {
+                interviewAttemptRef.current = attempt;
+                return startInterviewAttempt(attempt, {
+                    onReserve: () => { interviewReservedRef.current = true; },
+                    onRelease: releaseInterviewReservation,
+                });
+            })
+            .then(active => {
+                setInterviewActive(active);
+                setLaunchingInterview(false);
+                scb && scb();
+            })
+            .catch(err => {
+                setLaunchingInterview(false);
+                window.notify.warning(err?.message || 'Не удалось начать интервью. Попробуйте ещё раз.');
+                // Запасной сценарий - обычный квиз в модалке; если квизов у
+                // модуля нет вовсе, показывать в модалке нечего, оставляем
+                // человека на странице с предупреждением.
+                if (pubQuizes.length) {
+                    reGenerateQuiz(scb);
+                } else {
+                    scb && scb();
+                }
+            });
+    }
+
+    function closeInterview() {
+        releaseInterviewReservation();
+        setInterviewActive(null);
+        setHistoryReloadKey(key => key + 1);
+    }
+
+    function completeInterview() {
+        let attempt = interviewAttemptRef.current;
+        releaseInterviewReservation();
+        setInterviewActive(null);
+        setHistoryReloadKey(key => key + 1);
+        global.http.put(`/mock-interview/my-list/${attempt._id}`, {status: 'completed'}, {wo_notify: true})
+            .catch(() => {});
+        // Интервью - альтернатива итоговому квизу, а не довесок к нему:
+        // пройденное интервью закрывает модуль ровно так же, как сданный квиз -
+        // тем же /save-course-module-results со status "ok" и тем же onSuccess,
+        // который обновляет mHistory. Без этого модуль оставался незакрытым и
+        // курс, пройденный через интервью, показывал не 100%.
+        saveResults(100);
+        onSuccess && onSuccess({status: 'ok'});
+        // Разбор ответа и список вопросов на странице курса не помещаются -
+        // уводим на ту же /mock-interviews/:id, где результаты открываются в
+        // обычном потоке.
+        navigate(`/mock-interviews/${attempt._id}`);
+    }
 
     let localQuizIteration;
     localQuizIteration = quizIteration;
@@ -213,11 +292,15 @@ function CourseQuiz(props, ref) {
                 {t('loadingResultsTesting')}
                 ...</button>}
         {!loading && <>
-            {!!_quizes.length && <Button className={'btn btn-sm btn-primary'} onClick={(scb) => {
+            {(!!_quizes.length || hasInterview) && <Button className={'btn btn-sm btn-primary'} onClick={(scb) => {
+                if (hasInterview) {
+                    launchInterview(scb);
+                    return;
+                }
                 reGenerateQuiz(scb)
             }}>
                 <i className="iconoir-double-check"></i>
-                {title || t('checkKnowledge')}</Button>}
+                {launchingInterview ? 'Открываем интервью...' : (title || t('checkKnowledge'))}</Button>}
             {isEmptyQuiz && <><Button
                 // disabled={true}
                 className={'btn btn-sm btn-primary'} onClick={(scb) => {
@@ -236,7 +319,7 @@ function CourseQuiz(props, ref) {
                     </small>
                 </div>
             </>}
-            {isLastModule && !_quizes.length &&
+            {isLastModule && !_quizes.length && !hasInterview &&
                 <Link to='/courses' className={'btn btn-sm btn-primary'} onClick={(scb) => {
                     saveResults(100, () => {
                     })
@@ -256,49 +339,6 @@ function CourseQuiz(props, ref) {
         >
             <>
 
-                {hasInterviewTab && <div className={'btn-group'} style={{marginBottom: '15px'}}>
-                    <button
-                        className={`btn btn-sm ${activeTab === 'interview' ? 'btn-primary' : 'btn-outline-primary'}`}
-                        onClick={() => setActiveTab('interview')}
-                    >
-                        <i className="iconoir-brain"></i> Мок-интервью
-                    </button>
-                    <button
-                        className={`btn btn-sm ${activeTab === 'quiz' ? 'btn-primary' : 'btn-outline-primary'}`}
-                        onClick={() => setActiveTab('quiz')}
-                    >
-                        Обычная проверка
-                    </button>
-                </div>}
-
-                {hasInterviewTab && activeTab === 'interview' && <div>
-                    {!interviewAttemptId
-                        ? <div>Готовим интервью...</div>
-                        : <MockInterviewCore
-                            attemptId={interviewAttemptId}
-                            onRetake={setInterviewAttemptId}
-                            onComplete={(completedId) => {
-                                // Интервью - альтернатива итоговому квизу, а не
-                                // довесок к нему: пройденное интервью закрывает
-                                // модуль ровно так же, как сданный квиз - тем же
-                                // /save-course-module-results со status "ok" и тем
-                                // же onSuccess, который обновляет mHistory. Без
-                                // этого модуль оставался незакрытым и курс,
-                                // пройденный через интервью, показывал не 100%.
-                                saveResults(100);
-                                onSuccess && onSuccess({status: 'ok'});
-                                // Модалка курса тесновата для полного экрана
-                                // результатов интервью (список вопросов + разбор
-                                // ответа) - как только интервью завершено, закрываем
-                                // её и уводим на ту же страницу /mock-interviews/:id,
-                                // на которой результаты открываются в обычном потоке.
-                                hideModal();
-                                navigate(`/mock-interviews/${completedId}`);
-                            }}
-                        />}
-                </div>}
-
-                {(!hasInterviewTab || activeTab === 'quiz') && <>
                 {!loading && !quizResults && !!_quizes.length && <div>
                     <TrainPageCourse
                         onResult={() => {
@@ -374,11 +414,18 @@ function CourseQuiz(props, ref) {
 
 
                 </div>}
-                </>}
             </>
 
 
         </MyModal>
+
+        {interviewActive && <MockInterviewIframe
+            interview={interviewActive}
+            onClose={closeInterview}
+            onComplete={completeInterview}
+        />}
+
+        {hasInterview && <CourseInterviewHistory interviewId={interviewId} reloadKey={historyReloadKey}/>}
         {/*{!!_quizes.length && <TrainPageCourse*/}
         {/*    onResult={() => {*/}
         {/*        setOpen(false)*/}

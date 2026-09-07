@@ -73,6 +73,48 @@
 
 .cardBtn {
   margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// Карточка попытки в истории лежит внутри такой же белой .card (--bs-card-bg =
+// --bs-secondary-bg, в светлой теме это чистый белый) - на общем фоне строки
+// читались как один сплошной лист, границу приходилось искать глазами. Берём
+// подложку на тон темнее (--bs-tertiary-bg, в тёмной теме тоже светлее фона
+// карточки), отчётливую рамку и подъём по наведению: список сразу разбирается
+// на отдельные попытки.
+.attemptCard {
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+
+  &:hover {
+    border-color: var(--bs-primary-border-subtle);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+    transform: translateY(-1px);
+  }
+}
+
+// Текущая попытка - та, что открыта на экране выше. Отмечаем её рамкой
+// акцентного цвета, чтобы в списке было видно, где ты находишься.
+.attemptCardCurrent {
+  border-color: var(--bs-primary);
+}
+
+// Номер попытки - заголовок строки, а не такая же служебная подпись, как
+// статус и дата рядом: вытаскиваем его из приглушённого цвета .cardMeta.
+.attemptTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.attemptScore {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--bs-body-color);
 }
 
 .resultsRoot {
@@ -358,4 +400,99 @@
   font-size: 12px;
   color: var(--bs-text-muted);
   margin-top: 2px;
+}
+
+// Статус попытки, которую ещё можно продолжить. Остальные строки списка -
+// факты о прошлом, эта - незакрытое дело, поэтому единственная в списке
+// набрана акцентом, а не общим приглушённым цветом .cardMeta.
+.cardStatusUnfinished {
+  font-weight: 600;
+  color: var(--bs-warning-text-emphasis);
+}
+
+// Компактная история попыток на странице курса (CourseInterviewHistory).
+// В отличие от списка на /mock-interviews/:id это не карточки с действиями, а
+// строки-ссылки: одна попытка - одна строка, разделённая волосяной линией.
+.attemptsRows {
+  display: flex;
+  flex-direction: column;
+}
+
+// Строка истории - таблица без таблицы: одинаковый grid во всех строках держит
+// "Попытка N", статус, дату и балл в общих колонках, чтобы взгляд шёл сверху
+// вниз по столбцу, а не искал значение заново в каждой строке. На узком экране
+// колонки не сжимаются в кашу, а перестраиваются в два ряда (см. медиазапрос).
+.attemptRow {
+  display: grid;
+  grid-template-columns: minmax(86px, auto) minmax(84px, auto) 1fr minmax(56px, auto);
+  grid-template-areas: "num status date score";
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--bs-border-color);
+  color: var(--bs-body-color);
+  text-decoration: none;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &:hover {
+    color: var(--bs-body-color);
+    background: var(--light-hover);
+  }
+}
+
+.attemptRowNum {
+  grid-area: num;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.attemptRowStatus,
+.attemptRowDate {
+  font-size: 13px;
+  color: var(--bs-text-muted);
+}
+
+.attemptRowStatus {
+  grid-area: status;
+}
+
+.attemptRowDate {
+  grid-area: date;
+}
+
+// Балл - единственное число в строке, поэтому набран моноширинным: колонка
+// баллов читается сверху вниз, не сбиваясь на разной ширине цифр.
+.attemptRowScore {
+  grid-area: score;
+  font-family: monospace;
+  font-size: 13px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+// Узкий экран: четыре колонки в строку уже не помещаются, дата переносится под
+// номер попытки. Пары "попытка - балл" и "статус - дата" остаются выровненными
+// по левому и правому краю, так что колонки читаются и здесь.
+@media (max-width: 575px) {
+  .attemptRow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "num score"
+      "status date";
+  }
+
+  .attemptRowDate {
+    text-align: right;
+  }
+}
+
+// Сколько всего попыток и какая открыта сейчас. Стоит подписью под названием
+// интервью - это ориентир, а не заголовок, поэтому набран тише .cardName.
+.attemptCounter {
+  font-size: 13px;
+  color: var(--bs-text-muted);
+  margin: -4px 0 4px;
 }

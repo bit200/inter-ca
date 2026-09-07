@@ -29,6 +29,10 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     const finishTimeoutRef = useRef(null);
     const aiPlayingRef = useRef(false);
     const awaitingFinishRef = useRef(false);
+    // itk-live на выходе умеет прислать и itk.interview.exit, и следом
+    // itk.interview.session_closed - чтобы оверлей не закрывался дважды
+    // (и попытка не завершалась дважды), реагируем только на первый сигнал.
+    const doneRef = useRef(false);
 
     useEffect(() => {
         return () => clearTimeout(finishTimeoutRef.current);
@@ -38,10 +42,27 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
         const finishNow = () => {
             clearTimeout(finishTimeoutRef.current);
             awaitingFinishRef.current = false;
+            if (doneRef.current) {
+                return;
+            }
+            doneRef.current = true;
             onComplete();
         };
 
+        const closeNow = () => {
+            clearTimeout(finishTimeoutRef.current);
+            awaitingFinishRef.current = false;
+            if (doneRef.current) {
+                return;
+            }
+            doneRef.current = true;
+            onClose();
+        };
+
         const scheduleFinish = () => {
+            if (doneRef.current) {
+                return;
+            }
             awaitingFinishRef.current = true;
             if (!aiPlayingRef.current) {
                 finishNow();
@@ -98,6 +119,20 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                 return;
             }
 
+            // Кнопка "Выйти" внутри iframe шлёт itk.interview.exit - это явная
+            // просьба пользователя закрыть интервью, и ждать после неё нечего.
+            // Если финал уже объявлен и мы лишь дослушиваем прощание бота -
+            // выход обрывает ожидание и завершает попытку, иначе просто
+            // закрываем оверлей, как при отменённой сессии.
+            if (msg.type === 'itk.interview.exit') {
+                if (awaitingFinishRef.current) {
+                    finishNow();
+                } else {
+                    closeNow();
+                }
+                return;
+            }
+
             if (msg.type === 'itk.interview.session_closed') {
                 const status = msg.payload?.status;
                 // Своей кнопки "Выйти" в шапке оверлея больше нет - выходят той,
@@ -113,7 +148,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                 if (status === 'completed') {
                     scheduleFinish();
                 } else {
-                    onClose();
+                    closeNow();
                 }
             }
         };
