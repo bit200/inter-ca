@@ -2863,6 +2863,13 @@ export default {
         en: "Retake",
         fr: `Retenter`
     },
+    "continueMockInterview": {
+        ru: "Продолжить",
+        es: "Continuar",
+        de: "Fortsetzen",
+        en: "Continue",
+        fr: `Continuer`
+    },
     "attemptHistory": {
         ru: "История попыток",
         es: "Historial de intentos",

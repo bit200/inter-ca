@@ -22,7 +22,13 @@ const STATUS_LABEL = {
 // сервис оценки упал по ним - тогда средний балл считается по оставшимся,
 // и сколько их было, показываем строкой рядом (см. attemptScoreSummary).
 
-const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake }) => {
+// Незавершённая попытка (её видно в списке как "Начато"/"Ожидает") - это не
+// тупик: бот по ней ещё ждёт, и её надо дать открыть заново. Кнопка стоит
+// только у чужих строк списка: для текущей попытки то же самое делает большая
+// карточка старта над историей, второй кнопки там не нужно.
+const UNFINISHED_STATUSES = ['draft', 'active', 'started'];
+
+const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, retaking, onRetake, onContinue }) => {
     // Список прошлых попыток показываем только когда их реально больше одной -
     // сама первая попытка и так видна как основной экран выше. Кнопка "Пройти
     // заново" от этого не зависит: она нужна уже после самой первой завершённой
@@ -52,6 +58,9 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                     : { score: null, scored: 0, total: 0 };
                                 const partial = score != null && total > 0 && scored < total;
                                 const isCurrent = attempt._id === currentItem._id;
+                                const canContinue = !isCurrent
+                                    && !!onContinue
+                                    && UNFINISHED_STATUSES.includes(attempt.status);
                                 return (
                                     <div key={attempt._id} className="card" data-testid="mock-interview-attempt-row">
                                         <div className={`card-body ${styles.cardBody}`}>
@@ -60,7 +69,9 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                                 {isCurrent && <span className={styles.cardMode}>{t('currentAttempt') || 'Текущая'}</span>}
                                             </div>
                                             <div className={styles.cardMeta}>
-                                                <span>{STATUS_LABEL[attempt.status] || attempt.status}</span>
+                                                <span className={canContinue ? styles.cardStatusUnfinished : undefined}>
+                                                    {STATUS_LABEL[attempt.status] || attempt.status}
+                                                </span>
                                                 {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
                                             </div>
                                             {score != null && <div>{'Балл: ' + score + '/10'}</div>}
@@ -71,6 +82,17 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                             )}
                                             {passed && score == null && (
                                                 <div className={styles.cardScoreNote}>{NO_RESULTS_NOTE}</div>
+                                            )}
+                                            {canContinue && (
+                                                <div className={styles.cardBtn}>
+                                                    <button
+                                                        className="btn btn-outline-primary btn-sm"
+                                                        data-testid="mock-interview-continue-button"
+                                                        onClick={() => onContinue(attempt)}
+                                                    >
+                                                        {t('continueMockInterview') || 'Продолжить'}
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
