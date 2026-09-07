@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import _ from 'underscore';
 import './PreviewCourseModule.css'
 import QuestionDetails from "./QuestionDetails";
@@ -34,6 +34,8 @@ function PreviewCourseModule(props) {
         interviewId,
     } = props;
     let isAdmin = global.env.isAdmin || props.isAdmin;
+
+    let courseQuizRef = useRef(null);
 
     let [selectedBlockInd2, setSelectedBlockInd] = useState(0);
     let selectedBlockInd = props.selectedBlockInd;
@@ -174,6 +176,7 @@ function PreviewCourseModule(props) {
                             {<>
                                 <div className="ib animChild">
                                     <CourseQuiz
+                                        ref={courseQuizRef}
                                         onAction={onAction}
                                         title={t('checkKnowledge')}
                                         questionId={selectedBlock._id}
@@ -203,6 +206,14 @@ function PreviewCourseModule(props) {
                                 </button>
                                     <button className={'btn btn-sm btn-primary'}
                                             onClick={() => {
+                                                // Тема ещё не сдана (qHistory) и по ней есть квиз-вопросы -
+                                                // сразу открываем проверку знаний вместо перехода, который
+                                                // всё равно упрётся в замочек на следующей (залоченной) главе.
+                                                let isDone = (qHistory[qId] || {}).status === 'ok';
+                                                if (!isDone && courseQuizRef.current && courseQuizRef.current.hasPendingQuiz()) {
+                                                    courseQuizRef.current.openQuiz()
+                                                    return
+                                                }
                                                 props.onChangeInd(1)
                                                 // onSelectInd(selectedBlockInd == questions.length - 1 ? -1 : selectedBlockInd + 1)
                                                 // scrollToView('#topicsList')

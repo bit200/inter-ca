@@ -23,12 +23,22 @@ jobs:
     # (Settings -> Environments -> production -> Required reviewers).
     environment: production
     steps:
-      - name: Deploy
+      # Два отдельных шага, а не один sudo-скрипт: prod-deploy.sh делает git
+      # fetch/reset и npm ci/build (код зависимостей) и запускается БЕЗ root, от
+      # deploy — иначе root бы выполнял произвольный код из зависимостей/master.
+      # Только сама подмена build/ + nginx reload реально требует root, и делает
+      # это отдельный inter-ca-apply-build.sh, установленный вне репозитория и
+      # принадлежащий root (не deploy) — см. deploy/self-hosted-runner.md.
+      - name: Build (без root)
         # Скрипт берётся из рабочей копии на сервере, а не из checkout'а runner'а:
-        # prod-deploy.sh сам делает git fetch/reset в этой копии, собирает build-new,
-        # атомарно подменяет build и откатывается, если health-check не прошёл.
-        # sudo -n: скрипту нужен root (nginx), пароля не спрашиваем — см. sudoers в
-        # deploy/self-hosted-runner.md.
-        run: flock /var/lock/itk-deploy.lock sudo -n "${APP_DIR}/deploy/prod-deploy.sh"
+        # prod-deploy.sh сам делает git fetch/reset в этой копии и собирает build-new
+        # с health-check на диске.
+        run: flock /var/lock/itk-deploy.lock "${APP_DIR}/deploy/prod-deploy.sh"
+        env:
+          APP_DIR: ${{ vars.PROD_APP_DIR || '/var/www/inter-ca' }}
+      - name: Apply build (root)
+        # sudo -n: разрешён без пароля только этот фиксированный путь вне
+        # git-репозитория — см. sudoers в deploy/self-hosted-runner.md.
+        run: sudo -n /usr/local/sbin/inter-ca-apply-build.sh
         env:
           APP_DIR: ${{ vars.PROD_APP_DIR || '/var/www/inter-ca' }}

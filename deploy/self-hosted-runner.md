@@ -14,8 +14,10 @@
 - `itk-platform-en/.github/workflows/deploy-prod.yml` → `deploy.sh`
   (git pull + `docker compose up -d --build` + health-check api/admin/multer +
   автооткат на предыдущий коммит, если стек не отвечает);
-- `inter-ca/.github/workflows/deploy-prod.yml` → `deploy/prod-deploy.sh`
-  (сборка в `build-new`, атомарная подмена, health-check, автооткат).
+- `inter-ca/.github/workflows/deploy-prod.yml` → два шага: `deploy/prod-deploy.sh`
+  (без root, от `deploy`: git pull, `npm ci`/`npm run build` в `build-new`) и
+  `inter-ca-apply-build.sh` (root, из `/usr/local/sbin`: атомарная подмена build,
+  health-check, автооткат — исходник на ревью в `inter-ca/deploy/inter-ca-apply-build.sh`).
 
 Оба workflow'а: `runs-on: [self-hosted, itk-vps]`, `environment: production`,
 `workflow_dispatch` для ручного запуска, и `flock /var/lock/itk-deploy.lock`, чтобы
@@ -24,16 +26,34 @@
 ## 1. Пользователь для деплоя
 
 Runner не должен работать от root. Заводим отдельного пользователя и даём ему ровно
-то, что нужно двум скриптам: docker (для itk-platform-en) и root на один скрипт
-inter-ca (он ставит/релоадит nginx).
+то, что нужно: docker (для itk-platform-en) и root на **один фиксированный скрипт
+вне git-репозитория** (`inter-ca-apply-build.sh` — он ставит/релоадит nginx).
+
+Скрипту, разрешённому в sudoers, **нельзя** быть внутри рабочей копии `inter-ca`:
+эта копия принадлежит `deploy` (см. `chown` ниже), и `deploy` может пушить
+изменения в `master` через git. Если бы sudoers указывал на файл внутри
+репозитория, `deploy` (или кто угодно, кто может смёржить коммит в master) мог бы
+подменить содержимое этого файла своим кодом и получить root на следующем
+деплое — правило «разрешить только этот один скрипт» ничего бы не ограничивало.
+Поэтому root-часть деплоя `inter-ca` — это отдельный файл в `/usr/local/sbin`,
+устанавливаемый вручную и принадлежащий `root:root`; `inter-ca/deploy/prod-deploy.sh`
+(git-версия, для истории/ревью) делает только сборку и работает от `deploy`, без
+sudo:
 
 ```bash
 sudo adduser --disabled-password --gecos "" deploy
 sudo usermod -aG docker deploy
 
-# inter-ca/deploy/prod-deploy.sh требует root — разрешаем без пароля только его
+# Root-скрипт устанавливается ВНЕ рабочей копии и принадлежит root, не deploy —
+# исходник для ревью лежит в git (inter-ca/deploy/inter-ca-apply-build.sh), но
+# копия, которую реально запускает sudo, обновляется этой командой вручную при
+# каждом изменении скрипта (а не git pull'ом deploy-пользователя).
+sudo install -o root -g root -m 750 \
+  /var/www/inter-ca/deploy/inter-ca-apply-build.sh \
+  /usr/local/sbin/inter-ca-apply-build.sh
+
 sudo tee /etc/sudoers.d/deploy-inter-ca >/dev/null <<'SUDO'
-deploy ALL=(root) NOPASSWD: /var/www/inter-ca/deploy/prod-deploy.sh
+deploy ALL=(root) NOPASSWD: /usr/local/sbin/inter-ca-apply-build.sh
 SUDO
 sudo chmod 440 /etc/sudoers.d/deploy-inter-ca
 sudo visudo -c
@@ -47,6 +67,11 @@ sudo chown -R deploy:deploy /var/www/itk-portal-prod
 sudo chown -R deploy:deploy /var/www/inter-ca   # сам чекаут; nginx-конфиги остаются root'овыми
 sudo install -o deploy -g deploy -m 664 /dev/null /var/lock/itk-deploy.lock
 ```
+
+**После любой правки `inter-ca/deploy/inter-ca-apply-build.sh` в git** повторить
+команду `sudo install ...` выше на сервере — `deploy` физически не может обновить
+`/usr/local/sbin/inter-ca-apply-build.sh` сам (в этом и весь смысл разделения),
+поэтому это ручной шаг после мержа, а не часть автодеплоя.
 
 Deploy-ключ для git: под `deploy` сгенерировать `ssh-keygen -t ed25519` и добавить
 публичный ключ в оба репозитория (Settings → Deploy keys, read-only). Проверить:

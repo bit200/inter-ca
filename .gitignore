@@ -13,3 +13,4 @@ api/conv/task_remainder/node_modules
 admin/build
 admin/build-new
 admin/build-old
+deploy/root-deploy.sh
