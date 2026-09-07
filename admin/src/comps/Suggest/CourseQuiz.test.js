@@ -37,13 +37,20 @@ import CourseQuiz from './CourseQuiz';
 describe('CourseQuiz - финальная проверка знаний через мок-интервью', () => {
     let onSuccess;
     let postFail;
+    let historyItems;
 
     beforeEach(() => {
         global.t = (key) => key;
         onSuccess = jest.fn();
         postFail = null;
+        historyItems = [];
         global.http = {
-            get: jest.fn(() => Promise.resolve({ quizes: [{ _id: 1 }], pubQuizes: [{ _id: 1 }] })),
+            get: jest.fn((url) => {
+                if (url === '/mock-interview/my-list') {
+                    return Promise.resolve({ items: historyItems });
+                }
+                return Promise.resolve({ quizes: [{ _id: 1 }], pubQuizes: [{ _id: 1 }] });
+            }),
             put: jest.fn(() => Promise.resolve({})),
             post: jest.fn((url) => {
                 if (postFail && postFail(url)) {
@@ -100,6 +107,35 @@ describe('CourseQuiz - финальная проверка знаний чере
         await renderQuiz();
 
         expect(screen.getByText('история попыток 9')).toBeInTheDocument();
+    });
+
+    it('продолжает незавершённую попытку интервью, а не создаёт новую', async () => {
+        historyItems = [
+            { _id: 70, status: 'started', cd: '2026-09-01T10:00:00Z' },
+            { _id: 71, status: 'completed', cd: '2026-09-02T10:00:00Z' },
+        ];
+        await renderQuiz();
+        await clickCheck();
+
+        await waitFor(() => screen.getByText('iframe: https://itk.live/e/abc'));
+        expect(global.http.post).not.toHaveBeenCalledWith('/mock-interview/my-list', expect.anything(), expect.anything());
+        expect(global.http.post).toHaveBeenCalledWith(
+            '/mock-interview/my-list/70/reserve', {}, { wo_notify: true }
+        );
+    });
+
+    it('если незавершённых попыток нет, заводит новую', async () => {
+        historyItems = [{ _id: 71, status: 'completed', cd: '2026-09-02T10:00:00Z' }];
+        await renderQuiz();
+        await clickCheck();
+
+        await waitFor(() => screen.getByText('iframe: https://itk.live/e/abc'));
+        expect(global.http.post).toHaveBeenCalledWith(
+            '/mock-interview/my-list', { interviewId: 9 }, { wo_notify: true }
+        );
+        expect(global.http.post).toHaveBeenCalledWith(
+            '/mock-interview/my-list/55/reserve', {}, { wo_notify: true }
+        );
     });
 
     it('после завершения интервью пишет модулю тот же результат "ok", что и сданный квиз', async () => {
