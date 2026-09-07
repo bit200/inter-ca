@@ -418,10 +418,16 @@
   flex-direction: column;
 }
 
+// Строка истории - таблица без таблицы: одинаковый grid во всех строках держит
+// "Попытка N", статус, дату и балл в общих колонках, чтобы взгляд шёл сверху
+// вниз по столбцу, а не искал значение заново в каждой строке. На узком экране
+// колонки не сжимаются в кашу, а перестраиваются в два ряда (см. медиазапрос).
 .attemptRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(86px, auto) minmax(84px, auto) 1fr minmax(56px, auto);
+  grid-template-areas: "num status date score";
   align-items: baseline;
-  gap: 12px;
+  gap: 4px 12px;
   padding: 9px 0;
   border-top: 1px solid var(--bs-border-color);
   color: var(--bs-body-color);
@@ -438,9 +444,9 @@
 }
 
 .attemptRowNum {
+  grid-area: num;
   font-size: 14px;
   font-weight: 600;
-  flex: 0 0 auto;
 }
 
 .attemptRowStatus,
@@ -449,18 +455,38 @@
   color: var(--bs-text-muted);
 }
 
+.attemptRowStatus {
+  grid-area: status;
+}
+
 .attemptRowDate {
-  margin-left: auto;
+  grid-area: date;
 }
 
 // Балл - единственное число в строке, поэтому набран моноширинным: колонка
 // баллов читается сверху вниз, не сбиваясь на разной ширине цифр.
 .attemptRowScore {
+  grid-area: score;
   font-family: monospace;
   font-size: 13px;
-  flex: 0 0 auto;
-  min-width: 56px;
   text-align: right;
+  white-space: nowrap;
+}
+
+// Узкий экран: четыре колонки в строку уже не помещаются, дата переносится под
+// номер попытки. Пары "попытка - балл" и "статус - дата" остаются выровненными
+// по левому и правому краю, так что колонки читаются и здесь.
+@media (max-width: 575px) {
+  .attemptRow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "num score"
+      "status date";
+  }
+
+  .attemptRowDate {
+    text-align: right;
+  }
 }
 
 // Сколько всего попыток и какая открыта сейчас. Стоит подписью под названием
