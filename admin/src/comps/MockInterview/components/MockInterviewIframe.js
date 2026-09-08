@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import styles from '../mockInterview.module.scss';
+import {isFinishedSessionStatus, sessionProgressOf} from './sessionEndDecision';
 
 // см. docs/contracts/embed-interview-iframe.md в itk-live: iframe открывается
 // сразу на одноразовый interview.embedUrl (его выдал наш бэкенд), поэтому
@@ -29,6 +30,10 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     const finishTimeoutRef = useRef(null);
     const aiPlayingRef = useRef(false);
     const awaitingFinishRef = useRef(false);
+    // Сколько ходов кандидат успел пройти (по данным itk.interview.state).
+    // Нужно на выходе по кнопке: если ответы уже есть, "Выйти" - это конец
+    // интервью, а не отмена попытки.
+    const progressRef = useRef(0);
     // itk-live на выходе умеет прислать и itk.interview.exit, и следом
     // itk.interview.session_closed - чтобы оверлей не закрывался дважды
     // (и попытка не завершалась дважды), реагируем только на первый сигнал.
@@ -90,6 +95,7 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
 
             if (msg.type === 'itk.interview.state') {
                 aiPlayingRef.current = !!msg.payload?.aiPlaying;
+                progressRef.current = Math.max(progressRef.current, sessionProgressOf(msg.payload));
                 if (awaitingFinishRef.current && !aiPlayingRef.current) {
                     finishNow();
                 }
@@ -122,10 +128,13 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
             // Кнопка "Выйти" внутри iframe шлёт itk.interview.exit - это явная
             // просьба пользователя закрыть интервью, и ждать после неё нечего.
             // Если финал уже объявлен и мы лишь дослушиваем прощание бота -
-            // выход обрывает ожидание и завершает попытку, иначе просто
-            // закрываем оверлей, как при отменённой сессии.
+            // выход обрывает ожидание и завершает попытку. Кандидат, вышедший
+            // после последнего вопроса, но до session_closed, раньше оставлял
+            // попытку в "Начато": выход при уже отвеченных вопросах - это тоже
+            // завершение, а не отмена. Совсем пустую сессию по-прежнему просто
+            // закрываем.
             if (msg.type === 'itk.interview.exit') {
-                if (awaitingFinishRef.current) {
+                if (awaitingFinishRef.current || progressRef.current > 0) {
                     finishNow();
                 } else {
                     closeNow();
@@ -145,7 +154,11 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
                     finishNow();
                     return;
                 }
-                if (status === 'completed') {
+                // Меш закрывает сессию не одним статусом: бывает 'completed',
+                // бывает 'closed' (и то и другое - пройденное интервью).
+                // Завершением считаем любой терминальный статус, кроме явной
+                // отмены/ошибки - см. sessionEndDecision.
+                if (isFinishedSessionStatus(status)) {
                     scheduleFinish();
                 } else {
                     closeNow();
@@ -161,9 +174,9 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     // полноэкранного вида, как на отдельной странице /mock-interviews/:id.
     return createPortal((
         <div className={styles.iframeOverlay} data-testid="mock-interview-overlay">
-            <div className={styles.iframeHeader}>
-                <span>{interview.name}</span>
-            </div>
+            {/* Никакой своей шапки над iframe: подпись "где я" и выход рисует
+                сам itk-live внутри embed'а, а полоса сверху только отъедала
+                высоту у видео. Интервью занимает весь экран. */}
             <div className={styles.iframeWrap}>
                 <iframe
                     src={interview.embedUrl}

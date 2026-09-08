@@ -3,7 +3,13 @@ import { render, waitFor, act } from '@testing-library/react';
 import MockInterviewCore from './MockInterviewCore';
 
 jest.mock('../../libs/sse/sse', () => ({ subscribe: () => () => {} }));
-jest.mock('./components/MockInterviewIframe', () => () => <div>iframe</div>);
+jest.mock('./components/MockInterviewIframe', () => ({ onClose, onComplete }) => (
+    <div>
+        iframe
+        <button onClick={onClose}>close-iframe</button>
+        <button onClick={onComplete}>complete-iframe</button>
+    </div>
+));
 jest.mock('./components/MockInterviewResults', () => () => <div>results</div>);
 
 const attempt = (id, status) => ({ _id: id, interviewId: 'int-1', status, cd: '2026-09-0' + id, turns: [], evaluate: [] });
@@ -48,5 +54,103 @@ describe('MockInterviewCore автостарт попытки', () => {
         ));
         await act(async () => { await new Promise(r => setTimeout(r, 50)); });
         expect(post).not.toHaveBeenCalled();
+    });
+});
+
+// Собеседование прошло, но PUT status: 'completed' не успел уйти - попытка
+// осталась 'started'. Экран верил статусу и вместо результатов показывал
+// карточку старта, поэтому оценка была недоступна.
+describe('MockInterviewCore застрявшая в "Начато" попытка', () => {
+    test('с готовым диалогом открывается результатами, а не карточкой старта', async () => {
+        const stuck = { ...attempt(1, 'started'), turns: [{ question_id: 'q1' }] };
+        const post = setupHttp(stuck, [stuck]);
+
+        const { findByText, queryByTestId } = render(<MockInterviewCore attemptId={1}/>);
+
+        expect(await findByText('results')).toBeInTheDocument();
+        expect(queryByTestId('mock-interview-start-card')).not.toBeInTheDocument();
+        expect(post).not.toHaveBeenCalled();
+    });
+});
+
+
+// Закрытие оверлея раньше не трогало статус попытки, и она висела в "Начато"
+// до фоновой догоняющей проверки (две минуты порога + минута тика). Теперь
+// клиент сам зовёт sync, который спрашивает меш и отдаёт актуальную запись.
+describe('MockInterviewCore синхронизация попытки при выходе из интервью', () => {
+    const setupStarted = (syncResult) => {
+        const item = attempt(1, 'draft');
+        const post = jest.fn((url) => {
+            if (url === '/mock-interview/my-list/1/embed-session') {
+                return Promise.resolve({ sessionId: 's-1', embedUrl: 'https://mesh/e/1' });
+            }
+            if (url === '/mock-interview/my-list/1/sync') return Promise.resolve(syncResult);
+            return Promise.resolve({});
+        });
+        global.http = {
+            get: jest.fn((url) => Promise.resolve(
+                url === '/mock-interview/my-list' ? { items: [item] } : item
+            )),
+            post,
+            put: jest.fn(() => Promise.resolve({})),
+        };
+        global.notify = { warning: () => {} };
+        return post;
+    };
+
+    test('закрытие окна интервью зовёт sync и показывает пришедшие результаты', async () => {
+        const closed = { ...attempt(1, 'completed'), turns: [{ question_id: 'q1' }] };
+        const post = setupStarted(closed);
+
+        const { findByText } = render(<MockInterviewCore attemptId={1}/>);
+        const closeBtn = await findByText('close-iframe');
+        await act(async () => { closeBtn.click(); });
+
+        await waitFor(() => expect(post).toHaveBeenCalledWith(
+            '/mock-interview/my-list/1/sync', {}, { wo_notify: true }
+        ));
+        expect(await findByText('results')).toBeInTheDocument();
+    });
+
+    test('завершение интервью тоже синхронизирует попытку - PUT мог не дойти', async () => {
+        const post = setupStarted(attempt(1, 'completed'));
+
+        const { findByText } = render(<MockInterviewCore attemptId={1}/>);
+        const completeBtn = await findByText('complete-iframe');
+        await act(async () => { completeBtn.click(); });
+
+        await waitFor(() => expect(post).toHaveBeenCalledWith(
+            '/mock-interview/my-list/1/sync', {}, { wo_notify: true }
+        ));
+    });
+
+    test('упавший sync не показывается кандидату', async () => {
+        const item = attempt(1, 'draft');
+        const post = jest.fn((url) => {
+            if (url === '/mock-interview/my-list/1/embed-session') {
+                return Promise.resolve({ sessionId: 's-1', embedUrl: 'https://mesh/e/1' });
+            }
+            if (url === '/mock-interview/my-list/1/sync') return Promise.reject(new Error('mesh down'));
+            return Promise.resolve({});
+        });
+        const warning = jest.fn();
+        global.http = {
+            get: jest.fn((url) => Promise.resolve(
+                url === '/mock-interview/my-list' ? { items: [item] } : item
+            )),
+            post,
+            put: jest.fn(() => Promise.resolve({})),
+        };
+        global.notify = { warning };
+
+        const { findByText } = render(<MockInterviewCore attemptId={1}/>);
+        const closeBtn = await findByText('close-iframe');
+        await act(async () => { closeBtn.click(); });
+
+        await waitFor(() => expect(post).toHaveBeenCalledWith(
+            '/mock-interview/my-list/1/sync', {}, { wo_notify: true }
+        ));
+        await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+        expect(warning).not.toHaveBeenCalled();
     });
 });

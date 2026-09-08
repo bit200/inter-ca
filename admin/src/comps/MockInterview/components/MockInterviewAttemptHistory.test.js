@@ -158,4 +158,23 @@ describe('MockInterviewAttemptHistory', () => {
         />);
         expect(screen.getByTestId('mock-interview-attempt-counter')).toHaveTextContent('Попытка 1 из 2');
     });
+    // Попытка, у которой собеседование прошло, но статус остался 'started'
+    // (вкладку закрыли раньше, чем ушёл PUT status: 'completed').
+    it('застрявшую в "Начато" попытку с диалогом показывает завершённой и с результатами', () => {
+        const stuck = { _id: 3, status: 'started', attemptNumber: 2, turns: [{ question_id: 'q1' }], evaluate: [{ questionId: 'q1', evaluate: { score: 9 } }] };
+        const current = attempt(1, [{ evaluate: { score: 5 } }], 1);
+        render(<MockInterviewAttemptHistory
+            history={[stuck, current]}
+            currentItem={current}
+            latestCompleted={true}
+            onRetake={() => {}}
+            onContinue={() => {}}
+            onOpenResults={() => {}}
+        />);
+        expect(screen.getAllByText('Завершено')).toHaveLength(2);
+        expect(screen.queryByText('Начато')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('mock-interview-continue-button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('mock-interview-results-button')).toBeInTheDocument();
+        expect(screen.getByText('Балл: 9/10')).toBeInTheDocument();
+    });
 });
