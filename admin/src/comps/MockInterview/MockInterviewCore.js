@@ -168,18 +168,44 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         }
     }, [item, isPassed, historyLoaded, history.length]);
 
+    // Закрыли окно интервью - значит статус сессии у меша уже можно узнать, а не
+    // ждать фоновую догоняющую проверку: та не трогает попытки моложе двух минут
+    // (MESH_CHECK_MIN_AGE_MS в services/mockInterviewStaleQueue.js) и ходит раз в
+    // минуту, из-за чего попытка до трёх минут висела в "Начато". Ручка спрашивает
+    // меш прямо сейчас, закрывает попытку при терминальной сессии и отдаёт
+    // актуальную запись - кладём её в item, чтобы экран сразу показал результаты.
+    // Ошибку гасим молча (wo_notify, как соседние вызовы): не смогли спросить -
+    // попытку через минуту-другую закроет фон, кандидату об этом знать незачем.
+    const syncAttempt = (syncId) => {
+        if (!syncId) return Promise.resolve();
+        return global.http.post(`/mock-interview/my-list/${syncId}/sync`, {}, { wo_notify: true })
+            .then(r => {
+                const synced = r && r.item ? r.item : r;
+                if (!synced || !synced._id) return;
+                setItem(prev => (prev && prev._id === synced._id ? synced : prev));
+            })
+            .catch(() => {});
+    };
+
     const handleComplete = () => {
         releaseReservation();
-        global.http.put(`/mock-interview/my-list/${itemRef.current._id}`, { status: 'completed' }, { wo_notify: true }).catch(() => {});
+        const completedId = itemRef.current._id;
+        // sync только после PUT - иначе меш мог бы ответить раньше, чем попытка
+        // перешла в completed, и вернуть уже устаревшую запись.
+        global.http.put(`/mock-interview/my-list/${completedId}`, { status: 'completed' }, { wo_notify: true })
+            .catch(() => {})
+            .then(() => syncAttempt(completedId));
         setItem(prev => ({ ...prev, status: 'completed' }));
         setActive(null);
         setCompletedLocally(true);
-        onComplete && onComplete(itemRef.current._id);
+        onComplete && onComplete(completedId);
     };
 
     const handleCloseIframe = () => {
         releaseReservation();
+        const closedId = itemRef.current && itemRef.current._id;
         setActive(null);
+        syncAttempt(closedId);
     };
 
     // Резолвит существующую (draft/active/started) или создаёт новую попытку для
