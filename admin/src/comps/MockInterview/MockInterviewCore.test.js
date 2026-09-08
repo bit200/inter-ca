@@ -50,3 +50,19 @@ describe('MockInterviewCore автостарт попытки', () => {
         expect(post).not.toHaveBeenCalled();
     });
 });
+
+// Собеседование прошло, но PUT status: 'completed' не успел уйти - попытка
+// осталась 'started'. Экран верил статусу и вместо результатов показывал
+// карточку старта, поэтому оценка была недоступна.
+describe('MockInterviewCore застрявшая в "Начато" попытка', () => {
+    test('с готовым диалогом открывается результатами, а не карточкой старта', async () => {
+        const stuck = { ...attempt(1, 'started'), turns: [{ question_id: 'q1' }] };
+        const post = setupHttp(stuck, [stuck]);
+
+        const { findByText, queryByTestId } = render(<MockInterviewCore attemptId={1}/>);
+
+        expect(await findByText('results')).toBeInTheDocument();
+        expect(queryByTestId('mock-interview-start-card')).not.toBeInTheDocument();
+        expect(post).not.toHaveBeenCalled();
+    });
+});

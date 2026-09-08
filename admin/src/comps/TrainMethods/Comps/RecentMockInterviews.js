@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { attemptStatusLabel } from '../../MockInterview/components/attemptStatus';
 
 const RECENT_COUNT = 10;
 
@@ -13,14 +14,6 @@ function averageScore(attempt) {
     if (!scores.length) return null;
     return Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10;
 }
-
-const STATUS_LABEL = {
-    draft: 'Ожидает',
-    active: 'Ожидает',
-    started: 'Начато',
-    completed: 'Завершено',
-    evaluated: 'Завершено',
-};
 
 function attemptTime(attempt) {
     return new Date(attempt?.cd || 0).getTime() || 0;
@@ -92,7 +85,7 @@ function RecentMockInterviews() {
                                 )}
                             </div>
                             <span className="fs-12 fw-semibold text-muted me-2" style={{ whiteSpace: 'nowrap' }}>
-                                {STATUS_LABEL[latest.status] || latest.status}
+                                {attemptStatusLabel(latest)}
                             </span>
                             {score != null && (
                                 <span className="fw-bold text-success" style={{ whiteSpace: 'nowrap' }}>
