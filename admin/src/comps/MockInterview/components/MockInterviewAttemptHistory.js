@@ -1,21 +1,12 @@
 import React from 'react';
 import styles from '../mockInterview.module.scss';
 import { attemptScoreSummary } from './evaluateJobState';
-
-const PASSED_STATUSES = ['completed', 'evaluated'];
+import { isAttemptFinished, attemptStatusLabel } from './attemptStatus';
 
 // Завершённая попытка без единой оценки: раньше про это писала отдельная
 // карточка-заглушка над историей (MockInterviewResults), оторванная от самой
 // попытки. Теперь строка стоит там же, где у остальных попыток стоит балл.
 const NO_RESULTS_NOTE = 'Результаты пока недоступны';
-
-const STATUS_LABEL = {
-    draft: 'Ожидает',
-    active: 'Ожидает',
-    started: 'Начато',
-    completed: 'Завершено',
-    evaluated: 'Завершено',
-};
 
 // Балл попытки агрегируем сами: отдельного поля с итогом на попытке нет
 // (см. mockInterview.md), а часть вопросов может остаться без оценки, если
@@ -25,8 +16,9 @@ const STATUS_LABEL = {
 // Незавершённая попытка (её видно в списке как "Начато"/"Ожидает") - это не
 // тупик: бот по ней ещё ждёт, и её надо дать открыть заново. Кнопка стоит
 // только у чужих строк списка: для текущей попытки то же самое делает большая
-// карточка старта над историей, второй кнопки там не нужно.
-const UNFINISHED_STATUSES = ['draft', 'active', 'started'];
+// карточка старта над историей, второй кнопки там не нужно. Попытку, застрявшую
+// в статусе "Начато" с уже готовым диалогом, продолжать нечего - она считается
+// завершённой (см. isAttemptFinished).
 
 // Завершённая попытка из списка - это готовая оценка, но открыть её было
 // нечем: экран показывал результаты только той попытки, что пришла в
@@ -52,7 +44,7 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
     // Единственная попытка списком не показывается - но сказать, что результатов
     // по ней ещё нет, всё равно надо: строку ставим над кнопкой "Пройти заново".
     const soloWithoutResults = !showList
-        && PASSED_STATUSES.includes(currentItem.status)
+        && isAttemptFinished(currentItem)
         && attemptScoreSummary(currentItem).score == null;
 
     return (
@@ -67,15 +59,13 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                         </p>
                         <div className={styles.list}>
                             {history.map((attempt, ind) => {
-                                const passed = PASSED_STATUSES.includes(attempt.status);
+                                const passed = isAttemptFinished(attempt);
                                 const { score, scored, total } = passed
                                     ? attemptScoreSummary(attempt)
                                     : { score: null, scored: 0, total: 0 };
                                 const partial = score != null && total > 0 && scored < total;
                                 const isCurrent = attempt._id === currentItem._id;
-                                const canContinue = !isCurrent
-                                    && !!onContinue
-                                    && UNFINISHED_STATUSES.includes(attempt.status);
+                                const canContinue = !isCurrent && !!onContinue && !passed;
                                 const canOpenResults = !isCurrent && !!onOpenResults && passed;
                                 return (
                                     <div
@@ -90,7 +80,7 @@ const MockInterviewAttemptHistory = ({ history, currentItem, latestCompleted, re
                                             </div>
                                             <div className={styles.cardMeta}>
                                                 <span className={canContinue ? styles.cardStatusUnfinished : undefined}>
-                                                    {STATUS_LABEL[attempt.status] || attempt.status}
+                                                    {attemptStatusLabel(attempt)}
                                                 </span>
                                                 {attempt.cd && <span>{new Date(attempt.cd).toLocaleString('ru')}</span>}
                                             </div>

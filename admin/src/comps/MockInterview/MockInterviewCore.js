@@ -7,8 +7,7 @@ import MockInterviewStartCard from "./components/MockInterviewStartCard";
 import MockInterviewAttemptHistory from "./components/MockInterviewAttemptHistory";
 import {startInterviewAttempt} from "./startInterviewAttempt";
 import {jobsByQuestion} from "./components/evaluateJobState";
-
-const PASSED_STATUSES = ['completed', 'evaluated'];
+import {isAttemptFinished} from "./components/attemptStatus";
 
 // Вынесено из MockInterview.js (страница /mock-interviews/:id), чтобы ту же
 // проверку занятости бота (reserve -> busy) и старт/завершение/ретейк попытки
@@ -94,7 +93,10 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
         .then(setItem)
         .catch(() => {});
 
-    const isPassed = !!item && (PASSED_STATUSES.includes(item.status) || completedLocally);
+    // Попытка считается пройденной не только по статусу: та, что застряла в
+    // "Начато" с уже разобранным диалогом, тоже должна открываться результатами,
+    // а не карточкой старта (см. isAttemptFinished).
+    const isPassed = !!item && (isAttemptFinished(item) || completedLocally);
 
     // history может быть чуть более старым снимком, чем текущий item (например
     // сразу после handleComplete/handleRetake) - подменяем в нём запись текущей
@@ -102,7 +104,7 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
     const mergedHistory = history.map(attempt => (attempt._id === item?._id ? item : attempt))
         .sort((a, b) => new Date(b.cd) - new Date(a.cd));
     const latestAttempt = mergedHistory[0] || item;
-    const latestCompleted = !!latestAttempt && PASSED_STATUSES.includes(latestAttempt.status);
+    const latestCompleted = isAttemptFinished(latestAttempt);
 
     // releaseReservation прогоняем через обычный http (переживает SPA-навигацию),
     // releaseReservationOnUnload — через fetch(keepalive), т.к. это единственный способ

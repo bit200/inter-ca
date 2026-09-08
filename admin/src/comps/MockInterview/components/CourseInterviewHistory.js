@@ -2,17 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import styles from '../mockInterview.module.scss';
 import {attemptScoreSummary} from './evaluateJobState';
-
-const PASSED_STATUSES = ['completed', 'evaluated'];
-const UNFINISHED_STATUSES = ['draft', 'active', 'started'];
-
-const STATUS_LABEL = {
-    draft: 'Ожидает',
-    active: 'Ожидает',
-    started: 'Начато',
-    completed: 'Завершено',
-    evaluated: 'Завершено',
-};
+import {isAttemptFinished, attemptStatusLabel} from './attemptStatus';
 
 // История попыток интервью прямо на странице курса: кнопка "Проверить знания"
 // теперь уводит сразу в iframe и никакого промежуточного экрана со списком не
@@ -42,12 +32,12 @@ function CourseInterviewHistory({interviewId, reloadKey}) {
                 <p className={styles.cardName}>{t('attemptHistory') || 'История попыток'}</p>
                 <div className={styles.attemptsRows}>
                     {items.map((attempt, ind) => {
-                        const passed = PASSED_STATUSES.includes(attempt.status);
+                        const passed = isAttemptFinished(attempt);
                         const {score, scored, total} = passed
                             ? attemptScoreSummary(attempt)
                             : {score: null, scored: 0, total: 0};
                         const partial = score != null && total > 0 && scored < total;
-                        const unfinished = UNFINISHED_STATUSES.includes(attempt.status);
+                        const unfinished = !passed;
                         return (
                             <Link
                                 key={attempt._id}
@@ -59,7 +49,7 @@ function CourseInterviewHistory({interviewId, reloadKey}) {
                                     {(t('attemptNumber') || 'Попытка') + ' ' + (attempt.attemptNumber || (items.length - ind))}
                                 </span>
                                 <span className={`${styles.attemptRowStatus} ${unfinished ? styles.cardStatusUnfinished : ''}`}>
-                                    {STATUS_LABEL[attempt.status] || attempt.status}
+                                    {attemptStatusLabel(attempt)}
                                 </span>
                                 <span className={styles.attemptRowDate}>
                                     {attempt.cd ? new Date(attempt.cd).toLocaleString('ru') : ''}
