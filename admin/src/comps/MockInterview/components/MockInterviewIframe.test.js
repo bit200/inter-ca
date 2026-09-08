@@ -29,11 +29,19 @@ function setup() {
 }
 
 describe('MockInterviewIframe', () => {
-    it('в шапке оверлея нет своей кнопки выхода - выходят кнопкой самого itk-live внутри iframe', () => {
+    it('над iframe нет своей шапки - ни названия интервью, ни кнопки выхода', () => {
         setup();
-        expect(screen.getByText('Интервью тест')).toBeInTheDocument();
+        expect(screen.queryByText('Интервью тест')).toBeNull();
         expect(screen.queryByRole('button', {name: 'Выйти'})).toBeNull();
         expect(screen.queryByTestId('mock-interview-exit-btn')).toBeNull();
+    });
+
+    it('iframe - единственное содержимое оверлея, поэтому занимает весь экран', () => {
+        setup();
+        const overlay = screen.getByTestId('mock-interview-overlay');
+        const frame = screen.getByTestId('mock-interview-embed-frame');
+        expect(overlay.children).toHaveLength(1);
+        expect(overlay.contains(frame)).toBe(true);
     });
 
     it('выход из iframe, пока ждём прощальную реплику бота, завершает попытку сразу', () => {

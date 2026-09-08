@@ -174,9 +174,9 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     // полноэкранного вида, как на отдельной странице /mock-interviews/:id.
     return createPortal((
         <div className={styles.iframeOverlay} data-testid="mock-interview-overlay">
-            <div className={styles.iframeHeader}>
-                <span>{interview.name}</span>
-            </div>
+            {/* Никакой своей шапки над iframe: подпись "где я" и выход рисует
+                сам itk-live внутри embed'а, а полоса сверху только отъедала
+                высоту у видео. Интервью занимает весь экран. */}
             <div className={styles.iframeWrap}>
                 <iframe
                     src={interview.embedUrl}
