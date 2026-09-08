@@ -76,6 +76,21 @@ describe('MockInterviewIframe', () => {
         expect(onClose).not.toHaveBeenCalled();
     });
 
+    it('session_closed со статусом closed завершает попытку, а не просто закрывает оверлей', () => {
+        const {onClose, onComplete} = setup();
+        emit('itk.interview.session_closed', {status: 'closed'});
+        expect(onComplete).toHaveBeenCalledTimes(1);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('itk.interview.exit после отвеченных вопросов завершает попытку', () => {
+        const {onClose, onComplete} = setup();
+        emit('itk.interview.state', {aiPlaying: false, turns: 13});
+        emit('itk.interview.exit', {});
+        expect(onComplete).toHaveBeenCalledTimes(1);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
     it('itk.interview.exit и следом session_closed закрывают оверлей один раз', () => {
         const {onClose, onComplete} = setup();
         emit('itk.interview.exit', {});
