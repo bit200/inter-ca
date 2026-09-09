@@ -3,6 +3,7 @@ import styles from '../mockInterview.module.scss';
 import MockInterviewQuestionList from './MockInterviewQuestionList';
 import MockInterviewTurnDetail from './MockInterviewTurnDetail';
 import { groupAdvice } from '../../EvaluationDetail/components/adviceLogic';
+import { isAttemptInterrupted } from './attemptInterrupted';
 import { getQuestionEvaluateStatus, jobsByQuestion, countFailedQuestions, resolveQuestionEvaluate, isAudioLostJob, isSkippedEvaluate } from './evaluateJobState';
 
 // One dialog answer's advice, computed with the exact same rule-matching logic
@@ -91,15 +92,34 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
         global.http.get('/eval-metric-schemas').then(r => setMetricSchemas(r.items || []));
     }, []);
 
+    // Прерванная попытка: кандидат вышел, не дойдя до последнего вопроса
+    // (см. attemptInterrupted.js). Без этой строки короткое интервью на два
+    // вопроса выглядит на экране так же, как честно пройденное, и низкий балл
+    // читается как оценка знаний, а не как оборванный разговор.
+    const interrupted = isAttemptInterrupted(interview);
+    const interruptedNote = interrupted && (
+        <div className={styles.interruptedNote} data-testid="mock-interview-interrupted-note">
+            <i className="iconoir-warning-triangle"/>
+            <div>
+                <span className={styles.interruptedTitle}>Интервью прервано</span>
+                {turns.length
+                    ? ' Вы вышли до последнего вопроса — ниже разобраны только те ответы, что успели прозвучать.'
+                    : ' Вы вышли, не ответив ни на один вопрос, поэтому разбирать нечего. Пройдите интервью заново, когда будет время на весь разговор.'}
+            </div>
+        </div>
+    );
+
     // Пустой попытке отдельная карточка-заглушка не нужна: она занимала целый
     // экран ради одной серой строки и висела в отрыве от того, к чему относится.
     // Про отсутствие результатов теперь пишет история попыток - прямо у той
     // попытки, у которой их нет (см. MockInterviewAttemptHistory).
     if (!turns.length) {
-        return null;
+        return interruptedNote || null;
     }
 
     return (
+        <>
+        {interruptedNote}
         <div className={`mainCont2 row`}>
             <div className="col-sm-3 sticky3">
                 <MockInterviewQuestionList
@@ -120,6 +140,7 @@ const MockInterviewResults = ({ interview, onRefresh }) => {
                 />
             </div>
         </div>
+        </>
     );
 };
 

@@ -39,3 +39,11 @@ describe('attemptStatusLabel', () => {
         expect(attemptStatusLabel({ status: 'draft' })).toBe('Ожидает');
     });
 });
+
+describe('attemptStatusLabel - прерванная попытка', () => {
+    it('подписывает её "Прервано", а не "Завершено"', () => {
+        expect(attemptStatusLabel({
+            _id: 7, status: 'completed', interrupted: true, turns: [{ question_id: 'q1' }],
+        })).toBe('Прервано');
+    });
+});

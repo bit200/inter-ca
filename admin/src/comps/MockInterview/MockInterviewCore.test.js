@@ -1,13 +1,15 @@
 import React from 'react';
-import { render, waitFor, act } from '@testing-library/react';
+import { render, waitFor, act, fireEvent } from '@testing-library/react';
 import MockInterviewCore from './MockInterviewCore';
+import { isAttemptInterrupted } from './components/attemptInterrupted';
 
 jest.mock('../../libs/sse/sse', () => ({ subscribe: () => () => {} }));
 jest.mock('./components/MockInterviewIframe', () => ({ onClose, onComplete }) => (
     <div>
         iframe
         <button onClick={onClose}>close-iframe</button>
-        <button onClick={onComplete}>complete-iframe</button>
+        <button onClick={() => onComplete({ interrupted: false })}>complete-iframe</button>
+        <button onClick={() => onComplete({ interrupted: true })}>interrupt-iframe</button>
     </div>
 ));
 jest.mock('./components/MockInterviewResults', () => () => <div>results</div>);
@@ -152,5 +154,45 @@ describe('MockInterviewCore синхронизация попытки при в�
         ));
         await act(async () => { await new Promise(r => setTimeout(r, 20)); });
         expect(warning).not.toHaveBeenCalled();
+    });
+});
+
+
+// Прерванное интервью видно только в момент закрытия окна - дальше попытка с
+// двумя ответами неотличима от честно пройденной, поэтому признак уходит на
+// бэкенд вместе со статусом и остаётся в локальной памяти устройства.
+describe('MockInterviewCore - завершение прерванного интервью', () => {
+    test('запоминает выход посреди интервью на попытке', async () => {
+        const item = attempt(1, 'draft');
+        setupHttp(item, [item]);
+        window.localStorage.clear();
+
+        const { findByText } = render(<MockInterviewCore attemptId={1}/>);
+        const btn = await findByText('interrupt-iframe');
+        await act(async () => { fireEvent.click(btn); });
+
+        expect(global.http.put).toHaveBeenCalledWith(
+            '/mock-interview/my-list/1',
+            { status: 'completed', interrupted: true },
+            { wo_notify: true }
+        );
+        expect(isAttemptInterrupted({ _id: 1 })).toBe(true);
+    });
+
+    test('интервью, доведённое до конца, прерванным не помечает', async () => {
+        const item = attempt(1, 'draft');
+        setupHttp(item, [item]);
+        window.localStorage.clear();
+
+        const { findByText } = render(<MockInterviewCore attemptId={1}/>);
+        const btn = await findByText('complete-iframe');
+        await act(async () => { fireEvent.click(btn); });
+
+        expect(global.http.put).toHaveBeenCalledWith(
+            '/mock-interview/my-list/1',
+            { status: 'completed', interrupted: false },
+            { wo_notify: true }
+        );
+        expect(isAttemptInterrupted({ _id: 1 })).toBe(false);
     });
 });

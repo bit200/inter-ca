@@ -8,6 +8,7 @@ import MockInterviewAttemptHistory from "./components/MockInterviewAttemptHistor
 import {startInterviewAttempt} from "./startInterviewAttempt";
 import {jobsByQuestion} from "./components/evaluateJobState";
 import {isAttemptFinished} from "./components/attemptStatus";
+import {rememberInterrupted} from "./components/attemptInterrupted";
 
 // Вынесено из MockInterview.js (страница /mock-interviews/:id), чтобы ту же
 // проверку занятости бота (reserve -> busy) и старт/завершение/ретейк попытки
@@ -187,15 +188,20 @@ function MockInterviewCore({attemptId, onRetake, onComplete}) {
             .catch(() => {});
     };
 
-    const handleComplete = () => {
+    // interrupted приходит из окна интервью: true - кандидат вышел сам, не
+    // дойдя до последнего вопроса. Запоминаем это вместе с завершением - иначе
+    // на странице результатов прерванная попытка ничем не отличается от
+    // короткой пройденной (см. attemptInterrupted.js).
+    const handleComplete = ({ interrupted = false } = {}) => {
         releaseReservation();
         const completedId = itemRef.current._id;
+        rememberInterrupted(completedId, interrupted);
         // sync только после PUT - иначе меш мог бы ответить раньше, чем попытка
         // перешла в completed, и вернуть уже устаревшую запись.
-        global.http.put(`/mock-interview/my-list/${completedId}`, { status: 'completed' }, { wo_notify: true })
+        global.http.put(`/mock-interview/my-list/${completedId}`, { status: 'completed', interrupted }, { wo_notify: true })
             .catch(() => {})
             .then(() => syncAttempt(completedId));
-        setItem(prev => ({ ...prev, status: 'completed' }));
+        setItem(prev => ({ ...prev, status: 'completed', interrupted }));
         setActive(null);
         setCompletedLocally(true);
         onComplete && onComplete(completedId);
