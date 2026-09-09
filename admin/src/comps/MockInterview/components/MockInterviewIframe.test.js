@@ -107,3 +107,29 @@ describe('MockInterviewIframe', () => {
         expect(onComplete).not.toHaveBeenCalled();
     });
 });
+
+// Прерванное интервью надо отличать от пройденного в момент закрытия окна:
+// дальше по попытке это уже не восстановить (см. attemptInterrupted.js).
+describe('MockInterviewIframe - дошёл ли кандидат до конца', () => {
+    it('выход посреди диалога помечает завершение прерванным', () => {
+        const {onComplete} = setup();
+        emit('itk.interview.state', {aiPlaying: false, turns: 3});
+        emit('itk.interview.exit', {});
+        expect(onComplete).toHaveBeenCalledWith({interrupted: true});
+    });
+
+    it('нормальный конец интервью прерванным не считается', () => {
+        const {onComplete} = setup();
+        emit('itk.interview.state', {aiPlaying: false, turns: 13});
+        emit('itk.interview.session_closed', {status: 'completed'});
+        expect(onComplete).toHaveBeenCalledWith({interrupted: false});
+    });
+
+    it('выход во время прощальной реплики бота - это конец интервью, а не обрыв', () => {
+        const {onComplete} = setup();
+        emit('itk.interview.state', {aiPlaying: true, turns: 13});
+        emit('itk.interview.session_closed', {status: 'completed'});
+        emit('itk.interview.exit', {});
+        expect(onComplete).toHaveBeenCalledWith({interrupted: false});
+    });
+});

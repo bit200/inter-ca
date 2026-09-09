@@ -44,14 +44,18 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
     }, []);
 
     useEffect(() => {
-        const finishNow = () => {
+        // interrupted - кандидат вышел сам, не дойдя до конца интервью. Отличаем
+        // это от нормального финала здесь и только здесь: дальше по попытке
+        // прерванное интервью неотличимо от короткого пройденного (см.
+        // attemptInterrupted.js), поэтому признак уезжает наверх с завершением.
+        const finishNow = ({ interrupted = false } = {}) => {
             clearTimeout(finishTimeoutRef.current);
             awaitingFinishRef.current = false;
             if (doneRef.current) {
                 return;
             }
             doneRef.current = true;
-            onComplete();
+            onComplete({ interrupted });
         };
 
         const closeNow = () => {
@@ -131,11 +135,15 @@ const MockInterviewIframe = ({ interview, onClose, onComplete }) => {
             // выход обрывает ожидание и завершает попытку. Кандидат, вышедший
             // после последнего вопроса, но до session_closed, раньше оставлял
             // попытку в "Начато": выход при уже отвеченных вопросах - это тоже
-            // завершение, а не отмена. Совсем пустую сессию по-прежнему просто
-            // закрываем.
+            // завершение, а не отмена, но завершение прерванное. Совсем пустую
+            // сессию по-прежнему просто закрываем.
             if (msg.type === 'itk.interview.exit') {
                 if (awaitingFinishRef.current || progressRef.current > 0) {
-                    finishNow();
+                    // Финал уже объявлен (awaitingFinish) - интервью пройдено, выход
+                    // лишь обрывает прощание бота. А выход посреди диалога, когда
+                    // финала ещё не было, - это прерванное интервью: запоминаем это
+                    // и показываем на странице результатов.
+                    finishNow({ interrupted: !awaitingFinishRef.current });
                 } else {
                     closeNow();
                 }

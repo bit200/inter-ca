@@ -57,3 +57,41 @@ describe('MockInterviewResults - попытка без ответов', () => {
         expect(container).toBeEmptyDOMElement();
     });
 });
+
+describe('MockInterviewResults - прерванное интервью', () => {
+    beforeEach(() => {
+        global.http = { post: jest.fn(() => Promise.resolve({})), get: jest.fn(() => Promise.resolve({ items: [] })) };
+        global.notify = { success: jest.fn(), warning: jest.fn() };
+        window.localStorage.clear();
+    });
+
+    it('над разбором ответов пишет, что кандидат вышел раньше конца', async () => {
+        await act(async () => {
+            render(<MockInterviewResults interview={{
+                _id: 1010,
+                interrupted: true,
+                turns: [{ question_id: 'q1', question: 'Вопрос', transcript: 'Ответ' }],
+                evaluate: [],
+            }}/>);
+        });
+        expect(screen.getByTestId('mock-interview-interrupted-note')).toHaveTextContent('Интервью прервано');
+    });
+
+    it('у попытки, доведённой до конца, такой строки нет', async () => {
+        await act(async () => {
+            render(<MockInterviewResults interview={{
+                _id: 1010,
+                turns: [{ question_id: 'q1', question: 'Вопрос', transcript: 'Ответ' }],
+                evaluate: [],
+            }}/>);
+        });
+        expect(screen.queryByTestId('mock-interview-interrupted-note')).toBeNull();
+    });
+
+    it('прерванную попытку без единого ответа объясняет строкой вместо пустого экрана', async () => {
+        await act(async () => {
+            render(<MockInterviewResults interview={{ _id: 1010, interrupted: true, turns: [] }}/>);
+        });
+        expect(screen.getByTestId('mock-interview-interrupted-note')).toHaveTextContent('ни на один вопрос');
+    });
+});

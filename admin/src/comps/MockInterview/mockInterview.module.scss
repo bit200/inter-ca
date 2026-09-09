@@ -481,3 +481,35 @@
   color: var(--bs-text-muted);
   margin: -4px 0 4px;
 }
+
+// Прерванное интервью - факт о попытке, а не ошибка системы: кандидат вышел
+// раньше последнего вопроса, и разбор ниже неполный. Поэтому не алерт во всю
+// ширину, а тихая строка над результатами - той же врезкой с полосой слева,
+// какой на этом экране уже помечены особые состояния оценки
+// (.evaluationSkipped, .chatAdviceModalItem). Полоса идёт от края до края:
+// слева радиуса нет.
+.interruptedNote {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  border-radius: 0 8px 8px 0;
+  border-left: 3px solid var(--bs-warning);
+  background: var(--bs-warning-bg-subtle);
+  color: var(--bs-body-color);
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 90ch;
+
+  i {
+    color: var(--bs-warning-text-emphasis);
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+}
+
+.interruptedTitle {
+  font-weight: 600;
+  color: var(--bs-warning-text-emphasis);
+}

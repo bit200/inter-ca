@@ -12,10 +12,16 @@
 // Поэтому завершённость считаем по самим данным попытки, а не только по
 // статусу: есть ходы или оценка - собеседование состоялось.
 
+import { isAttemptInterrupted } from './attemptInterrupted';
+
 export const PASSED_STATUSES = ['completed', 'evaluated'];
 
 // Незавершённая попытка - её ещё можно открыть заново кнопкой "Продолжить".
 export const UNFINISHED_STATUSES = ['draft', 'active', 'started'];
+
+// Прерванная попытка тоже завершена - но подписывать её "Завершено" значит
+// прятать то, ради чего признак и запоминается (см. attemptInterrupted.js).
+export const INTERRUPTED_LABEL = 'Прервано';
 
 export const STATUS_LABEL = {
     draft: 'Ожидает',
@@ -44,6 +50,8 @@ export function isAttemptFinished(attempt) {
 // готовым диалогом, на экране должно стоять "Завершено" - иначе рядом с её же
 // баллом висит противоречие.
 export function attemptStatusLabel(attempt) {
-    if (isAttemptFinished(attempt)) return STATUS_LABEL.completed;
+    if (isAttemptFinished(attempt)) {
+        return isAttemptInterrupted(attempt) ? INTERRUPTED_LABEL : STATUS_LABEL.completed;
+    }
     return STATUS_LABEL[attempt?.status] || attempt?.status;
 }
