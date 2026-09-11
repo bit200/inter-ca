@@ -3415,6 +3415,13 @@ export default {
         en: "Seconds",
         fr: `Secondes`
     },
+    "dialogAnalysis": {
+        ru: "Диалог",
+        es: "Diálogo",
+        de: "Dialog",
+        en: "Dialogue",
+        fr: `Dialogue`
+    },
     "analyse": {
         ru: "Анализ",
         es: "Análisis",

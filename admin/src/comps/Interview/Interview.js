@@ -24,6 +24,7 @@ import {pub0} from "../../libs/m/m";
 import DebugLogs from "../DebugLogs";
 import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
+import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
 
 let isAdmin = Storage.isAdmin()
 let pubName = Storage.pubName;
@@ -287,6 +288,14 @@ function Interview({props}) {
                                             // type: 'textarea', key: 'bestAsnwers', name: 'Лучшие ответы',
                                             // minRows: 4,
                                         },
+                                    ]
+                                },
+                                {
+                                    name: t('dialogAnalysis'), childs: [
+                                        {
+                                            size: 12,
+                                            Component: ({item: parent}) => <DialogAnalysisTab interview={parent || item}/>
+                                        }
                                     ]
                                 },
                                 !(isSale || isAdmin) ? null : {
