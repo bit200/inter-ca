@@ -142,6 +142,28 @@ describe('таб разбора диалога', () => {
             expect(playing[0]).toHaveTextContent('Работал с очередями');
         });
 
+        test('у звучащей реплики вместо ▶ кнопка паузы, она останавливает запись', async () => {
+            setupHttp(done);
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const video = container.querySelector('video');
+            video.pause = jest.fn();
+            video.currentTime = 66;
+            fireEvent.timeUpdate(video);
+            fireEvent.play(video);
+
+            const pauseButton = screen.getByRole('button', {name: 'Пауза'});
+            expect(pauseButton).toHaveTextContent('❚❚');
+            expect(screen.getByRole('button', {name: 'Воспроизвести с 0:00'})).toHaveTextContent('▶');
+
+            fireEvent.click(pauseButton);
+            expect(video.pause).toHaveBeenCalled();
+            fireEvent.pause(video);
+            expect(screen.queryByRole('button', {name: 'Пауза'})).toBeNull();
+            expect(screen.getByRole('button', {name: 'Воспроизвести с 1:05'})).toBeInTheDocument();
+        });
+
         test('без видео реплики привязываются к аудиозаписи', async () => {
             setupHttp(done);
             const {container} = render(<DialogAnalysisTab item={{_id: 7, audio: 'https://example.test/call.mp3'}}/>);
