@@ -192,6 +192,7 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
     let labelOf = turn => labels[speakerKey(turn)] || speakerLabel(turn.role, turn.speaker);
     let player = useRef(null);
     let [playingIndex, setPlayingIndex] = useState(-1);
+    let [paused, setPaused] = useState(true);
 
     // Реплика перематывает запись на своё начало и сразу запускает её:
     // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
@@ -201,6 +202,13 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
         el.currentTime = Math.max(0, Number(turn.startMs || 0)) / 1000;
         let started = el.play && el.play();
         started && started.catch && started.catch(() => {});
+    }
+
+    // У звучащей реплики вместо ▶ стоит пауза: второй клик останавливает запись
+    // на месте, а не перематывает её снова на начало реплики.
+    function pause() {
+        let el = player.current;
+        el && el.pause && el.pause();
     }
 
     function onTimeUpdate(event) {
@@ -238,8 +246,8 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
         <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
         {media && <div className={styles.player}>
             {media.kind === 'video'
-                ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate}/>
-                : <audio ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate}/>}
+                ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
+                : <audio ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
             <p className={styles.playerHint}>
                 {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
             </p>
@@ -267,18 +275,22 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
                         <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
                         <span className={styles.turnSpeaker}>{labelOf(turn)}</span>
                         <p className={styles.turnText}>{turn.text || '—'}</p>
-                        {media && <button
-                            type="button"
-                            className={styles.turnPlay}
-                            aria-label={'Воспроизвести с ' + formatDuration(turn.startMs || 0)}
-                            title={'Воспроизвести с ' + formatDuration(turn.startMs || 0)}
-                            onClick={event => {
-                                // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
-                                event.stopPropagation();
-                                playFrom(turn);
-                            }}
-                            onKeyDown={event => event.stopPropagation()}
-                        >▶</button>}
+                        {media && (() => {
+                            let sounding = !paused && playingIndex === index;
+                            let label = sounding ? 'Пауза' : 'Воспроизвести с ' + formatDuration(turn.startMs || 0);
+                            return <button
+                                type="button"
+                                className={styles.turnPlay}
+                                aria-label={label}
+                                title={label}
+                                onClick={event => {
+                                    // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
+                                    event.stopPropagation();
+                                    sounding ? pause() : playFrom(turn);
+                                }}
+                                onKeyDown={event => event.stopPropagation()}
+                            >{sounding ? '❚❚' : '▶'}</button>;
+                        })()}
                         <TurnSignals turn={turn} markers={turnMarkers}/>
                     </div>
                     {openTurn === key && <TurnDetails turn={turn} label={labelOf(turn)} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
