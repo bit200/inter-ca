@@ -1338,3 +1338,13 @@ button.turnSpeaker{
     border-top-color: var(--dlg-strong);
   }
 }
+
+.lensDemoNote{
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--dlg-muted);
+  background: var(--dlg-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}

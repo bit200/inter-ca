@@ -205,7 +205,7 @@ describe('таб разбора диалога', () => {
         await flush();
 
         expect(screen.queryByText('Кто на записи кандидат')).toBeNull();
-        expect(screen.queryByRole('radiogroup')).toBeNull();
+        expect(screen.queryByRole('radiogroup', {name: 'Роль говорящего'})).toBeNull();
 
         const turnOf = text => screen.getByText(text).closest('[data-role]');
         const pick = (text, role) => {
@@ -215,7 +215,7 @@ describe('таб разбора диалога', () => {
         };
 
         pick('Я второй интервьюер', 'Интервьюер');
-        expect(screen.queryByRole('radiogroup')).toBeNull();
+        expect(screen.queryByRole('radiogroup', {name: 'Роль говорящего'})).toBeNull();
         pick('Я пишу на js', 'Кандидат');
 
         expect(onSpeakerRolesChange).toHaveBeenLastCalledWith({SPEAKER_01: 'manager', SPEAKER_02: 'client'});
@@ -223,7 +223,7 @@ describe('таб разбора диалога', () => {
         fireEvent.click(within(turnOf('Я пишу на js')).getByRole('button', {expanded: false}));
         expect(within(turnOf('Я пишу на js')).getByRole('radio', {name: 'Кандидат'})).toHaveAttribute('aria-checked', 'true');
         fireEvent.keyDown(within(turnOf('Я пишу на js')).getByRole('radio', {name: 'Кандидат'}), {key: 'Escape'});
-        expect(screen.queryByRole('radiogroup')).toBeNull();
+        expect(screen.queryByRole('radiogroup', {name: 'Роль говорящего'})).toBeNull();
         expect(screen.getByText('Добрый день, начнём').closest('[data-role]')).toHaveTextContent('Интервьюер 1');
         expect(screen.getByText('Я второй интервьюер').closest('[data-role]')).toHaveTextContent('Интервьюер 2');
         expect(screen.getByText('Я пишу на js').closest('[data-role]')).toHaveAttribute('data-role', 'client');
@@ -335,6 +335,21 @@ describe('таб разбора диалога', () => {
             expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
             fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
             expect(container.querySelector('[data-bracket]')).toBeNull();
+        });
+
+        test('без оценки ответов вариант B виден на демо-разбивке: шкала, вопросы и скобки с попапом', async () => {
+            setupHttp(done, null);
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const bar = screen.getByRole('region', {name: 'Оценка интервью'});
+            expect(within(bar).getByText(/Разбивка на вопросы, темы и баллы — демо/)).toBeInTheDocument();
+            expect(container.querySelectorAll('button[aria-label^="Перейти к вопросу"]').length).toBeGreaterThan(1);
+            expect(screen.getByRole('radio', {name: 'По вопросам'})).toHaveAttribute('aria-checked', 'true');
+
+            const first = screen.getByRole('region', {name: 'Вопрос 1'});
+            expect(within(first).getAllByRole('tooltip')[0]).toHaveTextContent('ДЕМО ЗНАЧЕНИЕ');
+            expect(screen.getByRole('region', {name: 'Вопрос 2'})).toBeInTheDocument();
         });
 
         test('вопрос без ответа связывается с репликой кандидата в два клика', async () => {
