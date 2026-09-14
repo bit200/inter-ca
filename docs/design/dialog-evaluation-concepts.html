@@ -1,0 +1,749 @@
+<title>Разбор диалога: три варианта оценки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Токены — те же, что у вкладки «Разбор диалога»
+   (admin/src/comps/Interview/DialogAnalysis/dialogAnalysis.module.scss):
+   макеты должны выглядеть как экран админки, а не как чужая тема.
+   Светлый набор — база, тёмный только переопределяет значения.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --page-bg:#f5f7f6;
+  --dlg-card:#ffffff;
+  --dlg-soft:#f3f6f4;
+  --dlg-line:#dfe5e1;
+  --dlg-ink:#26302b;
+  --dlg-muted:#6b7470;
+  --dlg-strong:#14201a;
+  --dlg-accent:#15803d;
+  --dlg-accent-soft:#ecf9f1;
+  --dlg-guest:#7c8580;
+  --dlg-guest-soft:#f1f3f2;
+  --dlg-warn:#8a5a0b;
+  --dlg-warn-soft:#fdf3e2;
+  --dlg-bad:#b3261e;
+  --dlg-bad-soft:#fbeceb;
+  --dlg-link:#1d6fb8;
+  --dlg-link-soft:#e8f1fa;
+  --btn:#22c55e;
+  --shadow:0 6px 18px rgba(20,32,26,.10);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page-bg:#181a19;
+    --dlg-card:#202221;
+    --dlg-soft:#242a26;
+    --dlg-line:#34403a;
+    --dlg-ink:#dde7e1;
+    --dlg-muted:#a8b3ad;
+    --dlg-strong:#f3f6f4;
+    --dlg-accent:#7adc9e;
+    --dlg-accent-soft:#16271f;
+    --dlg-guest:#a8b3ad;
+    --dlg-guest-soft:#292c2b;
+    --dlg-warn:#e3b465;
+    --dlg-warn-soft:#2c2416;
+    --dlg-bad:#ef8f88;
+    --dlg-bad-soft:#2e1a18;
+    --dlg-link:#8cc2f2;
+    --dlg-link-soft:#17232e;
+    --shadow:0 6px 18px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --page-bg:#181a19;
+  --dlg-card:#202221;
+  --dlg-soft:#242a26;
+  --dlg-line:#34403a;
+  --dlg-ink:#dde7e1;
+  --dlg-muted:#a8b3ad;
+  --dlg-strong:#f3f6f4;
+  --dlg-accent:#7adc9e;
+  --dlg-accent-soft:#16271f;
+  --dlg-guest:#a8b3ad;
+  --dlg-guest-soft:#292c2b;
+  --dlg-warn:#e3b465;
+  --dlg-warn-soft:#2c2416;
+  --dlg-bad:#ef8f88;
+  --dlg-bad-soft:#2e1a18;
+  --dlg-link:#8cc2f2;
+  --dlg-link-soft:#17232e;
+  --shadow:0 6px 18px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--page-bg);
+  color:var(--dlg-ink);
+  font-family:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1240px;margin:0 auto;padding:48px 24px 96px;display:flex;flex-direction:column;gap:56px}
+
+h1{font-size:clamp(28px,3.6vw,40px);font-weight:600;letter-spacing:-.02em;line-height:1.12;margin:0;color:var(--dlg-strong);text-wrap:balance}
+h2{font-size:24px;font-weight:600;letter-spacing:-.015em;margin:0;color:var(--dlg-strong);text-wrap:balance}
+h3{font-size:15px;font-weight:600;margin:0 0 6px;color:var(--dlg-strong)}
+p{margin:0}
+.lede{max-width:68ch;color:var(--dlg-muted);margin-top:14px;font-size:15px}
+.route{color:var(--dlg-muted);font-size:13px;margin-bottom:10px}
+code{font-size:.92em;padding:1px 5px;border-radius:4px;background:var(--dlg-soft);border:1px solid var(--dlg-line)}
+.rule{height:1px;background:var(--dlg-line);border:0;margin:0}
+
+/* Что должно уместиться: две колонки — есть сейчас / добавляется */
+.scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:18px}
+.scope > div{padding:16px 18px;background:var(--dlg-card);border:1px solid var(--dlg-line);border-radius:8px}
+.scope ul{margin:6px 0 0;padding-left:18px;color:var(--dlg-ink)}
+.scope li{margin:3px 0}
+.scope li b{font-weight:600}
+
+/* Шапка концепта */
+.concept{display:flex;flex-direction:column;gap:18px}
+.concept-head{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;align-items:baseline}
+.concept-letter{grid-row:1 / span 2;font-size:56px;font-weight:700;line-height:.9;color:var(--dlg-accent);letter-spacing:-.04em}
+.concept-head p{color:var(--dlg-muted);max-width:74ch}
+
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.note{padding:12px 14px;border:1px solid var(--dlg-line);border-radius:8px;background:var(--dlg-card);font-size:13px}
+.note b{display:block;color:var(--dlg-strong);font-weight:600;margin-bottom:2px}
+.note.plus b{color:var(--dlg-accent)}
+.note.minus b{color:var(--dlg-warn)}
+
+/* Макет: экран вкладки. На узком экране — горизонтальный скролл
+   внутри рамки, сама страница не едет. */
+.frame{overflow-x:auto;border:1px solid var(--dlg-line);border-radius:10px;background:var(--page-bg)}
+.screen{min-width:980px;padding:18px 20px 22px;display:flex;flex-direction:column;gap:12px}
+.screen.narrow{min-width:0}
+
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--dlg-line);font-size:13px;color:var(--dlg-muted)}
+.tabs span{padding:0 0 9px}
+.tabs .on{color:var(--dlg-accent);font-weight:600;box-shadow:inset 0 -2px 0 var(--dlg-accent)}
+
+.card{background:var(--dlg-card);border:1px solid var(--dlg-line);border-radius:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid transparent;cursor:default}
+.btn-primary{background:var(--btn);color:#fff}
+.btn-ghost{border-color:var(--dlg-line);color:var(--dlg-ink);background:var(--dlg-card)}
+.btn-link{color:var(--dlg-link);padding:0;border:0;background:none;font-weight:500}
+.muted{color:var(--dlg-muted)}
+.small{font-size:12px}
+.tiny{font-size:11px}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+
+/* Сжатая шапка процессов: оба пайплайна в одну строку, когда готовы */
+.pipes{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:10px 14px}
+.pipe{display:flex;align-items:center;gap:8px;font-size:12px}
+.pipe .dot{width:8px;height:8px;border-radius:50%;background:var(--dlg-accent)}
+.pipe .dot.run{box-shadow:0 0 0 3px var(--dlg-accent-soft),0 0 0 4px var(--dlg-accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){.pipe .dot.run{animation:none}}
+.pipe b{font-weight:600;color:var(--dlg-strong)}
+.sep{width:1px;align-self:stretch;background:var(--dlg-line)}
+
+.step{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--dlg-line);border-radius:999px;font-size:11px;color:var(--dlg-muted);background:var(--dlg-soft)}
+.step.done,.step.active{border-color:var(--dlg-accent);color:var(--dlg-accent);background:var(--dlg-accent-soft)}
+.step.active{font-weight:600}
+.step i{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* Чипы и метки */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--dlg-line);border-radius:4px;font-size:11px;color:var(--dlg-muted);background:var(--dlg-soft);white-space:nowrap}
+.chip.warn{color:var(--dlg-warn);background:var(--dlg-warn-soft)}
+.chip.bad{color:var(--dlg-bad);background:var(--dlg-bad-soft)}
+.chip.ok{color:var(--dlg-accent);background:var(--dlg-accent-soft)}
+.chip.link{color:var(--dlg-link);background:var(--dlg-link-soft);border-color:transparent}
+.kind{padding:1px 8px;border:1px solid var(--dlg-line);border-radius:999px;font-size:11px;color:var(--dlg-muted);background:var(--dlg-card)}
+.kind.tech{border-color:var(--dlg-accent);color:var(--dlg-accent);background:var(--dlg-accent-soft)}
+
+.seg{display:inline-flex;padding:2px;border:1px solid var(--dlg-line);border-radius:6px;background:var(--dlg-soft)}
+.seg span{padding:3px 11px;border-radius:4px;font-size:12px;color:var(--dlg-muted)}
+.seg .on{color:var(--dlg-accent);background:var(--dlg-card);box-shadow:inset 0 0 0 1px var(--dlg-accent);font-weight:600}
+.seg .cnt{margin-left:5px;font-weight:400;color:var(--dlg-muted)}
+
+/* Балл: цифра + деления, как в QaScore */
+.score{--band:var(--dlg-accent);display:inline-flex;align-items:center;gap:8px}
+.score.fair{--band:var(--dlg-warn)}
+.score.poor{--band:var(--dlg-bad)}
+.score .v{color:var(--band);font-size:18px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.score .v small{color:var(--dlg-muted);font-size:11px;font-weight:400;margin-left:1px}
+.score .bar{display:grid;grid-auto-flow:column;grid-auto-columns:5px;gap:2px}
+.score .bar i{height:12px;border-radius:1px;background:var(--dlg-line)}
+.score .bar i.on{background:var(--band)}
+.score.sm .v{font-size:14px}
+.score.sm .bar i{height:9px}
+.pill-score{display:inline-flex;align-items:center;justify-content:center;min-width:30px;padding:1px 6px;border-radius:4px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--dlg-accent);background:var(--dlg-accent-soft)}
+.pill-score.fair{color:var(--dlg-warn);background:var(--dlg-warn-soft)}
+.pill-score.poor{color:var(--dlg-bad);background:var(--dlg-bad-soft)}
+.pill-score.none{color:var(--dlg-muted);background:var(--dlg-soft);font-weight:500}
+
+/* Реплика — та же сетка, что в ленте разбора: время, кто, текст, ▶.
+   Полоса роли слева идёт от края до края, радиуса слева нет. */
+.turn{position:relative;display:grid;grid-template-columns:52px minmax(0,1fr) 28px;gap:2px 12px;padding:9px 12px 10px;border-left:3px solid var(--dlg-line);border-radius:0;background:var(--dlg-card)}
+.turn + .turn{border-top:1px solid var(--dlg-line)}
+.turn.m{border-left-color:var(--dlg-accent)}
+.turn.c{border-left-color:var(--dlg-guest)}
+.turn .t{color:var(--dlg-muted)}
+.turn .who{font-size:12px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.turn.m .who > span:first-child{color:var(--dlg-accent);border-bottom:1px dashed currentColor}
+.turn.c .who > span:first-child{color:var(--dlg-guest);border-bottom:1px dashed currentColor}
+.turn .txt{grid-column:2;font-size:13.5px}
+.turn .sig{grid-column:2;display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.turn .play{grid-column:3;grid-row:1 / span 2;width:26px;height:26px;border:1px solid var(--dlg-line);border-radius:50%;display:grid;place-items:center;font-size:9px;color:var(--dlg-muted)}
+.turn.playing{background:var(--dlg-accent-soft)}
+.turn.playing .play{background:var(--dlg-accent);border-color:var(--dlg-accent);color:#fff}
+.turn.dim{opacity:.42}
+.turn.flag-bad{background:var(--dlg-bad-soft)}
+
+.player{padding:8px;align-self:start;position:sticky;top:8px}
+.video{aspect-ratio:16/9;border-radius:4px;background:linear-gradient(160deg,#2b3530,#121714);display:grid;place-items:center;color:#cfd8d3;font-size:12px;position:relative;overflow:hidden}
+.video::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--btn) 38%,rgba(255,255,255,.2) 38%)}
+
+.sect-title{font-size:14px;font-weight:600;color:var(--dlg-strong)}
+
+/* ═════════ Концепт A — цепочки в ленте ═════════ */
+.verdict{display:grid;grid-template-columns:1.1fr 1fr;gap:0}
+.verdict > div{padding:14px 16px}
+.verdict > div + div{border-left:1px solid var(--dlg-line)}
+.dist{display:flex;gap:3px;height:10px;margin:10px 0 6px}
+.dist i{display:block;border-radius:2px}
+.behaviour{display:grid;gap:6px;margin-top:8px}
+.bh{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;font-size:12.5px;padding:5px 8px;border-radius:6px}
+.bh:hover{background:var(--dlg-soft)}
+.bh .ic{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;font-size:12px;font-weight:700}
+.bh .ic.warn{color:var(--dlg-warn);background:var(--dlg-warn-soft)}
+.bh .ic.bad{color:var(--dlg-bad);background:var(--dlg-bad-soft)}
+.bh .ic.ok{color:var(--dlg-accent);background:var(--dlg-accent-soft)}
+.bh .go{font-size:11px;color:var(--dlg-link)}
+
+.chain{border:1px solid var(--dlg-line);border-radius:0 8px 8px 0;background:var(--dlg-card)}
+.chain-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px;padding:8px 12px 8px 15px;background:var(--dlg-soft);border-bottom:1px solid var(--dlg-line);border-top-right-radius:8px}
+.chain-body{position:relative}
+/* Нить цепочки: вертикальная линия с узлами — вопрос, ответ, уточнение, ответ.
+   Узел ставится на реплику, линия связывает их в одну цепочку. */
+.thread{position:relative;padding-left:26px}
+.thread::before{content:"";position:absolute;left:12px;top:18px;bottom:18px;width:2px;background:var(--dlg-link);opacity:.35}
+.thread .turn{border-left-width:3px}
+.thread .node{position:absolute;left:-20px;top:13px;width:12px;height:12px;border-radius:50%;background:var(--dlg-card);border:2px solid var(--dlg-link)}
+.thread .node.a{background:var(--dlg-link)}
+.thread .link-score{position:absolute;right:46px;top:9px}
+.chain-foot{padding:9px 14px 11px 15px;border-top:1px solid var(--dlg-line);font-size:12.5px;display:grid;gap:4px}
+.chain-foot .lead{color:var(--dlg-strong);font-weight:600}
+.edit-bar{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 15px;background:var(--dlg-link-soft);color:var(--dlg-link);font-size:12px;border-bottom:1px solid var(--dlg-line)}
+.pick{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:4px;border:1.5px solid var(--dlg-link);font-size:10px;color:#fff;margin-right:2px}
+.pick.on{background:var(--dlg-link)}
+.orphan{border:1px dashed var(--dlg-line);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:12.5px;background:var(--dlg-card)}
+
+/* ═════════ Концепт B — линзы ═════════ */
+.lens-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:10px 14px}
+.lens-scores{display:flex;gap:22px;align-items:center}
+.lens-scores .lbl{font-size:11px;color:var(--dlg-muted);display:block}
+.timeline{position:relative;height:34px;margin:0 14px 12px;border-radius:4px;background:var(--dlg-soft);border:1px solid var(--dlg-line)}
+.timeline .seg-q{position:absolute;top:6px;bottom:6px;border-radius:2px;background:var(--dlg-accent);opacity:.18}
+.timeline .seg-q.t{opacity:.45}
+.timeline .ev{position:absolute;top:-4px;width:2px;bottom:-4px}
+.timeline .ev::after{content:"";position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;background:inherit;border:2px solid var(--dlg-card)}
+.timeline .now{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--dlg-strong)}
+.feed-b{display:grid;grid-template-columns:34px minmax(0,1fr)}
+/* Скобка цепочки в жёлобе слева: от вопроса до последнего ответа */
+.gutter{position:relative}
+.bracket{position:absolute;left:12px;width:14px;border:2px solid var(--dlg-link);border-right:0;border-radius:0}
+.bracket .bs{position:absolute;left:-14px;top:50%;transform:translateY(-50%);padding:1px 4px;border-radius:4px;font-size:10.5px;font-weight:700;color:#fff;background:var(--dlg-accent)}
+.bracket .bs.fair{background:var(--dlg-warn)}
+.bracket.pending{border-style:dashed;border-color:var(--dlg-muted)}
+.q-divider{display:flex;align-items:center;gap:10px;padding:6px 12px;background:var(--dlg-soft);border-top:1px solid var(--dlg-line);border-bottom:1px solid var(--dlg-line);font-size:12px}
+.q-divider b{color:var(--dlg-strong);font-weight:600}
+.flag{position:absolute;right:46px;top:8px;display:flex;gap:5px}
+.linking{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--dlg-link);background:var(--dlg-link-soft);color:var(--dlg-link);border-radius:8px;font-size:12.5px}
+.turn.target{box-shadow:inset 0 0 0 2px var(--dlg-link);background:var(--dlg-link-soft)}
+.turn .attach{position:absolute;right:46px;top:8px;font-size:11px;color:var(--dlg-link);background:var(--dlg-card);border:1px solid var(--dlg-link);border-radius:4px;padding:1px 7px}
+
+/* ═════════ Концепт C — вопрос за вопросом ═════════ */
+.head-c{display:grid;grid-template-columns:auto auto 1fr auto;gap:0;align-items:stretch}
+.head-c > div{padding:12px 16px}
+.head-c > div + div{border-left:1px solid var(--dlg-line)}
+.big{font-size:26px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--dlg-accent)}
+.big.fair{color:var(--dlg-warn)}
+.big small{font-size:12px;color:var(--dlg-muted);font-weight:400}
+.split{display:grid;grid-template-columns:290px minmax(0,1fr) 300px;gap:12px;align-items:start}
+.index{overflow:hidden}
+.index-filter{display:flex;gap:5px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--dlg-line)}
+.qi{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 8px;padding:8px 10px 9px 9px;border-left:3px solid transparent;border-top:1px solid var(--dlg-line);font-size:12.5px;border-radius:0}
+.qi:first-of-type{border-top:0}
+.qi .n{color:var(--dlg-muted);font-variant-numeric:tabular-nums}
+.qi .q{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dlg-ink)}
+.qi .meta{grid-column:2 / span 2;display:flex;gap:5px;align-items:center}
+.qi.on{background:var(--dlg-accent-soft);border-left-color:var(--dlg-accent)}
+.qi.on .q{color:var(--dlg-strong);font-weight:600}
+.qi.nontech .q{color:var(--dlg-muted)}
+.qi .dotb{width:7px;height:7px;border-radius:50%;background:var(--dlg-bad)}
+.qi .dotw{width:7px;height:7px;border-radius:50%;background:var(--dlg-warn)}
+.detail-head{padding:12px 14px;border-bottom:1px solid var(--dlg-line);display:grid;gap:6px}
+.detail-q{font-size:15px;font-weight:600;color:var(--dlg-strong);line-height:1.4}
+.steps-c{display:grid}
+.stepc{display:grid;grid-template-columns:86px minmax(0,1fr);border-top:1px solid var(--dlg-line)}
+.stepc:first-child{border-top:0}
+.stepc .lab{padding:10px 0 10px 14px;font-size:11.5px;color:var(--dlg-muted);display:grid;align-content:start;gap:6px}
+.stepc .lab b{color:var(--dlg-strong);font-weight:600;font-size:12px}
+.stepc .turn{border-top:0}
+.slot{margin:8px 12px 10px 0;padding:8px 10px;border:1.5px dashed var(--dlg-link);border-radius:6px;color:var(--dlg-link);font-size:12px;background:var(--dlg-link-soft);display:flex;gap:8px;align-items:center}
+.crit{display:grid;gap:7px;padding:12px 14px}
+.crit-row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12.5px;align-items:center}
+.meter{height:5px;border-radius:3px;background:var(--dlg-line);grid-column:1 / span 2;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--dlg-accent)}
+.meter i.fair{background:var(--dlg-warn)}
+.kbd{display:inline-block;padding:0 5px;border:1px solid var(--dlg-line);border-bottom-width:2px;border-radius:4px;font-size:11px;background:var(--dlg-card);color:var(--dlg-muted)}
+.side-sec{padding:12px 14px;border-top:1px solid var(--dlg-line)}
+.side-sec:first-child{border-top:0}
+.nb{display:grid;gap:6px;margin-top:6px}
+.nb-row{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--dlg-line)}
+.nb-row:last-child{border-bottom:0}
+
+/* Сравнение */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--dlg-line);border-radius:8px;background:var(--dlg-card)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13px}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--dlg-line);vertical-align:top}
+th{font-weight:600;color:var(--dlg-strong);background:var(--dlg-soft)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--dlg-muted);width:28%}
+.yes{color:var(--dlg-accent);font-weight:600}
+.mid{color:var(--dlg-warn);font-weight:600}
+
+.pick-box{padding:18px 20px;border:1px solid var(--dlg-accent);border-left:4px solid var(--dlg-accent);border-radius:0 8px 8px 0;background:var(--dlg-accent-soft)}
+.pick-box p + p{margin-top:8px}
+.model{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+pre{margin:6px 0 0;padding:12px 14px;overflow-x:auto;border-radius:6px;border:1px solid var(--dlg-line);background:var(--dlg-soft);font-size:12px;line-height:1.5;color:var(--dlg-ink)}
+
+@media (max-width:640px){
+  .wrap{padding-block:28px 64px;padding-inline:16px;gap:40px}
+  .concept-letter{font-size:40px}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="route">Админка → Интервью → вкладка «Разбор диалога» (<code>/interviews/:id?tab=dialog</code>)</div>
+  <h1>Разбор диалога: как показать техническую и нетехническую оценку</h1>
+  <p class="lede">
+    На вкладку приходит оценка цепочек «вопрос → ответ → уточнение → ответ» и поведенческая часть:
+    пропущенные ответы, невежливость, серии пропусков. Ниже три варианта компоновки. Все собраны
+    из того, что на вкладке уже есть — токены <code>--dlg-*</code>, строка реплики с полосой роли,
+    балл с делениями, переключатель-сегмент, — чтобы новое не выглядело заплаткой.
+    Ни одна текущая функция не пропадает: список проверки — сразу под этим абзацем.
+  </p>
+</header>
+
+<section>
+  <h2>Что должно уместиться</h2>
+  <div class="scope">
+    <div>
+      <h3>Уже есть и остаётся</h3>
+      <ul>
+        <li>Два процесса со шагами и ошибками: <b>Разбор диалога</b> и <b>Оценка ответов</b>, кнопки «Оценить» / «Оценить заново»</li>
+        <li>Метрики (реплики, длительность, замечания, участники), чипы замечаний, эмоции за интервью</li>
+        <li>Плеер: видео липнет справа, ▶ у реплики, подсветка звучащей</li>
+        <li>Реплика: время, кто говорит (попап «Кто говорит?»), сигналы, раскрытие деталей</li>
+        <li>«По вопросам» / «Все реплики», метка «Технический», балл и разбор ответа</li>
+        <li>Акустические события и качество записи</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Добавляется</h3>
+      <ul>
+        <li><b>Цепочки:</b> балл за цепочку и за каждое звено (ответ на уточнение оценивается отдельно)</li>
+        <li><b>Связи:</b> проверить и поправить, какая реплика — ответ на какой вопрос; приклеить уточнение к цепочке</li>
+        <li><b>Нетехническое:</b> вопрос без ответа, невежливый ответ, серия пропусков, итог по поведению</li>
+        <li><b>Итог:</b> две оценки рядом — техническая и нетехническая — с переходом к месту в записи</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- ═══════════════ A ═══════════════ -->
+<section class="concept">
+  <div class="concept-head">
+    <div class="concept-letter">A</div>
+    <h2>Цепочки в ленте</h2>
+    <p>Минимальный шаг от текущего экрана. Блок «Вопрос N» становится цепочкой: реплики связаны нитью с узлами,
+      у каждого ответа — свой маленький балл, у цепочки — общий. Над расшифровкой — карточка «Итог» из двух половин.
+      Связи правятся прямо в блоке кнопкой «Изменить связи».</p>
+  </div>
+
+  <div class="frame"><div class="screen">
+    <div class="tabs"><span>Меню</span><span>Вопросы</span><span class="on">Разбор диалога</span><span>Отзыв</span></div>
+
+    <!-- оба процесса готовы → сворачиваются в одну строку, разворачиваются по клику -->
+    <div class="card pipes">
+      <div class="pipe"><span class="dot"></span><b>Разбор диалога</b><span class="muted">готов · 14 сен, 12:40</span></div>
+      <span class="sep"></span>
+      <div class="pipe"><span class="dot"></span><b>Оценка ответов</b><span class="muted">готова · 11 цепочек</span></div>
+      <span class="grow"></span>
+      <span class="btn btn-ghost">Оценить заново</span>
+      <span class="btn btn-link small">Шаги ▾</span>
+    </div>
+
+    <div class="card verdict">
+      <div>
+        <div class="row between"><span class="sect-title">Техническая часть</span><span class="muted small">8 технических цепочек из 11</span></div>
+        <div class="row" style="margin-top:8px;gap:14px">
+          <span class="score"><span class="v">6,4<small>/10</small></span><span class="bar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></span>
+          <span class="small muted">Сильно: React, HTTP. Слабо: асинхронность, SQL.</span>
+        </div>
+        <div class="dist" aria-hidden="true">
+          <i style="flex:4;background:var(--dlg-accent)"></i><i style="flex:3;background:var(--dlg-warn)"></i><i style="flex:1;background:var(--dlg-bad)"></i>
+        </div>
+        <div class="row tiny muted" style="gap:14px"><span>4 уверенно</span><span>3 с пробелами</span><span>1 мимо</span></div>
+      </div>
+      <div>
+        <div class="row between"><span class="sect-title">Поведение</span><span class="pill-score fair">5/10</span></div>
+        <div class="behaviour">
+          <div class="bh"><span class="ic warn">?</span><span>Ушёл от ответа — <b>3 вопроса</b>, два подряд</span><span class="go">к 18:02 ↓</span></div>
+          <div class="bh"><span class="ic bad">!</span><span>Невежливо ответил — <b>1 раз</b></span><span class="go">к 24:15 ↓</span></div>
+          <div class="bh"><span class="ic ok">✓</span><span>Перебиваний нет, темп ровный</span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row between" style="margin-top:6px">
+      <span class="sect-title">Расшифровка</span>
+      <div class="row">
+        <div class="seg"><span>Все</span><span class="on">Технические<span class="cnt">8</span></span><span>С замечаниями<span class="cnt">4</span></span></div>
+        <div class="seg"><span class="on">По вопросам</span><span>Все реплики</span></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start">
+      <div style="display:grid;gap:12px">
+
+        <div class="chain">
+          <div class="chain-head">
+            <div class="row" style="gap:10px"><b style="color:var(--dlg-strong)">Вопрос 4</b><span class="mono muted">12:31–15:48</span><span class="kind tech">Технический</span><span class="small muted">Event loop</span></div>
+            <div class="row"><span class="btn btn-link small">Изменить связи</span>
+              <span class="score"><span class="v">7<small>/10</small></span><span class="bar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></span></div>
+          </div>
+          <div class="thread">
+            <div class="turn m"><span class="node"></span><span class="mono t">12:31</span><span class="who"><span>Интервьюер</span></span><p class="txt">Что выведет консоль: setTimeout с нулём, Promise.resolve().then и обычный console.log?</p><span class="play">▶</span></div>
+            <div class="turn c playing"><span class="node a"></span><span class="mono t">12:44</span><span class="who"><span>Кандидат</span></span><p class="txt">Сначала log, потом промис, потому что микрозадачи идут раньше, и в конце таймаут.</p><span class="link-score pill-score">8</span><span class="play">❚❚</span></div>
+            <div class="turn m"><span class="node"></span><span class="mono t">13:20</span><span class="who"><span>Интервьюер</span><span class="tiny muted">уточнение</span></span><p class="txt">А если внутри then поставить ещё один setTimeout — где он окажется?</p><span class="play">▶</span></div>
+            <div class="turn c"><span class="node a"></span><span class="mono t">13:32</span><span class="who"><span>Кандидат</span></span><p class="txt">Ну… тоже в микрозадачах, наверное, сразу после первого промиса.</p>
+              <span class="sig"><span class="chip warn">Неуверенность</span></span><span class="link-score pill-score fair">5</span><span class="play">▶</span></div>
+          </div>
+          <div class="chain-foot">
+            <span class="lead">Основу знает, на уточнении путает очереди</span>
+            <span class="muted">Порядок log → then → timeout назван верно. Вложенный таймаут отнесён к микрозадачам — это ошибка: он уйдёт в очередь макрозадач.</span>
+          </div>
+        </div>
+
+        <div class="chain">
+          <div class="edit-bar">Отметьте реплики, которые входят в цепочку. Снятая реплика вернётся в общий поток.<span class="grow"></span><span class="btn btn-ghost">Отмена</span><span class="btn btn-primary">Сохранить и переоценить</span></div>
+          <div class="chain-head">
+            <div class="row" style="gap:10px"><b style="color:var(--dlg-strong)">Вопрос 5</b><span class="mono muted">15:50–17:10</span><span class="kind tech">Технический</span><span class="small muted">Индексы в SQL</span></div>
+            <span class="pill-score none">изменено</span>
+          </div>
+          <div class="thread">
+            <div class="turn m"><span class="node"></span><span class="mono t">15:50</span><span class="who"><span><span class="pick on">✓</span>Интервьюер</span></span><p class="txt">Когда индекс не поможет запросу?</p><span class="play">▶</span></div>
+            <div class="turn c"><span class="node a"></span><span class="mono t">16:02</span><span class="who"><span><span class="pick on">✓</span>Кандидат</span></span><p class="txt">Если выборка большая, или функция по полю в where.</p><span class="play">▶</span></div>
+            <div class="turn c dim"><span class="mono t">16:40</span><span class="who"><span><span class="pick"></span>Кандидат</span><span class="tiny muted">не в цепочке</span></span><p class="txt">Кстати, у нас на проекте было похоже с отчётами…</p><span class="play">▶</span></div>
+          </div>
+        </div>
+
+        <div class="orphan"><span class="chip warn">Без ответа</span><span class="grow"><b>Вопрос 7</b> · 18:02 · «Почему решили уйти с текущего места?» — кандидат перевёл тему</span><span class="btn btn-link small">Найти ответ</span></div>
+      </div>
+
+      <div class="card player"><div class="video">Видео интервью · 12:44</div><p class="tiny muted" style="margin:6px 2px 0">Нажмите ▶ у реплики, чтобы услышать её с начала.</p></div>
+    </div>
+
+    <p class="small muted">Ниже без изменений: эмоции за интервью, акустические события, качество записи.</p>
+  </div></div>
+
+  <div class="notes">
+    <div class="note plus"><b>Почему удобно</b>Ничего не надо переучивать: тот же блок вопроса, та же лента. Нить с узлами сразу показывает, что к чему относится, а балл звена стоит у самого ответа.</div>
+    <div class="note plus"><b>Как связывать</b>«Изменить связи» включает галочки у реплик блока и соседних. Сохранение переоценивает только эту цепочку.</div>
+    <div class="note minus"><b>Ограничение</b>На длинном интервью (30+ вопросов) страница становится длинной, итог уезжает вверх. Спасают фильтр «Технические / С замечаниями» и переходы «к 18:02 ↓».</div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- ═══════════════ B ═══════════════ -->
+<section class="concept">
+  <div class="concept-head">
+    <div class="concept-letter">B</div>
+    <h2>Одна лента, две линзы</h2>
+    <p>Расшифровка остаётся сплошной — так её читают как разговор. Сверху переключатель линзы: «Техника» проводит скобки цепочек
+      в жёлобе слева с баллом на скобке, «Поведение» гасит техническое и поднимает флаги на репликах. Над лентой — полоса
+      времени интервью с отметками: видно, где кандидат «провис», и можно туда прыгнуть.</p>
+  </div>
+
+  <div class="frame"><div class="screen">
+    <div class="tabs"><span>Меню</span><span>Вопросы</span><span class="on">Разбор диалога</span><span>Отзыв</span></div>
+
+    <div class="card pipes">
+      <div class="pipe"><span class="dot"></span><b>Разбор диалога</b><span class="muted">готов</span></div>
+      <span class="sep"></span>
+      <div class="pipe"><span class="dot run"></span><b>Оценка ответов</b></div>
+      <span class="step done"><i></i>Делим на вопросы</span><span class="step done"><i></i>Отмечаем технические</span><span class="step active"><i></i>Оцениваем ответы · 6 из 8</span><span class="step"><i></i>Готово</span>
+    </div>
+
+    <div class="card">
+      <div class="lens-bar">
+        <div class="seg"><span>Всё</span><span class="on">Техника</span><span>Поведение</span></div>
+        <div class="lens-scores">
+          <div><span class="lbl">Техническая</span><span class="score sm"><span class="v">6,4<small>/10</small></span></span></div>
+          <div><span class="lbl">Нетехническая</span><span class="score sm fair"><span class="v">5<small>/10</small></span></span></div>
+          <div class="row small" style="gap:6px"><span class="chip warn">Без ответа · 3</span><span class="chip bad">Невежливо · 1</span><span class="chip">Замечания · 6</span></div>
+        </div>
+      </div>
+      <div class="timeline" aria-label="Шкала интервью">
+        <span class="seg-q" style="left:2%;width:9%"></span>
+        <span class="seg-q t" style="left:12%;width:8%"></span>
+        <span class="seg-q t" style="left:21%;width:12%"></span>
+        <span class="seg-q t" style="left:34%;width:7%"></span>
+        <span class="seg-q" style="left:42%;width:6%"></span>
+        <span class="seg-q" style="left:49%;width:5%"></span>
+        <span class="seg-q t" style="left:55%;width:13%"></span>
+        <span class="seg-q t" style="left:69%;width:10%"></span>
+        <span class="seg-q t" style="left:80%;width:15%"></span>
+        <span class="ev" style="left:44%;background:var(--dlg-warn)"></span>
+        <span class="ev" style="left:51%;background:var(--dlg-warn)"></span>
+        <span class="ev" style="left:60%;background:var(--dlg-bad)"></span>
+        <span class="ev" style="left:88%;background:var(--dlg-warn)"></span>
+        <span class="now" style="left:27%"></span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start">
+      <div style="display:grid;gap:10px">
+        <div class="linking"><b>Связываем</b> ответ с вопросом 6 «Что такое замыкание?» — нажмите на реплику кандидата <span class="grow"></span><span class="kbd">Esc</span> отмена</div>
+
+        <div class="card" style="border-radius:0 8px 8px 0;overflow:visible">
+          <div class="q-divider"><b>Вопрос 4</b><span class="mono muted">12:31</span><span class="kind tech">Технический</span><span class="muted">Event loop</span></div>
+          <div class="feed-b">
+            <div class="gutter"><span class="bracket" style="top:16px;height:222px"><span class="bs">7</span></span></div>
+            <div>
+              <div class="turn m"><span class="mono t">12:31</span><span class="who"><span>Интервьюер</span></span><p class="txt">Что выведет консоль: setTimeout с нулём, Promise.resolve().then и console.log?</p><span class="play">▶</span></div>
+              <div class="turn c playing"><span class="mono t">12:44</span><span class="who"><span>Кандидат</span><span class="pill-score" style="font-size:11px">8</span></span><p class="txt">Сначала log, потом промис, потому что микрозадачи идут раньше, и в конце таймаут.</p><span class="play">❚❚</span></div>
+              <div class="turn m"><span class="mono t">13:20</span><span class="who"><span>Интервьюер</span><span class="tiny muted">уточнение</span></span><p class="txt">А если внутри then поставить ещё один setTimeout?</p><span class="play">▶</span></div>
+              <div class="turn c"><span class="mono t">13:32</span><span class="who"><span>Кандидат</span><span class="pill-score fair" style="font-size:11px">5</span></span><p class="txt">Ну… тоже в микрозадачах, наверное.</p><span class="play">▶</span></div>
+            </div>
+          </div>
+          <div class="q-divider"><b>Вопрос 5</b><span class="mono muted">15:50</span><span class="kind">Нетехнический</span><span class="muted">Опыт и мотивация</span></div>
+          <div class="feed-b">
+            <div class="gutter"></div>
+            <div>
+              <div class="turn m dim"><span class="mono t">15:50</span><span class="who"><span>Интервьюер</span></span><p class="txt">Расскажите, почему решили сменить работу?</p><span class="play">▶</span></div>
+              <div class="turn c dim"><span class="mono t">16:05</span><span class="who"><span>Кандидат</span></span><p class="txt">Давайте лучше про технологии поговорим.</p><span class="play">▶</span></div>
+            </div>
+          </div>
+          <div class="q-divider"><b>Вопрос 6</b><span class="mono muted">17:12</span><span class="kind tech">Технический</span><span class="muted">Замыкания</span><span class="grow"></span><span class="chip warn">Ответ не найден</span></div>
+          <div class="feed-b">
+            <div class="gutter"><span class="bracket pending" style="top:16px;height:44px"></span></div>
+            <div>
+              <div class="turn m"><span class="mono t">17:12</span><span class="who"><span>Интервьюер</span></span><p class="txt">Что такое замыкание и где вы его использовали?</p><span class="play">▶</span></div>
+              <div class="turn m"><span class="mono t">17:40</span><span class="who"><span>Интервьюер</span></span><p class="txt">Хорошо, давайте дальше. Как работает this в стрелочной функции?</p><span class="play">▶</span></div>
+              <div class="turn c target"><span class="mono t">17:52</span><span class="who"><span>Кандидат</span></span><p class="txt">Замыкание — это когда функция помнит переменные снаружи, мы так счётчики делали. А this у стрелочной берётся снаружи.</p><span class="attach">Сделать ответом на вопрос 6</span><span class="play">▶</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card player"><div class="video">Видео интервью · 12:44</div><p class="tiny muted" style="margin:6px 2px 0">Клик по отметке на шкале перематывает запись.</p></div>
+    </div>
+  </div></div>
+
+  <p class="small muted" style="margin-top:-4px">Та же лента в линзе «Поведение»: технические скобки скрыты, флаги стоят на самих репликах.</p>
+  <div class="frame"><div class="screen">
+    <div class="row between">
+      <div class="seg"><span>Всё</span><span>Техника</span><span class="on">Поведение</span></div>
+      <div class="row small"><span class="muted">Показать:</span><span class="chip warn">Без ответа · 3</span><span class="chip bad">Невежливо · 1</span><span class="chip">Серия пропусков · 1</span></div>
+    </div>
+    <div class="card" style="border-radius:0 8px 8px 0">
+      <div class="q-divider"><b>Вопросы 5–6</b><span class="mono muted">15:50–17:52</span><span class="chip warn">Серия: 2 вопроса подряд без ответа</span></div>
+      <div class="turn m"><span class="mono t">15:50</span><span class="who"><span>Интервьюер</span></span><p class="txt">Расскажите, почему решили сменить работу?</p><span class="play">▶</span></div>
+      <div class="turn c"><span class="mono t">16:05</span><span class="who"><span>Кандидат</span></span><p class="txt">Давайте лучше про технологии поговорим.</p><span class="flag"><span class="chip warn">Ушёл от ответа</span></span><span class="play">▶</span></div>
+      <div class="turn c flag-bad"><span class="mono t">24:15</span><span class="who"><span>Кандидат</span></span><p class="txt">Это странный вопрос, вы сами-то знаете ответ?</p><span class="sig"><span class="chip">Эмоция: раздражение</span></span><span class="flag"><span class="chip bad">Невежливо</span><span class="btn btn-link tiny">Не согласен</span></span><span class="play">▶</span></div>
+    </div>
+  </div></div>
+
+  <div class="notes">
+    <div class="note plus"><b>Почему удобно</b>Одна лента на всё — не надо выбирать между «по вопросам» и «все реплики». Линза меняет только акценты, контекст разговора сохраняется. Шкала сверху отвечает на «где провал» за секунду.</div>
+    <div class="note plus"><b>Как связывать</b>Вопрос без ответа помечен «Ответ не найден»: кнопка «Найти ответ» включает режим связывания, следующая реплика кандидата по клику становится ответом. Скобка перерисовывается сразу.</div>
+    <div class="note minus"><b>Ограничение</b>Скобки плохо читаются, если ответ пришёл сильно позже вопроса и между ними другая цепочка — скобки перекрещиваются. Нужна отрисовка в два ряда жёлоба.</div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- ═══════════════ C ═══════════════ -->
+<section class="concept">
+  <div class="concept-head">
+    <div class="concept-letter">C</div>
+    <h2>Вопрос за вопросом</h2>
+    <p>Рабочее место проверяющего. Слева — оглавление вопросов с баллами и флагами, в центре — выбранная цепочка по звеньям,
+      справа — видео и итог по поведению. Листать стрелками <span class="kbd">↑</span> <span class="kbd">↓</span>, связи правятся
+      в слоте «Ответ». «Все реплики» остаются отдельным режимом.</p>
+  </div>
+
+  <div class="frame"><div class="screen">
+    <div class="tabs"><span>Меню</span><span>Вопросы</span><span class="on">Разбор диалога</span><span>Отзыв</span></div>
+
+    <div class="card head-c">
+      <div><span class="tiny muted">Техническая</span><div class="big">6,4<small>/10</small></div></div>
+      <div><span class="tiny muted">Нетехническая</span><div class="big fair">5<small>/10</small></div></div>
+      <div class="row" style="gap:6px;align-content:center">
+        <span class="chip">Реплики · 142</span><span class="chip">44:10</span><span class="chip warn">Без ответа · 3</span><span class="chip bad">Невежливо · 1</span><span class="chip">Замечания · 6</span>
+      </div>
+      <div class="row" style="align-content:center">
+        <span class="small muted">Разбор и оценка готовы</span><span class="btn btn-ghost">Оценить заново ▾</span>
+      </div>
+    </div>
+
+    <div class="row between">
+      <div class="seg"><span class="on">По вопросам</span><span>Все реплики</span></div>
+      <span class="small muted"><span class="kbd">↑</span> <span class="kbd">↓</span> следующий вопрос · <span class="kbd">Space</span> играть звено</span>
+    </div>
+
+    <div class="split">
+      <div class="card index">
+        <div class="index-filter"><span class="chip ok">Все · 11</span><span class="chip">Технические · 8</span><span class="chip warn">Проблемные · 4</span></div>
+        <div class="qi"><span class="n">1</span><span class="q">Расскажите о себе</span><span class="pill-score none">—</span><span class="meta"><span class="tiny muted">нетехн.</span></span></div>
+        <div class="qi"><span class="n">2</span><span class="q">Virtual DOM и reconciliation</span><span class="pill-score">8</span><span class="meta"><span class="tiny muted">05:10 · 2 звена</span></span></div>
+        <div class="qi"><span class="n">3</span><span class="q">useMemo против useCallback</span><span class="pill-score">7</span><span class="meta"><span class="tiny muted">09:02</span></span></div>
+        <div class="qi on"><span class="n">4</span><span class="q">Event loop: порядок вывода</span><span class="pill-score">7</span><span class="meta"><span class="tiny muted">12:31 · 2 звена</span></span></div>
+        <div class="qi nontech"><span class="n">5</span><span class="q">Почему меняете работу</span><span class="pill-score none">—</span><span class="meta"><span class="dotw"></span><span class="tiny muted">ушёл от ответа</span></span></div>
+        <div class="qi"><span class="n">6</span><span class="q">Что такое замыкание</span><span class="pill-score none">?</span><span class="meta"><span class="dotw"></span><span class="tiny muted">ответ не найден</span></span></div>
+        <div class="qi"><span class="n">7</span><span class="q">Индексы в SQL</span><span class="pill-score poor">3</span><span class="meta"><span class="dotb"></span><span class="tiny muted">невежливо</span></span></div>
+        <div class="qi"><span class="n">8</span><span class="q">HTTP-кеширование</span><span class="pill-score fair">5</span><span class="meta"><span class="tiny muted">26:40</span></span></div>
+      </div>
+
+      <div class="card">
+        <div class="detail-head">
+          <div class="row between"><div class="row"><b style="color:var(--dlg-strong)">Вопрос 4 из 11</b><span class="kind tech">Технический</span><span class="mono muted">12:31–15:48</span></div>
+            <span class="score"><span class="v">7<small>/10</small></span><span class="bar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></span></div>
+          <p class="detail-q">Что выведет консоль: setTimeout с нулём, Promise.resolve().then и console.log?</p>
+        </div>
+        <div class="steps-c">
+          <div class="stepc">
+            <div class="lab"><b>Ответ</b><span class="pill-score">8</span></div>
+            <div>
+              <div class="turn c playing"><span class="mono t">12:44</span><span class="who"><span>Кандидат</span></span><p class="txt">Сначала log, потом промис, потому что микрозадачи идут раньше, и в конце таймаут.</p><span class="play">❚❚</span></div>
+            </div>
+          </div>
+          <div class="stepc">
+            <div class="lab"><b>Уточнение</b><span class="tiny">13:20</span></div>
+            <div>
+              <div class="turn m"><span class="mono t">13:20</span><span class="who"><span>Интервьюер</span></span><p class="txt">А если внутри then поставить ещё один setTimeout — где он окажется?</p><span class="play">▶</span></div>
+            </div>
+          </div>
+          <div class="stepc">
+            <div class="lab"><b>Ответ</b><span class="pill-score fair">5</span></div>
+            <div>
+              <div class="turn c"><span class="mono t">13:32</span><span class="who"><span>Кандидат</span></span><p class="txt">Ну… тоже в микрозадачах, наверное, сразу после первого промиса.</p><span class="sig"><span class="chip warn">Неуверенность</span></span><span class="play">▶</span></div>
+              <div class="slot">＋ Добавить реплику к ответу<span class="grow"></span><span class="tiny">соседние: 13:58, 14:20</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="side-sec" style="display:grid;gap:4px">
+          <b style="color:var(--dlg-strong)">Основу знает, на уточнении путает очереди</b>
+          <span class="muted small">Порядок назван верно. Вложенный таймаут отнесён к микрозадачам — ошибка: он уйдёт в очередь макрозадач.</span>
+        </div>
+        <div class="crit" style="border-top:1px solid var(--dlg-line)">
+          <div class="crit-row"><span>Корректность</span><b>7</b><span class="meter"><i style="width:70%"></i></span></div>
+          <div class="crit-row"><span>Глубина на уточнениях</span><b>5</b><span class="meter"><i class="fair" style="width:50%"></i></span></div>
+        </div>
+      </div>
+
+      <div class="card" style="position:sticky;top:8px">
+        <div class="side-sec"><div class="video">Видео · 12:44</div></div>
+        <div class="side-sec">
+          <b style="color:var(--dlg-strong)">Поведение за интервью</b>
+          <div class="nb">
+            <div class="nb-row"><span>Ушёл от ответа</span><span class="btn-link">5, 6, 10</span></div>
+            <div class="nb-row"><span>Серия пропусков</span><span class="btn-link">5–6</span></div>
+            <div class="nb-row"><span>Невежливо</span><span class="btn-link">7</span></div>
+            <div class="nb-row"><span>Перебивал</span><span class="muted">нет</span></div>
+          </div>
+        </div>
+        <div class="side-sec small muted">Эмоции, акустика и качество записи — раскрываются здесь же.</div>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="notes">
+    <div class="note plus"><b>Почему удобно</b>Весь разбор — один экран без скролла: оглавление даёт картину интервью целиком, центр — одну цепочку крупно. Для HR, который проверяет десятки интервью, это самый быстрый путь.</div>
+    <div class="note plus"><b>Как связывать</b>У каждого звена есть слот «Добавить реплику» с соседними репликами на выбор; ответ можно перетащить в другое звено. Вопрос без ответа показывает пустой слот вместо ответа.</div>
+    <div class="note minus"><b>Ограничение</b>Самая большая переделка: три колонки требуют ширины от ~1200 px, на планшете оглавление превращается в выпадающий список. Разговор «подряд» читается только в режиме «Все реплики».</div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section style="display:flex;flex-direction:column;gap:18px">
+  <h2>Сравнение</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>&nbsp;</th><th>A · Цепочки в ленте</th><th>B · Одна лента, две линзы</th><th>C · Вопрос за вопросом</th></tr></thead>
+      <tbody>
+        <tr><td>Объём переделки</td><td class="yes">Малый — развитие текущих блоков</td><td class="mid">Средний — жёлоб, шкала, линзы</td><td class="mid">Большой — новая компоновка</td></tr>
+        <tr><td>Видно связь вопрос → ответ</td><td>Нить с узлами внутри блока</td><td>Скобка в жёлобе на всю цепочку</td><td>Звенья подписаны: ответ, уточнение, ответ</td></tr>
+        <tr><td>Правка связей</td><td>Галочки в режиме «Изменить связи»</td><td>Режим связывания в два клика</td><td>Слот «Добавить реплику» у звена</td></tr>
+        <tr><td>Нетехническая часть</td><td>Карточка «Поведение» с переходами</td><td>Линза + отметки на шкале времени</td><td>Флаги в оглавлении + сводка справа</td></tr>
+        <tr><td>Длинное интервью (30+ вопросов)</td><td>Длинный скролл, спасают фильтры</td><td class="yes">Шкала времени — быстрый переход</td><td class="yes">Оглавление — всё на одном экране</td></tr>
+        <tr><td>Читать разговор подряд</td><td class="yes">Да</td><td class="yes">Да, это основной режим</td><td>Только в «Все реплики»</td></tr>
+        <tr><td>Узкий экран</td><td class="yes">Как сейчас — плеер уходит наверх</td><td>Шкала сжимается, жёлоб остаётся</td><td>Оглавление в выпадающий список</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pick-box">
+    <p><b>Рекомендация: A сейчас, шкала времени из B — следующим шагом.</b></p>
+    <p>A закрывает весь новый функционал малой переделкой и не ломает привычный экран: блок вопроса уже есть, в нём появляются нить,
+      баллы звеньев и режим «Изменить связи»; над расшифровкой — карточка «Итог» с технической и нетехнической частью. Когда
+      интервью станут длинными, к A добавляется шкала времени с отметками из B — она ложится между итогом и расшифровкой без
+      перестройки. C имеет смысл, если вкладкой будут массово проверять интервью, — это отдельный режим «проверки», а не замена.</p>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:14px">
+  <h2>Что нужно от оценки ответов для любого варианта</h2>
+  <p class="muted" style="max-width:74ch">Сейчас блок (<code>qaBlocks.js</code>) знает реплики, признак «технический» и один балл. Для всех трёх вариантов в ответе
+    <code>answers-evaluation</code> нужны звенья цепочки и поведенческие находки со ссылкой на реплики — тогда переходы, флаги и правка связей работают одинаково.</p>
+  <div class="model">
+    <div class="card" style="padding:12px 14px">
+      <h3>Цепочка</h3>
+      <pre>{
+  id: "qa4", technical: true, topic: "Event loop",
+  score: 7, maxScore: 10, feedback: "…",
+  links: [
+    {kind: "question", turnIds: ["t31"]},
+    {kind: "answer",   turnIds: ["t32"], score: 8},
+    {kind: "followUp", turnIds: ["t35"]},
+    {kind: "answer",   turnIds: ["t36"], score: 5}
+  ],
+  editedBy: null   // кто правил связи руками
+}</pre>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <h3>Поведение</h3>
+      <pre>{
+  score: 5, maxScore: 10,
+  findings: [
+    {type: "noAnswer",  blockIds: ["qa5"], turnIds: ["t40"]},
+    {type: "skipSeries", blockIds: ["qa5","qa6"]},
+    {type: "rude",      turnIds: ["t71"], quote: "…"}
+  ]
+}
+// правка связей: PATCH …/answers-evaluation/blocks/:id
+// {links} → переоценка одной цепочки</pre>
+    </div>
+  </div>
+</section>
+
+</div>
