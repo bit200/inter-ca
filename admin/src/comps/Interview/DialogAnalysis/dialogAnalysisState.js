@@ -7,14 +7,19 @@
 // это исход, поэтому в дорожке его нет.
 export const PIPELINE_STEPS = ['queued', 'downloading', 'analyzing', 'done'];
 
+// Оценка ответов - второй пайплайн на той же карточке: запускается отдельной
+// кнопкой поверх готового разбора, делит реплики на вопросы, отличает
+// технические от прочих и отдаёт технические в evaluate.
+export const ANSWERS_PIPELINE_STEPS = ['queued', 'grouping', 'classifying', 'evaluating', 'done'];
+
 // Активная обработка - всё, что ещё не пришло к исходу: пока очередь работает,
 // повторно давить «Оценить» нельзя, иначе в mesh уедет вторая задача на те же часы.
-const ACTIVE = ['queued', 'downloading', 'analyzing'];
+function activeOf(steps) {
+    return steps.filter(step => step !== 'done');
+}
 
-const KNOWN = [...ACTIVE, 'done', 'error'];
-
-export function isActiveStatus(status) {
-    return ACTIVE.indexOf(status) > -1;
+export function isActiveStatus(status, steps = PIPELINE_STEPS) {
+    return activeOf(steps).indexOf(status) > -1;
 }
 
 export function isTerminalStatus(status) {
@@ -24,10 +29,10 @@ export function isTerminalStatus(status) {
 // Разбор приходит внутри интервью и за время жизни очереди успел побывать
 // в нескольких формах, поэтому статус и текст ошибки читаем терпимо:
 // пустой объект - это «ещё не запускали», а не ошибка.
-export function normalizeAnalysis(source) {
+export function normalizeAnalysis(source, steps = PIPELINE_STEPS) {
     let value = source && typeof source === 'object' ? source : {};
     let status = String(value.status || '').toLowerCase();
-    if (KNOWN.indexOf(status) < 0) {
+    if (status !== 'error' && steps.indexOf(status) < 0) {
         status = '';
     }
     let error = value.error && typeof value.error === 'object' ? value.error : {};
@@ -59,14 +64,14 @@ export function normalizeAnalysis(source) {
 // работает - она есть, но заблокирована со спиннером; терминальная
 // неретраебл-ошибка возвращает кнопку вместе с причиной.
 export function evaluateButtonState(analysis, options) {
-    let state = normalizeAnalysis(analysis);
-    let {hasVideo = true, sending = false} = options || {};
+    let {hasVideo = true, sending = false, steps = PIPELINE_STEPS} = options || {};
+    let state = normalizeAnalysis(analysis, steps);
 
     if (state.status === 'done') {
         return {visible: false, disabled: true, busy: false, reason: ''};
     }
 
-    let busy = sending || isActiveStatus(state.status);
+    let busy = sending || isActiveStatus(state.status, steps);
     // Ретраебл-ошибку очередь перезапустит сама - для человека это та же работа.
     let waiting = busy || (state.status === 'error' && state.retryable);
 
@@ -80,20 +85,40 @@ export function evaluateButtonState(analysis, options) {
     };
 }
 
+// Оценка ответов приходит той же обёрткой статуса, что и разбор. Блоки бэкенд
+// может положить и в result, и прямо рядом со статусом - сводим к result.
+export function normalizeAnswers(source) {
+    let value = source && typeof source === 'object' ? source : {};
+    let state = normalizeAnalysis(value, ANSWERS_PIPELINE_STEPS);
+    if (!state.result && Array.isArray(value.blocks)) {
+        state.result = {blocks: value.blocks};
+    }
+    return state;
+}
+
+// Кнопка «Оценить ответы» - те же правила, что у «Оценить», по шагам своего
+// пайплайна. Сверху одно условие: оценивать нечего, пока разбор диалога не готов.
+export function answersButtonState(dialog, answers, options) {
+    if (normalizeAnalysis(dialog).status !== 'done') {
+        return {visible: false, disabled: true, busy: false, reason: '', label: 'evaluate'};
+    }
+    return evaluateButtonState(answers, {...(options || {}), hasVideo: true, steps: ANSWERS_PIPELINE_STEPS});
+}
+
 // Индекс текущего шага в дорожке: по нему подсвечиваются пройденные этапы.
-export function stepIndex(status) {
-    let index = PIPELINE_STEPS.indexOf(status);
+export function stepIndex(status, steps = PIPELINE_STEPS) {
+    let index = steps.indexOf(status);
     return index < 0 ? -1 : index;
 }
 
-export function stepState(step, status) {
+export function stepState(step, status, steps = PIPELINE_STEPS) {
     if (status === 'error') {
         // Ошибка обрывает дорожку на шаге, где очередь споткнулась; предыдущие
         // шаги при этом остаются пройденными.
         return 'idle';
     }
-    let current = stepIndex(status);
-    let own = stepIndex(step);
+    let current = stepIndex(status, steps);
+    let own = stepIndex(step, steps);
     if (current < 0 || own < 0) return 'idle';
     if (own < current) return 'done';
     if (own === current) return status === 'done' ? 'done' : 'active';

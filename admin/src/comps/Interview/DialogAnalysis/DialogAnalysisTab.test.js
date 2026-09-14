@@ -4,10 +4,11 @@ import DialogAnalysisTab from './DialogAnalysisTab';
 
 const interview = (dialogAnalysis) => ({_id: 7, video: 'https://example.test/call.mp4', dialogAnalysis});
 
-const setupHttp = (payload) => {
+// answers - ответ ручки оценки ответов; у разбора и оценки разные адреса.
+const setupHttp = (payload, answers = null) => {
     const post = jest.fn(() => Promise.resolve({status: 'queued'}));
     global.http = {
-        get: jest.fn(() => Promise.resolve(payload)),
+        get: jest.fn(url => Promise.resolve(/answers-evaluation/.test(url) ? answers : payload)),
         post,
         put: jest.fn(() => Promise.resolve({})),
     };
@@ -67,7 +68,7 @@ describe('таб разбора диалога', () => {
         render(<DialogAnalysisTab item={interview(null)}/>);
         await flush();
 
-        expect(screen.queryByRole('button', {name: /Оценить/})).toBeNull();
+        expect(screen.queryByRole('button', {name: /^Оценить( заново)?$/})).toBeNull();
         expect(screen.getByText('Расскажите о себе')).toBeInTheDocument();
         expect(screen.getByText('Интервьюер')).toBeInTheDocument();
         expect(screen.getByText('Кандидат')).toBeInTheDocument();
@@ -242,5 +243,85 @@ describe('таб разбора диалога', () => {
         const first = screen.getByText('Первый голос').closest('[data-role]');
         expect(first.getAttribute('data-role')).toBe('manager');
         expect(screen.getByText('Второй голос').closest('[data-role]').getAttribute('data-role')).toBe('client');
+    });
+
+    describe('оценка ответов по вопросам', () => {
+        const done = {
+            status: 'done',
+            result: {conversation: {turns: [
+                {id: 't1', role: 'manager', startMs: 0, endMs: 3000, text: 'Что такое замыкание?'},
+                {id: 't2', role: 'client', startMs: 3000, endMs: 9000, text: 'Функция с доступом к внешней области'},
+                {id: 't3', role: 'manager', startMs: 9000, endMs: 11000, text: 'Почему ушли с прошлой работы?'},
+                {id: 't4', role: 'client', startMs: 11000, endMs: 15000, text: 'Хотел расти'},
+            ]}},
+        };
+
+        test('кнопки «Оценить ответы» нет, пока разбор диалога не готов', async () => {
+            setupHttp({status: 'analyzing'});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.queryByRole('button', {name: /Оценить ответы/})).toBeNull();
+            expect(screen.queryByText('Оценка ответов')).toBeNull();
+        });
+
+        test('после разбора кнопка ставит оценку в очередь и блокируется на шагах оценки', async () => {
+            const post = setupHttp(done);
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const button = screen.getByRole('button', {name: 'Оценить ответы'});
+            expect(button).not.toBeDisabled();
+            fireEvent.click(button);
+            await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/answers-evaluation', {}));
+            await waitFor(() => expect(screen.getByRole('button', {name: /Оценить ответы/})).toBeDisabled());
+            await waitFor(() => expect(screen.getByText('Делим на вопросы')).toBeInTheDocument());
+        });
+
+        test('терминальная ошибка оценки показывает причину и возвращает кнопку', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'error', error: {message: 'Сервис оценки недоступен'}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.getByText('Сервис оценки недоступен')).toBeInTheDocument();
+            expect(screen.getByText('Оценка ответов остановлена')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Оценить ответы заново'})).not.toBeDisabled();
+        });
+
+        test('реплики собраны в вопросы с меткой темы и баллом у технического', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
+                {id: 'b2', technical: false, turnIndexes: [2, 3]},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.queryByRole('button', {name: /Оценить ответы/})).toBeNull();
+            const first = screen.getByRole('region', {name: 'Вопрос 1'});
+            expect(within(first).getByText('Технический')).toBeInTheDocument();
+            expect(within(first).getByText('Что такое замыкание?')).toBeInTheDocument();
+            expect(within(first).getByRole('img', {name: 'Оценка 8 из 10'})).toBeInTheDocument();
+            expect(within(first).getByText('Определение верное')).toBeInTheDocument();
+
+            const second = screen.getByRole('region', {name: 'Вопрос 2'});
+            expect(within(second).getByText('Нетехнический')).toBeInTheDocument();
+            expect(within(second).getByText('Не оцениваем')).toBeInTheDocument();
+            expect(within(second).queryByRole('img')).toBeNull();
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
+            expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
+            expect(screen.getByText('Хотел расти')).toBeInTheDocument();
+        });
+
+        test('пока идёт оценка, у технического вопроса без балла написано «Оцениваем»', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'evaluating', blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1]},
+            ]}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(within(screen.getByRole('region', {name: 'Вопрос 1'})).getByText('Оцениваем')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Оценить ответы/})).toBeDisabled();
+        });
     });
 });

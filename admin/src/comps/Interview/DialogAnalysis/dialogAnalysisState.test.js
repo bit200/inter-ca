@@ -1,5 +1,8 @@
 import {
+    ANSWERS_PIPELINE_STEPS,
     PIPELINE_STEPS,
+    answersButtonState,
+    normalizeAnswers,
     evaluateButtonState,
     isActiveStatus,
     isTerminalStatus,
@@ -88,5 +91,51 @@ describe('кнопка «Оценить»', () => {
 
     it('без видео жать нечего', () => {
         expect(evaluateButtonState({}, {hasVideo: false}).disabled).toBe(true);
+    });
+});
+
+describe('кнопка «Оценить ответы»', () => {
+    it('не видна, пока разбор диалога не готов', () => {
+        ['', 'queued', 'analyzing', 'error'].forEach(status => {
+            expect(answersButtonState({status}, {}).visible).toBe(false);
+        });
+    });
+
+    it('видна и активна, когда разбор готов, а оценку не запускали', () => {
+        let state = answersButtonState({status: 'done'}, {});
+        expect(state.visible).toBe(true);
+        expect(state.disabled).toBe(false);
+        expect(state.label).toBe('evaluate');
+    });
+
+    it('заблокирована со спиннером на каждом шаге своего пайплайна', () => {
+        ['queued', 'grouping', 'classifying', 'evaluating'].forEach(status => {
+            let state = answersButtonState({status: 'done'}, normalizeAnswers({status}));
+            expect(state.visible).toBe(true);
+            expect(state.disabled).toBe(true);
+            expect(state.busy).toBe(true);
+        });
+        expect(answersButtonState({status: 'done'}, {}, {sending: true}).disabled).toBe(true);
+    });
+
+    it('скрыта, когда оценка готова, и возвращается с причиной после терминальной ошибки', () => {
+        expect(answersButtonState({status: 'done'}, {status: 'done'}).visible).toBe(false);
+        let failed = answersButtonState({status: 'done'}, {status: 'error', error: {message: 'evaluate недоступен'}});
+        expect(failed.disabled).toBe(false);
+        expect(failed.reason).toBe('evaluate недоступен');
+        expect(failed.label).toBe('evaluateAgain');
+        expect(answersButtonState({status: 'done'}, {status: 'error', retryable: true}).disabled).toBe(true);
+    });
+
+    it('шаги оценки ответов - свои, дорожка идёт по ним', () => {
+        expect(ANSWERS_PIPELINE_STEPS).toEqual(['queued', 'grouping', 'classifying', 'evaluating', 'done']);
+        expect(normalizeAnswers({status: 'classifying'}).status).toBe('classifying');
+        expect(normalizeAnalysis({status: 'classifying'}).status).toBe('');
+        expect(stepState('grouping', 'evaluating', ANSWERS_PIPELINE_STEPS)).toBe('done');
+        expect(stepState('evaluating', 'evaluating', ANSWERS_PIPELINE_STEPS)).toBe('active');
+    });
+
+    it('блоки рядом со статусом сводятся в result', () => {
+        expect(normalizeAnswers({status: 'done', blocks: [{id: 'b1'}]}).result).toEqual({blocks: [{id: 'b1'}]});
     });
 });
