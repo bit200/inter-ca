@@ -5,8 +5,8 @@
 .tab{
   --dlg-card: #ffffff;
   --dlg-soft: #f3f6f4;
-  --dlg-line: #dee2e6;
-  --dlg-ink: #2b2d3b;
+  --dlg-line: #dfe5e1;
+  --dlg-ink: #26302b;
   --dlg-muted: #6b7470;
   --dlg-strong: #14201a;
   // Акцент - зелёный проекта (--bs-primary), затемнённый до читаемого на белом:
@@ -28,14 +28,14 @@
 
 :global(html[data-bs-theme="dark"]) .tab{
   --dlg-card: #202221;
-  --dlg-soft: #25282d;
-  --dlg-line: #333547;
-  --dlg-ink: #d9e1ec;
-  --dlg-muted: #aab0b9;
+  --dlg-soft: #242a26;
+  --dlg-line: #34403a;
+  --dlg-ink: #dde7e1;
+  --dlg-muted: #a8b3ad;
   --dlg-strong: #f3f6f4;
   --dlg-accent: #7adc9e;
   --dlg-accent-soft: #16271f;
-  --dlg-guest: #aab0b9;
+  --dlg-guest: #a8b3ad;
   --dlg-guest-soft: #292c2b;
   --dlg-warn: #e3b465;
   --dlg-warn-soft: #2c2416;
@@ -519,7 +519,7 @@ button.turnSpeaker{
   border: 1px solid var(--dlg-line);
   border-radius: 8px;
   background: var(--dlg-card);
-  box-shadow: 0 6px 18px rgba(16, 26, 51, .14);
+  box-shadow: 0 6px 18px rgba(20, 32, 26, .14);
   cursor: default;
 }
 
