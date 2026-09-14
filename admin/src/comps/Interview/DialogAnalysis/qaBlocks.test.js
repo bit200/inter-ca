@@ -1,4 +1,4 @@
-import {readQaBlocks, scoreBand} from './qaBlocks';
+import {questionTitle, readQaBlocks, scoreBand} from './qaBlocks';
 
 const turns = [
     {id: 't1', role: 'manager', startMs: 0, endMs: 3000, text: 'Что такое замыкание?'},
@@ -81,5 +81,13 @@ describe('мягкая оценка нетехнических блоков', ()
         });
         expect(first.timing).toEqual({delayMs: 400, durationMs: 6000});
         expect(second.timing).toBeNull();
+    });
+
+    it('заголовок блока - текст основного вопроса, без него - номер', () => {
+        let [block] = readQaBlocks([{turnIndexes: [1, 2, 3]}], turns);
+        expect(questionTitle(block)).toBe('А где это пригодится?');
+        let [asked] = readQaBlocks([{turnIndexes: [0, 1, 2]}], turns);
+        expect(questionTitle(asked)).toBe('Что такое замыкание?');
+        expect(questionTitle({number: 4, items: [{turn: {role: 'client', text: 'Ответ'}, followUp: false}]})).toBe('Вопрос 4');
     });
 });

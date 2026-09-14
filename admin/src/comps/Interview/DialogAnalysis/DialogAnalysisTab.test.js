@@ -325,7 +325,8 @@ describe('таб разбора диалога', () => {
             expect(screen.queryByRole('button', {name: /Оценить ответы/})).toBeNull();
             const first = screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(first).getByText('Технический')).toBeInTheDocument();
-            expect(within(first).getByText('Что такое замыкание?')).toBeInTheDocument();
+            // Текст вопроса - в шапке блока и в самой реплике интервьюера.
+            expect(within(first).getAllByText('Что такое замыкание?')).toHaveLength(2);
             expect(within(first).getByRole('img', {name: 'Оценка 8 из 10'})).toBeInTheDocument();
             expect(within(first).getByText('Определение верное')).toBeInTheDocument();
 
@@ -337,6 +338,29 @@ describe('таб разбора диалога', () => {
             fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
             expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
+        });
+
+        test('в шапке вопроса его текст вместо номера, по шапке вопрос сворачивается и разворачивается', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const block = screen.getByRole('region', {name: 'Вопрос 1'});
+            expect(within(block).queryByText('Вопрос 1')).toBeNull();
+            const toggle = within(block).getByRole('button', {name: 'Что такое замыкание?'});
+            expect(toggle).toHaveAttribute('aria-expanded', 'true');
+            expect(within(block).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+
+            fireEvent.click(toggle);
+            expect(toggle).toHaveAttribute('aria-expanded', 'false');
+            expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
+            expect(within(block).queryByText('Определение верное')).toBeNull();
+            expect(within(block).getByText('Технический')).toBeInTheDocument();
+
+            fireEvent.click(toggle);
+            expect(within(block).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
         });
 
         test('линзы: технический и нетехнический баллы, флаги и счётчики - из настоящей оценки ответов', async () => {
