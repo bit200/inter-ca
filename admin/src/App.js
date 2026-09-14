@@ -342,6 +342,7 @@ global.CONFIG = {
             modalSize: "small",
             autoSave: 200,
             url: "/my-interview",
+            saveInTabs: true,
             top_filters: [
 
                 {

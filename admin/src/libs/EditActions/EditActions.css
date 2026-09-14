@@ -1,0 +1,88 @@
+.edit-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Полоса сохранения в конце вкладки: отделена от полей линией,
+   кнопка у правого края - там, где взгляд заканчивает форму. */
+.edit-actions--tab {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--bs-border-color, #e5e7eb);
+}
+
+.edit-actions__back,
+.edit-actions__save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.edit-actions__back i,
+.edit-actions__save i {
+    font-size: 16px;
+}
+
+.edit-actions__back {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--bs-secondary-color, #6b7280);
+}
+
+.edit-actions__back:hover {
+    background: var(--bs-tertiary-bg, #f3f4f6);
+    color: var(--bs-body-color, #111827);
+}
+
+.edit-actions__save {
+    min-width: 128px;
+    justify-content: center;
+    border: 1px solid var(--bs-primary);
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+.edit-actions__save:hover {
+    filter: brightness(.95);
+}
+
+.edit-actions__save.is-saving {
+    opacity: .75;
+    cursor: progress;
+}
+
+/* «Сохранено» - та же кнопка, но без заливки: действие выполнено,
+   звать к нему больше не нужно. */
+.edit-actions__save.is-saved {
+    background: transparent;
+    color: var(--bs-primary);
+}
+
+.edit-actions__save.is-error {
+    border-color: var(--bs-danger, #dc3545);
+    background: var(--bs-danger, #dc3545);
+}
+
+.edit-actions__back:focus-visible,
+.edit-actions__save:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .edit-actions__back,
+    .edit-actions__save {
+        transition: none;
+    }
+}
