@@ -766,6 +766,7 @@ function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, dura
 const RELEVANCE_LABELS = {on_topic: 'По теме', evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
 
 function SoftMarks({soft}) {
+    if (soft.state === 'unanswered') return null;
     if (soft.state === 'skipped') return <span className={styles.qaStatus}>Не оцениваем</span>;
     if (soft.state === 'pending') return <span className={styles.qaStatus} data-state="pending">
         <span className={styles.spinner} aria-hidden="true"/>Оцениваем

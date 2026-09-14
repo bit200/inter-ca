@@ -1,4 +1,5 @@
 import {questionTitle, readQaBlocks, scoreBand} from './qaBlocks';
+import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
     {id: 't1', role: 'manager', startMs: 0, endMs: 3000, text: 'Что такое замыкание?'},
@@ -73,6 +74,20 @@ describe('мягкая оценка нетехнических блоков', ()
         expect(readQaBlocks([block], turns)[0].soft.state).toBe('skipped');
         expect(readQaBlocks([{...block, softEvaluate: {error: {message: 'llm недоступна'}}}], turns)[0].soft)
             .toEqual({state: 'error', message: 'llm недоступна'});
+    });
+
+    it('в блоке без реплики кандидата оценка не показывается - она судила бы интервьюера', () => {
+        // Группировка отнесла уточнение интервьюера к «ответу», и модель оценила его слова.
+        let evaluated = {technical: false, turnIndexes: [0, 2], softEvaluate: {relevance: 'off_topic', complete: false, note: 'Ответ кандидата бессмыслен'}};
+        let [block] = readQaBlocks([evaluated], turns, {active: true});
+        expect(block.soft).toEqual({state: 'unanswered'});
+        expect(withoutAnswer(block)).toBe(true);
+        expect(behaviorCounts([block])).toEqual({unanswered: 1, evasive: 0, off_topic: 0});
+        expect(behaviorScore([block])).toBeNull();
+
+        let [answered] = readQaBlocks([{...evaluated, turnIndexes: [0, 1]}], turns);
+        expect(answered.soft.state).toBe('done');
+        expect(withoutAnswer(answered)).toBe(false);
     });
 
     it('тайминг ответа берётся из метрик разговора по порядку блоков', () => {
