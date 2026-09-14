@@ -174,3 +174,56 @@ export function markerCounts(markers) {
     });
     return Array.from(counts.entries()).map(([category, count]) => ({category, count}));
 }
+
+// Ключ говорящего: диаризация даёт SPEAKER_00, SPEAKER_01, а если её не было -
+// различать участников можно только по роли.
+export function speakerKey(turn) {
+    let speaker = turn && turn.speaker;
+    if (speaker && speaker !== 'unknown') return String(speaker);
+    return 'role:' + normalizedRole(turn && turn.role);
+}
+
+// Роль, которую человек назначил говорящему руками, сильнее автоматической:
+// разбор угадывает интервьюера по дорожкам, а интервьюеров бывает несколько.
+export function applySpeakerRoles(turns, roles) {
+    let map = roles && typeof roles === 'object' ? roles : {};
+    return (turns || []).map(turn => {
+        let role = map[speakerKey(turn)];
+        return role === 'client' || role === 'manager' ? {...turn, role} : turn;
+    });
+}
+
+// Участники записи для выбора роли: сколько реплик и сколько времени говорил
+// каждый и с чего начал - по первой фразе человек узнаёт голос.
+export function listSpeakers(turns) {
+    let byKey = new Map();
+    (turns || []).forEach(turn => {
+        if (!turn) return;
+        let key = speakerKey(turn);
+        let entry = byKey.get(key);
+        if (!entry) {
+            entry = {key, speaker: turn.speaker, role: normalizedRole(turn.role), turns: 0, speechMs: 0, sample: ''};
+            byKey.set(key, entry);
+        }
+        entry.turns += 1;
+        entry.speechMs += Math.max(0, Number(turn.endMs || 0) - Number(turn.startMs || 0));
+        if (!entry.sample && turn.text && String(turn.text).trim().length > 3) entry.sample = String(turn.text).trim();
+    });
+    return Array.from(byKey.values());
+}
+
+// Подпись говорящего в ленте. Если одну роль делят несколько голосов
+// (два интервьюера), добавляем номер, иначе реплики разных людей сливаются.
+export function speakerLabels(turns) {
+    let speakers = listSpeakers(turns);
+    let perRole = {};
+    speakers.forEach(entry => { perRole[entry.role] = (perRole[entry.role] || 0) + 1; });
+    let seen = {};
+    let labels = {};
+    speakers.forEach(entry => {
+        let base = speakerLabel(entry.role, entry.speaker);
+        seen[entry.role] = (seen[entry.role] || 0) + 1;
+        labels[entry.key] = ROLE_LABELS[entry.role] && perRole[entry.role] > 1 ? base + ' ' + seen[entry.role] : base;
+    });
+    return labels;
+}

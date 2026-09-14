@@ -486,3 +486,110 @@
   line-height: 1;
   cursor: pointer;
 }
+
+// Роли участников. Строка на каждый голос: слева - кто это и чем узнать,
+// справа - переключатель роли. Цвет точки тот же, что у полосы реплик в ленте,
+// чтобы выбор сразу читался в расшифровке.
+.speakers{
+  margin-top: 26px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  background: var(--dlg-card);
+}
+
+.speakersHead{
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dlg-line);
+}
+
+.speakersTitle{
+  margin: 0;
+  color: var(--dlg-strong);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.speakersHint{
+  margin: 3px 0 0;
+  max-width: 70ch;
+  color: var(--dlg-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.speaker{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 16px;
+
+  & + &{ border-top: 1px solid var(--dlg-line); }
+}
+
+.speakerInfo{
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.speakerName{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  color: var(--dlg-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.speakerDot{
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dlg-line);
+}
+
+.speaker[data-role="client"] .speakerDot{ background: var(--dlg-guest); }
+.speaker[data-role="manager"] .speakerDot{ background: var(--dlg-host); }
+
+.speakerStats{
+  color: var(--dlg-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.speakerSample{
+  overflow: hidden;
+  color: var(--dlg-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.roleSwitch{
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  background: var(--dlg-soft);
+}
+
+.roleOption{
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); }
+  &:focus-visible{ outline: 2px solid var(--dlg-host); outline-offset: 1px; }
+}
+
+.roleOption[aria-checked="true"][data-role="client"]{ color: var(--dlg-guest); background: var(--dlg-guest-soft); box-shadow: inset 0 0 0 1px var(--dlg-guest); }
+.roleOption[aria-checked="true"][data-role="manager"]{ color: var(--dlg-host); background: var(--dlg-host-soft); box-shadow: inset 0 0 0 1px var(--dlg-host); }

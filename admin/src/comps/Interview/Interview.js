@@ -297,7 +297,11 @@ function Interview({props}) {
                                     name: t('dialogAnalysis'), urlKey: 'dialog', childs: [
                                         {
                                             size: 12,
-                                            Component: ({item: parent}) => <DialogAnalysisTab interview={parent || item}/>
+                                            Component: ({item: parent}) => <DialogAnalysisTab
+                                                interview={parent || item}
+                                                speakerRoles={infoByUsersInterview.dialogSpeakerRoles}
+                                                onSpeakerRolesChange={dialogSpeakerRoles => onChangeInfoByUsers({dialogSpeakerRoles})}
+                                            />
                                         }
                                     ]
                                 },

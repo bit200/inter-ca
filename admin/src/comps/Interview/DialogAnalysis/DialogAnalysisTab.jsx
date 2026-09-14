@@ -24,6 +24,10 @@ import {
     readConversation,
     roleSummary,
     speakerLabel,
+    applySpeakerRoles,
+    listSpeakers,
+    speakerKey,
+    speakerLabels,
 } from './dialogAnalysisFormat';
 import {pickDialogMedia, turnIndexAt} from './dialogMedia';
 
@@ -53,7 +57,9 @@ function analysisOf(interview) {
     return item.dialogAnalysis || item.videoAnalysis || null;
 }
 
-export default function DialogAnalysisTab({item, interview}) {
+// speakerRoles - роли, назначенные говорящим руками ({SPEAKER_01: 'client'}),
+// onSpeakerRolesChange - сохранить их в интервью.
+export default function DialogAnalysisTab({item, interview, speakerRoles, onSpeakerRolesChange}) {
     let value = interview || item || {};
     let interviewId = value._id;
     let hasVideo = Boolean(value.video || value.uploadVideo || value.videoId);
@@ -61,6 +67,7 @@ export default function DialogAnalysisTab({item, interview}) {
     let [analysis, setAnalysis] = useState(() => normalizeAnalysis(analysisOf(value)));
     let [sending, setSending] = useState(false);
     let [openTurn, setOpenTurn] = useState(null);
+    let [roles, setRoles] = useState(() => ({...(speakerRoles || {})}));
     let mounted = useRef(true);
     let media = pickDialogMedia(value, analysis);
 
@@ -103,7 +110,17 @@ export default function DialogAnalysisTab({item, interview}) {
             .finally(() => { mounted.current && setSending(false); });
     }
 
-    let conversation = useMemo(() => readConversation(analysis.result), [analysis.result]);
+    let rawConversation = useMemo(() => readConversation(analysis.result), [analysis.result]);
+    let conversation = useMemo(
+        () => ({...rawConversation, turns: applySpeakerRoles(rawConversation.turns, roles)}),
+        [rawConversation, roles]
+    );
+
+    function assignRole(key, role) {
+        let next = {...roles, [key]: role};
+        setRoles(next);
+        onSpeakerRolesChange && onSpeakerRolesChange(next);
+    }
     let markersById = useMemo(() => {
         let map = new Map();
         conversation.markers.forEach(marker => marker && map.set(marker.id, marker));
@@ -158,6 +175,9 @@ export default function DialogAnalysisTab({item, interview}) {
 
         {analysis.status === 'done' && <Result
             conversation={conversation}
+            speakers={listSpeakers(rawConversation.turns).filter(entry => entry.speaker && entry.speaker !== 'unknown')}
+            roles={roles}
+            onAssignRole={assignRole}
             markersById={markersById}
             openTurn={openTurn}
             onOpenTurn={setOpenTurn}
@@ -166,8 +186,10 @@ export default function DialogAnalysisTab({item, interview}) {
     </div>;
 }
 
-function Result({conversation, markersById, openTurn, onOpenTurn, media}) {
+function Result({conversation, speakers, roles, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
     let {turns, markers, summary, capabilities} = conversation;
+    let labels = speakerLabels(turns);
+    let labelOf = turn => labels[speakerKey(turn)] || speakerLabel(turn.role, turn.speaker);
     let player = useRef(null);
     let [playingIndex, setPlayingIndex] = useState(-1);
 
@@ -210,6 +232,8 @@ function Result({conversation, markersById, openTurn, onOpenTurn, media}) {
 
         <EmotionSummary sources={summary.emotionSources}/>
 
+        <SpeakerRoles speakers={speakers} roles={roles} onAssignRole={onAssignRole}/>
+
         <h4 className={styles.sectionTitle}>Расшифровка</h4>
         <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
         {media && <div className={styles.player}>
@@ -241,7 +265,7 @@ function Result({conversation, markersById, openTurn, onOpenTurn, media}) {
                         }}
                     >
                         <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
-                        <span className={styles.turnSpeaker}>{speakerLabel(turn.role, turn.speaker)}</span>
+                        <span className={styles.turnSpeaker}>{labelOf(turn)}</span>
                         <p className={styles.turnText}>{turn.text || '—'}</p>
                         {media && <button
                             type="button"
@@ -257,7 +281,7 @@ function Result({conversation, markersById, openTurn, onOpenTurn, media}) {
                         >▶</button>}
                         <TurnSignals turn={turn} markers={turnMarkers}/>
                     </div>
-                    {openTurn === key && <TurnDetails turn={turn} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
+                    {openTurn === key && <TurnDetails turn={turn} label={labelOf(turn)} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
                 </React.Fragment>;
             })}
         </div>
@@ -268,6 +292,68 @@ function Result({conversation, markersById, openTurn, onOpenTurn, media}) {
             <Capabilities capabilities={capabilities}/>
         </div>
     </>;
+}
+
+// Кто на записи кандидат. Разбор угадывает роли по дорожкам и ошибается, когда
+// интервьюеров несколько, поэтому каждому голосу роль можно назначить руками.
+// Один голос - одна строка: первая фраза помогает узнать, кто это. Без
+// разделения говорящих голоса не различить, и блок не показываем.
+const ROLE_OPTIONS = [
+    {role: 'client', label: 'Кандидат'},
+    {role: 'manager', label: 'Интервьюер'},
+];
+
+function SpeakerRoles({speakers, roles, onAssignRole}) {
+    if (!speakers || !speakers.length) return null;
+    let totalMs = speakers.reduce((sum, entry) => sum + entry.speechMs, 0);
+    let hasCandidate = speakers.some(entry => (roles[entry.key] || entry.role) === 'client');
+
+    return <section className={styles.speakers} aria-label="Роли участников">
+        <div className={styles.speakersHead}>
+            <h4 className={styles.speakersTitle}>Кто на записи кандидат</h4>
+            <p className={styles.speakersHint}>
+                {hasCandidate
+                    ? 'Роли определились автоматически. Если голос подписан неверно, переключите его — лента ниже обновится.'
+                    : 'Кандидат не определился. Отметьте его голос — остальные участники считаются интервьюерами.'}
+            </p>
+        </div>
+        {speakers.map((entry, index) => {
+            let current = roles[entry.key] || entry.role;
+            let name = 'Голос ' + (index + 1);
+            let share = totalMs ? Math.round(entry.speechMs / totalMs * 100) : 0;
+            return <div key={entry.key} className={styles.speaker} data-role={current}>
+                <div className={styles.speakerInfo}>
+                    <span className={styles.speakerName}>
+                        <span className={styles.speakerDot} aria-hidden="true"/>
+                        {name}
+                        <span className={styles.speakerStats}>
+                            {entry.turns} {plural(entry.turns, 'реплика', 'реплики', 'реплик')}{totalMs ? ', ' + share + '% времени' : ''}
+                        </span>
+                    </span>
+                    {entry.sample && <span className={styles.speakerSample}>«{entry.sample}»</span>}
+                </div>
+                <div className={styles.roleSwitch} role="radiogroup" aria-label={'Роль: ' + name}>
+                    {ROLE_OPTIONS.map(option => <button
+                        key={option.role}
+                        type="button"
+                        role="radio"
+                        aria-checked={current === option.role}
+                        className={styles.roleOption}
+                        data-role={option.role}
+                        onClick={() => current !== option.role && onAssignRole(entry.key, option.role)}
+                    >{option.label}</button>)}
+                </div>
+            </div>;
+        })}
+    </section>;
+}
+
+function plural(count, one, few, many) {
+    let mod10 = count % 10;
+    let mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+    return many;
 }
 
 // Короткие подписи прямо в ленте: по ним видно проблемную реплику, не открывая её.
@@ -300,7 +386,7 @@ function TurnSignals({turn, markers}) {
     </span>;
 }
 
-function TurnDetails({turn, markers, onClose}) {
+function TurnDetails({turn, label, markers, onClose}) {
     let signals = turn.signals && typeof turn.signals === 'object' ? turn.signals : {};
     let prosody = signals.prosody && typeof signals.prosody === 'object' ? signals.prosody : null;
     let events = Array.isArray(signals.events) ? signals.events : [];
@@ -309,7 +395,7 @@ function TurnDetails({turn, markers, onClose}) {
 
     return <div className={styles.details}>
         <div className={styles.detailsHead}>
-            <strong>{speakerLabel(turn.role, turn.speaker)} · {formatDuration(startMs)}–{formatDuration(endMs)}</strong>
+            <strong>{label || speakerLabel(turn.role, turn.speaker)} · {formatDuration(startMs)}–{formatDuration(endMs)}</strong>
             <button type="button" className={styles.detailsClose} onClick={onClose} aria-label="Свернуть реплику">×</button>
         </div>
         <blockquote className={styles.detailsQuote}>{turn.text || 'Текст реплики не распознан.'}</blockquote>
