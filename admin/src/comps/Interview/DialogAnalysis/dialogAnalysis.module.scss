@@ -351,6 +351,9 @@ button.turnSpeaker{
 // Расшифровка рядом с записью. Видео стоит справа и едет вместе со скроллом,
 // чтобы при чтении длинного разговора собеседник оставался в кадре; аудио -
 // узкая полоса плеера над репликами, которая тоже не уезжает.
+// Липнет плеер под фиксированным хэдером админки (.topbar), а не к краю окна:
+// с top у самого края видео при скролле уезжало под хэдер. Высота видео тоже
+// считается от видимой под хэдером части окна, чтобы подпись не срезалась.
 .transcript{
   display: grid;
   gap: 14px;
@@ -358,7 +361,7 @@ button.turnSpeaker{
 
 .player{
   position: sticky;
-  top: 8px;
+  top: calc(var(--bs-topbar-height, 0px) + 12px);
   z-index: 1;
   align-self: start;
   padding: 10px;
@@ -373,7 +376,7 @@ button.turnSpeaker{
   }
 
   video{
-    max-height: 60vh;
+    max-height: min(60vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
     border-radius: 4px;
     background: #000;
   }
