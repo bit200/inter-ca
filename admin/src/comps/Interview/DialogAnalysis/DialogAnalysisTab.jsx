@@ -622,7 +622,7 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
                     onClick={() => setCollapsed(!collapsed)}
                 >
                     <span className={styles.qaChevron} aria-hidden="true"/>
-                    <strong className={styles.qaQuestion}>{title}</strong>
+                    <strong className={styles.qaQuestion} title={title}>{title}</strong>
                 </button>
                 {block.startMs !== null && <span className={styles.qaTime}>
                     {formatDuration(block.startMs)}–{formatDuration(block.endMs === null ? block.startMs : block.endMs)}
