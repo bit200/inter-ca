@@ -288,6 +288,32 @@ describe('таб разбора диалога', () => {
             expect(screen.getByRole('button', {name: 'Оценить ответы заново'})).not.toBeDisabled();
         });
 
+        test('готовые разбор и оценка не показывают свои карточки с шагами, а идущие и упавшие показывают', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: []}}});
+            const {unmount} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.queryByText('Разбор диалога')).toBeNull();
+            expect(screen.queryByText('Оценка ответов')).toBeNull();
+            expect(screen.queryByText('Готово')).toBeNull();
+            expect(screen.getByText('Что такое замыкание?')).toBeInTheDocument();
+            unmount();
+
+            setupHttp(done, {answersEvaluation: {status: 'evaluating'}});
+            const second = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+            expect(screen.queryByText('Разбор диалога')).toBeNull();
+            expect(screen.getByText('Оценка ответов')).toBeInTheDocument();
+            expect(screen.getByText('Оцениваем ответы')).toBeInTheDocument();
+            second.unmount();
+
+            setupHttp({status: 'error', error: {message: 'Запись недоступна'}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+            expect(screen.getByText('Разбор диалога')).toBeInTheDocument();
+            expect(screen.getByText('Запись недоступна')).toBeInTheDocument();
+        });
+
         test('реплики собраны в вопросы с меткой темы и баллом у технического', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
