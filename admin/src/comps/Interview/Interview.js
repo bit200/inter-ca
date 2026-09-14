@@ -2,7 +2,7 @@ import TextField from '@mui/material/TextField';
 import React, {useRef, useState, useEffect} from 'react';
 import _ from 'underscore';
 import {
-    Link, Outlet
+    Link, Outlet, useSearchParams
 } from "react-router-dom";
 import Select from 'libs/Select'
 import Smart from 'libs/Smart'
@@ -25,6 +25,7 @@ import DebugLogs from "../DebugLogs";
 import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
+import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
 
 let isAdmin = Storage.isAdmin()
 let pubName = Storage.pubName;
@@ -161,6 +162,8 @@ function Interview({props}) {
 
 
     let userId = global.user.get_id();
+    let [searchParams, setSearchParams] = useSearchParams();
+    let tabs;
 
     function onChangeInfoByUsers(data) {
         item.infoByUsersInterview = item.infoByUsersInterview || {};
@@ -211,9 +214,9 @@ function Interview({props}) {
                     items={[
                         {
                             size: 12,
-                            tabs: [
+                            tabs: tabs = [
                                 {
-                                    name: t('questions'), childs: [
+                                    name: t('questions'), urlKey: 'questions', childs: [
                                         {
                                             size: 12,
                                             Component: Comp
@@ -221,7 +224,7 @@ function Interview({props}) {
                                     ]
                                 },
                                 {
-                                    name: t('mainMenu'), childs: [
+                                    name: t('mainMenu'), urlKey: 'main', childs: [
                                         {
                                             name: 'name',
                                             key: 'name', type: 'input', size: 3},
@@ -241,7 +244,7 @@ function Interview({props}) {
 
 
                                 {
-                                    name: t('analyse'), childs: [
+                                    name: t('analyse'), urlKey: 'analyse', childs: [
                                         {
                                             name: t('Overall assessment of the interview'),
                                             key: `infoByUsersInterview.user${global.user.get_id()}.feedback`,
@@ -291,7 +294,7 @@ function Interview({props}) {
                                     ]
                                 },
                                 {
-                                    name: t('dialogAnalysis'), childs: [
+                                    name: t('dialogAnalysis'), urlKey: 'dialog', childs: [
                                         {
                                             size: 12,
                                             Component: ({item: parent}) => <DialogAnalysisTab interview={parent || item}/>
@@ -299,7 +302,7 @@ function Interview({props}) {
                                     ]
                                 },
                                 !(isSale || isAdmin) ? null : {
-                                    name: 'Админ', childs: [
+                                    name: 'Админ', urlKey: 'admin', childs: [
                                         {type: 'HR', size: 12,},
 
                                         {
@@ -348,6 +351,14 @@ function Interview({props}) {
                                     ]
                                 }
                             ],
+                            // Вкладка хранится в адресе (?tab=dialog), см. interviewTabs.js.
+                            activeTabInd: tabIndexFromKey(tabs, searchParams.get(TAB_PARAM)),
+                            onTabChange: (ind) => {
+                                let next = new URLSearchParams(searchParams);
+                                let key = tabKeyAt(tabs, ind);
+                                key ? next.set(TAB_PARAM, key) : next.delete(TAB_PARAM);
+                                setSearchParams(next, {replace: true});
+                            },
                             Footer: FooterComp
                         },
                         // {

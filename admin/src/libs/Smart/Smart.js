@@ -331,7 +331,11 @@ class Smart extends React.Component {
                 }
 
                 if (tabs) {
-                    let activeTabInd = _this.state.activeTabInd || tabs.findIndex(it => it);
+                    // Поле может само вести активную вкладку (например, из адреса страницы):
+                    // тогда activeTabInd приходит снаружи, а клик уходит в onTabChange.
+                    let activeTabInd = field.activeTabInd != null && tabs[field.activeTabInd]
+                        ? field.activeTabInd
+                        : _this.state.activeTabInd || tabs.findIndex(it => it);
                     let Footer = field.Footer;
                     let childs = tabs[activeTabInd]?.childs;
                     return <>
@@ -343,7 +347,10 @@ class Smart extends React.Component {
                                 }
                                 return (<li className="nav-item" role="presentation" key={ind}>
                                     <a className={"nav-link " + (isActive ? 'active' : '')}
-                                       onClick={() => {this.setState({activeTabInd: ind})}}
+                                       onClick={() => {
+                                           this.setState({activeTabInd: ind})
+                                           field.onTabChange && field.onTabChange(ind, tab)
+                                       }}
                                        data-bs-toggle="tab"
                                       role="tab"
                                        aria-selected="true">{tab.name || '-'}</a>

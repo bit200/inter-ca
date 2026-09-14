@@ -49,6 +49,8 @@ export function normalizeAnalysis(source) {
         finishedAt: value.finishedAt || null,
         updatedAt: value.updatedAt || null,
         result: value.result && typeof value.result === 'object' ? value.result : null,
+        // Отдельная аудиозапись разбора: к ней привязываем реплики, если у интервью нет видео.
+        audioUrl: typeof value.audioUrl === 'string' ? value.audioUrl : '',
     };
 }
 

@@ -99,4 +99,66 @@ describe('таб разбора диалога', () => {
         fireEvent.click(screen.getByText('Работал с очередями'));
         expect(screen.getByText('142 слов/мин')).toBeInTheDocument();
     });
+    describe('реплики привязаны к записи', () => {
+        const done = {
+            status: 'done',
+            result: {
+                conversation: {
+                    summary: {},
+                    markers: [],
+                    turns: [
+                        {id: 't1', role: 'manager', startMs: 0, endMs: 4000, text: 'Расскажите о себе'},
+                        {id: 't2', role: 'client', startMs: 65000, endMs: 70000, text: 'Работал с очередями', signals: {prosody: {wordsPerMinute: 142}}},
+                    ],
+                },
+            },
+        };
+
+        test('кнопка у реплики перематывает видео на её начало и не раскрывает детали', async () => {
+            setupHttp(done);
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const video = container.querySelector('video');
+            expect(video).toHaveAttribute('src', 'https://example.test/call.mp4');
+            video.play = jest.fn(() => Promise.resolve());
+
+            fireEvent.click(screen.getByRole('button', {name: 'Воспроизвести с 1:05'}));
+            expect(video.currentTime).toBe(65);
+            expect(video.play).toHaveBeenCalled();
+            expect(screen.queryByText('142 слов/мин')).toBeNull();
+        });
+
+        test('звучащая реплика подсвечивается по ходу записи', async () => {
+            setupHttp(done);
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const video = container.querySelector('video');
+            video.currentTime = 66;
+            fireEvent.timeUpdate(video);
+            const playing = container.querySelectorAll('[data-playing="true"]');
+            expect(playing).toHaveLength(1);
+            expect(playing[0]).toHaveTextContent('Работал с очередями');
+        });
+
+        test('без видео реплики привязываются к аудиозаписи', async () => {
+            setupHttp(done);
+            const {container} = render(<DialogAnalysisTab item={{_id: 7, audio: 'https://example.test/call.mp3'}}/>);
+            await flush();
+
+            expect(container.querySelector('video')).toBeNull();
+            expect(container.querySelector('audio')).toHaveAttribute('src', 'https://example.test/call.mp3');
+            expect(screen.getAllByRole('button', {name: /Воспроизвести с/})).toHaveLength(2);
+        });
+
+        test('без записи кнопок воспроизведения нет', async () => {
+            setupHttp(done);
+            render(<DialogAnalysisTab item={{_id: 7}}/>);
+            await flush();
+
+            expect(screen.getByText('Расскажите о себе')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Воспроизвести с/})).toBeNull();
+        });
+    });
 });

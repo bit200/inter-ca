@@ -246,7 +246,8 @@
   display: grid;
   gap: 2px;
   border: 1px solid var(--dlg-line);
-  border-radius: 8px;
+  // Слева у реплик полоса роли - скругление угла её обрезало бы, поэтому радиус только справа.
+  border-radius: 0 8px 8px 0;
   background: var(--dlg-card);
   overflow: hidden;
 }
@@ -314,6 +315,65 @@
 }
 
 .turnPlay:hover{ color: var(--dlg-strong); background: var(--dlg-soft); }
+.turnPlay:focus-visible{ outline: 2px solid var(--dlg-host); outline-offset: 2px; }
+
+// Реплика, которая сейчас звучит в плеере: заливка цветом участника и
+// залитая кнопка - по ней глаз находит место в длинной расшифровке.
+.turn[data-playing="true"][data-role="manager"]{ background: var(--dlg-host-soft); }
+.turn[data-playing="true"][data-role="client"]{ background: var(--dlg-guest-soft); }
+.turn[data-playing="true"] .turnPlay{
+  border-color: currentColor;
+  color: var(--dlg-card);
+  background: var(--dlg-muted);
+}
+.turn[data-playing="true"][data-role="manager"] .turnPlay{ background: var(--dlg-host); border-color: var(--dlg-host); }
+.turn[data-playing="true"][data-role="client"] .turnPlay{ background: var(--dlg-guest); border-color: var(--dlg-guest); }
+
+// Расшифровка рядом с записью. Видео стоит справа и едет вместе со скроллом,
+// чтобы при чтении длинного разговора собеседник оставался в кадре; аудио -
+// узкая полоса плеера над репликами, которая тоже не уезжает.
+.transcript{
+  display: grid;
+  gap: 14px;
+}
+
+.player{
+  position: sticky;
+  top: 8px;
+  z-index: 1;
+  align-self: start;
+  padding: 10px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  background: var(--dlg-card);
+
+  video,
+  audio{
+    display: block;
+    width: 100%;
+  }
+
+  video{
+    max-height: 60vh;
+    border-radius: 4px;
+    background: #000;
+  }
+}
+
+.playerHint{
+  margin: 8px 2px 0;
+  color: var(--dlg-muted);
+  font-size: 12px;
+}
+
+@media (min-width: 992px){
+  .transcript[data-media="video"]{
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
+
+    .player{ grid-column: 2; grid-row: 1; }
+    .turns{ grid-column: 1; grid-row: 1; }
+  }
+}
 
 .turnSignals{
   display: flex;

@@ -25,6 +25,7 @@ import {
     roleSummary,
     speakerLabel,
 } from './dialogAnalysisFormat';
+import {pickDialogMedia, turnIndexAt} from './dialogMedia';
 
 // Разбор диалога по записи интервью. Очередь на стороне api ведёт запись по
 // шагам queued -> downloading -> analyzing -> done/error, а таб показывает, где
@@ -61,6 +62,7 @@ export default function DialogAnalysisTab({item, interview}) {
     let [sending, setSending] = useState(false);
     let [openTurn, setOpenTurn] = useState(null);
     let mounted = useRef(true);
+    let media = pickDialogMedia(value, analysis);
 
     useEffect(() => () => { mounted.current = false; }, []);
 
@@ -159,12 +161,30 @@ export default function DialogAnalysisTab({item, interview}) {
             markersById={markersById}
             openTurn={openTurn}
             onOpenTurn={setOpenTurn}
+            media={media}
         />}
     </div>;
 }
 
-function Result({conversation, markersById, openTurn, onOpenTurn}) {
+function Result({conversation, markersById, openTurn, onOpenTurn, media}) {
     let {turns, markers, summary, capabilities} = conversation;
+    let player = useRef(null);
+    let [playingIndex, setPlayingIndex] = useState(-1);
+
+    // Реплика перематывает запись на своё начало и сразу запускает её:
+    // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
+    function playFrom(turn) {
+        let el = player.current;
+        if (!el) return;
+        el.currentTime = Math.max(0, Number(turn.startMs || 0)) / 1000;
+        let started = el.play && el.play();
+        started && started.catch && started.catch(() => {});
+    }
+
+    function onTimeUpdate(event) {
+        let index = turnIndexAt(turns, event.currentTarget.currentTime * 1000);
+        setPlayingIndex(prev => prev === index ? prev : index);
+    }
 
     if (!turns.length) {
         return <p className={styles.empty}>
@@ -191,6 +211,15 @@ function Result({conversation, markersById, openTurn, onOpenTurn}) {
         <EmotionSummary sources={summary.emotionSources}/>
 
         <h4 className={styles.sectionTitle}>Расшифровка</h4>
+        <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
+        {media && <div className={styles.player}>
+            {media.kind === 'video'
+                ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate}/>
+                : <audio ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate}/>}
+            <p className={styles.playerHint}>
+                {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
+            </p>
+        </div>}
         <div className={styles.turns}>
             {turns.map((turn, index) => {
                 let key = turn.id || index;
@@ -201,6 +230,7 @@ function Result({conversation, markersById, openTurn, onOpenTurn}) {
                     <div
                         className={styles.turn}
                         data-role={normalizedRole(turn.role)}
+                        data-playing={media && playingIndex === index ? 'true' : undefined}
                         role="button"
                         tabIndex={0}
                         onClick={() => onOpenTurn(openTurn === key ? null : key)}
@@ -213,11 +243,24 @@ function Result({conversation, markersById, openTurn, onOpenTurn}) {
                         <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
                         <span className={styles.turnSpeaker}>{speakerLabel(turn.role, turn.speaker)}</span>
                         <p className={styles.turnText}>{turn.text || '—'}</p>
+                        {media && <button
+                            type="button"
+                            className={styles.turnPlay}
+                            aria-label={'Воспроизвести с ' + formatDuration(turn.startMs || 0)}
+                            title={'Воспроизвести с ' + formatDuration(turn.startMs || 0)}
+                            onClick={event => {
+                                // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
+                                event.stopPropagation();
+                                playFrom(turn);
+                            }}
+                            onKeyDown={event => event.stopPropagation()}
+                        >▶</button>}
                         <TurnSignals turn={turn} markers={turnMarkers}/>
                     </div>
                     {openTurn === key && <TurnDetails turn={turn} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
                 </React.Fragment>;
             })}
+        </div>
         </div>
 
         <div className={styles.signalsGrid}>
