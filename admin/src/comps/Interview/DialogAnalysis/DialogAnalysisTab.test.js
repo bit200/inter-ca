@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, screen, waitFor, act, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, act, fireEvent, within} from '@testing-library/react';
 import DialogAnalysisTab from './DialogAnalysisTab';
 
 const interview = (dialogAnalysis) => ({_id: 7, video: 'https://example.test/call.mp4', dialogAnalysis});
@@ -98,5 +98,52 @@ describe('таб разбора диалога', () => {
 
         fireEvent.click(screen.getByText('Работал с очередями'));
         expect(screen.getByText('142 слов/мин')).toBeInTheDocument();
+    });
+
+    test('роль говорящего можно назначить руками, когда интервьюеров несколько', async () => {
+        setupHttp({
+            status: 'done',
+            result: {
+                conversation: {
+                    summary: {},
+                    markers: [],
+                    turns: [
+                        {id: 't1', speaker: 'SPEAKER_00', role: 'manager', startMs: 0, endMs: 3000, text: 'Добрый день, начнём'},
+                        {id: 't2', speaker: 'SPEAKER_01', role: 'unknown', startMs: 3000, endMs: 5000, text: 'Я второй интервьюер'},
+                        {id: 't3', speaker: 'SPEAKER_02', role: 'unknown', startMs: 5000, endMs: 9000, text: 'Я пишу на js'},
+                    ],
+                },
+            },
+        });
+        const onSpeakerRolesChange = jest.fn();
+        render(<DialogAnalysisTab item={interview(null)} onSpeakerRolesChange={onSpeakerRolesChange}/>);
+        await flush();
+
+        expect(screen.getByText('Кто на записи кандидат')).toBeInTheDocument();
+        const groups = screen.getAllByRole('radiogroup');
+        fireEvent.click(within(groups[1]).getByRole('radio', {name: 'Интервьюер'}));
+        fireEvent.click(within(groups[2]).getByRole('radio', {name: 'Кандидат'}));
+
+        expect(onSpeakerRolesChange).toHaveBeenLastCalledWith({SPEAKER_01: 'manager', SPEAKER_02: 'client'});
+        expect(within(groups[2]).getByRole('radio', {name: 'Кандидат'})).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByText('Добрый день, начнём').closest('[data-role]')).toHaveTextContent('Интервьюер 1');
+        expect(screen.getByText('Я второй интервьюер').closest('[data-role]')).toHaveTextContent('Интервьюер 2');
+        expect(screen.getByText('Я пишу на js').closest('[data-role]')).toHaveAttribute('data-role', 'client');
+    });
+
+    test('сохранённые роли применяются к ленте сразу', async () => {
+        setupHttp({
+            status: 'done',
+            result: {conversation: {turns: [
+                {id: 't1', speaker: 'SPEAKER_00', role: 'client', startMs: 0, endMs: 1000, text: 'Первый голос'},
+                {id: 't2', speaker: 'SPEAKER_01', role: 'manager', startMs: 1000, endMs: 2000, text: 'Второй голос'},
+            ]}},
+        });
+        render(<DialogAnalysisTab item={interview(null)} speakerRoles={{SPEAKER_00: 'manager', SPEAKER_01: 'client'}}/>);
+        await flush();
+
+        const first = screen.getByText('Первый голос').closest('[data-role]');
+        expect(first.getAttribute('data-role')).toBe('manager');
+        expect(screen.getByText('Второй голос').closest('[data-role]').getAttribute('data-role')).toBe('client');
     });
 });
