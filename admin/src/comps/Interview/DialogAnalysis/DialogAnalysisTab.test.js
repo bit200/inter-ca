@@ -184,7 +184,7 @@ describe('таб разбора диалога', () => {
         });
     });
 
-    test('роль говорящего можно назначить руками, когда интервьюеров несколько', async () => {
+    test('роль говорящего назначается в попапе над репликой, когда интервьюеров несколько', async () => {
         setupHttp({
             status: 'done',
             result: {
@@ -203,13 +203,26 @@ describe('таб разбора диалога', () => {
         render(<DialogAnalysisTab item={interview(null)} onSpeakerRolesChange={onSpeakerRolesChange}/>);
         await flush();
 
-        expect(screen.getByText('Кто на записи кандидат')).toBeInTheDocument();
-        const groups = screen.getAllByRole('radiogroup');
-        fireEvent.click(within(groups[1]).getByRole('radio', {name: 'Интервьюер'}));
-        fireEvent.click(within(groups[2]).getByRole('radio', {name: 'Кандидат'}));
+        expect(screen.queryByText('Кто на записи кандидат')).toBeNull();
+        expect(screen.queryByRole('radiogroup')).toBeNull();
+
+        const turnOf = text => screen.getByText(text).closest('[data-role]');
+        const pick = (text, role) => {
+            fireEvent.click(within(turnOf(text)).getByRole('button', {expanded: false}));
+            const popover = within(turnOf(text)).getByRole('radiogroup');
+            fireEvent.click(within(popover).getByRole('radio', {name: role}));
+        };
+
+        pick('Я второй интервьюер', 'Интервьюер');
+        expect(screen.queryByRole('radiogroup')).toBeNull();
+        pick('Я пишу на js', 'Кандидат');
 
         expect(onSpeakerRolesChange).toHaveBeenLastCalledWith({SPEAKER_01: 'manager', SPEAKER_02: 'client'});
-        expect(within(groups[2]).getByRole('radio', {name: 'Кандидат'})).toHaveAttribute('aria-checked', 'true');
+        expect(screen.queryByText('142 слов/мин')).toBeNull();
+        fireEvent.click(within(turnOf('Я пишу на js')).getByRole('button', {expanded: false}));
+        expect(within(turnOf('Я пишу на js')).getByRole('radio', {name: 'Кандидат'})).toHaveAttribute('aria-checked', 'true');
+        fireEvent.keyDown(within(turnOf('Я пишу на js')).getByRole('radio', {name: 'Кандидат'}), {key: 'Escape'});
+        expect(screen.queryByRole('radiogroup')).toBeNull();
         expect(screen.getByText('Добрый день, начнём').closest('[data-role]')).toHaveTextContent('Интервьюер 1');
         expect(screen.getByText('Я второй интервьюер').closest('[data-role]')).toHaveTextContent('Интервьюер 2');
         expect(screen.getByText('Я пишу на js').closest('[data-role]')).toHaveAttribute('data-role', 'client');

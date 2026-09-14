@@ -249,10 +249,15 @@
   // Слева у реплик полоса роли - скругление угла её обрезало бы, поэтому радиус только справа.
   border-radius: 0 8px 8px 0;
   background: var(--dlg-card);
-  overflow: hidden;
+
+  // Попап роли выходит за край реплики, поэтому ленту не обрезаем, а правые
+  // углы скругляем у крайних строк.
+  > :first-child{ border-top-right-radius: 8px; }
+  > :last-child{ border-bottom-right-radius: 8px; }
 }
 
 .turn{
+  position: relative;
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) 34px;
   gap: 4px 12px;
@@ -290,6 +295,19 @@
 
 .turn[data-role="manager"] .turnSpeaker{ color: var(--dlg-host); }
 .turn[data-role="client"] .turnSpeaker{ color: var(--dlg-guest); }
+
+button.turnSpeaker{
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed currentColor;
+  background: transparent;
+  line-height: 1.3;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); }
+  &:focus-visible{ outline: 2px solid var(--dlg-host); outline-offset: 2px; }
+}
 
 .turnText{
   grid-column: 2;
@@ -484,87 +502,27 @@
   cursor: pointer;
 }
 
-// Роли участников. Строка на каждый голос: слева - кто это и чем узнать,
-// справа - переключатель роли. Цвет точки тот же, что у полосы реплик в ленте,
-// чтобы выбор сразу читался в расшифровке.
-.speakers{
-  margin-top: 26px;
+// Выбор роли голоса - попап над репликой, открывается по подписи участника.
+// Роль назначается голосу целиком, поэтому меняются все его реплики сразу.
+.rolePopover{
+  position: absolute;
+  bottom: calc(100% - 6px);
+  left: 90px;
+  z-index: 5;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 10px;
   border: 1px solid var(--dlg-line);
   border-radius: 8px;
   background: var(--dlg-card);
+  box-shadow: 0 6px 18px rgba(16, 26, 51, .14);
+  cursor: default;
 }
 
-.speakersHead{
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--dlg-line);
-}
-
-.speakersTitle{
-  margin: 0;
-  color: var(--dlg-strong);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.speakersHint{
-  margin: 3px 0 0;
-  max-width: 70ch;
-  color: var(--dlg-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.speaker{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-  padding: 10px 16px;
-
-  & + &{ border-top: 1px solid var(--dlg-line); }
-}
-
-.speakerInfo{
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  flex: 1 1 240px;
-}
-
-.speakerName{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  color: var(--dlg-strong);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.speakerDot{
-  align-self: center;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--dlg-line);
-}
-
-.speaker[data-role="client"] .speakerDot{ background: var(--dlg-guest); }
-.speaker[data-role="manager"] .speakerDot{ background: var(--dlg-host); }
-
-.speakerStats{
-  color: var(--dlg-muted);
-  font-size: 12px;
-  font-weight: 400;
-}
-
-.speakerSample{
-  overflow: hidden;
+.rolePopoverTitle{
   color: var(--dlg-muted);
   font-size: 12px;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .roleSwitch{
