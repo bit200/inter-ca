@@ -10,7 +10,7 @@ import {
     normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
-import {formatScore, readQaBlocks, scoreBand} from './qaBlocks';
+import {formatScore, questionTitle, readQaBlocks, scoreBand} from './qaBlocks';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall} from './dialogSummary';
 import {
     capabilityLabel,
@@ -599,16 +599,31 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
     let {evaluation} = block;
     let missing = withoutAnswer(block);
     let bracket = showsTech(lens) && block.technical === true;
+    // Длинный вопрос занимает экран целиком - свёрнутый остаётся одной шапкой.
+    let [collapsed, setCollapsed] = useState(false);
+    let title = questionTitle(block);
+    let bodyId = 'dlg-q-body-' + block.key;
     return <section
         id={'dlg-q-' + block.key}
         className={styles.qaBlock}
         data-technical={String(block.technical)}
         data-dimmed={lensDimmed(lens, block.technical) ? 'true' : undefined}
         aria-label={'Вопрос ' + block.number}
+        data-collapsed={collapsed ? 'true' : undefined}
     >
         <header className={styles.qaHead}>
             <div className={styles.qaTitle}>
-                <strong>Вопрос {block.number}</strong>
+                <button
+                    type="button"
+                    className={styles.qaToggle}
+                    aria-expanded={!collapsed}
+                    aria-controls={bodyId}
+                    title={collapsed ? 'Развернуть вопрос' : 'Свернуть вопрос'}
+                    onClick={() => setCollapsed(!collapsed)}
+                >
+                    <span className={styles.qaChevron} aria-hidden="true"/>
+                    <strong className={styles.qaQuestion}>{title}</strong>
+                </button>
                 {block.startMs !== null && <span className={styles.qaTime}>
                     {formatDuration(block.startMs)}–{formatDuration(block.endMs === null ? block.startMs : block.endMs)}
                 </span>}
@@ -636,6 +651,7 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
                 {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
             </div>
         </header>
+        {!collapsed && <div id={bodyId}>
         <div className={styles.qaTurns} data-bracket={bracket ? (evaluation.state === 'done' ? 'done' : 'pending') : undefined}>
             {bracket && <span className={styles.bracket} aria-hidden="true">
                 {evaluation.state === 'done' && <b data-band={scoreBand(evaluation.score, evaluation.max)}>{formatScore(evaluation.score)}</b>}
@@ -650,6 +666,7 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
         {evaluation.state === 'error' && <p className={styles.qaError}>
             Ответ не оценён: {evaluation.message || 'сервис оценки не сообщил причину.'}
         </p>}
+        </div>}
     </section>;
 }
 

@@ -641,6 +641,7 @@ button.turnSpeaker{
 
 .qaTitle{
   display: flex;
+  flex: 1 1 20rem;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 12px;
@@ -651,6 +652,57 @@ button.turnSpeaker{
     font-size: 14px;
     font-weight: 600;
   }
+}
+
+// Заголовок вопроса - сам текст вопроса и одновременно переключатель: шеврон
+// показывает, развёрнут ли блок. Метаданные (время, пауза, тема) - строкой ниже.
+.qaToggle{
+  display: flex;
+  flex: 1 1 100%;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 0 -4px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover .qaQuestion{ color: var(--dlg-accent); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 1px; }
+}
+
+.qaChevron{
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-right: 2px solid var(--dlg-muted);
+  border-bottom: 2px solid var(--dlg-muted);
+  transform: rotate(45deg);
+  transition: transform .15s ease;
+
+  .qaToggle[aria-expanded="false"] &{ margin-top: 4px; transform: rotate(-45deg); }
+}
+
+.qaTitle strong.qaQuestion{
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  transition: color .15s ease;
+}
+
+.qaBlock[data-collapsed="true"] .qaHead{
+  border-bottom: 0;
+  border-bottom-right-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .qaChevron, .qaTitle strong.qaQuestion{ transition: none; }
 }
 
 .qaTime{

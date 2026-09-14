@@ -187,3 +187,11 @@ export function readQaBlocks(result, turns, options) {
         };
     }).filter(block => block.items.length);
 }
+
+// Заголовок блока - сам вопрос интервьюера, а не порядковый номер: по номеру
+// не понять, о чём речь, пока не прочтёшь реплики. Уточнения в заголовок не идут.
+export function questionTitle(block) {
+    let items = block && Array.isArray(block.items) ? block.items : [];
+    let main = items.find(item => item.turn && item.turn.role === 'manager' && !item.followUp && firstText(item.turn.text));
+    return main ? firstText(main.turn.text) : 'Вопрос ' + (block && block.number);
+}
