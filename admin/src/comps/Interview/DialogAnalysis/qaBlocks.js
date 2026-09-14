@@ -103,8 +103,12 @@ const RELEVANCE_ALIASES = {
     off_topic: 'off_topic', offtopic: 'off_topic', irrelevant: 'off_topic',
 };
 
-function readSoftEvaluation(block, technical, active) {
+// answered - есть ли в блоке реплика кандидата. Без неё модель оценила бы чужие
+// слова - группировка иногда кладёт уточнение интервьюера в «ответ», - поэтому
+// такую оценку не показываем: блок остаётся «Ответ не найден».
+function readSoftEvaluation(block, technical, active, answered) {
     if (technical !== false) return null;
+    if (!answered) return {state: 'unanswered'};
     let source = asObject(block.softEvaluate) || asObject(block.softEvaluation);
     if (!source) return {state: active ? 'pending' : 'skipped'};
 
@@ -182,7 +186,7 @@ export function readQaBlocks(result, turns, options) {
             startMs: starts.length ? Math.min(...starts) : null,
             endMs: ends.length ? Math.max(...ends) : null,
             evaluation: readEvaluation(block, technical, active),
-            soft: readSoftEvaluation(block, technical, active),
+            soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client')),
             timing: readTiming(block, timings[position]),
         };
     }).filter(block => block.items.length);

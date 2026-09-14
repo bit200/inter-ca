@@ -34,10 +34,10 @@ export function technicalAverage(blocks) {
     return {score: Math.round(sum / done.length * 10) / 10, max: 10, count: done.length};
 }
 
-// Технический вопрос, в котором нет ни одной реплики кандидата: ответ либо
+// Вопрос с известной темой, в котором нет ни одной реплики кандидата: ответ либо
 // пропущен, либо разбор отнёс его к другому вопросу - тогда его связывают руками.
 export function withoutAnswer(block) {
-    return Boolean(block) && block.technical === true
+    return Boolean(block) && typeof block.technical === 'boolean'
         && !block.items.some(item => item.turn && item.turn.role === 'client');
 }
 
@@ -132,8 +132,8 @@ export function behaviorFlags(blocks) {
 }
 
 // Счётчики панели линз: вопросы, оставшиеся без реплики кандидата, и ответы
-// мимо вопроса или уклончивые. Считаются по мягкой оценке, а не по флагам: флагу
-// нужна реплика кандидата, а у вопроса её может не оказаться из-за ролей говорящих.
+// мимо вопроса или уклончивые. Мягкая оценка вопроса без реплики кандидата
+// сюда не попадает: она судила бы слова интервьюера (см. readQaBlocks).
 export function behaviorCounts(blocks) {
     let list = blocks || [];
     let counts = {unanswered: list.filter(block => !hasClientAnswer(block)).length, evasive: 0, off_topic: 0};
