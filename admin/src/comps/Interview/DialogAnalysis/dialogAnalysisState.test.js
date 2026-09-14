@@ -128,7 +128,8 @@ describe('кнопка «Оценить ответы»', () => {
     });
 
     it('шаги оценки ответов - свои, дорожка идёт по ним', () => {
-        expect(ANSWERS_PIPELINE_STEPS).toEqual(['queued', 'grouping', 'classifying', 'evaluating', 'done']);
+        expect(ANSWERS_PIPELINE_STEPS).toEqual(['queued', 'grouping', 'classifying', 'evaluating', 'summarizing', 'done']);
+        expect(isActiveStatus('summarizing', ANSWERS_PIPELINE_STEPS)).toBe(true);
         expect(normalizeAnswers({status: 'classifying'}).status).toBe('classifying');
         expect(normalizeAnalysis({status: 'classifying'}).status).toBe('');
         expect(stepState('grouping', 'evaluating', ANSWERS_PIPELINE_STEPS)).toBe('done');
@@ -137,5 +138,7 @@ describe('кнопка «Оценить ответы»', () => {
 
     it('блоки рядом со статусом сводятся в result', () => {
         expect(normalizeAnswers({status: 'done', blocks: [{id: 'b1'}]}).result).toEqual({blocks: [{id: 'b1'}]});
+        expect(normalizeAnswers({status: 'done', blocks: [], metrics: {speech: {}}, greeting: {greeted: true}, overall: {score: 7}}).result)
+            .toEqual({blocks: [], metrics: {speech: {}}, greeting: {greeted: true}, overall: {score: 7}});
     });
 });
