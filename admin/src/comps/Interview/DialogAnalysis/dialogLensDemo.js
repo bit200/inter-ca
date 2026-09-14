@@ -61,3 +61,42 @@ export function demoBehaviorCounts(flags) {
 export function demoSkipSeries(block) {
     return block && block.technical === false && seed(block.key) % 4 === 1;
 }
+
+// Разбивка расшифровки на вопросы, пока оценки ответов нет (не запускали, идёт
+// или ручка api не отдала блоков). Без неё вариант B не видно вовсе: шкала,
+// скобки цепочек, линзы и «Ответ не найден» строятся по вопросам. Должна
+// работать так: шаг grouping оценки ответов отдаёт answersEvaluation.result.blocks[] =
+// {id, technical, turnIndexes, evaluation: {score, maxScore}} - тогда эта функция
+// удаляется, а экран берёт настоящие блоки. Здесь реплика интервьюера с вопросом
+// после ответа кандидата открывает новый вопрос; тема и балл выдуманы.
+export function demoQaBlocks(turns) {
+    let feed = Array.isArray(turns) ? turns : [];
+    let group = asksOnly => {
+        let blocks = [];
+        let current = null;
+        let answered = false;
+        feed.forEach((turn, index) => {
+            if (!turn) return;
+            let client = turn.role === 'client';
+            let asks = !asksOnly || String(turn.text || '').includes('?');
+            if (!current || (!client && answered && asks)) {
+                current = {id: 'demo-q' + blocks.length, turnIndexes: []};
+                blocks.push(current);
+                answered = false;
+            }
+            current.turnIndexes.push(index);
+            answered = answered || client;
+        });
+        return blocks;
+    };
+    // Распознавание не всегда ставит «?» - тогда делим по смене говорящего.
+    let blocks = group(true);
+    if (blocks.length < 2) blocks = group(false);
+
+    return blocks.map((block, position) => {
+        let technical = position > 0 && seed(block.id) % 3 !== 0;
+        return technical
+            ? {...block, technical, evaluation: {score: demoAnswerScore(block.id), maxScore: 10}}
+            : {...block, technical};
+    });
+}

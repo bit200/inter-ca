@@ -54,6 +54,7 @@ import {
     demoBehaviorCounts,
     demoBehaviorFlags,
     demoBehaviorScore,
+    demoQaBlocks,
     demoSkipSeries,
 } from './dialogLensDemo';
 
@@ -224,6 +225,13 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         }),
         [answers.result, conversation.turns, answersActive, sendingAnswers]
     );
+    // Пока настоящих вопросов нет, вариант B строится на демо-разбивке расшифровки:
+    // иначе шкалы, скобок и линз не видно, и экран не отличить от прежнего.
+    let demoBlocks = blocks.length === 0;
+    let shownBlocks = useMemo(
+        () => demoBlocks ? readQaBlocks(demoQaBlocks(conversation.turns), conversation.turns) : blocks,
+        [demoBlocks, blocks, conversation.turns]
+    );
 
     let markersById = useMemo(() => {
         let map = new Map();
@@ -276,7 +284,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
 
         {dialogDone && <Result
             conversation={conversation}
-            blocks={blocks}
+            blocks={shownBlocks}
+            demoBlocks={demoBlocks}
             answersDone={answers.status === 'done'}
             onAssignRole={assignRole}
             markersById={markersById}
@@ -330,7 +339,7 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
     </section>;
 }
 
-function Result({conversation, blocks: evaluatedBlocks, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
+function Result({conversation, blocks: evaluatedBlocks, demoBlocks = false, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
     let {turns, markers, summary, capabilities} = conversation;
     // Вариант B: линза меняет акценты ленты, шкала показывает, где в интервью
     // какой вопрос, а вопрос без ответа связывается с репликой кандидата руками.
@@ -526,6 +535,7 @@ function Result({conversation, blocks: evaluatedBlocks, answersDone, onAssignRol
         <EmotionSummary sources={summary.emotionSources}/>
 
         {blocks.length > 0 && <LensBar
+            demo={demoBlocks}
             lens={lens}
             onLens={setLens}
             blocks={blocks}
@@ -572,6 +582,7 @@ function Result({conversation, blocks: evaluatedBlocks, answersDone, onAssignRol
                 {blocks.map(block => <QaBlock
                     key={block.key}
                     block={block}
+                    demo={demoBlocks}
                     lens={lens}
                     linking={linking === block.key}
                     onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
@@ -601,7 +612,7 @@ function Result({conversation, blocks: evaluatedBlocks, answersDone, onAssignRol
 // вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
-function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children}) {
+function QaBlock({block, demo = false, lens = 'all', linking = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
     let bracket = showsTech(lens) && block.technical === true;
@@ -626,9 +637,11 @@ function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children})
                         ? 'ответ начат до конца вопроса'
                         : 'пауза перед ответом ' + formatMs(block.timing.delayMs)}
                 </span>}
-                <span className={styles.qaKind} data-technical={String(block.technical)}>
-                    {KIND_LABELS[String(block.technical)]}
-                </span>
+                <DemoIf on={demo}>
+                    <span className={styles.qaKind} data-technical={String(block.technical)}>
+                        {KIND_LABELS[String(block.technical)]}
+                    </span>
+                </DemoIf>
                 {showsBehavior(lens) && demoSkipSeries(block) && <Demo>
                     <span className={styles.flag} data-kind="evasive">Серия пропусков</span>
                 </Demo>}
@@ -641,7 +654,9 @@ function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children})
                     aria-pressed={linking}
                     onClick={onFindAnswer}
                 >{linking ? 'Отменить' : 'Найти ответ'}</button>}
-                {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
+                <DemoIf on={demo && evaluation.state === 'done'}>
+                    {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
+                </DemoIf>
             </div>
         </header>
         <div className={styles.qaTurns} data-bracket={bracket ? (evaluation.state === 'done' ? 'done' : 'pending') : undefined}>
@@ -684,13 +699,18 @@ function QaScore({evaluation}) {
 
 // Панель линз над расшифровкой: переключатель акцента, итоговые баллы за
 // технику и поведение, счётчики и шкала времени интервью с вопросами.
-function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, durationMs, currentMs, onJump}) {
+function LensBar({demo = false, lens, onLens, blocks, answersDone, turns, flags, markers, durationMs, currentMs, onJump}) {
     let tech = technicalAverage(blocks);
     let counts = demoBehaviorCounts(flags);
     let behavior = demoBehaviorScore(turns);
     let segments = timelineSegments(blocks, durationMs);
 
     return <section className={styles.lensBar} aria-label="Оценка интервью">
+        {demo && <Demo block>
+            <p className={styles.lensDemoNote}>
+                Разбивка на вопросы, темы и баллы — демо: настоящие появятся после «Оценить ответы».
+            </p>
+        </Demo>}
         <div className={styles.lensHead}>
             <div className={styles.viewSwitch} role="radiogroup" aria-label="Линза расшифровки">
                 {LENSES.map(option => <button
@@ -706,7 +726,7 @@ function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, dura
                 <div className={styles.lensScore}>
                     <span>Техническая</span>
                     {tech
-                        ? <strong data-band={scoreBand(tech.score, tech.max)}>{formatScore(tech.score)}<small>/10</small></strong>
+                        ? <DemoIf on={demo}><strong data-band={scoreBand(tech.score, tech.max)}>{formatScore(tech.score)}<small>/10</small></strong></DemoIf>
                         : <strong data-band="none" title={answersDone ? 'Нет оценённых технических вопросов' : 'Запустите «Оценить ответы»'}>—</strong>}
                 </div>
                 <div className={styles.lensScore}>
@@ -761,6 +781,11 @@ function Demo({children, block = false, tick = false, style}) {
         {children}
         <span className={styles.demoTip} role="tooltip">{DEMO_LABEL}</span>
     </span>;
+}
+
+// Демо-обёртка только там, где значение выдумано: у настоящих вопросов её нет.
+function DemoIf({on, children}) {
+    return on ? <Demo>{children}</Demo> : children;
 }
 
 // Мягкая оценка нетехнического ответа - вместо балла две-три отметки. Цвет общий
