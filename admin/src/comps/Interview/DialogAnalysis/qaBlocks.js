@@ -94,6 +94,43 @@ function readEvaluation(block, technical, active) {
     return {state, score, max, feedback, message};
 }
 
+// Мягкая оценка нетехнического ответа: по теме ли кандидат ответил, развёрнуто ли
+// и задавал ли встречные вопросы. Баллов нет - уровень ответа сводим к тем же
+// полосам, что у балла технического вопроса, чтобы блоки читались одинаково.
+const RELEVANCE_ALIASES = {
+    on_topic: 'on_topic', ontopic: 'on_topic', relevant: 'on_topic',
+    evasive: 'evasive', partial: 'evasive',
+    off_topic: 'off_topic', offtopic: 'off_topic', irrelevant: 'off_topic',
+};
+
+function readSoftEvaluation(block, technical, active) {
+    if (technical !== false) return null;
+    let source = asObject(block.softEvaluate) || asObject(block.softEvaluation);
+    if (!source) return {state: active ? 'pending' : 'skipped'};
+
+    let error = asObject(source.error) || {};
+    let message = firstText(error.message, source.errorMessage);
+    let relevance = RELEVANCE_ALIASES[String(source.relevance || '').toLowerCase().replace(/[\s-]/g, '_')] || null;
+    let complete = typeof source.complete === 'boolean' ? source.complete
+        : typeof source.completeness === 'string' ? source.completeness.toLowerCase() === 'complete'
+        : null;
+    let engaged = typeof source.engaged === 'boolean' ? source.engaged
+        : typeof source.engagement === 'boolean' ? source.engagement
+        : null;
+    let note = firstText(source.note, source.comment, source.feedback);
+
+    if (relevance === null && complete === null) {
+        return message || String(source.status || '').toLowerCase() === 'error'
+            ? {state: 'error', message}
+            : {state: active ? 'pending' : 'missing'};
+    }
+
+    let band = relevance === 'off_topic' ? 'poor'
+        : relevance === 'evasive' || complete === false ? 'fair'
+        : 'good';
+    return {state: 'done', relevance, complete, engaged, note, band};
+}
+
 // Полоса оценки: зелёная - уверенный ответ, жёлтая - с пробелами, красная - мимо.
 export function scoreBand(score, max) {
     if (typeof score !== 'number') return 'none';
@@ -107,12 +144,21 @@ export function formatScore(score) {
     return Number.isInteger(score) ? String(score) : score.toFixed(1).replace('.', ',');
 }
 
+// Пауза перед ответом и его длина: у самого блока или в метриках разговора по тому же месту.
+function readTiming(block, metrics) {
+    let source = asObject(block.timing) || asObject(block.metrics) || asObject(metrics) || {};
+    let delayMs = firstNumber(source.responseDelayMs, block.responseDelayMs);
+    let durationMs = firstNumber(source.answerDurationMs, block.answerDurationMs);
+    return delayMs === null && durationMs === null ? null : {delayMs, durationMs};
+}
+
 // turns - реплики разбора с уже применёнными ролями, active - идёт ли оценка:
-// от этого зависит, «оцениваем» ли блок без оценки или он остался без неё.
+// от этого зависит, «оцениваем» ли блок без оценки или он остался без неё;
+// timings - тайминги ответов из метрик разговора, по порядку блоков.
 export function readQaBlocks(result, turns, options) {
     let list = readQaBlockList(result);
     let feed = Array.isArray(turns) ? turns : [];
-    let {active = false} = options || {};
+    let {active = false, timings = []} = options || {};
 
     return list.map((raw, position) => {
         let block = asObject(raw) || {};
@@ -136,6 +182,8 @@ export function readQaBlocks(result, turns, options) {
             startMs: starts.length ? Math.min(...starts) : null,
             endMs: ends.length ? Math.max(...ends) : null,
             evaluation: readEvaluation(block, technical, active),
+            soft: readSoftEvaluation(block, technical, active),
+            timing: readTiming(block, timings[position]),
         };
     }).filter(block => block.items.length);
 }

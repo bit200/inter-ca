@@ -52,3 +52,34 @@ describe('Q&A-блоки оценки ответов', () => {
         expect(scoreBand(null, 10)).toBe('none');
     });
 });
+
+describe('мягкая оценка нетехнических блоков', () => {
+    it('отметки релевантности и полноты сводятся к полосе уровня', () => {
+        let blocks = readQaBlocks({blocks: [
+            {technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'on_topic', complete: true, note: 'По делу'}},
+            {technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'evasive', complete: true}},
+            {technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'off_topic', complete: false}},
+            {technical: true, turnIndexes: [2, 3], softEvaluate: {relevance: 'on_topic'}},
+        ]}, turns);
+        expect(blocks[0].soft).toEqual({state: 'done', relevance: 'on_topic', complete: true, engaged: null, note: 'По делу', band: 'good'});
+        expect(blocks[1].soft.band).toBe('fair');
+        expect(blocks[2].soft.band).toBe('poor');
+        expect(blocks[3].soft).toBeNull();
+    });
+
+    it('без мягкой оценки блок ждёт её, пока идёт оценка, иначе не оценивается', () => {
+        let block = {technical: false, turnIndexes: [0, 1]};
+        expect(readQaBlocks([block], turns, {active: true})[0].soft.state).toBe('pending');
+        expect(readQaBlocks([block], turns)[0].soft.state).toBe('skipped');
+        expect(readQaBlocks([{...block, softEvaluate: {error: {message: 'llm недоступна'}}}], turns)[0].soft)
+            .toEqual({state: 'error', message: 'llm недоступна'});
+    });
+
+    it('тайминг ответа берётся из метрик разговора по порядку блоков', () => {
+        let [first, second] = readQaBlocks([{turnIndexes: [0, 1]}, {turnIndexes: [2, 3]}], turns, {
+            timings: [{responseDelayMs: 400, answerDurationMs: 6000}],
+        });
+        expect(first.timing).toEqual({delayMs: 400, durationMs: 6000});
+        expect(second.timing).toBeNull();
+    });
+});

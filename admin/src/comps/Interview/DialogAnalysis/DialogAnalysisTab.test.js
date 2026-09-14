@@ -323,5 +323,52 @@ describe('таб разбора диалога', () => {
             expect(within(screen.getByRole('region', {name: 'Вопрос 1'})).getByText('Оцениваем')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Оценить ответы/})).toBeDisabled();
         });
+        test('итог интервью стоит над процессами: балл, сводка, приветствие с прощанием и цифры разговора', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {
+                blocks: [
+                    {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8}},
+                    {id: 'b2', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'evasive', complete: false, note: 'Про причину ухода не сказал'}},
+                ],
+                greeting: {greeted: true, farewelled: false},
+                metrics: {
+                    speech: {managerPercent: 35, clientPercent: 65},
+                    interruptions: {managerInterruptedClient: 1, clientInterruptedManager: 4},
+                    blocks: [{responseDelayMs: 1500, answerDurationMs: 6000}],
+                    responses: {responseDelayMs: {median: 1500}, answerDurationMs: {median: 42000}},
+                },
+                overall: {score: 6.5, summary: 'Технически уверен, на вопросы про мотивацию отвечает уклончиво.'},
+            }}});
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const summary = screen.getByRole('region', {name: 'Итог интервью'});
+            expect(container.querySelector('section').getAttribute('aria-label')).toBe('Итог интервью');
+            expect(within(summary).getByRole('img', {name: 'Общая оценка 6,5 из 10'})).toBeInTheDocument();
+            expect(within(summary).getByText('Технически уверен, на вопросы про мотивацию отвечает уклончиво.')).toBeInTheDocument();
+            expect(within(summary).getByText('Приветствие есть')).toBeInTheDocument();
+            expect(within(summary).getByText('Прощания нет')).toBeInTheDocument();
+            expect(within(summary).getByText('Кандидат 65%')).toBeInTheDocument();
+            expect(within(summary).getByText('4')).toBeInTheDocument();
+            expect(within(summary).getByText('42 с')).toBeInTheDocument();
+
+            expect(within(screen.getByRole('region', {name: 'Вопрос 1'})).getByText('пауза перед ответом 1,5 с')).toBeInTheDocument();
+            const second = screen.getByRole('region', {name: 'Вопрос 2'});
+            expect(within(second).getByText('Уклончиво')).toBeInTheDocument();
+            expect(within(second).getByText('Формально')).toBeInTheDocument();
+            expect(within(second).getByText('Про причину ухода не сказал')).toBeInTheDocument();
+            expect(within(second).queryByText('Не оцениваем')).toBeNull();
+        });
+
+        test('пока пишется итог, в блоке итога ожидание и шаг «Пишем итог»', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'summarizing', result: {blocks: [
+                {id: 'b1', technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'on_topic', complete: true}},
+            ], metrics: {speech: {managerPercent: 50, clientPercent: 50}}}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.getByText('Пишем итог')).toBeInTheDocument();
+            expect(screen.getByText('Пишем итог по оценкам ответов и метрикам разговора.')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Оценить ответы/})).toBeDisabled();
+        });
     });
 });
