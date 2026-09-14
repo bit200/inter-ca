@@ -1,4 +1,15 @@
-import {attachAnswers, lensDimmed, technicalAverage, timelineSegments, withoutAnswer} from './dialogLens';
+import {
+    answerScores,
+    attachAnswers,
+    behaviorCounts,
+    behaviorFlags,
+    behaviorScore,
+    lensDimmed,
+    skipSeriesStarts,
+    technicalAverage,
+    timelineSegments,
+    withoutAnswer,
+} from './dialogLens';
 
 const turns = [
     {id: 't1', role: 'manager', startMs: 0, endMs: 3000, text: 'Что такое замыкание?'},
@@ -49,5 +60,59 @@ describe('линзы расшифровки', () => {
         expect(withoutAnswer(linked[0])).toBe(false);
         expect(linked[1].items.map(item => item.index)).toEqual([1]);
         expect(withoutAnswer(linked[1])).toBe(true);
+    });
+
+    // Значения панели линз считаются из настоящей оценки ответов, а не выдумываются.
+    describe('оценки из оценки ответов', () => {
+        const feed = [
+            {id: 'a', role: 'manager', text: 'Почему уходите?'},
+            {id: 'b', role: 'client', text: 'Ну так'},
+            {id: 'c', role: 'manager', text: 'Что такое замыкание?'},
+            {id: 'd', role: 'client', text: 'Функция'},
+            {id: 'e', role: 'client', text: 'с окружением'},
+            {id: 'f', role: 'manager', text: 'Какая вилка?'},
+            {id: 'g', role: 'manager', text: 'Когда готовы выйти?'},
+            {id: 'h', role: 'client', text: 'Про погоду'},
+        ];
+        const make = (key, technical, indexes, extra = {}) => ({
+            key,
+            technical,
+            items: indexes.map(index => ({turn: feed[index], index})),
+            evaluation: {state: technical ? 'missing' : 'skipped'},
+            soft: null,
+            ...extra,
+        });
+        const blocks = [
+            make('q1', false, [0, 1], {soft: {state: 'done', relevance: 'evasive', band: 'fair'}}),
+            make('q2', true, [2, 3, 4], {evaluation: {state: 'done', score: 3, max: 10}}),
+            make('q3', true, [5]),
+            make('q4', false, [6], {soft: {state: 'done', relevance: 'on_topic', band: 'good'}}),
+            make('q5', false, [7], {soft: {state: 'done', relevance: 'off_topic', band: 'poor'}}),
+        ];
+
+        test('балл технического вопроса стоит у последней реплики ответа', () => {
+            expect(Array.from(answerScores(blocks))).toEqual([[4, {state: 'done', score: 3, max: 10}]]);
+        });
+
+        test('флаги поведения - из мягкой оценки: уклончиво и не по вопросу', () => {
+            let flags = behaviorFlags(blocks);
+            expect(Array.from(flags)).toEqual([[1, 'evasive'], [7, 'off_topic']]);
+            expect(behaviorCounts(blocks)).toEqual({unanswered: 2, evasive: 1, off_topic: 1});
+
+            // Ответ без реплики кандидата флага не получает, но в счётчик попадает.
+            let noClient = [make('q6', false, [6], {soft: {state: 'done', relevance: 'off_topic', band: 'poor'}})];
+            expect(behaviorFlags(noClient).size).toBe(0);
+            expect(behaviorCounts(noClient)).toEqual({unanswered: 1, evasive: 0, off_topic: 1});
+        });
+
+        test('нетехническая оценка - ответы по теме и развёрнуто из оценённых', () => {
+            expect(behaviorScore(blocks)).toEqual({good: 1, count: 3});
+            expect(behaviorScore([make('q1', false, [0])])).toBeNull();
+        });
+
+        test('серия пропусков отмечается у первого из двух и больше вопросов подряд без ответа', () => {
+            expect(Array.from(skipSeriesStarts(blocks))).toEqual(['q3']);
+            expect(Array.from(skipSeriesStarts([blocks[1], blocks[2]]))).toEqual([]);
+        });
     });
 });

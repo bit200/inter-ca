@@ -1,8 +1,7 @@
 // Линзы расшифровки (вариант B из docs/design/dialog-evaluation-concepts.html):
 // одна лента, поверх неё - акцент на технике или на поведении, шкала времени
 // интервью и связывание вопроса без ответа с репликой кандидата. Здесь только
-// то, что считается из настоящих данных разбора и оценки ответов; значения,
-// под которые функционала ещё нет, живут в dialogLensDemo.js.
+// то, что считается из настоящих данных разбора и оценки ответов.
 
 export const LENSES = [
     {key: 'all', label: 'Всё'},
@@ -95,10 +94,72 @@ export function attachAnswers(blocks, links, turns) {
     }).filter(block => block.items.length);
 }
 
-// Какой вопрос у реплики ленты: по нему реплика в «Все реплики» знает, что
-// она ответ на технический вопрос.
-export function blockByTurnIndex(blocks) {
+function hasClientAnswer(block) {
+    return block.items.some(item => item.turn && item.turn.role === 'client');
+}
+
+function lastClientIndex(block) {
+    let answers = block.items.filter(item => item.index > -1 && item.turn && item.turn.role === 'client');
+    return answers.length ? answers[answers.length - 1].index : -1;
+}
+
+// Балл технического вопроса у реплики кандидата. evaluate оценивает вопрос
+// целиком, а не каждую реплику, поэтому балл встаёт один раз - у последней
+// реплики ответа, которой цепочка вопроса закончилась.
+export function answerScores(blocks) {
     let map = new Map();
-    (blocks || []).forEach(block => block.items.forEach(item => item.index > -1 && map.set(item.index, block)));
+    (blocks || []).forEach(block => {
+        if (block.technical !== true || !block.evaluation || block.evaluation.state !== 'done') return;
+        let index = lastClientIndex(block);
+        index > -1 && map.set(index, block.evaluation);
+    });
     return map;
+}
+
+// Флаги поведения - из мягкой оценки нетехнических вопросов: ответ мимо
+// вопроса или уклончивый. Флаг ставится у последней реплики ответа.
+export const BEHAVIOR_FLAG_LABELS = {evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
+
+export function behaviorFlags(blocks) {
+    let flags = new Map();
+    (blocks || []).forEach(block => {
+        let soft = block.soft;
+        if (!soft || soft.state !== 'done' || !BEHAVIOR_FLAG_LABELS[soft.relevance]) return;
+        let index = lastClientIndex(block);
+        index > -1 && flags.set(index, soft.relevance);
+    });
+    return flags;
+}
+
+// Счётчики панели линз: вопросы, оставшиеся без реплики кандидата, и ответы
+// мимо вопроса или уклончивые. Считаются по мягкой оценке, а не по флагам: флагу
+// нужна реплика кандидата, а у вопроса её может не оказаться из-за ролей говорящих.
+export function behaviorCounts(blocks) {
+    let list = blocks || [];
+    let counts = {unanswered: list.filter(block => !hasClientAnswer(block)).length, evasive: 0, off_topic: 0};
+    list.forEach(block => {
+        let soft = block.soft;
+        if (soft && soft.state === 'done' && BEHAVIOR_FLAG_LABELS[soft.relevance]) counts[soft.relevance] += 1;
+    });
+    return counts;
+}
+
+// Нетехническая оценка: баллов у мягкой оценки нет, поэтому итог - сколько
+// нетехнических ответов из оценённых дано по теме и развёрнуто (зелёная полоса).
+export function behaviorScore(blocks) {
+    let done = (blocks || []).filter(block => block.soft && block.soft.state === 'done');
+    if (!done.length) return null;
+    return {good: done.filter(block => block.soft.band === 'good').length, count: done.length};
+}
+
+// Серия пропусков: два и больше вопросов подряд без ответа кандидата. Отметка
+// встаёт у первого вопроса серии - возвращаются ключи таких вопросов.
+export function skipSeriesStarts(blocks) {
+    let starts = new Set();
+    let list = blocks || [];
+    list.forEach((block, position) => {
+        let skipped = item => item && !hasClientAnswer(item);
+        if (skipped(block) && skipped(list[position + 1]) && !skipped(list[position - 1])) starts.add(block.key);
+    });
+    return starts;
 }

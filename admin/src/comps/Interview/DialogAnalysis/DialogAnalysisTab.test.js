@@ -313,43 +313,45 @@ describe('таб разбора диалога', () => {
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
         });
 
-        test('линзы: итоговый технический балл настоящий, нетехнический - демо-заглушка с попапом', async () => {
+        test('линзы: технический и нетехнический баллы, флаги и счётчики - из настоящей оценки ответов', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
-                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8}},
-                {id: 'b2', technical: false, turnIndexes: [2, 3]},
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {score: 8}},
+                {id: 'b2', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'off_topic', complete: false}},
             ]}}});
             const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
             await flush();
 
+            expect(container.querySelector('[role="tooltip"]')).toBeNull();
+            expect(screen.queryByText(/ДЕМО/)).toBeNull();
             const bar = screen.getByRole('region', {name: 'Оценка интервью'});
-            const technical = within(bar).getByText('Техническая').parentElement;
-            expect(technical).toHaveTextContent('8/10');
-            expect(technical.querySelector('[role="tooltip"]')).toBeNull();
-
-            const behavior = within(bar).getByText('Нетехническая').parentElement;
-            expect(within(behavior).getByRole('tooltip')).toHaveTextContent('ДЕМО ЗНАЧЕНИЕ');
+            expect(within(bar).getByText('Техническая').parentElement).toHaveTextContent('8/10');
+            expect(within(bar).getByText('Нетехническая').parentElement).toHaveTextContent('0/1');
+            expect(within(bar).getByText('Не по вопросу · 1')).toBeInTheDocument();
+            expect(within(bar).getByText('Без ответа · 0')).toBeInTheDocument();
+            expect(within(bar).queryByText(/Невежливо/)).toBeNull();
 
             expect(container.querySelector('[data-bracket="done"]')).toHaveTextContent('8');
+            fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
+            expect(container.querySelector('[class*="answerScore"]')).toHaveTextContent('8');
+            expect(container.querySelectorAll('[class*="turnFlags"] [data-kind="off_topic"]').length).toBe(1);
+
             fireEvent.click(within(bar).getByRole('radio', {name: 'Техника'}));
+            fireEvent.click(screen.getByRole('radio', {name: 'По вопросам'}));
             expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
             expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
             fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
             expect(container.querySelector('[data-bracket]')).toBeNull();
         });
 
-        test('без оценки ответов вариант B виден на демо-разбивке: шкала, вопросы и скобки с попапом', async () => {
+        test('без оценки ответов выдуманной разбивки на вопросы нет - только лента реплик', async () => {
             setupHttp(done, null);
-            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            render(<DialogAnalysisTab item={interview(null)}/>);
             await flush();
 
-            const bar = screen.getByRole('region', {name: 'Оценка интервью'});
-            expect(within(bar).getByText(/Разбивка на вопросы, темы и баллы — демо/)).toBeInTheDocument();
-            expect(container.querySelectorAll('button[aria-label^="Перейти к вопросу"]').length).toBeGreaterThan(1);
-            expect(screen.getByRole('radio', {name: 'По вопросам'})).toHaveAttribute('aria-checked', 'true');
-
-            const first = screen.getByRole('region', {name: 'Вопрос 1'});
-            expect(within(first).getAllByRole('tooltip')[0]).toHaveTextContent('ДЕМО ЗНАЧЕНИЕ');
-            expect(screen.getByRole('region', {name: 'Вопрос 2'})).toBeInTheDocument();
+            expect(screen.queryByRole('region', {name: 'Оценка интервью'})).toBeNull();
+            expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
+            expect(screen.queryByText(/ДЕМО/)).toBeNull();
+            expect(screen.getByText('Хотел расти')).toBeInTheDocument();
         });
 
         test('вопрос без ответа связывается с репликой кандидата в два клика', async () => {
@@ -357,7 +359,8 @@ describe('таб разбора диалога', () => {
                 {id: 'b1', technical: true, turnIndexes: [0]},
                 {id: 'b2', technical: true, turnIndexes: [1, 2, 3]},
             ]}}});
-            render(<DialogAnalysisTab item={interview(null)}/>);
+            const onAnswerLinksChange = jest.fn();
+            render(<DialogAnalysisTab item={interview(null)} onAnswerLinksChange={onAnswerLinksChange}/>);
             await flush();
 
             const first = () => screen.getByRole('region', {name: 'Вопрос 1'});
@@ -369,6 +372,20 @@ describe('таб разбора диалога', () => {
             expect(screen.queryByRole('status')).toBeNull();
             expect(within(first()).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
             expect(within(first()).queryByText('Ответ не найден')).toBeNull();
+            expect(onAnswerLinksChange).toHaveBeenCalledWith({b1: [1]});
+        });
+
+        test('сохранённая связь ответа применяется к ленте сразу', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0]},
+                {id: 'b2', technical: true, turnIndexes: [1, 2, 3]},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)} answerLinks={{b1: [1]}}/>);
+            await flush();
+
+            const first = screen.getByRole('region', {name: 'Вопрос 1'});
+            expect(within(first).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+            expect(within(first).queryByText('Ответ не найден')).toBeNull();
         });
 
         test('пока идёт оценка, у технического вопроса без балла написано «Оцениваем»', async () => {

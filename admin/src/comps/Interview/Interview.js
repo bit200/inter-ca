@@ -301,6 +301,8 @@ function Interview({props}) {
                                                 interview={parent || item}
                                                 speakerRoles={infoByUsersInterview.dialogSpeakerRoles}
                                                 onSpeakerRolesChange={dialogSpeakerRoles => onChangeInfoByUsers({dialogSpeakerRoles})}
+                                                answerLinks={infoByUsersInterview.dialogAnswerLinks}
+                                                onAnswerLinksChange={dialogAnswerLinks => onChangeInfoByUsers({dialogAnswerLinks})}
                                             />
                                         }
                                     ]
