@@ -1,4 +1,4 @@
-import {questionTitle, readQaBlocks, scoreBand} from './qaBlocks';
+import {questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -104,5 +104,16 @@ describe('мягкая оценка нетехнических блоков', ()
         let [asked] = readQaBlocks([{turnIndexes: [0, 1, 2]}], turns);
         expect(questionTitle(asked)).toBe('Что такое замыкание?');
         expect(questionTitle({number: 4, items: [{turn: {role: 'client', text: 'Ответ'}, followUp: false}]})).toBe('Вопрос 4');
+    });
+
+    it('короткая версия вопроса для шапки короче полной реплики', () => {
+        let long = 'пока что, да. К сожалению, я не смогу сориентироваться, поскольку мы сотрудничаем как с средним, так и крупным бизнесом. То есть тут я не смогу даже близко, наверное, делать что-то как-то на том же.';
+        let short = shortQuestionTitle(long);
+        expect(short).toBe('К сожалению, я не смогу сориентироваться, поскольку мы сотрудничаем…');
+        expect(short.length).toBeLessThanOrEqual(71);
+        expect(shortQuestionTitle('Хорошо, спасибо. Мы уже обсудили стек, а теперь расскажите, как вы тестируете код? Можно коротко.'))
+            .toBe('Мы уже обсудили стек, а теперь расскажите, как вы тестируете код?');
+        expect(shortQuestionTitle('Что такое замыкание?')).toBe('Что такое замыкание?');
+        expect(shortQuestionTitle('')).toBe('');
     });
 });

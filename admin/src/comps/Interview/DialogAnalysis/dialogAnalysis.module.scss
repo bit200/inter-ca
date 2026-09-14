@@ -694,8 +694,8 @@ button.turnSpeaker{
 .qaTitle strong.qaQuestion{
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   overflow: hidden;
   min-width: 0;
   font-size: 15px;

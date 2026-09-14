@@ -199,3 +199,25 @@ export function questionTitle(block) {
     let main = items.find(item => item.turn && item.turn.role === 'manager' && !item.followUp && firstText(item.turn.text));
     return main ? firstText(main.turn.text) : 'Вопрос ' + (block && block.number);
 }
+
+// Короткая версия вопроса для шапки: полный текст и так стоит репликой в блоке,
+// повторять его в шапке незачем. Берём само вопросительное предложение - интервьюер
+// часто начинает с предисловия, - иначе первое содержательное (от 4 слов: «Да, хорошо.»
+// о теме не скажет), и обрезаем по границе слова.
+export const SHORT_TITLE_LIMIT = 70;
+
+export function shortQuestionTitle(text, limit = SHORT_TITLE_LIMIT) {
+    let full = firstText(text).replace(/\s+/g, ' ');
+    if (!full) return '';
+    let sentences = full.split(/(?<=[.!?…])\s+/).filter(Boolean);
+    let words = sentence => sentence.split(' ').length;
+    let asked = sentences.filter(sentence => /\?$/.test(sentence) && words(sentence) > 1);
+    let short = asked.length ? asked[asked.length - 1]
+        : sentences.find(sentence => words(sentence) >= 4) || full;
+    if (short.length > limit) {
+        let cut = short.slice(0, limit + 1);
+        let space = cut.lastIndexOf(' ');
+        short = (space > limit / 2 ? cut.slice(0, space) : short.slice(0, limit)).replace(/[\s,;:—–-]+$/, '') + '…';
+    }
+    return short.charAt(0).toUpperCase() + short.slice(1);
+}
