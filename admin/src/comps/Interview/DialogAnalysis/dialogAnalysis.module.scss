@@ -749,3 +749,335 @@ button.turnSpeaker{
 }
 
 .tab > .pipeline + .pipeline{ margin-top: 12px; }
+
+// ── Линзы расшифровки (вариант B) ───────────────────────────────────────────
+// Лента и всё, что над ней в режиме связывания, - одна колонка рядом с видео.
+.feed{
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+@media (min-width: 992px){
+  .transcript[data-media="video"] .feed{ grid-column: 1; grid-row: 1; }
+}
+
+// Панель линз: переключатель акцента слева, итоговые баллы справа, под ними шкала.
+.lensBar{
+  display: grid;
+  gap: 12px;
+  margin-top: 26px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  background: var(--dlg-card);
+}
+
+.lensHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.lensScores{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 22px;
+}
+
+.lensScore{
+  --dlg-band: var(--dlg-accent);
+  display: grid;
+  gap: 2px;
+
+  > span:first-child{
+    color: var(--dlg-muted);
+    font-size: 11px;
+  }
+
+  strong{
+    color: var(--dlg-band);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  strong[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
+  strong[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
+  strong[data-band="none"]{ --dlg-band: var(--dlg-muted); }
+
+  small{
+    margin-left: 1px;
+    color: var(--dlg-muted);
+    font-size: 12px;
+    font-weight: 400;
+  }
+}
+
+.lensCounts{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+// Шкала интервью: отрезки вопросов (технические плотнее), точки поведения и
+// текущая позиция записи. Отрезок - кнопка, он ведёт к вопросу.
+.timeline{
+  position: relative;
+  height: 30px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 4px;
+  background: var(--dlg-soft);
+}
+
+.timelineSegment{
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--dlg-guest);
+  opacity: .35;
+  cursor: pointer;
+
+  &[data-technical="true"]{ background: var(--dlg-accent); opacity: .55; }
+  &[data-dimmed="true"]{ opacity: .15; }
+  &:hover{ opacity: .85; }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; opacity: .85; }
+}
+
+.timelineEvent{
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--dlg-card);
+  border-radius: 50%;
+  background: var(--dlg-warn);
+
+  &[data-kind="rude"]{ background: var(--dlg-bad); }
+}
+
+.timelineNow{
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--dlg-strong);
+  pointer-events: none;
+}
+
+// Флаги поведения и «Ответ не найден»: тот же размер, что у чипов замечаний.
+.flag{
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--dlg-warn);
+  background: var(--dlg-warn-soft);
+  font-size: 11px;
+  white-space: nowrap;
+
+  &[data-kind="rude"]{ color: var(--dlg-bad); background: var(--dlg-bad-soft); }
+}
+
+.flagDispute{
+  padding: 0;
+  border: 0;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 11px;
+  text-decoration: underline dotted;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
+}
+
+.turnFlags{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  grid-column: 2;
+  gap: 6px 10px;
+  margin-top: 6px;
+}
+
+@media (max-width: 575px){
+  .turnFlags{ grid-column: 1; }
+}
+
+// Балл звена цепочки у реплики кандидата.
+.answerScore{
+  --dlg-band: var(--dlg-accent);
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--dlg-band);
+  border-radius: 4px;
+  color: var(--dlg-band);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+
+  &[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
+  &[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
+}
+
+// Линза гасит вопросы не своей темы, но оставляет их читаемыми - контекст разговора.
+.qaBlock[data-dimmed="true"] .qaTurns{ opacity: .5; }
+
+.qaActions{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.findAnswer{
+  padding: 3px 10px;
+  border: 1px solid var(--dlg-accent);
+  border-radius: 4px;
+  color: var(--dlg-accent);
+  background: var(--dlg-card);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover{ background: var(--dlg-accent-soft); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
+  &[aria-pressed="true"]{ color: var(--dlg-card); background: var(--dlg-accent); }
+}
+
+// Скобка цепочки в жёлобе слева от реплик: от первого звена до последнего,
+// с баллом вопроса. Это левая полоса, поэтому углов у неё нет.
+.qaTurns[data-bracket]{
+  position: relative;
+  padding-left: 22px;
+}
+
+.bracket{
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 8px;
+  width: 6px;
+  border: 2px solid var(--dlg-accent);
+  border-right: 0;
+  border-radius: 0;
+
+  b{
+    --dlg-band: var(--dlg-accent);
+    position: absolute;
+    top: 50%;
+    left: -9px;
+    min-width: 18px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    color: var(--dlg-card);
+    background: var(--dlg-band);
+    font-size: 10px;
+    line-height: 14px;
+    text-align: center;
+    transform: translateY(-50%);
+    font-variant-numeric: tabular-nums;
+  }
+
+  b[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
+  b[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
+}
+
+.qaTurns[data-bracket="pending"] .bracket{ border-style: dashed; border-right: 0; border-color: var(--dlg-muted); }
+
+// Режим связывания: строка-подсказка над лентой и подсвеченные реплики-кандидаты.
+.linking{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  border: 1px dashed var(--dlg-accent);
+  border-radius: 6px;
+  color: var(--dlg-ink);
+  background: var(--dlg-accent-soft);
+  font-size: 13px;
+}
+
+.linkingCancel{
+  padding: 0;
+  border: 0;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); }
+}
+
+.turn[data-target="true"]{ box-shadow: inset 0 0 0 1px var(--dlg-accent); }
+.turn[data-target="true"]:hover{ background: var(--dlg-accent-soft); }
+
+.attachHint{
+  color: var(--dlg-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+// Демо-заглушка: пунктирная обводка вокруг значения, которого ещё нет, и попап
+// «ДЕМО ЗНАЧЕНИЕ» при наведении или фокусе.
+.demo{
+  position: relative;
+  display: inline-block;
+  outline: 1px dashed var(--dlg-warn);
+  outline-offset: 2px;
+  border-radius: 2px;
+  cursor: help;
+
+  &[data-block="true"]{ display: block; }
+
+  &[data-tick="true"]{
+    position: absolute;
+    top: -6px;
+    margin-left: -5px;
+    outline: 0;
+  }
+
+  &:hover > .demoTip,
+  &:focus-within > .demoTip{ display: block; }
+}
+
+.demoTip{
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 3;
+  display: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--dlg-card);
+  background: var(--dlg-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+
+  &::after{
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border: 4px solid transparent;
+    border-top-color: var(--dlg-strong);
+  }
+}

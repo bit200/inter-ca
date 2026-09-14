@@ -313,6 +313,49 @@ describe('таб разбора диалога', () => {
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
         });
 
+        test('линзы: итоговый технический балл настоящий, нетехнический - демо-заглушка с попапом', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8}},
+                {id: 'b2', technical: false, turnIndexes: [2, 3]},
+            ]}}});
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const bar = screen.getByRole('region', {name: 'Оценка интервью'});
+            const technical = within(bar).getByText('Техническая').parentElement;
+            expect(technical).toHaveTextContent('8/10');
+            expect(technical.querySelector('[role="tooltip"]')).toBeNull();
+
+            const behavior = within(bar).getByText('Нетехническая').parentElement;
+            expect(within(behavior).getByRole('tooltip')).toHaveTextContent('ДЕМО ЗНАЧЕНИЕ');
+
+            expect(container.querySelector('[data-bracket="done"]')).toHaveTextContent('8');
+            fireEvent.click(within(bar).getByRole('radio', {name: 'Техника'}));
+            expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
+            expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
+            fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
+            expect(container.querySelector('[data-bracket]')).toBeNull();
+        });
+
+        test('вопрос без ответа связывается с репликой кандидата в два клика', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0]},
+                {id: 'b2', technical: true, turnIndexes: [1, 2, 3]},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const first = () => screen.getByRole('region', {name: 'Вопрос 1'});
+            expect(within(first()).getByText('Ответ не найден')).toBeInTheDocument();
+            fireEvent.click(within(first()).getByRole('button', {name: 'Найти ответ'}));
+            expect(screen.getByRole('status')).toHaveTextContent('Связываем ответ с вопросом 1');
+
+            fireEvent.click(screen.getByText('Функция с доступом к внешней области'));
+            expect(screen.queryByRole('status')).toBeNull();
+            expect(within(first()).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+            expect(within(first()).queryByText('Ответ не найден')).toBeNull();
+        });
+
         test('пока идёт оценка, у технического вопроса без балла написано «Оцениваем»', async () => {
             setupHttp(done, {answersEvaluation: {status: 'evaluating', blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1]},
