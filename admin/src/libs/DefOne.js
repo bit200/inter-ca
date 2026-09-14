@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import _ from 'underscore';
 import Smart from './Smart';
+import {BackButton, EditActions, SaveButton} from './EditActions/EditActions';
+import {saveSpots} from './EditActions/editActions';
 import Table from './Table';
 import Input from './Input';
 
@@ -140,26 +142,19 @@ function ProjectDetails(params) {
 
 
     let opts = (props || {}).opts || props
+    let spots = saveSpots(props)
+    const saveItem = (item) => global.http.put(url, {item: item && !_.isEmpty(item) ? item : obj})
+        .then(r => {
+            props.refreshOnSave && global.UpdateRootFn && global.UpdateRootFn();
+            return r;
+        })
+    // Вкладки, куда переехало сохранение (saveInTabs), зовут его отсюда.
+    window.saveItemFn = saveItem;
     let BTN_SAVE = {
-        btns: [{
-            name: t('save'),
-            icon: 'iconoir-double-check',
-            minWidth: '120px',
-            onClick: (e) => {
-                // console.log('*........ ## bbb', e);
-                global.http.put(url, {item: e})
-                    .then(r => {
-                        // console.log("qqqqq saved", props.refreshOnSave, params);
-                        props.refreshOnSave && global.UpdateRootFn && global.UpdateRootFn();
-                        //setCount(new Date().getTime())
-
-                    })
-                    .catch(e => {
-                        // console.log("qqqqqasdfasdf", e);
-                    })
-            }
-        }
-        ]
+        size: 12,
+        Component: ({localItem}) => <EditActions>
+            <SaveButton onSave={() => saveItem(localItem)}/>
+        </EditActions>
     };
     if (!obj || (obj && obj.reactLoading)) {
         console.log('LOOOG', 'HERE');
@@ -172,34 +167,10 @@ function ProjectDetails(params) {
                     <div className={'row justify-content-center'}>
                         <div className="col-12 ">
 
-                            <div className="pull-right zSMax">
-
-                                <a
-                                    style={{marginRight: '10px'}}
-                                    onClick={() => {
-                                    global.navigate(-1)
-                                }} className={'btn-light btn pull-left'}>
-                                    <i className="iconoir-undo"></i>
-                                    {t('back')}
-                                </a>
-                                <div style={{display: 'inline-block', marginLeft: '-10px', paddingLeft: '5px'}}>
-                                <Smart
-                                    _this={this}
-                                    defSize={12}
-                                    autoSaveFn={autoSaveFn}
-                                    httpSaveFn={httpSaveFn}
-                                    defClass={props.defClass}
-                                    items={[
-                                        BTN_SAVE
-                                    ]}
-                                    obj={obj}
-                                    onChange={(obj, field, value) => {
-                                        setObj(obj, 'smart1')
-                                        setCount(+count + 1)
-                                        props.autoSave && autoSaveFn()
-                                    }}></Smart>
-                                </div>
-                            </div>
+                            <EditActions className="zSMax">
+                                <BackButton/>
+                                {spots.header && <SaveButton onSave={() => saveItem(obj)}/>}
+                            </EditActions>
                         </div>
                         <div className="col-12">
                             <Smart
@@ -208,10 +179,10 @@ function ProjectDetails(params) {
                                 autoSaveFn={autoSaveFn}
                                 httpSaveFn={httpSaveFn}
                                 defClass={props.defClass}
-                                items={[].concat(opts.edit, [
+                                items={[].concat(opts.edit, spots.footer ? [
                                     {HR: true, size: 12},
                                     BTN_SAVE
-                                ])}
+                                ] : [])}
                                 obj={obj}
                                 onChange={(obj, field, value) => {
                                     setObj(obj, {key: 'smart2', field, value})

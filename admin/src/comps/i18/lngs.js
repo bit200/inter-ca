@@ -3303,6 +3303,20 @@ export default {
         en: "Back",
         fr: `Retour`
     },
+    "saving": {
+        ru: "Сохраняю…",
+        es: "Guardando…",
+        de: "Speichern…",
+        en: "Saving…",
+        fr: `Enregistrement…`
+    },
+    "saved": {
+        ru: "Сохранено",
+        es: "Guardado",
+        de: "Gespeichert",
+        en: "Saved",
+        fr: `Enregistré`
+    },
     "interviewPerc": {
         ru: "Процент заполненности интервью",
         es: "Porcentaje de entrevistas completadas",

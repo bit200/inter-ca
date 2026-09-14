@@ -26,6 +26,8 @@ import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
 import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
+import {EditActions, SaveButton} from "../../libs/EditActions/EditActions";
+import {withTabSave} from "../../libs/EditActions/editActions";
 
 let isAdmin = Storage.isAdmin()
 let pubName = Storage.pubName;
@@ -184,6 +186,14 @@ function Interview({props}) {
     let infoByUsersInterview = (item?.infoByUsersInterview || {})[userId] || {}
     pp = {props, selId, item,userId, onChangeInfoByUsers};
     console.log("qqqqq itemitemitemitemitem", item?.infoByUsersInterview);
+    // «Сохранить» живёт внутри вкладок, где есть что сохранять (save: true);
+    // у «Разбора диалога» его нет. Карточка включает это через saveInTabs.
+    let TabSaveBar = {
+        size: 12,
+        Component: () => <EditActions className="edit-actions--tab">
+            <SaveButton onSave={() => global.saveItemFn && global.saveItemFn(item)}/>
+        </EditActions>
+    };
     let FooterComp = () => {
         return <div className="col-sm-12 " style={{marginTop: '10px'}}>
 
@@ -214,9 +224,9 @@ function Interview({props}) {
                     items={[
                         {
                             size: 12,
-                            tabs: tabs = [
+                            tabs: tabs = withTabSave([
                                 {
-                                    name: t('questions'), urlKey: 'questions', childs: [
+                                    name: t('questions'), urlKey: 'questions', save: true, childs: [
                                         {
                                             size: 12,
                                             Component: Comp
@@ -224,7 +234,7 @@ function Interview({props}) {
                                     ]
                                 },
                                 {
-                                    name: t('mainMenu'), urlKey: 'main', childs: [
+                                    name: t('mainMenu'), urlKey: 'main', save: true, childs: [
                                         {
                                             name: 'name',
                                             key: 'name', type: 'input', size: 3},
@@ -244,7 +254,7 @@ function Interview({props}) {
 
 
                                 {
-                                    name: t('analyse'), urlKey: 'analyse', childs: [
+                                    name: t('analyse'), urlKey: 'analyse', save: true, childs: [
                                         {
                                             name: t('Overall assessment of the interview'),
                                             key: `infoByUsersInterview.user${global.user.get_id()}.feedback`,
@@ -308,7 +318,7 @@ function Interview({props}) {
                                     ]
                                 },
                                 !(isSale || isAdmin) ? null : {
-                                    name: 'Админ', urlKey: 'admin', childs: [
+                                    name: 'Админ', urlKey: 'admin', save: true, childs: [
                                         {type: 'HR', size: 12,},
 
                                         {
@@ -356,7 +366,7 @@ function Interview({props}) {
 
                                     ]
                                 }
-                            ],
+                            ], TabSaveBar),
                             // Вкладка хранится в адресе (?tab=dialog), см. interviewTabs.js.
                             activeTabInd: tabIndexFromKey(tabs, searchParams.get(TAB_PARAM)),
                             onTabChange: (ind) => {
