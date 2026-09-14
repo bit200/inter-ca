@@ -689,7 +689,15 @@ button.turnSpeaker{
   .qaToggle[aria-expanded="false"] &{ margin-top: 4px; transform: rotate(-45deg); }
 }
 
+// Длинный вопрос (интервьюер рассказывает минуту) обрезается до двух строк:
+// шапка остаётся шапкой, полный текст - в реплике ниже и во всплывающей подсказке.
 .qaTitle strong.qaQuestion{
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
   font-size: 15px;
   line-height: 1.4;
   overflow-wrap: anywhere;
