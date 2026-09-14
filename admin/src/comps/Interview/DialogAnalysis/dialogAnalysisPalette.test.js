@@ -3,13 +3,15 @@ import path from 'path';
 
 // Вкладка разбора диалога живёт на странице с зелёной темой проекта
 // (--bs-primary #22c55e), поэтому её собственные токены не должны уводить
-// оформление в синий. Проверяем палитру из стилей: ни один цветной токен
-// (кроме текста и линий, взятых из общей палитры сайта) не синий.
+// оформление в синий. Проверяем палитру из стилей: ни один токен - включая
+// текст, линии и тени - не отдаёт синим, даже едва заметным холодным серым.
 const scss = fs.readFileSync(path.join(__dirname, 'dialogAnalysis.module.scss'), 'utf8');
 
-function hsl(hex) {
-    const n = hex.replace('#', '');
-    const [r, g, b] = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16) / 255);
+function hsl(color) {
+    const rgb = color.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/i);
+    const [r, g, b] = rgb
+        ? rgb.slice(1, 4).map(v => +v / 255)
+        : [0, 2, 4].map(i => parseInt(color.replace('#', '').slice(i, i + 2), 16) / 255);
     const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
     if (max === min) return { h: 0, s: 0 };
     const d = max - min;
@@ -20,9 +22,14 @@ function hsl(hex) {
 
 function tokens(block) {
     return [...block.matchAll(/--(dlg-[\w-]+):\s*(#[0-9a-f]{6})/gi)]
-        .map(([, name, hex]) => ({ name, hex }))
-        .filter(t => t.name !== 'dlg-ink' && t.name !== 'dlg-line');
+        .map(([, name, hex]) => ({ name, hex }));
 }
+
+// Синий или холодный сине-серый: оттенок в синей зоне при заметной насыщенности.
+const isBlue = color => {
+    const { h, s } = hsl(color);
+    return h >= 190 && h <= 260 && s > 0.05;
+};
 
 describe('палитра разбора диалога', () => {
     const light = scss.slice(scss.indexOf('.tab{'), scss.indexOf('}', scss.indexOf('.tab{')));
@@ -30,11 +37,12 @@ describe('палитра разбора диалога', () => {
     const dark = scss.slice(darkStart, scss.indexOf('}', darkStart));
 
     it.each([['светлая', light], ['тёмная', dark]])('%s тема без синих токенов', (_, block) => {
-        const blue = tokens(block).filter(({ hex }) => {
-            const { h, s } = hsl(hex);
-            return h >= 190 && h <= 260 && s > 0.15;
-        });
-        expect(blue).toEqual([]);
+        expect(tokens(block).filter(({ hex }) => isBlue(hex))).toEqual([]);
+    });
+
+    it('тени и прочие цвета вне токенов не синие', () => {
+        const colors = scss.match(/rgba?\([^)]*\)|#[0-9a-f]{6}\b/gi) || [];
+        expect(colors.filter(isBlue)).toEqual([]);
     });
 
     it('акцент - зелёный', () => {
