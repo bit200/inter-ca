@@ -11,6 +11,7 @@ import {
     stepState,
 } from './dialogAnalysisState';
 import {formatScore, readQaBlocks, scoreBand} from './qaBlocks';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall} from './dialogSummary';
 import {
     capabilityLabel,
     capabilityStatusLabel,
@@ -84,16 +85,18 @@ const ANSWERS_STEP_LABELS = {
     grouping: 'Делим на вопросы',
     classifying: 'Отмечаем технические',
     evaluating: 'Оцениваем ответы',
+    summarizing: 'Пишем итог',
     done: 'Готово',
 };
 
 const ANSWERS_HINTS = {
-    '': 'Разобьём расшифровку на вопросы, отметим технические и оценим ответы кандидата на них. Нетехнические вопросы не оцениваем.',
+    '': 'Разобьём расшифровку на вопросы и оценим ответы кандидата: технические — баллом, остальные — по теме ли и развёрнуто ли. В конце напишем итог интервью.',
     queued: 'Оценка ждёт свободного слота. Страницу можно закрыть — она не прервётся.',
     grouping: 'Собираем реплики в вопросы: основной вопрос, ответ и уточнения.',
     classifying: 'Отмечаем, какие вопросы технические, а какие про опыт и организацию.',
-    evaluating: 'Оцениваем ответы на технические вопросы. Готовые баллы появляются в расшифровке по мере проверки.',
-    done: 'Оценка готова: у технических вопросов в расшифровке стоит балл.',
+    evaluating: 'Оцениваем ответы. Готовые оценки появляются в расшифровке по мере проверки.',
+    summarizing: 'Собираем оценки ответов и метрики разговора в итог интервью.',
+    done: 'Оценка готова: итог интервью — вверху, оценки ответов — в расшифровке по вопросам.',
 };
 
 function answersOf(interview, analysis) {
@@ -215,7 +218,10 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     }
     let answersActive = isActiveStatus(answers.status, ANSWERS_PIPELINE_STEPS);
     let blocks = useMemo(
-        () => readQaBlocks(answers.result, conversation.turns, {active: answersActive || sendingAnswers}),
+        () => readQaBlocks(answers.result, conversation.turns, {
+            active: answersActive || sendingAnswers,
+            timings: readBlockTimings(answers.result),
+        }),
         [answers.result, conversation.turns, answersActive, sendingAnswers]
     );
 
@@ -231,7 +237,19 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             ? 'Разбор ещё не запускали. Кнопка отправит запись в очередь: мы достанем звук, распознаем речь и разделим реплики по участникам.'
             : 'Приложите ссылку на запись во вкладке «Меню» — без видео разбирать нечего.';
 
+    // Итог - то, ради чего открывают карточку, поэтому он над процессами и расшифровкой.
+    let overall = dialogDone ? readOverall(answers.result) : null;
+    let greeting = dialogDone ? readGreeting(answers.result) : null;
+    let dialogMetrics = dialogDone ? readDialogMetrics(answers.result) : null;
+
     return <div className={styles.tab}>
+        {(overall || greeting || dialogMetrics) && <InterviewSummary
+            overall={overall}
+            greeting={greeting}
+            metrics={dialogMetrics}
+            summarizing={answers.status === 'summarizing'}
+        />}
+
         <PipelineCard
             title="Разбор диалога"
             hint={hint}
@@ -600,6 +618,14 @@ function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children})
                 {block.startMs !== null && <span className={styles.qaTime}>
                     {formatDuration(block.startMs)}–{formatDuration(block.endMs === null ? block.startMs : block.endMs)}
                 </span>}
+                {block.timing && block.timing.delayMs !== null && <span
+                    className={styles.qaTiming}
+                    data-early={block.timing.delayMs < 0 ? 'true' : undefined}
+                >
+                    {block.timing.delayMs < 0
+                        ? 'ответ начат до конца вопроса'
+                        : 'пауза перед ответом ' + formatMs(block.timing.delayMs)}
+                </span>}
                 <span className={styles.qaKind} data-technical={String(block.technical)}>
                     {KIND_LABELS[String(block.technical)]}
                 </span>
@@ -615,7 +641,7 @@ function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children})
                     aria-pressed={linking}
                     onClick={onFindAnswer}
                 >{linking ? 'Отменить' : 'Найти ответ'}</button>}
-                <QaScore evaluation={evaluation}/>
+                {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
             </div>
         </header>
         <div className={styles.qaTurns} data-bracket={bracket ? (evaluation.state === 'done' ? 'done' : 'pending') : undefined}>
@@ -625,6 +651,10 @@ function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children})
             {children}
         </div>
         {evaluation.state === 'done' && evaluation.feedback && <p className={styles.qaFeedback}>{evaluation.feedback}</p>}
+        {block.soft && block.soft.state === 'done' && block.soft.note && <p className={styles.qaFeedback}>{block.soft.note}</p>}
+        {block.soft && block.soft.state === 'error' && <p className={styles.qaError}>
+            Ответ не оценён: {block.soft.message || 'оценка не сообщила причину.'}
+        </p>}
         {evaluation.state === 'error' && <p className={styles.qaError}>
             Ответ не оценён: {evaluation.message || 'сервис оценки не сообщил причину.'}
         </p>}
@@ -731,6 +761,127 @@ function Demo({children, block = false, tick = false, style}) {
         {children}
         <span className={styles.demoTip} role="tooltip">{DEMO_LABEL}</span>
     </span>;
+}
+
+// Мягкая оценка нетехнического ответа - вместо балла две-три отметки. Цвет общий
+// с баллом технического вопроса: зелёный - по делу, жёлтый - с пробелами, красный - мимо.
+const RELEVANCE_LABELS = {on_topic: 'По теме', evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
+
+function SoftMarks({soft}) {
+    if (soft.state === 'skipped') return <span className={styles.qaStatus}>Не оцениваем</span>;
+    if (soft.state === 'pending') return <span className={styles.qaStatus} data-state="pending">
+        <span className={styles.spinner} aria-hidden="true"/>Оцениваем
+    </span>;
+    if (soft.state === 'missing') return <span className={styles.qaStatus}>Без оценки</span>;
+    if (soft.state === 'error') return <span className={styles.qaStatus} data-state="error">Ошибка оценки</span>;
+
+    let marks = [
+        soft.relevance && {key: 'relevance', text: RELEVANCE_LABELS[soft.relevance],
+            tone: soft.relevance === 'on_topic' ? 'good' : soft.relevance === 'evasive' ? 'fair' : 'poor'},
+        soft.complete !== null && {key: 'complete', text: soft.complete ? 'Развёрнуто' : 'Формально',
+            tone: soft.complete ? 'good' : 'fair'},
+        soft.engaged === true && {key: 'engaged', text: 'Встречные вопросы', tone: 'good'},
+    ].filter(Boolean);
+
+    return <ul className={styles.softMarks} data-band={soft.band} aria-label="Оценка ответа">
+        {marks.map(mark => <li key={mark.key} className={styles.softMark} data-tone={mark.tone}>{mark.text}</li>)}
+    </ul>;
+}
+
+// Итог интервью: общий балл и сводка, рядом - отметки приветствия и прощания, ниже -
+// цифры разговора. Первое, что читают на карточке, поэтому стоит над всем остальным.
+function InterviewSummary({overall, greeting, metrics, summarizing}) {
+    let band = overall ? scoreBand(overall.score, overall.max) : 'none';
+    return <section className={styles.summary} data-band={band} aria-label="Итог интервью">
+        <header className={styles.summaryHead}>
+            <h3 className={styles.summaryTitle}>Итог интервью</h3>
+            {greeting && <ul className={styles.courtesy} aria-label="Приветствие и прощание">
+                <CourtesyMark value={greeting.greeted} yes="Приветствие есть" no="Приветствия нет" unknown="Приветствие не определено"/>
+                <CourtesyMark value={greeting.farewelled} yes="Прощание есть" no="Прощания нет" unknown="Прощание не определено"/>
+            </ul>}
+        </header>
+
+        {overall
+            ? <div className={styles.summaryBody}>
+                {overall.score !== null && <SummaryScore score={overall.score} max={overall.max}/>}
+                <div className={styles.summaryText}>
+                    {overall.summary && <p>{overall.summary}</p>}
+                    {overall.message && !overall.summary && <p className={styles.summaryMuted}>Итог не собран: {overall.message}</p>}
+                    {(overall.strengths.length > 0 || overall.weaknesses.length > 0) && <div className={styles.summaryLists}>
+                        {overall.strengths.length > 0 && <div>
+                            <h4>Сильные стороны</h4>
+                            <ul>{overall.strengths.map((text, index) => <li key={index}>{text}</li>)}</ul>
+                        </div>}
+                        {overall.weaknesses.length > 0 && <div>
+                            <h4>Над чем работать</h4>
+                            <ul>{overall.weaknesses.map((text, index) => <li key={index}>{text}</li>)}</ul>
+                        </div>}
+                    </div>}
+                </div>
+            </div>
+            : <p className={styles.summaryMuted}>
+                {summarizing && <span className={styles.spinner} aria-hidden="true"/>}
+                {summarizing ? 'Пишем итог по оценкам ответов и метрикам разговора.' : 'Итоговой сводки пока нет — она появится после оценки ответов.'}
+            </p>}
+
+        {greeting && greeting.note && <p className={styles.courtesyNote}>{greeting.note}</p>}
+        {metrics && <DialogMetrics metrics={metrics}/>}
+    </section>;
+}
+
+function CourtesyMark({value, yes, no, unknown}) {
+    let tone = value === true ? 'good' : value === false ? 'poor' : 'none';
+    return <li className={styles.courtesyMark} data-tone={tone}>
+        <span aria-hidden="true">{value === true ? '✓' : value === false ? '✕' : '?'}</span>
+        {value === true ? yes : value === false ? no : unknown}
+    </li>;
+}
+
+// Общий балл - та же шкала из делений, что у балла вопроса, только крупнее.
+function SummaryScore({score, max}) {
+    let cells = Math.min(20, Math.max(1, Math.round(max > 20 ? 10 : max)));
+    let filled = Math.round(score / max * cells);
+    return <div className={styles.summaryScore} role="img" aria-label={`Общая оценка ${formatScore(score)} из ${formatScore(max)}`}>
+        <span className={styles.summaryScoreValue}>{formatScore(score)}<small>/{formatScore(max)}</small></span>
+        <span className={styles.scoreBar} aria-hidden="true">
+            {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
+        </span>
+    </div>;
+}
+
+// Цифры разговора одной строкой: доля речи - полосой, остальное - числами.
+function DialogMetrics({metrics}) {
+    let {speech, interruptions, delay, duration} = metrics;
+    let pick = stats => stats && (stats.median !== null ? stats.median : stats.mean);
+    return <dl className={styles.dialogMetrics}>
+        {speech && <div className={styles.dialogMetric} data-wide="true">
+            <dt>Кто сколько говорил</dt>
+            <dd>
+                <span className={styles.speechBar} aria-hidden="true">
+                    <i data-role="client" style={{width: Math.max(0, Math.min(100, speech.clientPercent)) + '%'}}/>
+                    <i data-role="manager" style={{width: Math.max(0, Math.min(100, speech.managerPercent)) + '%'}}/>
+                </span>
+                <span className={styles.speechLegend}>
+                    <span data-role="client">Кандидат {Math.round(speech.clientPercent)}%</span>
+                    <span data-role="manager">Интервьюер {Math.round(speech.managerPercent)}%</span>
+                </span>
+            </dd>
+        </div>}
+        {interruptions && <div className={styles.dialogMetric}>
+            <dt>Перебивания</dt>
+            <dd>
+                <span className={styles.metricLine}>кандидат перебил <strong>{interruptions.byClient}</strong></span>
+                <span className={styles.metricLine}>интервьюер перебил <strong>{interruptions.byManager}</strong></span>
+            </dd>
+        </div>}
+        {(delay || duration) && <div className={styles.dialogMetric}>
+            <dt>{(delay || duration).median !== null ? 'Ответы, медиана' : 'Ответы, в среднем'}</dt>
+            <dd>
+                {delay && <span className={styles.metricLine}>пауза перед ответом <strong>{formatMs(pick(delay))}</strong></span>}
+                {duration && <span className={styles.metricLine}>длина ответа <strong>{formatMs(pick(duration))}</strong></span>}
+            </dd>
+        </div>}
+    </dl>;
 }
 
 // Кто говорит в реплике. Разбор угадывает роли по дорожкам и ошибается, когда

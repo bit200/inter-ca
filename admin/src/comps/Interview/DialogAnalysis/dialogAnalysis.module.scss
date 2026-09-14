@@ -750,6 +750,260 @@ button.turnSpeaker{
 
 .tab > .pipeline + .pipeline{ margin-top: 12px; }
 
+// Итог интервью - главный блок таба. Выделен не рамкой, а крупным баллом в цвете
+// уровня на мягкой подложке того же цвета: уровень считывается раньше текста.
+.summary{
+  --dlg-band: var(--dlg-muted);
+  --dlg-band-soft: var(--dlg-soft);
+  display: grid;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  background: var(--dlg-card);
+}
+
+.summary[data-band="good"]{ --dlg-band: var(--dlg-accent); --dlg-band-soft: var(--dlg-accent-soft); }
+.summary[data-band="fair"]{ --dlg-band: var(--dlg-warn); --dlg-band-soft: var(--dlg-warn-soft); }
+.summary[data-band="poor"]{ --dlg-band: var(--dlg-bad); --dlg-band-soft: var(--dlg-bad-soft); }
+
+.summaryHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.summaryTitle{
+  margin: 0;
+  color: var(--dlg-strong);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.summaryBody{
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 16px 22px;
+}
+
+@media (max-width: 575px){
+  .summaryBody{ grid-template-columns: minmax(0, 1fr); }
+}
+
+.summaryScore{
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--dlg-band-soft);
+
+  .scoreBar{
+    grid-auto-columns: 8px;
+
+    i{ height: 18px; }
+    i[data-on="true"]{ background: var(--dlg-band); }
+  }
+}
+
+.summaryScoreValue{
+  color: var(--dlg-band);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: .9;
+  font-variant-numeric: tabular-nums;
+
+  small{
+    margin-left: 2px;
+    color: var(--dlg-muted);
+    font-size: 15px;
+    font-weight: 400;
+  }
+}
+
+.summaryText{
+  display: grid;
+  gap: 12px;
+  max-width: 72ch;
+
+  > p{
+    margin: 0;
+    color: var(--dlg-ink);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+}
+
+.summaryLists{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 22px;
+
+  h4{
+    margin: 0 0 4px;
+    color: var(--dlg-strong);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  ul{
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
+.summaryMuted{
+  margin: 0;
+  color: var(--dlg-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+// Приветствие и прощание - про весь разговор, не про вопрос, поэтому живут в шапке итога.
+.courtesy{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.courtesyMark{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 999px;
+  color: var(--dlg-muted);
+  background: var(--dlg-soft);
+  font-size: 12px;
+
+  > span{ font-weight: 700; }
+
+  &[data-tone="good"]{ border-color: var(--dlg-accent); color: var(--dlg-accent); background: var(--dlg-accent-soft); }
+  &[data-tone="poor"]{ border-color: var(--dlg-bad); color: var(--dlg-bad); background: var(--dlg-bad-soft); }
+  &[data-tone="none"]{ border-style: dashed; }
+}
+
+.courtesyNote{
+  margin: -6px 0 0;
+  color: var(--dlg-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+// Цифры разговора - одна строка под итогом, а не отдельная таблица.
+.dialogMetrics{
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--dlg-line);
+  padding-top: 12px;
+}
+
+.dialogMetric{
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 0 16px;
+  border-left: 1px solid var(--dlg-line);
+
+  &:first-child{ padding-left: 0; border-left: 0; }
+
+  dt{
+    color: var(--dlg-muted);
+    font-size: 11px;
+    font-weight: 400;
+  }
+
+  dd{
+    display: grid;
+    gap: 3px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 767px){
+  .dialogMetrics{ grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dialogMetric{ padding: 0; border-left: 0; }
+}
+
+.metricLine{
+  color: var(--dlg-ink);
+  font-size: 12px;
+
+  strong{
+    color: var(--dlg-strong);
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Доля речи теми же цветами, что полосы ролей в ленте: кандидат серый, интервьюер зелёный.
+.speechBar{
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--dlg-soft);
+
+  i{ display: block; height: 100%; }
+  i[data-role="client"]{ background: var(--dlg-guest); }
+  i[data-role="manager"]{ background: var(--dlg-host); }
+}
+
+.speechLegend{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+
+  [data-role="client"]{ color: var(--dlg-guest); }
+  [data-role="manager"]{ color: var(--dlg-host); }
+}
+
+// Мягкая оценка нетехнического ответа - отметки на месте балла.
+.softMarks{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.softMark{
+  padding: 2px 9px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 999px;
+  color: var(--dlg-muted);
+  background: var(--dlg-card);
+  font-size: 12px;
+  font-weight: 600;
+
+  &[data-tone="good"]{ border-color: var(--dlg-accent); color: var(--dlg-accent); background: var(--dlg-accent-soft); }
+  &[data-tone="fair"]{ border-color: var(--dlg-warn); color: var(--dlg-warn); background: var(--dlg-warn-soft); }
+  &[data-tone="poor"]{ border-color: var(--dlg-bad); color: var(--dlg-bad); background: var(--dlg-bad-soft); }
+}
+
+.qaTiming{
+  color: var(--dlg-muted);
+  font-size: 12px;
+
+  &[data-early="true"]{ color: var(--dlg-warn); }
+}
+
 // ── Линзы расшифровки (вариант B) ───────────────────────────────────────────
 // Лента и всё, что над ней в режиме связывания, - одна колонка рядом с видео.
 .feed{

@@ -10,7 +10,8 @@ export const PIPELINE_STEPS = ['queued', 'downloading', 'analyzing', 'done'];
 // Оценка ответов - второй пайплайн на той же карточке: запускается отдельной
 // кнопкой поверх готового разбора, делит реплики на вопросы, отличает
 // технические от прочих и отдаёт технические в evaluate.
-export const ANSWERS_PIPELINE_STEPS = ['queued', 'grouping', 'classifying', 'evaluating', 'done'];
+// summarizing - итог по всему интервью из уже готовых оценок и метрик.
+export const ANSWERS_PIPELINE_STEPS = ['queued', 'grouping', 'classifying', 'evaluating', 'summarizing', 'done'];
 
 // Активная обработка - всё, что ещё не пришло к исходу: пока очередь работает,
 // повторно давить «Оценить» нельзя, иначе в mesh уедет вторая задача на те же часы.
@@ -85,13 +86,18 @@ export function evaluateButtonState(analysis, options) {
     };
 }
 
-// Оценка ответов приходит той же обёрткой статуса, что и разбор. Блоки бэкенд
+// Части результата оценки ответов: блоки вопросов, метрики разговора,
+// приветствие с прощанием и итог интервью.
+const ANSWERS_RESULT_FIELDS = ['blocks', 'metrics', 'greeting', 'farewell', 'overall'];
+
+// Оценка ответов приходит той же обёрткой статуса, что и разбор. Результат бэкенд
 // может положить и в result, и прямо рядом со статусом - сводим к result.
 export function normalizeAnswers(source) {
     let value = source && typeof source === 'object' ? source : {};
     let state = normalizeAnalysis(value, ANSWERS_PIPELINE_STEPS);
-    if (!state.result && Array.isArray(value.blocks)) {
-        state.result = {blocks: value.blocks};
+    if (!state.result) {
+        let fields = ANSWERS_RESULT_FIELDS.filter(key => value[key] && typeof value[key] === 'object');
+        if (fields.length) state.result = Object.fromEntries(fields.map(key => [key, value[key]]));
     }
     return state;
 }
