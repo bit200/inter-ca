@@ -1,12 +1,16 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
 import {
+    ANSWERS_PIPELINE_STEPS,
     PIPELINE_STEPS,
+    answersButtonState,
     evaluateButtonState,
     isActiveStatus,
     normalizeAnalysis,
+    normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
+import {formatScore, readQaBlocks, scoreBand} from './qaBlocks';
 import {
     capabilityLabel,
     capabilityStatusLabel,
@@ -51,6 +55,31 @@ const STATUS_HINTS = {
     done: 'Разбор готов. Реплики ниже — расшифровка записи с замечаниями.',
 };
 
+// Оценка ответов - второй процесс на той же карточке: запускается руками поверх
+// готового разбора и идёт своими шагами.
+const ANSWERS_STEP_LABELS = {
+    queued: 'В очереди',
+    grouping: 'Делим на вопросы',
+    classifying: 'Отмечаем технические',
+    evaluating: 'Оцениваем ответы',
+    done: 'Готово',
+};
+
+const ANSWERS_HINTS = {
+    '': 'Разобьём расшифровку на вопросы, отметим технические и оценим ответы кандидата на них. Нетехнические вопросы не оцениваем.',
+    queued: 'Оценка ждёт свободного слота. Страницу можно закрыть — она не прервётся.',
+    grouping: 'Собираем реплики в вопросы: основной вопрос, ответ и уточнения.',
+    classifying: 'Отмечаем, какие вопросы технические, а какие про опыт и организацию.',
+    evaluating: 'Оцениваем ответы на технические вопросы. Готовые баллы появляются в расшифровке по мере проверки.',
+    done: 'Оценка готова: у технических вопросов в расшифровке стоит балл.',
+};
+
+function answersOf(interview, analysis) {
+    let item = interview && typeof interview === 'object' ? interview : {};
+    let dialog = analysisOf(item) || {};
+    return item.answersEvaluation || dialog.answersEvaluation || (analysis && analysis.answersEvaluation) || null;
+}
+
 function analysisOf(interview) {
     let item = interview && typeof interview === 'object' ? interview : {};
     return item.dialogAnalysis || item.videoAnalysis || null;
@@ -67,14 +96,25 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     let [sending, setSending] = useState(false);
     let [openTurn, setOpenTurn] = useState(null);
     let [roles, setRoles] = useState(() => ({...(speakerRoles || {})}));
+    let [answers, setAnswers] = useState(() => normalizeAnswers(answersOf(value)));
+    let [sendingAnswers, setSendingAnswers] = useState(false);
     let mounted = useRef(true);
     let media = pickDialogMedia(value, analysis);
 
     useEffect(() => () => { mounted.current = false; }, []);
 
+    let applyAnswers = useCallback(payload => {
+        if (!mounted.current || !payload) return;
+        setAnswers(normalizeAnswers(payload.answersEvaluation || payload));
+    }, []);
+
     let apply = useCallback(payload => {
         if (!mounted.current) return;
-        setAnalysis(normalizeAnalysis(payload && payload.dialogAnalysis ? payload.dialogAnalysis : payload));
+        let dialog = payload && payload.dialogAnalysis ? payload.dialogAnalysis : payload;
+        setAnalysis(normalizeAnalysis(dialog));
+        // Оценка ответов может приехать вложенной в разбор - тогда отдельный запрос не нужен.
+        let nested = answersOf(payload, dialog);
+        nested && setAnswers(normalizeAnswers(nested));
     }, []);
 
     let load = useCallback(() => {
@@ -94,7 +134,38 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         return () => clearInterval(timer);
     }, [analysis.status, load]);
 
+    let dialogDone = analysis.status === 'done';
+
+    let loadAnswers = useCallback(() => {
+        if (!interviewId || !global.http) return;
+        // Оценку ответов ещё не запускали - для таба это обычное состояние.
+        global.http.get(`/my-interview/${interviewId}/answers-evaluation`, {}, {wo_notify: true})
+            .then(applyAnswers)
+            .catch(() => {});
+    }, [interviewId, applyAnswers]);
+
+    useEffect(() => { dialogDone && loadAnswers(); }, [dialogDone, loadAnswers]);
+
+    useEffect(() => {
+        if (!dialogDone || !isActiveStatus(answers.status, ANSWERS_PIPELINE_STEPS)) return undefined;
+        let timer = setInterval(loadAnswers, POLL_MS);
+        return () => clearInterval(timer);
+    }, [dialogDone, answers.status, loadAnswers]);
+
     let button = evaluateButtonState(analysis, {hasVideo, sending});
+    let answersButton = answersButtonState(analysis, answers, {sending: sendingAnswers});
+
+    function evaluateAnswers() {
+        if (!interviewId || !global.http || answersButton.disabled) return;
+        setSendingAnswers(true);
+        global.http.post(`/my-interview/${interviewId}/answers-evaluation`, {})
+            .then(payload => {
+                applyAnswers(payload);
+                if (mounted.current && !payload) setAnswers(normalizeAnswers({status: 'queued'}));
+            })
+            .catch(() => {})
+            .finally(() => { mounted.current && setSendingAnswers(false); });
+    }
 
     function evaluate() {
         if (!interviewId || !global.http || button.disabled) return;
@@ -120,6 +191,12 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         setRoles(next);
         onSpeakerRolesChange && onSpeakerRolesChange(next);
     }
+    let answersActive = isActiveStatus(answers.status, ANSWERS_PIPELINE_STEPS);
+    let blocks = useMemo(
+        () => readQaBlocks(answers.result, conversation.turns, {active: answersActive || sendingAnswers}),
+        [answers.result, conversation.turns, answersActive, sendingAnswers]
+    );
+
     let markersById = useMemo(() => {
         let map = new Map();
         conversation.markers.forEach(marker => marker && map.set(marker.id, marker));
@@ -133,47 +210,33 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             : 'Приложите ссылку на запись во вкладке «Меню» — без видео разбирать нечего.';
 
     return <div className={styles.tab}>
-        <section className={styles.pipeline}>
-            <div className={styles.pipelineHead}>
-                <div>
-                    <h3 className={styles.pipelineTitle}>Разбор диалога</h3>
-                    {hint && <p className={styles.pipelineHint}>{hint}</p>}
-                </div>
-                {button.visible && <div className={styles.actions}>
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        disabled={button.disabled}
-                        onClick={evaluate}
-                    >
-                        {button.busy && <span className={styles.spinner} aria-hidden="true"/>}
-                        {button.label === 'evaluateAgain' ? 'Оценить заново' : 'Оценить'}
-                    </button>
-                </div>}
-            </div>
+        <PipelineCard
+            title="Разбор диалога"
+            hint={hint}
+            button={button}
+            actionLabel="Оценить"
+            onRun={evaluate}
+            steps={PIPELINE_STEPS}
+            labels={STEP_LABELS}
+            state={analysis}
+            stoppedTitle="Разбор остановлен"
+        />
 
-            {analysis.status !== '' && analysis.status !== 'error' && <ul className={styles.steps}>
-                {PIPELINE_STEPS.map(step => <li
-                    key={step}
-                    className={styles.step}
-                    data-state={stepState(step, analysis.status)}
-                >
-                    <span className={styles.stepDot}/>
-                    {STEP_LABELS[step]}
-                </li>)}
-            </ul>}
+        {dialogDone && <PipelineCard
+            title="Оценка ответов"
+            hint={ANSWERS_HINTS[answers.status] || ''}
+            button={answersButton}
+            actionLabel="Оценить ответы"
+            onRun={evaluateAnswers}
+            steps={ANSWERS_PIPELINE_STEPS}
+            labels={ANSWERS_STEP_LABELS}
+            state={answers}
+            stoppedTitle="Оценка ответов остановлена"
+        />}
 
-            {analysis.status === 'error' && <div className={styles.failure}>
-                <span className={styles.failureTitle}>
-                    {analysis.retryable ? 'Сбой на нашей стороне — пробуем ещё раз' : 'Разбор остановлен'}
-                </span>
-                <span>{analysis.message || 'Причину очередь не сообщила.'}</span>
-                {analysis.retryable && <span>Попыток сделано: {analysis.attempts || 1}. Вмешиваться не нужно.</span>}
-            </div>}
-        </section>
-
-        {analysis.status === 'done' && <Result
+        {dialogDone && <Result
             conversation={conversation}
+            blocks={blocks}
             onAssignRole={assignRole}
             markersById={markersById}
             openTurn={openTurn}
@@ -183,7 +246,50 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     </div>;
 }
 
-function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
+// Шапка процесса: где сейчас запись, и что с ней можно сделать. Одна на оба
+// процесса карточки - разбор записи и оценку ответов, - чтобы они читались одинаково.
+function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, state, stoppedTitle}) {
+    return <section className={styles.pipeline}>
+        <div className={styles.pipelineHead}>
+            <div>
+                <h3 className={styles.pipelineTitle}>{title}</h3>
+                {hint && <p className={styles.pipelineHint}>{hint}</p>}
+            </div>
+            {button.visible && <div className={styles.actions}>
+                <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={button.disabled}
+                    onClick={onRun}
+                >
+                    {button.busy && <span className={styles.spinner} aria-hidden="true"/>}
+                    {button.label === 'evaluateAgain' ? actionLabel + ' заново' : actionLabel}
+                </button>
+            </div>}
+        </div>
+
+        {state.status !== '' && state.status !== 'error' && <ul className={styles.steps}>
+            {steps.map(step => <li
+                key={step}
+                className={styles.step}
+                data-state={stepState(step, state.status, steps)}
+            >
+                <span className={styles.stepDot}/>
+                {labels[step]}
+            </li>)}
+        </ul>}
+
+        {state.status === 'error' && <div className={styles.failure}>
+            <span className={styles.failureTitle}>
+                {state.retryable ? 'Сбой на нашей стороне — пробуем ещё раз' : stoppedTitle}
+            </span>
+            <span>{state.message || 'Причину очередь не сообщила.'}</span>
+            {state.retryable && <span>Попыток сделано: {state.attempts || 1}. Вмешиваться не нужно.</span>}
+        </div>}
+    </section>;
+}
+
+function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
     let {turns, markers, summary, capabilities} = conversation;
     let labels = speakerLabels(turns);
     let labelOf = turn => labels[speakerKey(turn)] || speakerLabel(turn.role, turn.speaker);
@@ -191,6 +297,8 @@ function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, 
     let [playingIndex, setPlayingIndex] = useState(-1);
     let [paused, setPaused] = useState(true);
     let [rolePicker, setRolePicker] = useState(null);
+    let [view, setView] = useState('blocks');
+    let byQuestions = view === 'blocks' && blocks.length > 0;
 
     // Реплика перематывает запись на своё начало и сразу запускает её:
     // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
@@ -212,6 +320,79 @@ function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, 
     function onTimeUpdate(event) {
         let index = turnIndexAt(turns, event.currentTarget.currentTime * 1000);
         setPlayingIndex(prev => prev === index ? prev : index);
+    }
+
+    // Реплика одинакова в ленте и в блоке вопроса: index - место в ленте разбора
+    // (-1 у реплики, которую блок принёс текстом), по нему подсвечивается звучащая.
+    function renderTurn(turn, index, key, followUp) {
+        let turnMarkers = Array.isArray(turn.markerIds)
+            ? turn.markerIds.map(id => markersById.get(id)).filter(Boolean)
+            : [];
+        return <React.Fragment key={key}>
+            <div
+                className={styles.turn}
+                data-role={normalizedRole(turn.role)}
+                data-playing={media && index > -1 && playingIndex === index ? 'true' : undefined}
+                data-followup={followUp ? 'true' : undefined}
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenTurn(openTurn === key ? null : key)}
+                onKeyDown={event => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    onOpenTurn(openTurn === key ? null : key);
+                }}
+            >
+                <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
+                <span className={styles.turnWho}>
+                {turn.speaker && turn.speaker !== 'unknown'
+                    ? <button
+                        type="button"
+                        className={styles.turnSpeaker}
+                        aria-haspopup="true"
+                        aria-expanded={rolePicker === key}
+                        title="Указать, кто это"
+                        onClick={event => {
+                            event.stopPropagation();
+                            setRolePicker(rolePicker === key ? null : key);
+                        }}
+                        onKeyDown={event => {
+                            event.stopPropagation();
+                            event.key === 'Escape' && setRolePicker(null);
+                        }}
+                    >{labelOf(turn)}</button>
+                    : <span className={styles.turnSpeaker}>{labelOf(turn)}</span>}
+                {followUp && <span className={styles.followUp}>уточнение</span>}
+                </span>
+                {rolePicker === key && <RolePopover
+                    role={normalizedRole(turn.role)}
+                    onPick={role => {
+                        setRolePicker(null);
+                        role !== normalizedRole(turn.role) && onAssignRole(speakerKey(turn), role);
+                    }}
+                    onClose={() => setRolePicker(null)}
+                />}
+                <p className={styles.turnText}>{turn.text || '—'}</p>
+                {media && (index > -1 || typeof turn.startMs === 'number') && (() => {
+                    let sounding = !paused && index > -1 && playingIndex === index;
+                    let label = sounding ? 'Пауза' : 'Воспроизвести с ' + formatDuration(turn.startMs || 0);
+                    return <button
+                        type="button"
+                        className={styles.turnPlay}
+                        aria-label={label}
+                        title={label}
+                        onClick={event => {
+                            // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
+                            event.stopPropagation();
+                            sounding ? pause() : playFrom(turn);
+                        }}
+                        onKeyDown={event => event.stopPropagation()}
+                    >{sounding ? '❚❚' : '▶'}</button>;
+                })()}
+                <TurnSignals turn={turn} markers={turnMarkers}/>
+            </div>
+            {openTurn === key && <TurnDetails turn={turn} label={labelOf(turn)} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
+        </React.Fragment>;
     }
 
     if (!turns.length) {
@@ -238,7 +419,19 @@ function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, 
 
         <EmotionSummary sources={summary.emotionSources}/>
 
-        <h4 className={styles.sectionTitle}>Расшифровка</h4>
+        <div className={styles.transcriptHead}>
+            <h4 className={styles.sectionTitle}>Расшифровка</h4>
+            {blocks.length > 0 && <div className={styles.viewSwitch} role="radiogroup" aria-label="Как показать расшифровку">
+                {[['blocks', 'По вопросам'], ['turns', 'Все реплики']].map(([key, label]) => <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={view === key}
+                    className={styles.viewOption}
+                    onClick={() => setView(key)}
+                >{label}</button>)}
+            </div>}
+        </div>
         <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
         {media && <div className={styles.player}>
             {media.kind === 'video'
@@ -248,75 +441,20 @@ function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, 
                 {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
             </p>
         </div>}
-        <div className={styles.turns}>
-            {turns.map((turn, index) => {
-                let key = turn.id || index;
-                let turnMarkers = Array.isArray(turn.markerIds)
-                    ? turn.markerIds.map(id => markersById.get(id)).filter(Boolean)
-                    : [];
-                return <React.Fragment key={key}>
-                    <div
-                        className={styles.turn}
-                        data-role={normalizedRole(turn.role)}
-                        data-playing={media && playingIndex === index ? 'true' : undefined}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onOpenTurn(openTurn === key ? null : key)}
-                        onKeyDown={event => {
-                            if (event.key !== 'Enter' && event.key !== ' ') return;
-                            event.preventDefault();
-                            onOpenTurn(openTurn === key ? null : key);
-                        }}
-                    >
-                        <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
-                        {turn.speaker && turn.speaker !== 'unknown'
-                            ? <button
-                                type="button"
-                                className={styles.turnSpeaker}
-                                aria-haspopup="true"
-                                aria-expanded={rolePicker === key}
-                                title="Указать, кто это"
-                                onClick={event => {
-                                    event.stopPropagation();
-                                    setRolePicker(rolePicker === key ? null : key);
-                                }}
-                                onKeyDown={event => {
-                                    event.stopPropagation();
-                                    event.key === 'Escape' && setRolePicker(null);
-                                }}
-                            >{labelOf(turn)}</button>
-                            : <span className={styles.turnSpeaker}>{labelOf(turn)}</span>}
-                        {rolePicker === key && <RolePopover
-                            role={normalizedRole(turn.role)}
-                            onPick={role => {
-                                setRolePicker(null);
-                                role !== normalizedRole(turn.role) && onAssignRole(speakerKey(turn), role);
-                            }}
-                            onClose={() => setRolePicker(null)}
-                        />}
-                        <p className={styles.turnText}>{turn.text || '—'}</p>
-                        {media && (() => {
-                            let sounding = !paused && playingIndex === index;
-                            let label = sounding ? 'Пауза' : 'Воспроизвести с ' + formatDuration(turn.startMs || 0);
-                            return <button
-                                type="button"
-                                className={styles.turnPlay}
-                                aria-label={label}
-                                title={label}
-                                onClick={event => {
-                                    // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
-                                    event.stopPropagation();
-                                    sounding ? pause() : playFrom(turn);
-                                }}
-                                onKeyDown={event => event.stopPropagation()}
-                            >{sounding ? '❚❚' : '▶'}</button>;
-                        })()}
-                        <TurnSignals turn={turn} markers={turnMarkers}/>
-                    </div>
-                    {openTurn === key && <TurnDetails turn={turn} label={labelOf(turn)} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
-                </React.Fragment>;
-            })}
-        </div>
+        {byQuestions
+            ? <div className={styles.qaList}>
+                {blocks.map(block => <QaBlock key={block.key} block={block}>
+                    {block.items.map((item, position) => renderTurn(
+                        item.turn,
+                        item.index,
+                        item.index > -1 ? (item.turn.id || item.index) : block.key + ':' + position,
+                        item.followUp
+                    ))}
+                </QaBlock>)}
+            </div>
+            : <div className={styles.turns}>
+                {turns.map((turn, index) => renderTurn(turn, index, turn.id || index, false))}
+            </div>}
         </div>
 
         <div className={styles.signalsGrid}>
@@ -324,6 +462,58 @@ function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, 
             <Capabilities capabilities={capabilities}/>
         </div>
     </>;
+}
+
+// Вопрос интервью целиком: основной вопрос, ответ и уточнения. В шапке - тема
+// вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
+const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
+
+function QaBlock({block, children}) {
+    let {evaluation} = block;
+    return <section
+        className={styles.qaBlock}
+        data-technical={String(block.technical)}
+        aria-label={'Вопрос ' + block.number}
+    >
+        <header className={styles.qaHead}>
+            <div className={styles.qaTitle}>
+                <strong>Вопрос {block.number}</strong>
+                {block.startMs !== null && <span className={styles.qaTime}>
+                    {formatDuration(block.startMs)}–{formatDuration(block.endMs === null ? block.startMs : block.endMs)}
+                </span>}
+                <span className={styles.qaKind} data-technical={String(block.technical)}>
+                    {KIND_LABELS[String(block.technical)]}
+                </span>
+            </div>
+            <QaScore evaluation={evaluation}/>
+        </header>
+        <div className={styles.qaTurns}>{children}</div>
+        {evaluation.state === 'done' && evaluation.feedback && <p className={styles.qaFeedback}>{evaluation.feedback}</p>}
+        {evaluation.state === 'error' && <p className={styles.qaError}>
+            Ответ не оценён: {evaluation.message || 'сервис оценки не сообщил причину.'}
+        </p>}
+    </section>;
+}
+
+// Балл за ответ: число и шкала из делений - по шкале уровень виден, не читая цифры.
+function QaScore({evaluation}) {
+    let {state, score, max} = evaluation;
+    if (state === 'skipped') return <span className={styles.qaStatus}>Не оцениваем</span>;
+    if (state === 'pending') return <span className={styles.qaStatus} data-state="pending">
+        <span className={styles.spinner} aria-hidden="true"/>Оцениваем
+    </span>;
+    if (state === 'missing') return <span className={styles.qaStatus}>Без оценки</span>;
+    if (state === 'error') return <span className={styles.qaStatus} data-state="error">Ошибка оценки</span>;
+
+    let band = scoreBand(score, max);
+    let cells = Math.max(1, Math.round(max));
+    let filled = Math.round(score / max * cells);
+    return <div className={styles.score} data-band={band} role="img" aria-label={`Оценка ${formatScore(score)} из ${formatScore(max)}`}>
+        <span className={styles.scoreValue}>{formatScore(score)}<small>/{formatScore(max)}</small></span>
+        <span className={styles.scoreBar} aria-hidden="true">
+            {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
+        </span>
+    </div>;
 }
 
 // Кто говорит в реплике. Разбор угадывает роли по дорожкам и ошибается, когда

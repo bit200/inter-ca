@@ -418,8 +418,11 @@ button.turnSpeaker{
 @media (max-width: 575px){
   .turn{ grid-template-columns: minmax(0, 1fr) 34px; }
   .turnText,
-  .turnSignals{ grid-column: 1; }
+  .turnSignals,
+  .turnWho{ grid-column: 1; }
   .turnTime{ grid-column: 1; }
+  .turnPlay{ grid-column: 2; }
+  .turn[data-followup="true"]{ padding-left: 22px; }
 }
 
 .signalsGrid{
@@ -552,3 +555,197 @@ button.turnSpeaker{
 
 .roleOption[aria-checked="true"][data-role="client"]{ color: var(--dlg-guest); background: var(--dlg-guest-soft); box-shadow: inset 0 0 0 1px var(--dlg-guest); }
 .roleOption[aria-checked="true"][data-role="manager"]{ color: var(--dlg-host); background: var(--dlg-host-soft); box-shadow: inset 0 0 0 1px var(--dlg-host); }
+
+// Расшифровка по вопросам или сплошной лентой - переключатель у заголовка.
+.transcriptHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 26px 0 10px;
+
+  .sectionTitle{ margin: 0; }
+}
+
+.viewSwitch{
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  background: var(--dlg-soft);
+}
+
+.viewOption{
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 1px; }
+  &[aria-checked="true"]{
+    color: var(--dlg-accent);
+    background: var(--dlg-card);
+    box-shadow: inset 0 0 0 1px var(--dlg-accent);
+    font-weight: 600;
+  }
+}
+
+.turnWho{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.followUp{
+  color: var(--dlg-muted);
+  font-size: 11px;
+}
+
+// Уточняющий вопрос отступает внутрь блока: видно, что он продолжает основной.
+.turn[data-followup="true"]{ padding-left: 28px; }
+
+// Вопрос интервью. Реплики внутри несут полосу роли у левого края, поэтому
+// у блока, как и у сплошной ленты, радиус только справа.
+.qaList{
+  display: grid;
+  gap: 12px;
+}
+
+.qaBlock{
+  border: 1px solid var(--dlg-line);
+  border-radius: 0 8px 8px 0;
+  background: var(--dlg-card);
+}
+
+.qaHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 14px 10px 17px;
+  border-bottom: 1px solid var(--dlg-line);
+  border-top-right-radius: 8px;
+  background: var(--dlg-soft);
+}
+
+.qaTitle{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-width: 0;
+
+  strong{
+    color: var(--dlg-strong);
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.qaTime{
+  color: var(--dlg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.qaKind{
+  align-self: center;
+  padding: 2px 8px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 999px;
+  color: var(--dlg-muted);
+  background: var(--dlg-card);
+  font-size: 11px;
+}
+
+.qaKind[data-technical="true"]{
+  border-color: var(--dlg-accent);
+  color: var(--dlg-accent);
+  background: var(--dlg-accent-soft);
+}
+
+.qaKind[data-technical="null"]{ border-style: dashed; }
+
+.qaTurns{
+  display: grid;
+
+  > :last-child{ border-bottom-right-radius: 8px; }
+}
+
+.qaStatus{
+  display: inline-flex;
+  align-items: center;
+  color: var(--dlg-muted);
+  font-size: 12px;
+
+  &[data-state="pending"]{ color: var(--dlg-accent); }
+  &[data-state="error"]{ color: var(--dlg-bad); font-weight: 600; }
+}
+
+// Балл: крупная цифра и шкала из делений. Цвет шкалы - уровень ответа.
+.score{
+  --dlg-band: var(--dlg-accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
+.score[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
+
+.scoreValue{
+  color: var(--dlg-band);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+
+  small{
+    margin-left: 1px;
+    color: var(--dlg-muted);
+    font-size: 12px;
+    font-weight: 400;
+  }
+}
+
+.scoreBar{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 6px;
+  gap: 2px;
+
+  i{
+    height: 14px;
+    border-radius: 1px;
+    background: var(--dlg-line);
+  }
+
+  i[data-on="true"]{ background: var(--dlg-band); }
+}
+
+// Разбор ответа от сервиса оценки - под репликами, как вывод после разговора.
+.qaFeedback,
+.qaError{
+  margin: 0;
+  padding: 10px 14px 12px 17px;
+  border-top: 1px solid var(--dlg-line);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.qaError{
+  color: var(--dlg-bad);
+  background: var(--dlg-bad-soft);
+  border-bottom-right-radius: 8px;
+}
+
+.tab > .pipeline + .pipeline{ margin-top: 12px; }
