@@ -10,7 +10,7 @@ import {
     normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
-import {formatScore, questionTitle, readQaBlocks, scoreBand} from './qaBlocks';
+import {formatScore, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall} from './dialogSummary';
 import {
     capabilityLabel,
@@ -601,7 +601,9 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
     let bracket = showsTech(lens) && block.technical === true;
     // Длинный вопрос занимает экран целиком - свёрнутый остаётся одной шапкой.
     let [collapsed, setCollapsed] = useState(false);
+    // В шапке - короткая версия вопроса, полный текст - репликой в самом блоке и в подсказке.
     let title = questionTitle(block);
+    let shortTitle = shortQuestionTitle(title);
     let bodyId = 'dlg-q-body-' + block.key;
     return <section
         id={'dlg-q-' + block.key}
@@ -622,7 +624,7 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
                     onClick={() => setCollapsed(!collapsed)}
                 >
                     <span className={styles.qaChevron} aria-hidden="true"/>
-                    <strong className={styles.qaQuestion} title={title}>{title}</strong>
+                    <strong className={styles.qaQuestion} title={title}>{shortTitle}</strong>
                 </button>
                 {block.startMs !== null && <span className={styles.qaTime}>
                     {formatDuration(block.startMs)}–{formatDuration(block.endMs === null ? block.startMs : block.endMs)}
