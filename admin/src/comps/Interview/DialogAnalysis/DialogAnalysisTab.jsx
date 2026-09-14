@@ -25,7 +25,6 @@ import {
     roleSummary,
     speakerLabel,
     applySpeakerRoles,
-    listSpeakers,
     speakerKey,
     speakerLabels,
 } from './dialogAnalysisFormat';
@@ -175,8 +174,6 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
 
         {analysis.status === 'done' && <Result
             conversation={conversation}
-            speakers={listSpeakers(rawConversation.turns).filter(entry => entry.speaker && entry.speaker !== 'unknown')}
-            roles={roles}
             onAssignRole={assignRole}
             markersById={markersById}
             openTurn={openTurn}
@@ -186,13 +183,14 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     </div>;
 }
 
-function Result({conversation, speakers, roles, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
+function Result({conversation, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
     let {turns, markers, summary, capabilities} = conversation;
     let labels = speakerLabels(turns);
     let labelOf = turn => labels[speakerKey(turn)] || speakerLabel(turn.role, turn.speaker);
     let player = useRef(null);
     let [playingIndex, setPlayingIndex] = useState(-1);
     let [paused, setPaused] = useState(true);
+    let [rolePicker, setRolePicker] = useState(null);
 
     // Реплика перематывает запись на своё начало и сразу запускает её:
     // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
@@ -240,8 +238,6 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
 
         <EmotionSummary sources={summary.emotionSources}/>
 
-        <SpeakerRoles speakers={speakers} roles={roles} onAssignRole={onAssignRole}/>
-
         <h4 className={styles.sectionTitle}>Расшифровка</h4>
         <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
         {media && <div className={styles.player}>
@@ -273,7 +269,31 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
                         }}
                     >
                         <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
-                        <span className={styles.turnSpeaker}>{labelOf(turn)}</span>
+                        {turn.speaker && turn.speaker !== 'unknown'
+                            ? <button
+                                type="button"
+                                className={styles.turnSpeaker}
+                                aria-haspopup="true"
+                                aria-expanded={rolePicker === key}
+                                title="Указать, кто это"
+                                onClick={event => {
+                                    event.stopPropagation();
+                                    setRolePicker(rolePicker === key ? null : key);
+                                }}
+                                onKeyDown={event => {
+                                    event.stopPropagation();
+                                    event.key === 'Escape' && setRolePicker(null);
+                                }}
+                            >{labelOf(turn)}</button>
+                            : <span className={styles.turnSpeaker}>{labelOf(turn)}</span>}
+                        {rolePicker === key && <RolePopover
+                            role={normalizedRole(turn.role)}
+                            onPick={role => {
+                                setRolePicker(null);
+                                role !== normalizedRole(turn.role) && onAssignRole(speakerKey(turn), role);
+                            }}
+                            onClose={() => setRolePicker(null)}
+                        />}
                         <p className={styles.turnText}>{turn.text || '—'}</p>
                         {media && (() => {
                             let sounding = !paused && playingIndex === index;
@@ -306,66 +326,53 @@ function Result({conversation, speakers, roles, onAssignRole, markersById, openT
     </>;
 }
 
-// Кто на записи кандидат. Разбор угадывает роли по дорожкам и ошибается, когда
-// интервьюеров несколько, поэтому каждому голосу роль можно назначить руками.
-// Один голос - одна строка: первая фраза помогает узнать, кто это. Без
-// разделения говорящих голоса не различить, и блок не показываем.
+// Кто говорит в реплике. Разбор угадывает роли по дорожкам и ошибается, когда
+// интервьюеров несколько, поэтому роль голоса можно поправить прямо в ленте:
+// попап над репликой, выбор применяется ко всем репликам этого голоса.
 const ROLE_OPTIONS = [
     {role: 'client', label: 'Кандидат'},
     {role: 'manager', label: 'Интервьюер'},
 ];
 
-function SpeakerRoles({speakers, roles, onAssignRole}) {
-    if (!speakers || !speakers.length) return null;
-    let totalMs = speakers.reduce((sum, entry) => sum + entry.speechMs, 0);
-    let hasCandidate = speakers.some(entry => (roles[entry.key] || entry.role) === 'client');
+function RolePopover({role, onPick, onClose}) {
+    let box = useRef(null);
 
-    return <section className={styles.speakers} aria-label="Роли участников">
-        <div className={styles.speakersHead}>
-            <h4 className={styles.speakersTitle}>Кто на записи кандидат</h4>
-            <p className={styles.speakersHint}>
-                {hasCandidate
-                    ? 'Роли определились автоматически. Если голос подписан неверно, переключите его — лента ниже обновится.'
-                    : 'Кандидат не определился. Отметьте его голос — остальные участники считаются интервьюерами.'}
-            </p>
+    useEffect(() => {
+        // Клик мимо закрывает попап. Подпись, которая его открыла, закроет его сама,
+        // иначе закрытие здесь и переключение по клику открыли бы его снова.
+        function onDown(event) {
+            let target = event.target;
+            if (box.current && box.current.contains(target)) return;
+            if (target.closest && target.closest('[aria-expanded="true"]')) return;
+            onClose();
+        }
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [onClose]);
+
+    return <div
+        ref={box}
+        className={styles.rolePopover}
+        onClick={event => event.stopPropagation()}
+        onKeyDown={event => {
+            // Реплика сама ловит Enter и пробел - выбор роли не должен её раскрывать.
+            event.stopPropagation();
+            event.key === 'Escape' && onClose();
+        }}
+    >
+        <span className={styles.rolePopoverTitle}>Кто говорит?</span>
+        <div className={styles.roleSwitch} role="radiogroup" aria-label="Роль говорящего">
+            {ROLE_OPTIONS.map(option => <button
+                key={option.role}
+                type="button"
+                role="radio"
+                aria-checked={role === option.role}
+                className={styles.roleOption}
+                data-role={option.role}
+                onClick={() => onPick(option.role)}
+            >{option.label}</button>)}
         </div>
-        {speakers.map((entry, index) => {
-            let current = roles[entry.key] || entry.role;
-            let name = 'Голос ' + (index + 1);
-            let share = totalMs ? Math.round(entry.speechMs / totalMs * 100) : 0;
-            return <div key={entry.key} className={styles.speaker} data-role={current}>
-                <div className={styles.speakerInfo}>
-                    <span className={styles.speakerName}>
-                        <span className={styles.speakerDot} aria-hidden="true"/>
-                        {name}
-                        <span className={styles.speakerStats}>
-                            {entry.turns} {plural(entry.turns, 'реплика', 'реплики', 'реплик')}{totalMs ? ', ' + share + '% времени' : ''}
-                        </span>
-                    </span>
-                    {entry.sample && <span className={styles.speakerSample}>«{entry.sample}»</span>}
-                </div>
-                <div className={styles.roleSwitch} role="radiogroup" aria-label={'Роль: ' + name}>
-                    {ROLE_OPTIONS.map(option => <button
-                        key={option.role}
-                        type="button"
-                        role="radio"
-                        aria-checked={current === option.role}
-                        className={styles.roleOption}
-                        data-role={option.role}
-                        onClick={() => current !== option.role && onAssignRole(entry.key, option.role)}
-                    >{option.label}</button>)}
-                </div>
-            </div>;
-        })}
-    </section>;
-}
-
-function plural(count, one, few, many) {
-    let mod10 = count % 10;
-    let mod100 = count % 100;
-    if (mod10 === 1 && mod100 !== 11) return one;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-    return many;
+    </div>;
 }
 
 // Короткие подписи прямо в ленте: по ним видно проблемную реплику, не открывая её.
