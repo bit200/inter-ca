@@ -34,6 +34,28 @@ import {
     speakerLabels,
 } from './dialogAnalysisFormat';
 import {pickDialogMedia, turnIndexAt} from './dialogMedia';
+import {
+    LENSES,
+    attachAnswers,
+    blockByTurnIndex,
+    interviewDuration,
+    lensDimmed,
+    showsBehavior,
+    showsTech,
+    technicalAverage,
+    timelinePosition,
+    timelineSegments,
+    withoutAnswer,
+} from './dialogLens';
+import {
+    BEHAVIOR_FLAG_LABELS,
+    DEMO_LABEL,
+    demoAnswerScore,
+    demoBehaviorCounts,
+    demoBehaviorFlags,
+    demoBehaviorScore,
+    demoSkipSeries,
+} from './dialogLensDemo';
 
 // Разбор диалога по записи интервью. Очередь на стороне api ведёт запись по
 // шагам queued -> downloading -> analyzing -> done/error, а таб показывает, где
@@ -255,6 +277,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         {dialogDone && <Result
             conversation={conversation}
             blocks={blocks}
+            answersDone={answers.status === 'done'}
             onAssignRole={assignRole}
             markersById={markersById}
             openTurn={openTurn}
@@ -307,8 +330,41 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
     </section>;
 }
 
-function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
+function Result({conversation, blocks: evaluatedBlocks, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
     let {turns, markers, summary, capabilities} = conversation;
+    // Вариант B: линза меняет акценты ленты, шкала показывает, где в интервью
+    // какой вопрос, а вопрос без ответа связывается с репликой кандидата руками.
+    let [lens, setLens] = useState('all');
+    let [links, setLinks] = useState({});
+    let [linking, setLinking] = useState(null);
+    let [currentMs, setCurrentMs] = useState(0);
+    let blocks = useMemo(() => attachAnswers(evaluatedBlocks, links, turns), [evaluatedBlocks, links, turns]);
+    let blockOf = useMemo(() => blockByTurnIndex(blocks), [blocks]);
+    let flags = useMemo(() => demoBehaviorFlags(turns), [turns]);
+    let linkingBlock = linking ? blocks.find(block => block.key === linking) : null;
+
+    useEffect(() => {
+        if (!linking) return undefined;
+        let onKey = event => event.key === 'Escape' && setLinking(null);
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [linking]);
+
+    // Связь пока живёт только на экране. Должна работать так: реплика уходит
+    // в api (PUT /my-interview/:id/answers-evaluation/links {blockId, turnIndex}),
+    // вопрос переоценивается с новым ответом, а связь хранится в интервью.
+    function attach(index) {
+        let key = linking;
+        setLinking(null);
+        setLinks(prev => ({...prev, [key]: [...(prev[key] || []), index]}));
+    }
+
+    // Отрезок шкалы перематывает запись на начало вопроса и прокручивает ленту к нему.
+    function jumpTo(segment) {
+        media && playFrom({startMs: segment.startMs});
+        let target = document.getElementById('dlg-q-' + segment.key);
+        target && target.scrollIntoView && target.scrollIntoView({block: 'start', behavior: 'smooth'});
+    }
     let labels = speakerLabels(turns);
     let labelOf = turn => labels[speakerKey(turn)] || speakerLabel(turn.role, turn.speaker);
     let player = useRef(null);
@@ -336,8 +392,12 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
     }
 
     function onTimeUpdate(event) {
-        let index = turnIndexAt(turns, event.currentTarget.currentTime * 1000);
+        let ms = event.currentTarget.currentTime * 1000;
+        let index = turnIndexAt(turns, ms);
         setPlayingIndex(prev => prev === index ? prev : index);
+        // Шкале хватает точности до секунды - чаще перерисовывать незачем.
+        let second = Math.floor(ms / 1000) * 1000;
+        setCurrentMs(prev => prev === second ? prev : second);
     }
 
     // Реплика одинакова в ленте и в блоке вопроса: index - место в ленте разбора
@@ -346,19 +406,28 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
         let turnMarkers = Array.isArray(turn.markerIds)
             ? turn.markerIds.map(id => markersById.get(id)).filter(Boolean)
             : [];
+        let isClient = normalizedRole(turn.role) === 'client';
+        let block = index > -1 ? blockOf.get(index) : null;
+        let answerScore = isClient && block && block.technical === true && showsTech(lens);
+        let flag = isClient && index > -1 && showsBehavior(lens) ? flags.get(index) : null;
+        // В режиме связывания реплика кандидата не раскрывается, а становится ответом.
+        let target = Boolean(linkingBlock) && isClient && index > -1
+            && !linkingBlock.items.some(item => item.index === index);
+        let activate = () => target ? attach(index) : onOpenTurn(openTurn === key ? null : key);
         return <React.Fragment key={key}>
             <div
                 className={styles.turn}
                 data-role={normalizedRole(turn.role)}
                 data-playing={media && index > -1 && playingIndex === index ? 'true' : undefined}
                 data-followup={followUp ? 'true' : undefined}
+                data-target={target ? 'true' : undefined}
                 role="button"
                 tabIndex={0}
-                onClick={() => onOpenTurn(openTurn === key ? null : key)}
+                onClick={activate}
                 onKeyDown={event => {
                     if (event.key !== 'Enter' && event.key !== ' ') return;
                     event.preventDefault();
-                    onOpenTurn(openTurn === key ? null : key);
+                    activate();
                 }}
             >
                 <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
@@ -381,6 +450,11 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
                     >{labelOf(turn)}</button>
                     : <span className={styles.turnSpeaker}>{labelOf(turn)}</span>}
                 {followUp && <span className={styles.followUp}>уточнение</span>}
+                {answerScore && <Demo>
+                    <span className={styles.answerScore} data-band={scoreBand(demoAnswerScore(turn.id || index), 10)}>
+                        {demoAnswerScore(turn.id || index)}
+                    </span>
+                </Demo>}
                 </span>
                 {rolePicker === key && <RolePopover
                     role={normalizedRole(turn.role)}
@@ -408,6 +482,20 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
                     >{sounding ? '❚❚' : '▶'}</button>;
                 })()}
                 <TurnSignals turn={turn} markers={turnMarkers}/>
+                {(flag || target) && <span className={styles.turnFlags}>
+                    {flag && <Demo>
+                        <span className={styles.flag} data-kind={flag}>{BEHAVIOR_FLAG_LABELS[flag]}</span>
+                    </Demo>}
+                    {flag === 'rude' && <Demo>
+                        <button
+                            type="button"
+                            className={styles.flagDispute}
+                            onClick={event => event.stopPropagation()}
+                            onKeyDown={event => event.stopPropagation()}
+                        >Не согласен</button>
+                    </Demo>}
+                    {target && <span className={styles.attachHint}>Сделать ответом на вопрос {linkingBlock.number}</span>}
+                </span>}
             </div>
             {openTurn === key && <TurnDetails turn={turn} label={labelOf(turn)} markers={turnMarkers} onClose={() => onOpenTurn(null)}/>}
         </React.Fragment>;
@@ -437,6 +525,19 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
 
         <EmotionSummary sources={summary.emotionSources}/>
 
+        {blocks.length > 0 && <LensBar
+            lens={lens}
+            onLens={setLens}
+            blocks={blocks}
+            answersDone={answersDone}
+            turns={turns}
+            flags={flags}
+            markers={markers}
+            durationMs={interviewDuration(summary, turns)}
+            currentMs={media ? currentMs : null}
+            onJump={jumpTo}
+        />}
+
         <div className={styles.transcriptHead}>
             <h4 className={styles.sectionTitle}>Расшифровка</h4>
             {blocks.length > 0 && <div className={styles.viewSwitch} role="radiogroup" aria-label="Как показать расшифровку">
@@ -459,9 +560,22 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
                 {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
             </p>
         </div>}
+        <div className={styles.feed}>
+        {linkingBlock && <Demo block>
+            <div className={styles.linking} role="status">
+                <span><strong>Связываем</strong> ответ с вопросом {linkingBlock.number} — нажмите на реплику кандидата</span>
+                <button type="button" className={styles.linkingCancel} onClick={() => setLinking(null)}>Отмена · Esc</button>
+            </div>
+        </Demo>}
         {byQuestions
             ? <div className={styles.qaList}>
-                {blocks.map(block => <QaBlock key={block.key} block={block}>
+                {blocks.map(block => <QaBlock
+                    key={block.key}
+                    block={block}
+                    lens={lens}
+                    linking={linking === block.key}
+                    onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
+                >
                     {block.items.map((item, position) => renderTurn(
                         item.turn,
                         item.index,
@@ -473,6 +587,7 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
             : <div className={styles.turns}>
                 {turns.map((turn, index) => renderTurn(turn, index, turn.id || index, false))}
             </div>}
+        </div>
         </div>
 
         <div className={styles.signalsGrid}>
@@ -486,11 +601,15 @@ function Result({conversation, blocks, onAssignRole, markersById, openTurn, onOp
 // вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
-function QaBlock({block, children}) {
+function QaBlock({block, lens = 'all', linking = false, onFindAnswer, children}) {
     let {evaluation} = block;
+    let missing = withoutAnswer(block);
+    let bracket = showsTech(lens) && block.technical === true;
     return <section
+        id={'dlg-q-' + block.key}
         className={styles.qaBlock}
         data-technical={String(block.technical)}
+        data-dimmed={lensDimmed(lens, block.technical) ? 'true' : undefined}
         aria-label={'Вопрос ' + block.number}
     >
         <header className={styles.qaHead}>
@@ -510,10 +629,27 @@ function QaBlock({block, children}) {
                 <span className={styles.qaKind} data-technical={String(block.technical)}>
                     {KIND_LABELS[String(block.technical)]}
                 </span>
+                {showsBehavior(lens) && demoSkipSeries(block) && <Demo>
+                    <span className={styles.flag} data-kind="evasive">Серия пропусков</span>
+                </Demo>}
             </div>
-            {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
+            <div className={styles.qaActions}>
+                {missing && <span className={styles.flag} data-kind="evasive">Ответ не найден</span>}
+                {missing && onFindAnswer && <button
+                    type="button"
+                    className={styles.findAnswer}
+                    aria-pressed={linking}
+                    onClick={onFindAnswer}
+                >{linking ? 'Отменить' : 'Найти ответ'}</button>}
+                {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
+            </div>
         </header>
-        <div className={styles.qaTurns}>{children}</div>
+        <div className={styles.qaTurns} data-bracket={bracket ? (evaluation.state === 'done' ? 'done' : 'pending') : undefined}>
+            {bracket && <span className={styles.bracket} aria-hidden="true">
+                {evaluation.state === 'done' && <b data-band={scoreBand(evaluation.score, evaluation.max)}>{formatScore(evaluation.score)}</b>}
+            </span>}
+            {children}
+        </div>
         {evaluation.state === 'done' && evaluation.feedback && <p className={styles.qaFeedback}>{evaluation.feedback}</p>}
         {block.soft && block.soft.state === 'done' && block.soft.note && <p className={styles.qaFeedback}>{block.soft.note}</p>}
         {block.soft && block.soft.state === 'error' && <p className={styles.qaError}>
@@ -544,6 +680,87 @@ function QaScore({evaluation}) {
             {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
         </span>
     </div>;
+}
+
+// Панель линз над расшифровкой: переключатель акцента, итоговые баллы за
+// технику и поведение, счётчики и шкала времени интервью с вопросами.
+function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, durationMs, currentMs, onJump}) {
+    let tech = technicalAverage(blocks);
+    let counts = demoBehaviorCounts(flags);
+    let behavior = demoBehaviorScore(turns);
+    let segments = timelineSegments(blocks, durationMs);
+
+    return <section className={styles.lensBar} aria-label="Оценка интервью">
+        <div className={styles.lensHead}>
+            <div className={styles.viewSwitch} role="radiogroup" aria-label="Линза расшифровки">
+                {LENSES.map(option => <button
+                    key={option.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={lens === option.key}
+                    className={styles.viewOption}
+                    onClick={() => onLens(option.key)}
+                >{option.label}</button>)}
+            </div>
+            <div className={styles.lensScores}>
+                <div className={styles.lensScore}>
+                    <span>Техническая</span>
+                    {tech
+                        ? <strong data-band={scoreBand(tech.score, tech.max)}>{formatScore(tech.score)}<small>/10</small></strong>
+                        : <strong data-band="none" title={answersDone ? 'Нет оценённых технических вопросов' : 'Запустите «Оценить ответы»'}>—</strong>}
+                </div>
+                <div className={styles.lensScore}>
+                    <span>Нетехническая</span>
+                    <Demo>
+                        <strong data-band={scoreBand(behavior, 10)}>{behavior}<small>/10</small></strong>
+                    </Demo>
+                </div>
+                <div className={styles.lensCounts}>
+                    <Demo><span className={styles.flag} data-kind="evasive">Без ответа · {counts.evasive}</span></Demo>
+                    <Demo><span className={styles.flag} data-kind="rude">Невежливо · {counts.rude}</span></Demo>
+                    <span className={styles.chip}>Замечания · {markers.length}</span>
+                </div>
+            </div>
+        </div>
+
+        {durationMs > 0 && <div className={styles.timeline}>
+            {segments.map(segment => <button
+                key={segment.key}
+                type="button"
+                className={styles.timelineSegment}
+                data-technical={String(segment.technical)}
+                data-dimmed={lensDimmed(lens, segment.technical) ? 'true' : undefined}
+                style={{left: segment.left + '%', width: segment.width + '%'}}
+                title={'Вопрос ' + segment.number + ' · ' + formatDuration(segment.startMs)}
+                aria-label={'Перейти к вопросу ' + segment.number}
+                onClick={() => onJump(segment)}
+            />)}
+            {showsBehavior(lens) && Array.from(flags).map(([index, kind]) => turns[index] && <Demo
+                key={index}
+                tick
+                style={{left: timelinePosition(Number(turns[index].startMs || 0), durationMs) + '%'}}
+            >
+                <span className={styles.timelineEvent} data-kind={kind}/>
+            </Demo>)}
+            {currentMs !== null && <span
+                className={styles.timelineNow}
+                style={{left: timelinePosition(currentMs, durationMs) + '%'}}
+                aria-hidden="true"
+            />}
+        </div>}
+    </section>;
+}
+
+// Заглушка под функционал, которого ещё нет (значения из dialogLensDemo.js).
+// Показывает демо-значение в пунктирной обводке и при наведении или фокусе -
+// попап «ДЕМО ЗНАЧЕНИЕ», чтобы его не приняли за настоящую оценку. Когда
+// функционал появится, обёртку снимают вместе с демо-значением внутри.
+// block - обёртка на всю ширину, tick - точка на шкале (обводки нет, она мелкая).
+function Demo({children, block = false, tick = false, style}) {
+    return <span className={styles.demo} data-block={block ? 'true' : undefined} data-tick={tick ? 'true' : undefined} style={style}>
+        {children}
+        <span className={styles.demoTip} role="tooltip">{DEMO_LABEL}</span>
+    </span>;
 }
 
 // Мягкая оценка нетехнического ответа - вместо балла две-три отметки. Цвет общий
