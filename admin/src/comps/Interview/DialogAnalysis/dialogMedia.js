@@ -2,6 +2,10 @@
 // начала той же записи, из которой разбор доставал звук, поэтому клик по
 // реплике просто перематывает плеер. Видео важнее: на нём видно собеседника.
 // Звук берём, только если видео нет, а отдельная аудиозапись есть.
+// Ссылка на страницу хостинга (Google Диск, YouTube) - не запись: плеер её не
+// проиграет и останется чёрным, поэтому такое видео пропускаем.
+
+import {readVideoSource} from '../VideoPreview/videoSource';
 
 function firstUrl(values) {
     for (let value of values) {
@@ -19,7 +23,11 @@ export function pickDialogMedia(interview, analysis) {
     let result = state.result && typeof state.result === 'object' ? state.result : {};
     let media = result.media && typeof result.media === 'object' ? result.media : {};
 
-    let video = firstUrl([item.video, item.uploadVideo, media.videoUrl, media.video]);
+    let video = firstUrl([item.video, item.uploadVideo, media.videoUrl, media.video]
+        .filter(value => {
+            let source = readVideoSource(value && typeof value === 'object' ? value.url : value);
+            return source && source.kind === 'direct';
+        }));
     if (video) return {kind: 'video', src: video};
 
     let audio = firstUrl([
