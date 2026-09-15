@@ -397,6 +397,23 @@ button.turnSpeaker{
   }
 }
 
+// Узкий экран: плеер стоит над расшифровкой и перекрывает её целиком, поэтому
+// прижат вплотную к шапке и ниже по высоте. Липнет он только после скролла, а
+// тогда хэдер уже сжат на 20px (.topbar:has(.nav-sticky) в app.min.scss) - от
+// полной --bs-topbar-height между шапкой и видео оставалась пустая полоса.
+@media (max-width: 991px){
+  .player{
+    top: calc(var(--bs-topbar-height, 20px) - 20px + 4px);
+    padding: 6px;
+
+    video{
+      max-height: min(34vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
+    }
+  }
+
+  .playerHint{ margin-top: 4px; }
+}
+
 .turnSignals{
   display: flex;
   flex-wrap: wrap;
