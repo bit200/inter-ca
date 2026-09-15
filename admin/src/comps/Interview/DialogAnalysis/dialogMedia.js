@@ -49,3 +49,22 @@ export function turnIndexAt(turns, ms) {
     }
     return -1;
 }
+
+// Плеер по умолчанию закреплён и висит над лентой при скролле. Открепить его
+// можно кнопкой под записью - тогда он уезжает вместе с контентом. Выбор
+// запоминается в браузере, чтобы не откреплять заново на каждом интервью.
+export const PLAYER_PINNED_KEY = 'dialogPlayerPinned';
+
+export function readPlayerPinned(storage) {
+    try {
+        return (storage || window.localStorage).getItem(PLAYER_PINNED_KEY) !== 'false';
+    } catch (e) {
+        return true;
+    }
+}
+
+export function savePlayerPinned(pinned, storage) {
+    try {
+        (storage || window.localStorage).setItem(PLAYER_PINNED_KEY, pinned ? 'true' : 'false');
+    } catch (e) {}
+}
