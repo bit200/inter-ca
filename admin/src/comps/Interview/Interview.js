@@ -28,7 +28,7 @@ import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
 import VideoPreview from "./VideoPreview/VideoPreview";
 import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
 import {EditActions, SaveButton} from "../../libs/EditActions/EditActions";
-import {withTabSave} from "../../libs/EditActions/editActions";
+import {withTabSave} from "../../libs/EditActions/saveSpots";
 
 let isAdmin = Storage.isAdmin()
 let pubName = Storage.pubName;

@@ -1,4 +1,4 @@
-import {saveSpots, withTabSave, saveLabel} from './editActions';
+import {saveSpots, withTabSave, saveLabel} from './saveSpots';
 
 describe('место кнопки «Сохранить» в карточке', () => {
     test('по умолчанию сохранение в шапке и под формой', () => {

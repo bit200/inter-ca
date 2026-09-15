@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import _ from 'underscore';
 import Smart from './Smart';
 import {BackButton, EditActions, SaveButton} from './EditActions/EditActions';
-import {saveSpots} from './EditActions/editActions';
+import {saveSpots} from './EditActions/saveSpots';
 import Table from './Table';
 import Input from './Input';
 

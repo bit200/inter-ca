@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {saveLabel} from './editActions';
+import {saveLabel} from './saveSpots';
 import './EditActions.css';
 
 // «Назад» - тихая кнопка без заливки: она уводит со страницы и не должна
