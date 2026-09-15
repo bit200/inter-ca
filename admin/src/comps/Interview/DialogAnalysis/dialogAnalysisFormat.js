@@ -105,6 +105,20 @@ export function capabilityStatusLabel(status) {
     return CAPABILITY_STATUS_LABELS[status] || status || 'Получено';
 }
 
+// Акустика и качество записи приходят в разборе, только если конвейер их
+// заказывал. Разбор интервью сейчас их не заказывает (только ASR, диаризация
+// и таймлайн), поэтому без данных блоки не показываем вовсе - иначе это
+// вечные пустые заглушки.
+export function hasRecordingSignals(capabilities) {
+    let value = capabilities && typeof capabilities === 'object' ? capabilities : {};
+    let events = value.acousticEvents && Array.isArray(value.acousticEvents.events) ? value.acousticEvents.events : [];
+    if (events.length) return true;
+    let snr = value.technicalQuality && value.technicalQuality.snr;
+    if (snr && typeof snr.estimatedDb === 'number') return true;
+    return Object.keys(value).some(key => key !== 'acousticEvents'
+        && value[key] && typeof value[key] === 'object' && value[key].status);
+}
+
 export function formatDuration(milliseconds) {
     let total = Math.max(0, Math.floor(Number(milliseconds || 0) / 1000));
     return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');

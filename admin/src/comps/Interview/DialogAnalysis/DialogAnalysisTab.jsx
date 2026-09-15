@@ -23,6 +23,7 @@ import {
     formatDuration,
     formatPercent,
     formatSeconds,
+    hasRecordingSignals,
     markerCounts,
     markerLabel,
     normalizedRole,
@@ -584,10 +585,10 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         </div>
         </div>
 
-        <div className={styles.signalsGrid}>
+        {hasRecordingSignals(capabilities) && <div className={styles.signalsGrid}>
             <AcousticEvents capability={capabilities.acousticEvents}/>
             <Capabilities capabilities={capabilities}/>
-        </div>
+        </div>}
     </>;
 }
 
