@@ -25,6 +25,7 @@ import DebugLogs from "../DebugLogs";
 import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
+import VideoPreview from "./VideoPreview/VideoPreview";
 import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
 import {EditActions, SaveButton} from "../../libs/EditActions/EditActions";
 import {withTabSave} from "../../libs/EditActions/editActions";
@@ -834,56 +835,14 @@ class Sort extends React.Component {
 
 
 const VideoPreviewMemo = React.memo(function (props) {
-    console.log("qqqqq props55555", props);
-    return <>
-        {/*cd: {new Date().getTime()}*/}
-        <VideoPreview {...props}></VideoPreview></>
+    // id плеера один на страницу: по нему getVideoTime берёт время для нового вопроса.
+    let [id] = useState(() => new Date().getTime())
+    videoId = id;
+    return <VideoPreview {...props} id={id.toString()}></VideoPreview>
 }, (v1, v2) => {
     //console.log('SMART MEMEO', v1.memo, v2.memo, v2.name)
     return JSON.stringify(v1) == JSON.stringify(v2)
 })
-
-function VideoPreview(props) {
-    let {src, time} = props;
-    let [id, setId] = useState(new Date().getTime())
-    let video = useRef()
-
-    videoId = id;
-    useEffect(() => {
-        if (!video.current) {
-            return;
-        }
-        console.log("qqqqq aaaaaaaaaaaaaaaa", time, video.current);
-        onPlay()
-
-    }, [time])
-
-    function onPlay() {
-        let _time = +(time.minutes || 0) * 60 + +(time.seconds || 0) + 0
-        // if (_time) {
-        video.current.currentTime = _time
-        video.current.play && video.current.play()
-        // }
-    }
-
-
-    if (!src) {
-        return <div>
-            {/*<div className="iconoir-warn"></div>*/}
-            {t('videoNotUploaded')}</div>
-    }
-    return <>
-        <video
-            ref={video}
-            controls
-            src={src} width={'100%'} id={id.toString()}></video>
-        {/*<button className={'btn btn-default btn-xs'} onClick={() => {*/}
-        {/*    onPlay()*/}
-        {/*}}>Воспроизвести с начала*/}
-        {/*</button>*/}
-    </>
-}
-
 
 function QuestionAutocomplete() {
     let options = Storage.getCategoriesPlain();
