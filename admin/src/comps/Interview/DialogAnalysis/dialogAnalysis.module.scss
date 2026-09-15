@@ -1392,11 +1392,15 @@ button.turnSpeaker{
 // Линза гасит вопросы не своей темы, но оставляет их читаемыми - контекст разговора.
 .qaBlock[data-dimmed="true"] .qaTurns{ opacity: .5; }
 
+// Отметки и балл прижаты к правому краю шапки: и в строку с вопросом, и когда
+// не влезли и перенеслись ниже - иначе балл съезжает влево под заголовок.
 .qaActions{
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px 12px;
+  margin-left: auto;
 }
 
 .findAnswer{
