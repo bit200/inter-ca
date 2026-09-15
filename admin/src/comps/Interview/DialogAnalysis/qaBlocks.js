@@ -95,8 +95,9 @@ function readEvaluation(block, technical, active) {
 }
 
 // Мягкая оценка нетехнического ответа: по теме ли кандидат ответил, развёрнуто ли
-// и задавал ли встречные вопросы. Баллов нет - уровень ответа сводим к тем же
-// полосам, что у балла технического вопроса, чтобы блоки читались одинаково.
+// и задавал ли встречные вопросы. Сервис баллов не ставит - сводим отметки к баллу
+// из 10 в той же полосе, что и уровень ответа, чтобы нетехнический блок показывался
+// так же, как технический: цифрой, шкалой и скобкой цепочки.
 const RELEVANCE_ALIASES = {
     on_topic: 'on_topic', ontopic: 'on_topic', relevant: 'on_topic',
     evasive: 'evasive', partial: 'evasive',
@@ -132,7 +133,22 @@ function readSoftEvaluation(block, technical, active, answered) {
     let band = relevance === 'off_topic' ? 'poor'
         : relevance === 'evasive' || complete === false ? 'fair'
         : 'good';
-    return {state: 'done', relevance, complete, engaged, note, band};
+    return {state: 'done', relevance, complete, engaged, note, band, score: softScore(relevance, complete, engaged, band), max: SOFT_MAX};
+}
+
+// Балл мягкой оценки: по теме - 6, уклончиво - 3, мимо - 0; развёрнуто +3 (не
+// известно +2), встречные вопросы +1. Итог зажат в полосу уровня ответа, чтобы
+// цвет цифры не спорил с отметками: «по теме, но формально» остаётся жёлтым.
+const SOFT_MAX = 10;
+const RELEVANCE_POINTS = {on_topic: 6, evasive: 3, off_topic: 0};
+const BAND_RANGES = {good: [7, 10], fair: [4, 6], poor: [0, 3]};
+
+function softScore(relevance, complete, engaged, band) {
+    let raw = (relevance ? RELEVANCE_POINTS[relevance] : 6)
+        + (complete === true ? 3 : complete === null ? 2 : 0)
+        + (engaged === true ? 1 : 0);
+    let [low, high] = BAND_RANGES[band];
+    return Math.min(high, Math.max(low, raw));
 }
 
 // Полоса оценки: зелёная - уверенный ответ, жёлтая - с пробелами, красная - мимо.

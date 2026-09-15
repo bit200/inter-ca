@@ -380,17 +380,22 @@ describe('таб разбора диалога', () => {
             expect(within(bar).getByText('Без ответа · 0')).toBeInTheDocument();
             expect(within(bar).queryByText(/Невежливо/)).toBeNull();
 
-            expect(container.querySelector('[data-bracket="done"]')).toHaveTextContent('8');
+            const brackets = () => Array.from(container.querySelectorAll('[data-bracket="done"] > [class*="bracket"]')).map(node => node.textContent);
+            expect(brackets()).toEqual(['8', '0']);
+            const second = screen.getByRole('region', {name: 'Вопрос 2'});
+            expect(within(second).getByRole('img', {name: 'Оценка 0 из 10'})).toBeInTheDocument();
+            expect(within(second).getByText('Не по вопросу')).toBeInTheDocument();
             fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
-            expect(container.querySelector('[class*="answerScore"]')).toHaveTextContent('8');
+            expect(Array.from(container.querySelectorAll('[class*="answerScore"]')).map(node => node.textContent)).toEqual(['8', '0']);
             expect(container.querySelectorAll('[class*="turnFlags"] [data-kind="off_topic"]').length).toBe(1);
 
             fireEvent.click(within(bar).getByRole('radio', {name: 'Техника'}));
             fireEvent.click(screen.getByRole('radio', {name: 'По вопросам'}));
             expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
             expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
+            expect(brackets()).toEqual(['8']);
             fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
-            expect(container.querySelector('[data-bracket]')).toBeNull();
+            expect(brackets()).toEqual(['0']);
         });
 
         test('без оценки ответов выдуманной разбивки на вопросы нет - только лента реплик', async () => {
