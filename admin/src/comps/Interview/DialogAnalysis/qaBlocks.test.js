@@ -62,10 +62,21 @@ describe('мягкая оценка нетехнических блоков', ()
             {technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'off_topic', complete: false}},
             {technical: true, turnIndexes: [2, 3], softEvaluate: {relevance: 'on_topic'}},
         ]}, turns);
-        expect(blocks[0].soft).toEqual({state: 'done', relevance: 'on_topic', complete: true, engaged: null, note: 'По делу', band: 'good'});
-        expect(blocks[1].soft.band).toBe('fair');
-        expect(blocks[2].soft.band).toBe('poor');
+        expect(blocks[0].soft).toEqual({state: 'done', relevance: 'on_topic', complete: true, engaged: null, note: 'По делу', band: 'good', score: 9, max: 10});
+        expect(blocks[1].soft).toMatchObject({band: 'fair', score: 6});
+        expect(blocks[2].soft).toMatchObject({band: 'poor', score: 0});
         expect(blocks[3].soft).toBeNull();
+    });
+
+    it('балл мягкой оценки из 10 не выходит из полосы уровня ответа', () => {
+        let soft = softEvaluate => readQaBlocks([{technical: false, turnIndexes: [0, 1], softEvaluate}], turns)[0].soft;
+        expect(soft({relevance: 'on_topic', complete: true, engaged: true}).score).toBe(10);
+        expect(soft({relevance: 'on_topic'})).toMatchObject({band: 'good', score: 8});
+        expect(soft({relevance: 'on_topic', complete: false, engaged: true})).toMatchObject({band: 'fair', score: 6});
+        expect(soft({relevance: 'evasive', complete: false})).toMatchObject({band: 'fair', score: 4});
+        expect(soft({relevance: 'off_topic', complete: true, engaged: true})).toMatchObject({band: 'poor', score: 3});
+        [soft({relevance: 'evasive', complete: true}), soft({relevance: 'off_topic', complete: false})]
+            .forEach(value => expect(scoreBand(value.score, value.max)).toBe(value.band));
     });
 
     it('без мягкой оценки блок ждёт её, пока идёт оценка, иначе не оценивается', () => {

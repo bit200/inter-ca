@@ -417,7 +417,8 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         // По вопросам балл и мягкая оценка уже стоят в шапке вопроса, поэтому у
         // реплики они только в сплошной ленте.
         let inFeed = isClient && index > -1 && !byQuestions;
-        let answerScore = inFeed && showsTech(lens) ? scores.get(index) : null;
+        let answerScore = inFeed ? scores.get(index) : null;
+        if (answerScore && !(answerScore.technical ? showsTech(lens) : showsBehavior(lens))) answerScore = null;
         let flag = inFeed && showsBehavior(lens) ? flags.get(index) : null;
         // В режиме связывания реплика кандидата не раскрывается, а становится ответом.
         let target = Boolean(linkingBlock) && isClient && index > -1
@@ -462,7 +463,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 {answerScore && <span
                     className={styles.answerScore}
                     data-band={scoreBand(answerScore.score, answerScore.max)}
-                    title={'Балл за ответ на вопрос: ' + formatScore(answerScore.score) + ' из ' + formatScore(answerScore.max)}
+                    title={(answerScore.technical ? 'Балл за ответ на вопрос: ' : 'Балл за нетехнический ответ: ') + formatScore(answerScore.score) + ' из ' + formatScore(answerScore.max)}
                 >{formatScore(answerScore.score)}</span>}
                 </span>
                 {rolePicker === key && <RolePopover
@@ -603,7 +604,11 @@ const KIND_LABELS = {true: 'Технический', false: 'Нетехниче�
 function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
-    let bracket = showsTech(lens) && block.technical === true;
+    // Скобка цепочки с баллом - у технического вопроса по баллу evaluate, у
+    // нетехнического по мягкой оценке: оба вида блоков выглядят одинаково.
+    let rated = block.technical === true ? evaluation : block.soft;
+    let bracket = Boolean(rated) && rated.state !== 'unanswered' && rated.state !== 'skipped'
+        && (block.technical === true ? showsTech(lens) : showsBehavior(lens));
     // Длинный вопрос занимает экран целиком - свёрнутый остаётся одной шапкой.
     let [collapsed, setCollapsed] = useState(false);
     // В шапке - короткая версия вопроса, полный текст - репликой в самом блоке и в подсказке.
@@ -659,9 +664,9 @@ function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking
             </div>
         </header>
         {!collapsed && <div id={bodyId}>
-        <div className={styles.qaTurns} data-bracket={bracket ? (evaluation.state === 'done' ? 'done' : 'pending') : undefined}>
+        <div className={styles.qaTurns} data-bracket={bracket ? (rated.state === 'done' ? 'done' : 'pending') : undefined}>
             {bracket && <span className={styles.bracket} aria-hidden="true">
-                {evaluation.state === 'done' && <b data-band={scoreBand(evaluation.score, evaluation.max)}>{formatScore(evaluation.score)}</b>}
+                {rated.state === 'done' && <b data-band={scoreBand(rated.score, rated.max)}>{formatScore(rated.score)}</b>}
             </span>}
             {children}
         </div>
@@ -787,8 +792,8 @@ function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, dura
     </section>;
 }
 
-// Мягкая оценка нетехнического ответа - вместо балла две-три отметки. Цвет общий
-// с баллом технического вопроса: зелёный - по делу, жёлтый - с пробелами, красный - мимо.
+// Мягкая оценка нетехнического ответа - две-три отметки и балл из них той же шкалой,
+// что у технического вопроса. Цвет общий: зелёный - по делу, жёлтый - с пробелами, красный - мимо.
 const RELEVANCE_LABELS = {on_topic: 'По теме', evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
 
 function SoftMarks({soft}) {
@@ -808,9 +813,12 @@ function SoftMarks({soft}) {
         soft.engaged === true && {key: 'engaged', text: 'Встречные вопросы', tone: 'good'},
     ].filter(Boolean);
 
-    return <ul className={styles.softMarks} data-band={soft.band} aria-label="Оценка ответа">
-        {marks.map(mark => <li key={mark.key} className={styles.softMark} data-tone={mark.tone}>{mark.text}</li>)}
-    </ul>;
+    return <>
+        <ul className={styles.softMarks} data-band={soft.band} aria-label="Оценка ответа">
+            {marks.map(mark => <li key={mark.key} className={styles.softMark} data-tone={mark.tone}>{mark.text}</li>)}
+        </ul>
+        <QaScore evaluation={soft}/>
+    </>;
 }
 
 // Итог интервью: общий балл и сводка, рядом - отметки приветствия и прощания, ниже -

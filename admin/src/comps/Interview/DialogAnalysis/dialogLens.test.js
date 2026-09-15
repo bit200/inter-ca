@@ -83,15 +83,19 @@ describe('линзы расшифровки', () => {
             ...extra,
         });
         const blocks = [
-            make('q1', false, [0, 1], {soft: {state: 'done', relevance: 'evasive', band: 'fair'}}),
+            make('q1', false, [0, 1], {soft: {state: 'done', relevance: 'evasive', band: 'fair', score: 4, max: 10}}),
             make('q2', true, [2, 3, 4], {evaluation: {state: 'done', score: 3, max: 10}}),
             make('q3', true, [5]),
             make('q4', false, [6], {soft: {state: 'done', relevance: 'on_topic', band: 'good'}}),
-            make('q5', false, [7], {soft: {state: 'done', relevance: 'off_topic', band: 'poor'}}),
+            make('q5', false, [7], {soft: {state: 'done', relevance: 'off_topic', band: 'poor', score: 0, max: 10}}),
         ];
 
-        test('балл технического вопроса стоит у последней реплики ответа', () => {
-            expect(Array.from(answerScores(blocks))).toEqual([[4, {state: 'done', score: 3, max: 10}]]);
+        test('балл вопроса стоит у последней реплики ответа - и у технического, и у нетехнического', () => {
+            expect(Array.from(answerScores(blocks))).toEqual([
+                [1, {score: 4, max: 10, technical: false}],
+                [4, {score: 3, max: 10, technical: true}],
+                [7, {score: 0, max: 10, technical: false}],
+            ]);
         });
 
         test('флаги поведения - из мягкой оценки: уклончиво и не по вопросу', () => {

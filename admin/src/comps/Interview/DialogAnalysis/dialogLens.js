@@ -103,15 +103,18 @@ function lastClientIndex(block) {
     return answers.length ? answers[answers.length - 1].index : -1;
 }
 
-// Балл технического вопроса у реплики кандидата. evaluate оценивает вопрос
-// целиком, а не каждую реплику, поэтому балл встаёт один раз - у последней
-// реплики ответа, которой цепочка вопроса закончилась.
+// Балл вопроса у реплики кандидата: у технического - оценка evaluate, у
+// нетехнического - балл мягкой оценки. Оценивается вопрос целиком, а не каждая
+// реплика, поэтому балл встаёт один раз - у последней реплики ответа, которой
+// цепочка вопроса закончилась. technical - к какой линзе балл относится.
 export function answerScores(blocks) {
     let map = new Map();
     (blocks || []).forEach(block => {
-        if (block.technical !== true || !block.evaluation || block.evaluation.state !== 'done') return;
+        let rated = block.technical === true ? block.evaluation
+            : block.technical === false ? block.soft : null;
+        if (!rated || rated.state !== 'done') return;
         let index = lastClientIndex(block);
-        index > -1 && map.set(index, block.evaluation);
+        index > -1 && map.set(index, {score: rated.score, max: rated.max, technical: block.technical});
     });
     return map;
 }
