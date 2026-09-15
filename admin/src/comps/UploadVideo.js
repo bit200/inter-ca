@@ -1,9 +1,10 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import Perc from "./Suggest/Perc";
 import Input from "../libs/Input";
 import Textarea from "../libs/Textarea";
 import MyModal from "../libs/MyModal";
 import {startVideoProcess, waitVideoProcess, buildS3UploadInfo} from "./videoProcessUpload";
+import {isFileDrag, pickDroppedFile} from "./videoDropzone";
 
 function Layout2(props) {
     //console.log('*........ ## ROOT RENDER', props);
@@ -18,6 +19,9 @@ function Layout2(props) {
     // upload - байты уходят на сервер, processing - сервер жмёт и заливает в S3
     let [stage, setStage] = useState('')
     let [link, setLink] = useState('')
+    let [dragOver, setDragOver] = useState(false)
+    // dragenter/dragleave летят и с дочерних элементов - считаем глубину, чтобы подсветка не мигала
+    let dragDepth = useRef(0)
 
     useEffect(() => {
         updateVideo({comment})
@@ -209,13 +213,71 @@ function Layout2(props) {
 
             </>}
             <div style={{marginTop: '20px'}}></div>
-            <div onClick={() => {
-                $('#fileWrapElTest').click()
-            }} className="bg-primary-subtle p-2 border-dashed border-primary rounded">
-                <span className="text-primary fw-semibold">
-                    {info.name || t('selectFile')}</span><span className="text-primary fw-normal">
-                </span>
+            <div
+                role="button"
+                tabIndex={0}
+                className={'videoDropzone' + (dragOver ? ' dragOver' : '')}
+                onClick={() => {
+                    $('#fileWrapElTest').click()
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        $('#fileWrapElTest').click()
+                    }
+                }}
+                onDragEnter={(e) => {
+                    if (!isFileDrag(e.dataTransfer)) return
+                    e.preventDefault()
+                    dragDepth.current++
+                    setDragOver(true)
+                }}
+                onDragOver={(e) => {
+                    if (!isFileDrag(e.dataTransfer)) return
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'copy'
+                }}
+                onDragLeave={() => {
+                    dragDepth.current = Math.max(0, dragDepth.current - 1)
+                    !dragDepth.current && setDragOver(false)
+                }}
+                onDrop={(e) => {
+                    e.preventDefault()
+                    dragDepth.current = 0
+                    setDragOver(false)
+                    let dropped = pickDroppedFile(e.dataTransfer)
+                    if (!dropped) {
+                        return window.notify?.error('Перетащите видеофайл: mp4, mov, webm или другой формат видео')
+                    }
+                    onChange(dropped)
+                }}
+            >
+                <i className="iconoir-upload videoDropzoneIcon"></i>
+                <div className="videoDropzoneTitle">
+                    {dragOver ? 'Отпустите, чтобы загрузить' : (info.name || t('selectFile'))}
+                </div>
+                {!dragOver && <div className="videoDropzoneHint">
+                    {info.name ? 'Перетащите другое видео или нажмите, чтобы выбрать' : 'или перетащите видео сюда'}
+                </div>}
             </div>
+            <style>{`
+                .videoDropzone {
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    gap: 4px; min-height: 140px; padding: 24px 16px; text-align: center; cursor: pointer;
+                    border: 2px dashed var(--bs-primary); border-radius: var(--bs-border-radius-lg, 8px);
+                    background: var(--bs-primary-bg-subtle); color: var(--bs-primary);
+                    transition: background-color .15s ease, border-color .15s ease;
+                }
+                .videoDropzone:hover { background: rgba(var(--bs-primary-rgb), .14); }
+                .videoDropzone:focus-visible { outline: 3px solid rgba(var(--bs-primary-rgb), .4); outline-offset: 2px; }
+                .videoDropzone.dragOver { border-style: solid; background: rgba(var(--bs-primary-rgb), .2); }
+                .videoDropzoneIcon { font-size: 28px; line-height: 1; transition: transform .15s ease; }
+                .videoDropzone.dragOver .videoDropzoneIcon { transform: translateY(-3px); }
+                .videoDropzoneTitle { font-weight: 600; word-break: break-word; }
+                .videoDropzoneHint { font-size: 13px; opacity: .75; }
+                .videoDropzone * { pointer-events: none; }
+                @media (prefers-reduced-motion: reduce) { .videoDropzone, .videoDropzoneIcon { transition: none; } }
+            `}</style>
             {/*<div className={'fileWrap'}*/}
             {/*     onClick={() => {*/}
             {/*         $('#fileWrapElTest').click()*/}
