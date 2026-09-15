@@ -23,7 +23,11 @@ export function pickDialogMedia(interview, analysis) {
     let result = state.result && typeof state.result === 'object' ? state.result : {};
     let media = result.media && typeof result.media === 'object' ? result.media : {};
 
-    let video = firstUrl([item.video, item.uploadVideo, media.videoUrl, media.video]
+    // item.videoUpload - числовой id записи UploadVideo (Interview.videoUpload),
+    // не прямая ссылка: firstUrl всё равно отсеет его как невалидный источник.
+    // Прямая ссылка на запись для плеера приходит только как media.videoUrl/video
+    // (аудио/видео сервиса разбора) или старым текстовым Interview.video.
+    let video = firstUrl([item.video, media.videoUrl, media.video]
         .filter(value => {
             let source = readVideoSource(value && typeof value === 'object' ? value.url : value);
             return source && source.kind === 'direct';

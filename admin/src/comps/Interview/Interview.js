@@ -25,6 +25,7 @@ import DebugLogs from "../DebugLogs";
 import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
+import InterviewVideoUpload from "./InterviewVideoUpload";
 import VideoPreview from "./VideoPreview/VideoPreview";
 import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
 import {EditActions, SaveButton} from "../../libs/EditActions/EditActions";
@@ -235,27 +236,38 @@ function Interview({props}) {
                                     ]
                                 },
                                 {
-                                    name: t('mainMenu'), urlKey: 'main', save: true, childs: [
+                                    // Было две вкладки («Меню»: name/date/type/videoLink,
+                                    // «Анализ»: оценка + топ-вопросы) - 7 полей на двух
+                                    // клика вместо одного. Слиты в «Обзор»: сверху
+                                    // основные поля и запись интервью, снизу - разбор
+                                    // по вопросам.
+                                    name: t('overview'), urlKey: 'overview', save: true, childs: [
                                         {
                                             name: 'name',
-                                            key: 'name', type: 'input', size: 3},
+                                            key: 'name', type: 'input', size: 4},
                                         {
                                             name: 'date',
-                                            key: 'date', type: 'date', size: 3,},
+                                            key: 'date', type: 'date', size: 4,},
                                         {
                                             name: 'type',
                                             key: 'type',
                                             type: 'select',
                                             items: ['', 'HR', 'tech', 'owner', 'partner', 'screening', 'kurators_screening'],
-                                            size: 3
+                                            size: 4
                                         },
-                                        {name: 'videoLink', size: 3, key: 'video', type: 'input'},
-                                    ]
-                                },
-
-
-                                {
-                                    name: t('analyse'), urlKey: 'analyse', save: true, childs: [
+                                        {
+                                            size: 12,
+                                            Component: ({item}) => <InterviewVideoUpload
+                                                interviewId={item._id}
+                                                videoUploadId={item.videoUpload}
+                                                onDone={(patch) => {
+                                                    patch && Object.assign(item, patch);
+                                                    global.onGlobalChange && global.onGlobalChange({...item});
+                                                }}
+                                            />
+                                        },
+                                        {name: 'videoLink', size: 4, key: 'video', type: 'input'},
+                                        {type: 'HR', size: 12},
                                         {
                                             name: t('Overall assessment of the interview'),
                                             key: `infoByUsersInterview.user${global.user.get_id()}.feedback`,

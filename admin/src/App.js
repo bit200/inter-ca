@@ -198,7 +198,12 @@ global.CONFIG = {
         },
         {isMenu: true, name: 'extraMenu'},
         {name: "profile", url: "profile", icon: 'iconoir-user'},
-        {name: "video", url: "video", icon: 'iconoir-cloud-upload'},
+        // Пункт "video" убран из навигации 2026-09-15: загрузка видео теперь
+        // на вкладке «Обзор» карточки интервью (InterviewVideoUpload.jsx) -
+        // так запись сразу привязывается к нужному интервью (Interview.videoUpload)
+        // одним действием, а не загружается вслепую отдельно от него. Маршрут
+        // /video и его компонент (comps/UploadVideo.js) оставлены в коде для
+        // отладки - ссылка на общий список без привязки была не нужна.
         {
             icon: 'iconoir-search',
             name: "search", url: "search"

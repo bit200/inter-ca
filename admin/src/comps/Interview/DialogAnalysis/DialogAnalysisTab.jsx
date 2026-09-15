@@ -113,7 +113,11 @@ function analysisOf(interview) {
 export default function DialogAnalysisTab({item, interview, speakerRoles, onSpeakerRolesChange, answerLinks, onAnswerLinksChange}) {
     let value = interview || item || {};
     let interviewId = value._id;
-    let hasVideo = Boolean(value.video || value.uploadVideo || value.videoId);
+    // videoUpload - привязанная запись (Interview.videoUpload, id UploadVideo,
+    // см. controllers/interviewVideoUpload.js), video - старая текстовая
+    // ссылка. Было value.uploadVideo/videoId - поля с такими именами в модели
+    // нет, hasVideo был бы false даже при привязанной записи.
+    let hasVideo = Boolean(value.video || value.videoUpload);
 
     let [analysis, setAnalysis] = useState(() => normalizeAnalysis(analysisOf(value)));
     let [sending, setSending] = useState(false);
@@ -233,7 +237,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         ? STATUS_HINTS[analysis.status] || ''
         : hasVideo
             ? 'Разбор ещё не запускали. Кнопка отправит запись в очередь: мы достанем звук, распознаем речь и разделим реплики по участникам.'
-            : 'Приложите ссылку на запись во вкладке «Меню» — без видео разбирать нечего.';
+            : 'Загрузите запись во вкладке «Обзор» — без видео разбирать нечего.';
 
     // Итог - то, ради чего открывают карточку, поэтому он над процессами и расшифровкой.
     let overall = dialogDone ? readOverall(answers.result) : null;

@@ -3443,6 +3443,13 @@ export default {
         en: "Analyse",
         fr: `Analyser`
     },
+    "overview": {
+        ru: "Обзор",
+        es: "Resumen",
+        de: "Übersicht",
+        en: "Overview",
+        fr: `Aperçu`
+    },
     "videoNotUploaded": {
         ru: "Видео не загружено",
         es: "Video no cargado",
