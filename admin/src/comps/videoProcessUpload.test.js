@@ -1,0 +1,100 @@
+import fs from 'fs';
+import path from 'path';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, DEFAULT_MODE} from './videoProcessUpload';
+
+// Поддельный XHR: отвечает по очереди из responses и запоминает запросы
+function makeXHR(responses, log) {
+    return function FakeXHR() {
+        const req = {headers: {}, upload: {}};
+        this.upload = req.upload;
+        this.open = (method, url) => Object.assign(req, {method, url});
+        this.setRequestHeader = (k, v) => { req.headers[k] = v; };
+        this.send = (body) => {
+            req.body = body;
+            log.push(req);
+            const [status, data] = responses.shift();
+            setTimeout(() => {
+                this.upload.onprogress && this.upload.onprogress({lengthComputable: true, loaded: 50, total: 100});
+                this.status = status;
+                this.responseText = JSON.stringify(data);
+                this.onload();
+            }, 0);
+        };
+    };
+}
+
+describe('startVideoProcess', () => {
+    it('шлёт один multipart POST на /api/video/process с токеном, video и mode', async () => {
+        const log = [];
+        const progress = [];
+        const file = new File(['abc'], 'interview.mp4', {type: 'video/mp4'});
+        const res = await startVideoProcess({
+            domain: 'http://multer.test', token: 'tkn', file, user: 'u1',
+            onUploadProgress: (p) => progress.push(p),
+            XHR: makeXHR([[202, {id: 'j1', status: 'queued'}]], log),
+        });
+        expect(res).toEqual({id: 'j1', status: 'queued'});
+        expect(log).toHaveLength(1);
+        expect(log[0].method).toBe('POST');
+        expect(log[0].url).toBe('http://multer.test/api/video/process');
+        expect(log[0].headers.Authorization).toBe('tkn');
+        expect(log[0].body.get('mode')).toBe(DEFAULT_MODE);
+        expect(log[0].body.get('user')).toBe('u1');
+        expect(log[0].body.get('video').name).toBe('interview.mp4');
+        expect(progress).toEqual([50]);
+    });
+
+    it('отдаёт ошибку сервера текстом', async () => {
+        const file = new File(['abc'], 'a.mp4');
+        await expect(startVideoProcess({
+            domain: 'http://m', token: 't', file,
+            XHR: makeXHR([[401, {error: 'unauthorized'}]], []),
+        })).rejects.toThrow('unauthorized');
+    });
+});
+
+describe('waitVideoProcess', () => {
+    it('опрашивает job до done с паузой между запросами', async () => {
+        const log = [];
+        const sleeps = [];
+        const job = await waitVideoProcess({
+            domain: 'http://m', token: 't', id: 'j1', interval: 4000,
+            sleep: async (ms) => sleeps.push(ms),
+            XHR: makeXHR([
+                [200, {status: 'queued'}],
+                [200, {status: 'processing'}],
+                [200, {status: 'done', key: 'u1/v.mp4', contentType: 'video/mp4', bytes: 10}],
+            ], log),
+        });
+        expect(job.key).toBe('u1/v.mp4');
+        expect(log.map((r) => r.url)).toEqual(Array(3).fill('http://m/api/video/process/j1'));
+        expect(log[0].headers.Authorization).toBe('t');
+        expect(sleeps).toEqual([4000, 4000]);
+    });
+
+    it('status error превращает в исключение', async () => {
+        await expect(waitVideoProcess({
+            domain: 'http://m', token: 't', id: 'j1', sleep: async () => {},
+            XHR: makeXHR([[200, {status: 'error', error: 'ffmpeg failed'}]], []),
+        })).rejects.toThrow('ffmpeg failed');
+    });
+});
+
+describe('buildS3UploadInfo', () => {
+    it('кладёт key, contentType, fileSize, name, duration', () => {
+        expect(buildS3UploadInfo({
+            job: {key: 'u1/v.mp4', contentType: 'video/mp4', bytes: 123},
+            name: 'interview.mp4', duration: 12.5,
+        })).toEqual({key: 'u1/v.mp4', contentType: 'video/mp4', fileSize: 123, name: 'interview.mp4', duration: 12.5});
+    });
+});
+
+describe('UploadVideo', () => {
+    it('больше не грузит чанками на /video-upload, а идёт через /api/video/process', () => {
+        const src = fs.readFileSync(path.join(__dirname, 'UploadVideo.js'), 'utf8');
+        expect(src).not.toMatch(/\/video-upload/);
+        expect(src).not.toMatch(/file\.slice\(/);
+        expect(src).toMatch(/startVideoProcess/);
+        expect(src).toMatch(/buildS3UploadInfo/);
+    });
+});

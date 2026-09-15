@@ -3,6 +3,7 @@ import Perc from "./Suggest/Perc";
 import Input from "../libs/Input";
 import Textarea from "../libs/Textarea";
 import MyModal from "../libs/MyModal";
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo} from "./videoProcessUpload";
 
 function Layout2(props) {
     //console.log('*........ ## ROOT RENDER', props);
@@ -14,6 +15,9 @@ function Layout2(props) {
     let [info, setInfo] = useState({})
     let [file, setFile] = useState(null)
     let [video, setVideo] = useState(null)
+    // upload - байты уходят на сервер, processing - сервер жмёт и заливает в S3
+    let [stage, setStage] = useState('')
+    let [link, setLink] = useState('')
 
     useEffect(() => {
         updateVideo({comment})
@@ -28,21 +32,12 @@ function Layout2(props) {
     }
 
     let onChange = async (file) => {
-        const url = global.env.VIDEO_UPLOAD_DOMAIN + '/video-upload'; // Your Node.js server URL
-        const chunkSize = 1024 * 1024 * 5; // 5MB chunk size
-        let start = 0;
         let fileSize = file.size;
         let originalFileName = file.name;
         let hash = new Date().getTime();
 
-        const extension = file.name.split('.').pop();
-        let fileName = `${hash}.${extension}`
-
-
         let info = {
             name: originalFileName,
-            fileName,
-            chunkSize,
             fileSize,
             duration: '-'
         }
@@ -51,6 +46,7 @@ function Layout2(props) {
         setComment('')
         setInfo(info)
         setProgress(0)
+        setStage('')
         setVideo({})
         setErr('')
 
@@ -74,7 +70,6 @@ function Layout2(props) {
             }
             let mbPerHour = 300 * 1000 * 1000;
             let maxFs = (duration / 60) * mbPerHour;
-            //console.log("qqqqq fsssssssssssssssssssss", fileSize, maxFs);
             let toMb = (fileSize) => {
                 return Math.round(fileSize / (1000 * 1000))
             }
@@ -85,47 +80,32 @@ function Layout2(props) {
 
             setInfo(info)
 
+            let domain = global.env.VIDEO_DOMAIN;
+            let token = user.get_token();
+            try {
+                let video = await global.http.post('/my-upload-video', {hash, info, hostname: window.location.hostname})
+                setVideo(video)
 
-            //console.log("qqqqq duration callbackbkbkbkbkbk", duration, info);
+                setStage('upload')
+                let started = await startVideoProcess({
+                    domain, token, file,
+                    user: user.get_id(),
+                    onUploadProgress: setProgress,
+                })
+                setProgress(100)
+                setStage('processing')
 
-
-            let video = await global.http.post('/my-upload-video', {hash, info, hostname: window.location.hostname})
-            setVideo(video)
-
-
-            //console.log("qqqqq video", video);
-            while (start < fileSize) {
-                try {
-
-                    setProgress(Math.round(100 * start / fileSize))
-                    const end = start + chunkSize;
-                    const chunk = file.slice(start, end);
-
-                    const formData = new FormData();
-                    formData.append('user', user.get_id());
-                    formData.append('chunk', chunk, fileName);
-
-                    let t = await fetch(url, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    start = end;
-                } catch (e) {
-                    // await updateVideo({_id: video._id, status: 'error'})//global.http.put('/my-upload-video', {_id: video._id, status: 'error', info})
-                    //
-                    return setErr(e.toString())
-                }
-
+                let job = await waitVideoProcess({domain, token, id: started.id})
+                let s3Info = buildS3UploadInfo({job, name: originalFileName, duration})
+                await global.http.put('/my-upload-video', {_id: video._id, info: s3Info})
+                setInfo(s3Info)
+                setLink(job.url || '')
+                setStage('done')
+            } catch (e) {
+                setStage('error')
+                setErr(e.message || e.toString())
             }
-
-            setProgress(100)
         });
-
-
-        // await updateVideo({_id: video._id, status: 'ok'})//global.http.put('/my-upload-video', {_id: video._id, status: 'error', info})
-        //
-        // alert("loaded")
     }
 
     let getDuration = (file, cb) => {
@@ -149,12 +129,6 @@ function Layout2(props) {
         return +((size / (1000 * 1000)) || 0).toFixed(1)
     }
 
-    let getLink = () => {
-        return `${env.VIDEO_STATIC_DOMAIN}/video/${user.get_id()}/${info.fileName}`
-    }
-    // let v = useActionData();
-
-    let link = getLink();
     return <div className={'card'}>
 
         <div className="card-body animChild">
@@ -178,8 +152,8 @@ function Layout2(props) {
 
 
             <div>
-                {t('link')}: {!info?.fileName && <b>{t('selectFileFirst')}</b>}
-                {!!info?.fileName &&
+                {t('link')}: {!link && <b>{t('selectFileFirst')}</b>}
+                {!!link &&
                     <><a href={link} target={"_blank"}>{link}</a>
                         <div className="fa fa-copy" style={{marginRight: '10px', fontSize: '20px'}} onClick={() => {
                             copyText(link)
@@ -220,10 +194,18 @@ function Layout2(props) {
 
 
                 <hr/>
-                <>
-                    Прогресс: {progress}%
+                {stage === 'upload' && <>
+                    Загрузка файла: {progress}%
                     <Perc value={progress} height={3}></Perc>
-                </>
+                </>}
+                {stage === 'processing' && <>
+                    Файл загружен, сервер сжимает видео. Это займёт несколько минут, страницу не закрывайте
+                    <div className="progress" style={{height: '3px'}}>
+                        <div className="progress-bar progress-bar-striped progress-bar-animated" style={{width: '100%'}}></div>
+                    </div>
+                </>}
+                {stage === 'done' && <div className="text-success">Видео загружено и обработано</div>}
+                {stage === 'error' && <div className="text-danger">Не удалось загрузить видео: {err}. Выберите файл ещё раз</div>}
 
             </>}
             <div style={{marginTop: '20px'}}></div>
