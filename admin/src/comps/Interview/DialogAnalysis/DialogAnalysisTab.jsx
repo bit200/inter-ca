@@ -34,7 +34,7 @@ import {
     speakerKey,
     speakerLabels,
 } from './dialogAnalysisFormat';
-import {pickDialogMedia, turnIndexAt} from './dialogMedia';
+import {pickDialogMedia, readPlayerPinned, savePlayerPinned, turnIndexAt} from './dialogMedia';
 import AnswerBriefPopover from './AnswerBriefPopover';
 import {answerDetailPath} from './answerBrief';
 import {
@@ -377,6 +377,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let player = useRef(null);
     let [playingIndex, setPlayingIndex] = useState(-1);
     let [paused, setPaused] = useState(true);
+    let [pinned, setPinned] = useState(() => readPlayerPinned());
     let [rolePicker, setRolePicker] = useState(null);
     let [view, setView] = useState('blocks');
     let byQuestions = view === 'blocks' && blocks.length > 0;
@@ -552,13 +553,25 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
             </div>}
         </div>
         <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
-        {media && <div className={styles.player}>
+        {media && <div className={styles.player} data-pinned={pinned ? 'true' : 'false'}>
             {media.kind === 'video'
                 ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
                 : <audio ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
-            <p className={styles.playerHint}>
-                {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
-            </p>
+            <div className={styles.playerFoot}>
+                <p className={styles.playerHint}>
+                    {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
+                </p>
+                <button
+                    type="button"
+                    className={styles.playerPin}
+                    aria-pressed={pinned}
+                    title={pinned ? 'Запись прокрутится вместе с расшифровкой' : 'Запись останется на экране при прокрутке'}
+                    onClick={() => setPinned(prev => {
+                        savePlayerPinned(!prev);
+                        return !prev;
+                    })}
+                >{pinned ? 'Открепить' : 'Закрепить'}</button>
+            </div>
         </div>}
         <div className={styles.feed}>
         {linkingBlock && <div className={styles.linking} role="status">

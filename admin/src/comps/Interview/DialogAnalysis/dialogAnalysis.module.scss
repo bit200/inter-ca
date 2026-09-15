@@ -382,10 +382,37 @@ button.turnSpeaker{
   }
 }
 
-.playerHint{
+.player[data-pinned="false"]{
+  position: static;
+}
+
+.playerFoot{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   margin: 8px 2px 0;
+}
+
+.playerHint{
+  margin: 0;
   color: var(--dlg-muted);
   font-size: 12px;
+}
+
+.playerPin{
+  flex: none;
+  padding: 0;
+  border: 0;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 12px;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
 }
 
 @media (min-width: 992px){
