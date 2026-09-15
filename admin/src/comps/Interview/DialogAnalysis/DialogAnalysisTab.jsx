@@ -35,6 +35,8 @@ import {
     speakerLabels,
 } from './dialogAnalysisFormat';
 import {pickDialogMedia, turnIndexAt} from './dialogMedia';
+import AnswerBriefPopover from './AnswerBriefPopover';
+import {answerDetailPath} from './answerBrief';
 import {
     BEHAVIOR_FLAG_LABELS,
     LENSES,
@@ -281,6 +283,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             openTurn={openTurn}
             onOpenTurn={setOpenTurn}
             media={media}
+            interviewId={interviewId}
         />}
     </div>;
 }
@@ -332,7 +335,7 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
     </section>;
 }
 
-function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media}) {
+function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId}) {
     let {turns, markers, summary, capabilities} = conversation;
     // Вариант B: линза меняет акценты ленты, шкала показывает, где в интервью
     // какой вопрос, а вопрос без ответа связывается с репликой кандидата руками.
@@ -566,6 +569,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 {blocks.map(block => <QaBlock
                     key={block.key}
                     block={block}
+                    interviewId={interviewId}
                     seriesStart={seriesStarts.has(block.key)}
                     lens={lens}
                     linking={linking === block.key}
@@ -596,7 +600,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 // вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
-function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onFindAnswer, children}) {
+function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
     let bracket = showsTech(lens) && block.technical === true;
@@ -651,7 +655,7 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
                     aria-pressed={linking}
                     onClick={onFindAnswer}
                 >{linking ? 'Отменить' : 'Найти ответ'}</button>}
-                {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation}/>}
+                {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation} number={block.number} interviewId={interviewId}/>}
             </div>
         </header>
         {!collapsed && <div id={bodyId}>
@@ -674,7 +678,11 @@ function QaBlock({block, seriesStart = false, lens = 'all', linking = false, onF
 }
 
 // Балл за ответ: число и шкала из делений - по шкале уровень виден, не читая цифры.
-function QaScore({evaluation}) {
+// Балл - кнопка: по клику попап раскладывает его на показатели и ведёт на
+// страницу с полной детализацией.
+function QaScore({evaluation, number, interviewId}) {
+    let [open, setOpen] = useState(false);
+    let close = useCallback(() => setOpen(false), []);
     let {state, score, max} = evaluation;
     if (state === 'skipped') return <span className={styles.qaStatus}>Не оцениваем</span>;
     if (state === 'pending') return <span className={styles.qaStatus} data-state="pending">
@@ -686,11 +694,26 @@ function QaScore({evaluation}) {
     let band = scoreBand(score, max);
     let cells = Math.max(1, Math.round(max));
     let filled = Math.round(score / max * cells);
-    return <div className={styles.score} data-band={band} role="img" aria-label={`Оценка ${formatScore(score)} из ${formatScore(max)}`}>
-        <span className={styles.scoreValue}>{formatScore(score)}<small>/{formatScore(max)}</small></span>
-        <span className={styles.scoreBar} aria-hidden="true">
-            {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
-        </span>
+    return <div className={styles.scoreAnchor}>
+        <button
+            type="button"
+            className={styles.score}
+            data-band={band}
+            aria-label={`Оценка ${formatScore(score)} из ${formatScore(max)}, показать детализацию`}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            onClick={() => setOpen(!open)}
+        >
+            <span className={styles.scoreValue}>{formatScore(score)}<small>/{formatScore(max)}</small></span>
+            <span className={styles.scoreBar} aria-hidden="true">
+                {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
+            </span>
+        </button>
+        {open && <AnswerBriefPopover
+            evaluation={evaluation}
+            href={interviewId ? answerDetailPath(interviewId, number) : ''}
+            onClose={close}
+        />}
     </div>;
 }
 

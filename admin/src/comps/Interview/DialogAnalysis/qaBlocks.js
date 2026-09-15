@@ -91,7 +91,11 @@ function readEvaluation(block, technical, active) {
     else if (status === 'error' || message) state = 'error';
     else state = active ? 'pending' : 'missing';
 
-    return {state, score, max, feedback, message};
+    // Сырой результат сервиса оценки - по нему попап и страница детализации
+    // раскладывают балл на показатели. Результат лежит либо плоско, либо в result.
+    let result = state === 'done' ? (typeof source.score === 'number' ? source : inner) : null;
+
+    return {state, score, max, feedback, message, result};
 }
 
 // Мягкая оценка нетехнического ответа: по теме ли кандидат ответил, развёрнуто ли

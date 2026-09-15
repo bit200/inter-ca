@@ -327,7 +327,7 @@ describe('таб разбора диалога', () => {
             expect(within(first).getByText('Технический')).toBeInTheDocument();
             // Текст вопроса - в шапке блока и в самой реплике интервьюера.
             expect(within(first).getAllByText('Что такое замыкание?')).toHaveLength(2);
-            expect(within(first).getByRole('img', {name: 'Оценка 8 из 10'})).toBeInTheDocument();
+            expect(within(first).getByRole('button', {name: 'Оценка 8 из 10, показать детализацию'})).toBeInTheDocument();
             expect(within(first).getByText('Определение верное')).toBeInTheDocument();
 
             const second = screen.getByRole('region', {name: 'Вопрос 2'});
@@ -338,6 +338,59 @@ describe('таб разбора диалога', () => {
             fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
             expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
+        });
+
+        test('по клику на балл технического вопроса попап раскладывает оценку на показатели и ведёт на страницу детализации', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {
+                    score: 2.8,
+                    evaluation: {
+                        relevance: {relevance: 9},
+                        depth: {depth_score: 2},
+                        errors: {is_critical: 1, errors: ['Путает замыкание с классом']},
+                    },
+                }},
+            ]}}});
+            const reference = {
+                '/eval-metric-schemas': {items: [
+                    {key: 'evaluation.relevance.relevance', group: 'Релевантность', min: 0, max: 9},
+                    {key: 'evaluation.depth.depth_score', group: 'Глубина', min: 0, max: 10},
+                ]},
+                '/eval-advice-rule': {items: [
+                    {key: 'evaluation.depth.depth_score', from: 0, to: 4, advice: 'Раскройте, как это работает внутри'},
+                ]},
+            };
+            const answersGet = global.http.get;
+            global.http.get = jest.fn((url, ...rest) => reference[url] ? Promise.resolve(reference[url]) : answersGet(url, ...rest));
+            require('./answerBrief').resetEvaluationReference();
+            global.navigate = jest.fn();
+
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const block = screen.getByRole('region', {name: 'Вопрос 1'});
+            const score = within(block).getByRole('button', {name: 'Оценка 2,8 из 10, показать детализацию'});
+            expect(screen.queryByRole('dialog', {name: 'Детализация оценки'})).toBeNull();
+
+            fireEvent.click(score);
+            const popup = await screen.findByRole('dialog', {name: 'Детализация оценки'});
+            expect(score).toHaveAttribute('aria-expanded', 'true');
+            expect(within(popup).getByText('Ответ не засчитан')).toBeInTheDocument();
+            await waitFor(() => expect(within(popup).getByText('Глубина')).toBeInTheDocument());
+            expect(within(popup).getByText('20%')).toBeInTheDocument();
+            expect(within(popup).getByText('Релевантность')).toBeInTheDocument();
+            expect(within(popup).getByText('100%')).toBeInTheDocument();
+            expect(within(popup).getByText('Путает замыкание с классом')).toBeInTheDocument();
+            expect(within(popup).getByText('Раскройте, как это работает внутри')).toBeInTheDocument();
+
+            const link = within(popup).getByRole('link', {name: 'Открыть полный разбор ответа'});
+            expect(link).toHaveAttribute('href', '/interviews/7/answers/1');
+            fireEvent.click(link);
+            expect(global.navigate).toHaveBeenCalledWith('/interviews/7/answers/1');
+
+            fireEvent.keyDown(document, {key: 'Escape'});
+            expect(screen.queryByRole('dialog', {name: 'Детализация оценки'})).toBeNull();
+            delete global.navigate;
         });
 
         test('в шапке вопроса его текст вместо номера, по шапке вопрос сворачивается и разворачивается', async () => {
