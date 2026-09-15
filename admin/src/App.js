@@ -542,6 +542,11 @@ const router = createBrowserRouter([
                 path: "evaluations/:id",
                 element: Loader("EvaluationDetail/EvaluationDetail")(),
             },
+            {
+                // Детализация технической оценки ответа из разбора диалога интервью.
+                path: "interviews/:id/answers/:number",
+                element: Loader("Interview/InterviewAnswerDetail")(),
+            },
         ].concat(admin_urls),
     },
     {
