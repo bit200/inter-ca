@@ -1,4 +1,4 @@
-import {questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown} from './qaBlocks';
+import {countDisfluencies, deliveryBreakdown, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown} from './qaBlocks';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -62,21 +62,28 @@ describe('мягкая оценка нетехнических блоков', ()
             {technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'off_topic', complete: false}},
             {technical: true, turnIndexes: [2, 3], softEvaluate: {relevance: 'on_topic'}},
         ]}, turns);
-        expect(blocks[0].soft).toEqual({state: 'done', relevance: 'on_topic', complete: true, engaged: null, note: 'По делу', band: 'good', score: 10, max: 10});
-        expect(blocks[1].soft).toMatchObject({band: 'fair', score: 6});
-        expect(blocks[2].soft).toMatchObject({band: 'poor', score: 0});
+        let content = block => softBreakdown(block.soft).content;
+        expect(blocks[0].soft).toMatchObject({state: 'done', relevance: 'on_topic', complete: true, engaged: null, note: 'По делу', band: 'good', max: 10});
+        expect(content(blocks[0])).toBe(10);
+        expect(blocks[1].soft.band).toBe('fair');
+        expect(content(blocks[1])).toBe(6);
+        expect(blocks[2].soft.band).toBe('poor');
+        expect(content(blocks[2])).toBe(0);
         expect(blocks[3].soft).toBeNull();
     });
 
-    it('балл мягкой оценки из 10 не выходит из полосы уровня ответа', () => {
-        let soft = softEvaluate => readQaBlocks([{technical: false, turnIndexes: [0, 1], softEvaluate}], turns)[0].soft;
-        expect(soft({relevance: 'on_topic', complete: true, engaged: true}).score).toBe(10);
-        expect(soft({relevance: 'on_topic'})).toMatchObject({band: 'good', score: 9});
-        expect(soft({relevance: 'on_topic', complete: false, engaged: true})).toMatchObject({band: 'fair', score: 6});
-        expect(soft({relevance: 'evasive', complete: false})).toMatchObject({band: 'fair', score: 4});
-        expect(soft({relevance: 'off_topic', complete: true, engaged: true})).toMatchObject({band: 'poor', score: 3});
+    it('балл содержания из 10 не выходит из полосы уровня ответа', () => {
+        let soft = softEvaluate => {
+            let value = readQaBlocks([{technical: false, turnIndexes: [0, 1], softEvaluate}], turns)[0].soft;
+            return {band: value.band, content: softBreakdown(value).content, max: value.max};
+        };
+        expect(soft({relevance: 'on_topic', complete: true, engaged: true}).content).toBe(10);
+        expect(soft({relevance: 'on_topic'})).toMatchObject({band: 'good', content: 9});
+        expect(soft({relevance: 'on_topic', complete: false, engaged: true})).toMatchObject({band: 'fair', content: 6});
+        expect(soft({relevance: 'evasive', complete: false})).toMatchObject({band: 'fair', content: 4});
+        expect(soft({relevance: 'off_topic', complete: true, engaged: true})).toMatchObject({band: 'poor', content: 3});
         [soft({relevance: 'evasive', complete: true}), soft({relevance: 'off_topic', complete: false})]
-            .forEach(value => expect(scoreBand(value.score, value.max)).toBe(value.band));
+            .forEach(value => expect(scoreBand(value.content, value.max)).toBe(value.band));
     });
 
     it('детализация мягкой оценки раскладывает балл на слагаемые и поправку полосой', () => {
@@ -85,12 +92,11 @@ describe('мягкая оценка нетехнических блоков', ()
         expect(full.rows.map(row => [row.label, row.points, row.max])).toEqual([
             ['По теме', 6, 6], ['Развёрнуто', 4, 4],
         ]);
-        expect(full).toMatchObject({raw: 10, score: 10, max: 10});
+        expect(full).toMatchObject({raw: 10, content: 10, max: 10});
 
         let formal = soft({relevance: 'on_topic', complete: false, engaged: true});
-        expect(softBreakdown(formal)).toMatchObject({raw: 7, score: formal.score});
-        expect(softBreakdown(formal).score).toBe(6);
-        expect(softBreakdown(soft({relevance: 'evasive', complete: false}))).toMatchObject({raw: 3, score: 4});
+        expect(softBreakdown(formal)).toMatchObject({raw: 7, content: 6, score: formal.score});
+        expect(softBreakdown(soft({relevance: 'evasive', complete: false}))).toMatchObject({raw: 3, content: 4});
     });
 
     it('встречные вопросы учитываются, только если применимы: нет повода - нет и слагаемого', () => {
@@ -99,15 +105,15 @@ describe('мягкая оценка нетехнических блоков', ()
 
         let needless = soft({relevance: 'on_topic', complete: true, engaged: null});
         expect(rows(needless)).toEqual([['По теме', 6, 6], ['Развёрнуто', 4, 4]]);
-        expect(needless.score).toBe(10);
+        expect(softBreakdown(needless).content).toBe(10);
 
         let missed = soft({relevance: 'on_topic', complete: true, engaged: false});
         expect(rows(missed)).toEqual([['По теме', 6, 6], ['Развёрнуто', 3, 3], ['Без встречных вопросов', 0, 1]]);
-        expect(missed.score).toBe(9);
+        expect(softBreakdown(missed).content).toBe(9);
 
         let asked = soft({relevance: 'on_topic', complete: true, engaged: true});
         expect(rows(asked)).toEqual([['По теме', 6, 6], ['Развёрнуто', 3, 3], ['Встречные вопросы', 1, 1]]);
-        expect(asked.score).toBe(10);
+        expect(softBreakdown(asked).content).toBe(10);
     });
 
     it('блок, который открыл сам кандидат, не штрафуется за встречные вопросы', () => {
@@ -115,7 +121,7 @@ describe('мягкая оценка нетехнических блоков', ()
             softEvaluate: {relevance: 'on_topic', complete: true, engaged: false}}], turns)[0].soft;
         expect(led.engaged).toBeNull();
         expect(softBreakdown(led).rows.map(row => row.label)).toEqual(['По теме', 'Развёрнуто']);
-        expect(led.score).toBe(10);
+        expect(softBreakdown(led).content).toBe(10);
     });
 
     it('без мягкой оценки блок ждёт её, пока идёт оценка, иначе не оценивается', () => {
@@ -165,5 +171,66 @@ describe('мягкая оценка нетехнических блоков', ()
             .toBe('Мы уже обсудили стек, а теперь расскажите, как вы тестируете код?');
         expect(shortQuestionTitle('Что такое замыкание?')).toBe('Что такое замыкание?');
         expect(shortQuestionTitle('')).toBe('');
+    });
+});
+
+describe('подача нетехнического ответа', () => {
+    // Ответ из интервью 1003: по смыслу верный, но с паразитами и самоперебивом.
+    const speech = [
+        {id: 'q', role: 'manager', startMs: 0, endMs: 14000, text: 'Расскажи, с чем принял решение выйти на рынок?'},
+        {id: 'a1', role: 'client', startMs: 16500, endMs: 25000, markerIds: ['f1', 'f2'],
+            text: 'У меня… Я был в Омске раньше, и у меня офис, ну, один из, так сказать, офисов этой'},
+        {id: 'a2', role: 'client', startMs: 25000, endMs: 30000, text: 'располагался в Омске. Я работал, соответственно,'},
+        {id: 'a3', role: 'client', startMs: 30000, endMs: 37000, markerIds: ['f3'], text: 'приходя в офис. А сейчас я переехал, и, ну,'},
+        {id: 'a4', role: 'client', startMs: 37000, endMs: 41000, text: 'них нет такой возможности'},
+        {id: 'a5', role: 'client', startMs: 41000, endMs: 46000, markerIds: ['f4', 'e1'], text: 'работать удаленно, и поэтому вот я сейчас и ищу работу.'},
+    ];
+    const markers = ['f1', 'f2', 'f3', 'f4'].map(id => ({id, category: 'filler'})).concat({id: 'e1', category: 'empathy'});
+    const read = (turnsList, options) => readQaBlocks([{technical: false, turnIndexes: turnsList.map((_, index) => index),
+        timing: {responseDelayMs: 2500}, softEvaluate: {relevance: 'on_topic', complete: true}}], turnsList, {markers, ...options})[0].soft;
+
+    it('верный по смыслу ответ с паразитами и запинкой больше не получает 10 из 10', () => {
+        let soft = read(speech);
+        expect(soft.delivery).toEqual({words: 47, fillers: 4, disfluencies: 1, delayMs: 2500, innerPauses: 0});
+        let breakdown = softBreakdown(soft);
+        expect(breakdown.content).toBe(10);
+        expect(breakdown.delivery.rows.map(row => [row.label, row.penalty])).toEqual([
+            ['4 паразита на 47 слов', 4], ['1 речевой сбой', 1], ['Пауза перед ответом 2,5 с', 0],
+        ]);
+        expect(breakdown.delivery.score).toBe(5);
+        expect(soft.score).toBe(8.5);
+        expect(soft.score).toBe(breakdown.score);
+    });
+
+    it('штраф за паразитов - по плотности на 100 слов, а не по штукам', () => {
+        let penalty = (fillers, words) => deliveryBreakdown({words, fillers}).rows[0].penalty;
+        expect(penalty(4, 200)).toBe(0);
+        expect(penalty(3, 100)).toBe(2);
+        expect(penalty(6, 100)).toBe(4);
+        expect(penalty(4, 40)).toBe(6);
+    });
+
+    it('речевые сбои: мычание, повтор слова, самоперебив и оборванная фраза', () => {
+        expect(countDisfluencies(['Я пишу на js и на Go.'])).toBe(0);
+        expect(countDisfluencies(['Эээ, я я пишу'])).toBe(2);
+        expect(countDisfluencies(['У меня… Я был', 'офисов этой…'])).toBe(2);
+        expect(deliveryBreakdown({words: 50, disfluencies: 5}).rows[1]).toMatchObject({penalty: 3});
+    });
+
+    it('долгая пауза перед ответом и паузы внутри ответа снижают подачу', () => {
+        let clean = [speech[0], {...speech[4], startMs: 20000, endMs: 22000}, {...speech[4], id: 'x', startMs: 26000, endMs: 28000}];
+        let soft = read(clean);
+        expect(soft.delivery).toMatchObject({innerPauses: 1, delayMs: 2500});
+        let rows = softBreakdown(soft).delivery.rows;
+        expect(rows.find(row => row.key === 'innerPauses')).toMatchObject({label: '1 долгая пауза в ответе', penalty: 1});
+        expect(deliveryBreakdown({words: 10, delayMs: 5000}).rows[2]).toMatchObject({penalty: 1});
+        expect(deliveryBreakdown({words: 10, delayMs: 9000}).rows[2]).toMatchObject({penalty: 2});
+    });
+
+    it('подача не поднимает ответ мимо вопроса: снимает только с заработанного', () => {
+        let off = softBreakdown({relevance: 'off_topic', complete: false, band: 'poor', delivery: {words: 20}});
+        expect(off).toMatchObject({content: 0, score: 0});
+        let fine = softBreakdown({relevance: 'on_topic', complete: true, band: 'good', delivery: {words: 20}});
+        expect(fine).toMatchObject({content: 10, score: 10});
     });
 });

@@ -283,8 +283,9 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         () => readQaBlocks(answers.result, conversation.turns, {
             active: answersActive || sendingAnswers,
             timings: readBlockTimings(answers.result),
+            markers: conversation.markers,
         }),
-        [answers.result, conversation.turns, answersActive, sendingAnswers]
+        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers]
     );
 
     let weakMocks = useWeakMocks(interviewId);

@@ -94,12 +94,14 @@ export default function AnswerBriefPopover({evaluation, href, onClose}) {
 }
 
 // Попап под баллом нетехнического вопроса: сервис баллов не ставит, балл сведён
-// из отметок - показываем, сколько дала каждая и где сумму поправила полоса уровня.
+// из отметок - показываем, сколько дала каждая и где сумму поправила полоса уровня,
+// а рядом «Подачу» - штрафы за паразитов, речевые сбои и паузы - и вес обеих частей.
 export function SoftBriefPopover({evaluation, onClose}) {
     let box = useRef(null);
     useDismiss(box, onClose);
 
-    let {rows, raw, score, max} = softBreakdown(evaluation);
+    let {rows, raw, content, delivery, score, max, weights} = softBreakdown(evaluation);
+    let percent = weight => Math.round(weight * 100) + '%';
     return <div
         ref={box}
         className={styles.brief}
@@ -113,18 +115,39 @@ export function SoftBriefPopover({evaluation, onClose}) {
             <span className={styles.briefScore}>{formatScore(score)}<small> из {formatScore(max)}</small></span>
         </div>
 
-        <ul className={styles.briefRows} data-kind="points">
-            {rows.map(row => <li key={row.key} data-band={scoreBand(row.points, row.max)}>
-                <span className={styles.briefLabel}>{row.label}</span>
-                <span className={styles.briefPoints}>+{formatScore(row.points)}<small> из {formatScore(row.max)}</small></span>
-            </li>)}
-        </ul>
+        <section className={styles.briefPart} aria-label="Содержание" data-band={scoreBand(content, max)}>
+            {delivery && <div className={styles.briefPartHead}>
+                <span>Содержание <small>вес {percent(weights.content)}</small></span>
+                <span className={styles.briefPoints}>{formatScore(content)}<small> из {formatScore(max)}</small></span>
+            </div>}
+            <ul className={styles.briefRows} data-kind="points">
+                {rows.map(row => <li key={row.key} data-band={scoreBand(row.points, row.max)}>
+                    <span className={styles.briefLabel}>{row.label}</span>
+                    <span className={styles.briefPoints}>+{formatScore(row.points)}<small> из {formatScore(row.max)}</small></span>
+                </li>)}
+            </ul>
+            {raw !== content && <p className={styles.briefNote}>
+                {raw > content
+                    ? `Сумма ${formatScore(raw)}, но ответ ${evaluation.relevance === 'off_topic' ? 'не по вопросу' : evaluation.relevance === 'evasive' ? 'уклончивый' : 'формальный'} — балл ограничен ${formatScore(content)}.`
+                    : `Сумма ${formatScore(raw)} поднята до ${formatScore(content)} — нижней границы для такого ответа.`}
+            </p>}
+        </section>
 
-        {raw !== score && <p className={styles.briefNote}>
-            {raw > score
-                ? `Сумма ${formatScore(raw)}, но ответ ${evaluation.relevance === 'off_topic' ? 'не по вопросу' : evaluation.relevance === 'evasive' ? 'уклончивый' : 'формальный'} — балл ограничен ${formatScore(score)}.`
-                : `Сумма ${formatScore(raw)} поднята до ${formatScore(score)} — нижней границы для такого ответа.`}
-        </p>}
+        {delivery && <section className={styles.briefPart} aria-label="Подача" data-band={scoreBand(delivery.score, delivery.max)}>
+            <div className={styles.briefPartHead}>
+                <span>Подача <small>вес {percent(weights.delivery)}</small></span>
+                <span className={styles.briefPoints}>{formatScore(delivery.score)}<small> из {formatScore(delivery.max)}</small></span>
+            </div>
+            <ul className={styles.briefRows} data-kind="points">
+                {delivery.rows.map(row => <li key={row.key} data-band={row.penalty ? 'fair' : 'good'}>
+                    <span className={styles.briefLabel}>{row.label}</span>
+                    <span className={styles.briefPoints}>{row.penalty ? '−' + formatScore(row.penalty) : '0'}</span>
+                </li>)}
+            </ul>
+            {score < content && <p className={styles.briefNote}>
+                {`Подача весит ${percent(weights.delivery)} балла: снято ${formatScore(Math.round((content - score) * 10) / 10)} из ${formatScore(content)}.`}
+            </p>}
+        </section>}
 
         {evaluation.note && <div className={styles.briefAdvice}>
             <b>Комментарий оценки</b>

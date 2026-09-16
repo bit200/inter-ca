@@ -966,6 +966,29 @@ button.turnSpeaker{
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+// Части мягкой оценки - «Содержание» и «Подача»: подпись с весом и балл части,
+// под ними строки. Вторая часть отделена линией, чтобы суммы не слились.
+.briefPart{
+  --dlg-band: var(--dlg-accent);
+  display: grid;
+  gap: 6px;
+
+  & + &{ padding-top: 10px; border-top: 1px solid var(--dlg-line); }
+}
+.briefPart[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
+.briefPart[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
+
+.briefPartHead{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dlg-strong);
+  font-weight: 600;
+
+  small{ margin-left: 4px; color: var(--dlg-muted); font-size: 12px; font-weight: 400; }
+}
+
 // Очки за отметку: цвет полосы - сколько взято из возможного.
 .briefPoints{
   color: var(--dlg-band);

@@ -555,6 +555,10 @@ describe('таб разбора диалога', () => {
             expect(within(popup).getByText('Формально')).toBeInTheDocument();
             expect(within(popup).getByText('Встречные вопросы')).toBeInTheDocument();
             expect(within(popup).getByText('Сумма 7, но ответ формальный — балл ограничен 6.')).toBeInTheDocument();
+            expect(within(popup).getByRole('region', {name: 'Содержание'})).toHaveTextContent('Содержание вес 70%6 из 10');
+            const delivery = within(popup).getByRole('region', {name: 'Подача'});
+            expect(delivery).toHaveTextContent('Подача вес 30%10 из 10');
+            expect(within(delivery).getByText('Без слов-паразитов')).toBeInTheDocument();
             expect(within(popup).getByText('Ответил в двух словах')).toBeInTheDocument();
             expect(within(popup).queryByText('Загружаем показатели…')).toBeNull();
 
