@@ -16,6 +16,11 @@ describe('статус разбора диалога', () => {
         expect(PIPELINE_STEPS).toEqual(['queued', 'downloading', 'analyzing', 'done']);
     });
 
+    it('флаг «роли ждут разметки» доезжает из состояния разбора', () => {
+        expect(normalizeAnalysis({status: 'done', rolesPending: true}).rolesPending).toBe(true);
+        expect(normalizeAnalysis({status: 'done'}).rolesPending).toBe(false);
+    });
+
     it('незнакомый статус не выдаёт себя за шаг пайплайна', () => {
         expect(normalizeAnalysis({status: 'whatever'}).status).toBe('');
         expect(normalizeAnalysis(null).status).toBe('');

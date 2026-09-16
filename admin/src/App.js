@@ -51,6 +51,7 @@ import Agreement from "./comps/Agreement";
 import AutoConfirm from "./comps/AutoConfirm";
 import ColorTheme from "./comps/ColorTheme";
 import PersonalMockInterviews from "./comps/MockInterview/components/PersonalMockInterviews";
+import RolesPendingInterviews from "./comps/Interview/RolesPendingInterviews";
 import MockInterviewName from "./comps/MockInterview/components/MockInterviewName";
 
 let err = console.error;
@@ -350,6 +351,8 @@ global.CONFIG = {
             autoSave: 200,
             url: "/my-interview",
             saveInTabs: true,
+            // Интервью, где оценка записи ждёт разметки ролей участников.
+            TopComp: RolesPendingInterviews,
             top_filters: [
 
                 {

@@ -27,6 +27,9 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
     let [err, setErr] = useState('');
     let [dragOver, setDragOver] = useState(false);
     let [uploaded, setUploaded] = useState(null);
+    // Запись только что привязана - бэк уже поставил её на разбор сам
+    // (services/interviewAutoPipeline.js), говорим, где ждать результат.
+    let [justUploaded, setJustUploaded] = useState(false);
 
     useEffect(() => {
         if (!videoUploadId) return setUploaded(null);
@@ -82,6 +85,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
 
                 let res = await global.http.post(`/my-interview/${interviewId}/video-upload`, s3Info);
                 setUploaded((res && res.uploadVideo) || null);
+                setJustUploaded(true);
                 setStage('');
                 onDone && onDone(res && res.item);
             } catch (e) {
@@ -99,8 +103,13 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
                 {info.name || `Запись #${uploaded._id}`}
                 {info.duration ? ` · ${(+info.duration).toFixed(0)} мин` : ''}
             </div>
+            {justUploaded && <div className="text-muted">
+                Оценка запустилась сама: разбор диалога, оценка ответов и мок-интервью по слабым
+                местам появятся во вкладке «Разбор диалога».
+            </div>}
             <button type="button" className="btn btn-xs btn-default" onClick={() => {
                 setUploaded(null);
+                setJustUploaded(false);
                 setFile(null);
             }}>Заменить запись</button>
         </div>;
