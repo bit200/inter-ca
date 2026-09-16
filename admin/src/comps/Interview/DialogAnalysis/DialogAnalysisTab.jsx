@@ -5,6 +5,7 @@ import {
     PIPELINE_STEPS,
     answersButtonState,
     answersOutdated,
+    dialogTabLoading,
     evaluateButtonState,
     isActiveStatus,
     normalizeAnalysis,
@@ -141,6 +142,9 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     let staleRerun = useRef(null);
     let [sendingAnswers, setSendingAnswers] = useState(false);
     let [sendingRoles, setSendingRoles] = useState(false);
+    // Разбор и оценка, пришедшие вместе с интервью, уже есть на руках - ждать нечего.
+    let [analysisLoaded, setAnalysisLoaded] = useState(() => Boolean(analysisOf(value)));
+    let [answersLoaded, setAnswersLoaded] = useState(() => Boolean(answersOf(value)));
     let mounted = useRef(true);
     let media = pickDialogMedia(value, analysis);
 
@@ -166,7 +170,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         // поэтому ошибку запроса не показываем всплывашкой.
         global.http.get(`/my-interview/${interviewId}/dialog-analysis`, {}, {wo_notify: true})
             .then(apply)
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => { mounted.current && setAnalysisLoaded(true); });
     }, [interviewId, apply]);
 
     useEffect(() => { load(); }, [load]);
@@ -184,7 +189,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         // Оценку ответов ещё не запускали - для таба это обычное состояние.
         global.http.get(`/my-interview/${interviewId}/answers-evaluation`, {}, {wo_notify: true})
             .then(applyAnswers)
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => { mounted.current && setAnswersLoaded(true); });
     }, [interviewId, applyAnswers]);
 
     useEffect(() => { dialogDone && loadAnswers(); }, [dialogDone, loadAnswers]);
@@ -307,6 +313,10 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     );
     let dialogMetrics = dialogDone ? readDialogMetrics(answers.result) : null;
 
+    if (interviewId && global.http && dialogTabLoading({analysisLoaded, answersLoaded, dialogDone})) {
+        return <DialogTabSkeleton/>;
+    }
+
     return <div className={styles.tab}>
         {(overall || greeting || dialogMetrics) && <InterviewSummary
             overall={overall}
@@ -364,6 +374,31 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             interviewId={interviewId}
             mockMarks={mockMarks}
         />}
+    </div>;
+}
+
+// Скелетон повторяет раскладку готового разбора - итог и свёрнутые блоки
+// вопросов тех же размеров, - чтобы после загрузки контент встал на место
+// заглушек, а не сдвинул страницу.
+function DialogTabSkeleton() {
+    return <div className={styles.tab} aria-busy="true" aria-label="Загружаем разбор диалога" data-testid="dialog-skeleton">
+        <div className={`${styles.summary} ${styles.skeletonSummary}`} aria-hidden="true">
+            <span className={styles.skeletonLine} style={{width: 150, height: 18}}/>
+            <div className={styles.summaryBody}>
+                <span className={styles.skeletonScore}/>
+                <div className={styles.skeletonText}>
+                    <span className={styles.skeletonLine}/>
+                    <span className={styles.skeletonLine}/>
+                    <span className={styles.skeletonLine} style={{width: '62%'}}/>
+                </div>
+            </div>
+        </div>
+        <div className={styles.skeletonBlocks} aria-hidden="true">
+            {[72, 58, 80, 46].map((width, index) => <div key={index} className={styles.skeletonBlock}>
+                <span className={styles.skeletonLine} style={{width: `${width}%`}}/>
+                <span className={styles.skeletonLine} style={{width: 44}}/>
+            </div>)}
+        </div>
     </div>;
 }
 

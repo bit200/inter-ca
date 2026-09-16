@@ -143,3 +143,12 @@ export function stepState(step, status, steps = PIPELINE_STEPS) {
     if (own === current) return status === 'done' ? 'done' : 'active';
     return 'idle';
 }
+
+// Пока первый ответ api не пришёл, таб не знает, что рисовать: без разбора
+// вышла бы шапка «Оценить», а через миг на её место встал бы итог и расшифровка.
+// Поэтому до ответа показываем скелетон. У готового разбора ждём и оценку
+// ответов - именно она добавляет над расшифровкой итог интервью.
+export function dialogTabLoading({analysisLoaded, answersLoaded, dialogDone}) {
+    if (!analysisLoaded) return true;
+    return Boolean(dialogDone) && !answersLoaded;
+}
