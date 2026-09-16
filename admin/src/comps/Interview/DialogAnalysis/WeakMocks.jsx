@@ -40,12 +40,12 @@ export function useWeakMocks(interviewId) {
     return mocks;
 }
 
-// Незаконченную попытку ручка my-list отдаёт ту же, новую - заводит; готовую
-// открываем по её id, иначе «Результаты» завели бы ещё одну попытку.
+// Попытку заводит только «Пройти», когда их ещё нет; уже начатую или пройденную
+// открываем по её id, без POST - иначе завелось бы новое интервью.
 export function openWeakMock(mock) {
     let go = path => global.navigate ? global.navigate(path) : window.location.assign(path);
     if (!mock || !mock.action) return Promise.resolve();
-    if (mock.action.kind === 'results') {
+    if (mock.action.kind === 'open') {
         go(`/mock-interviews/${mock.action.attemptId}`);
         return Promise.resolve();
     }
@@ -54,7 +54,7 @@ export function openWeakMock(mock) {
         .catch(() => global.notify && global.notify.warning('Не удалось открыть мок-интервью. Попробуйте ещё раз.'));
 }
 
-const ACTION_LABELS = {start: 'Пройти', continue: 'Продолжить', results: 'Результаты'};
+const ACTION_LABELS = {start: 'Пройти', open: 'Открыть'};
 
 function plural(count, one, few, many) {
     let mod10 = count % 10;
