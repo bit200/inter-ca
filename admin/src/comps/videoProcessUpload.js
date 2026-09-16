@@ -33,11 +33,29 @@ function request({method, url, token, body, onUploadProgress, XHR}) {
             if (xhr.status >= 200 && xhr.status < 300) {
                 return resolve(data);
             }
-            reject(new Error((data && data.error) || `HTTP ${xhr.status}`));
+            reject(new Error(uploadErrorMessage(data, `HTTP ${xhr.status}`)));
         };
         xhr.onerror = () => reject(new Error('Сервер загрузки не отвечает'));
         xhr.send(body || null);
     });
+}
+
+// Текст ошибки для показа человеку. Ошибки приходят в разном виде: Error,
+// строка, тело ответа global.http ({msg|error|message|errmsg}, где error
+// бывает и вложенным объектом) - без разбора в UI попадало «[object Object]».
+export function uploadErrorMessage(e, fallback = 'Неизвестная ошибка') {
+    if (!e) return fallback;
+    if (typeof e === 'string') return e.trim() || fallback;
+    if (typeof e !== 'object') return String(e);
+    for (const key of ['msg', 'message', 'error', 'errmsg']) {
+        const v = e[key];
+        if (v && typeof v === 'string') return v;
+        if (v && typeof v === 'object') {
+            const nested = uploadErrorMessage(v, '');
+            if (nested) return nested;
+        }
+    }
+    return fallback;
 }
 
 export function startVideoProcess({domain, token, file, user, mode = DEFAULT_MODE, onUploadProgress, XHR = XMLHttpRequest}) {

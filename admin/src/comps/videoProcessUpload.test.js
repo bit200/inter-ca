@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE} from './videoProcessUpload';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage} from './videoProcessUpload';
 
 // Поддельный XHR: отвечает по очереди из responses и запоминает запросы
 function makeXHR(responses, log) {
@@ -116,5 +116,34 @@ describe('фоновая доводка загрузки', () => {
         expect(src).not.toMatch(/waitVideoProcess/);
         expect(src).toMatch(/buildJobAttachInfo/);
         expect(src).not.toMatch(/страницу не закрывайте/);
+    });
+});
+
+describe('uploadErrorMessage', () => {
+    it('достаёт текст из Error, строки и тела ответа global.http, а не «[object Object]»', () => {
+        expect(uploadErrorMessage(new Error('Сервер загрузки не отвечает'))).toBe('Сервер загрузки не отвечает');
+        expect(uploadErrorMessage('Файл слишком большой')).toBe('Файл слишком большой');
+        expect(uploadErrorMessage({msg: 'Интервью не найдено'})).toBe('Интервью не найдено');
+        expect(uploadErrorMessage({error: {message: 'Нет доступа'}})).toBe('Нет доступа');
+        expect(uploadErrorMessage({errmsg: 'E11000'})).toBe('E11000');
+    });
+
+    it('без текста - запасная фраза', () => {
+        expect(uploadErrorMessage({})).toBe('Неизвестная ошибка');
+        expect(uploadErrorMessage(null, 'HTTP 500')).toBe('HTTP 500');
+    });
+
+    it('startVideoProcess отдаёт текст вложенной ошибки мультера', async () => {
+        const file = new File(['abc'], 'a.mp4', {type: 'video/mp4'});
+        const XHR = makeXHR([[500, {error: {message: 'Диск переполнен'}}]], []);
+        await expect(startVideoProcess({domain: 'http://m', token: 't', file, XHR})).rejects.toThrow('Диск переполнен');
+    });
+
+    it('карточка интервью и страница /video показывают ошибку через uploadErrorMessage', () => {
+        for (const f of ['Interview/InterviewVideoUpload.jsx', 'UploadVideo.js']) {
+            const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+            expect(src).toContain('setErr(uploadErrorMessage(e))');
+            expect(src).not.toContain('e.message || e.toString()');
+        }
     });
 });

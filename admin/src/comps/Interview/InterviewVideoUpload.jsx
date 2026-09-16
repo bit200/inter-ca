@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import Perc from '../Suggest/Perc';
-import {startVideoProcess, buildJobAttachInfo, uploadVideoState} from '../videoProcessUpload';
+import {startVideoProcess, buildJobAttachInfo, uploadVideoState, uploadErrorMessage} from '../videoProcessUpload';
 import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDropzone';
 
 // Загрузка записи прямо с карточки интервью (вкладка «Обзор»), вместо
@@ -104,7 +104,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
                 onDone && onDone(res && res.item);
             } catch (e) {
                 setStage('error');
-                setErr(e.message || e.toString());
+                setErr(uploadErrorMessage(e));
             }
         });
     };
