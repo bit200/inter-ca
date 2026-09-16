@@ -245,6 +245,47 @@ describe('таб разбора диалога', () => {
         expect(screen.getByText('Второй голос').closest('[data-role]').getAttribute('data-role')).toBe('client');
     });
 
+    describe('пересчёт оценки после ручных ролей', () => {
+        const unassigned = {
+            status: 'done',
+            result: {conversation: {turns: [
+                {id: 't1', speaker: 'SPEAKER_00', role: 'unknown', startMs: 0, endMs: 1000, text: 'Первый голос'},
+                {id: 't2', speaker: 'SPEAKER_01', role: 'unknown', startMs: 1000, endMs: 2000, text: 'Второй голос'},
+            ]}},
+        };
+        const answersDone = {answersEvaluation: {status: 'done', result: {}}};
+        const pick = async (text, label) => {
+            const turn = screen.getByText(text).closest('[data-role]');
+            fireEvent.click(within(turn).getByTitle('Указать, кто это'));
+            fireEvent.click(screen.getByRole('radio', {name: label}));
+            await flush();
+        };
+        const evaluations = post => post.mock.calls.filter(([url]) => /answers-evaluation/.test(url)).length;
+
+        test('когда заполнены обе роли, оценка ответов запускается сама один раз', async () => {
+            const post = setupHttp(unassigned, answersDone);
+            const onChange = jest.fn();
+            render(<DialogAnalysisTab item={interview(null)} onSpeakerRolesChange={onChange}/>);
+            await flush();
+
+            await pick('Первый голос', 'Интервьюер');
+            expect(evaluations(post)).toBe(0);
+
+            await pick('Второй голос', 'Кандидат');
+            await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/answers-evaluation', {}));
+            expect(onChange).toHaveBeenLastCalledWith({SPEAKER_00: 'manager', SPEAKER_01: 'client'});
+        });
+
+        test('если обе роли уже были, смена роли оценку не перезапускает', async () => {
+            const post = setupHttp(unassigned, answersDone);
+            render(<DialogAnalysisTab item={interview(null)} speakerRoles={{SPEAKER_00: 'manager', SPEAKER_01: 'client'}}/>);
+            await flush();
+
+            await pick('Первый голос', 'Кандидат');
+            expect(evaluations(post)).toBe(0);
+        });
+    });
+
     describe('оценка ответов по вопросам', () => {
         const done = {
             status: 'done',
