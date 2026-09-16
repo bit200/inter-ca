@@ -620,6 +620,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     seriesStart={seriesStarts.has(block.key)}
                     lens={lens}
                     linking={linking === block.key}
+                    choosing={linking !== null}
                     onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
                 >
                     {block.items.map((item, position) => renderTurn(
@@ -647,7 +648,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 // вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
-function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking = false, onFindAnswer, children}) {
+function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking = false, choosing = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
     // Скобка цепочки с баллом - у технического вопроса по баллу evaluate, у
@@ -656,7 +657,16 @@ function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking
     let bracket = Boolean(rated) && rated.state !== 'unanswered' && rated.state !== 'skipped'
         && (block.technical === true ? showsTech(lens) : showsBehavior(lens));
     // Длинный вопрос занимает экран целиком - свёрнутый остаётся одной шапкой.
-    let [collapsed, setCollapsed] = useState(false);
+    // Изначально блоки свёрнуты: расшифровка читается оглавлением вопросов.
+    let [collapsed, setCollapsed] = useState(true);
+    // Пока ищут ответ, реплики кандидата должны быть видны во всех вопросах, а
+    // вопрос, к которому ответ привязали, остаётся раскрытым - видно, что связалось.
+    let wasLinking = useRef(linking);
+    useEffect(() => {
+        if (wasLinking.current && !linking && !missing) setCollapsed(false);
+        wasLinking.current = linking;
+    }, [linking, missing]);
+    let shut = collapsed && !choosing;
     // В шапке - короткая версия вопроса, полный текст - репликой в самом блоке и в подсказке.
     let title = questionTitle(block);
     let shortTitle = shortQuestionTitle(title);
@@ -667,17 +677,17 @@ function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking
         data-technical={String(block.technical)}
         data-dimmed={lensDimmed(lens, block.technical) ? 'true' : undefined}
         aria-label={'Вопрос ' + block.number}
-        data-collapsed={collapsed ? 'true' : undefined}
+        data-collapsed={shut ? 'true' : undefined}
     >
         <header className={styles.qaHead}>
             <div className={styles.qaTitle}>
                 <button
                     type="button"
                     className={styles.qaToggle}
-                    aria-expanded={!collapsed}
+                    aria-expanded={!shut}
                     aria-controls={bodyId}
-                    title={collapsed ? 'Развернуть вопрос' : 'Свернуть вопрос'}
-                    onClick={() => setCollapsed(!collapsed)}
+                    title={shut ? 'Развернуть вопрос' : 'Свернуть вопрос'}
+                    onClick={() => setCollapsed(!shut)}
                 >
                     <span className={styles.qaChevron} aria-hidden="true"/>
                     <strong className={styles.qaQuestion} title={title}>{shortTitle}</strong>
@@ -709,7 +719,7 @@ function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking
                 {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation} number={block.number} interviewId={interviewId}/>}
             </div>
         </header>
-        {!collapsed && <div id={bodyId}>
+        {!shut && <div id={bodyId}>
         <div className={styles.qaTurns} data-bracket={bracket ? (rated.state === 'done' ? 'done' : 'pending') : undefined}>
             {bracket && <span className={styles.bracket} aria-hidden="true">
                 {rated.state === 'done' && <b data-band={scoreBand(rated.score, rated.max)}>{formatScore(rated.score)}</b>}
