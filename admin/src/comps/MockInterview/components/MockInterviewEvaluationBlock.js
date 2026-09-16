@@ -63,7 +63,10 @@ const MockInterviewEvaluationBlock = ({
                     </div>
                     <AdviceSection rules={adviceRules} schemas={metricSchemas} result={result} />
                     {interviewId != null && evaluateId != null && (
-                        <ExplainSection onExplain={explainDialogTurn} initialExplain={evaluateExplain} />
+                        // key по evaluateId: ExplainSection держит расшифровку в своём state,
+                        // и без пересоздания при переключении вопроса в нём оставалась
+                        // расшифровка предыдущего вопроса.
+                        <ExplainSection key={evaluateId} onExplain={explainDialogTurn} initialExplain={evaluateExplain} />
                     )}
                 </>
             )}
