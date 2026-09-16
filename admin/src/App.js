@@ -51,6 +51,7 @@ import Agreement from "./comps/Agreement";
 import AutoConfirm from "./comps/AutoConfirm";
 import ColorTheme from "./comps/ColorTheme";
 import PersonalMockInterviews from "./comps/MockInterview/components/PersonalMockInterviews";
+import MockInterviewName from "./comps/MockInterview/components/MockInterviewName";
 
 let err = console.error;
 console.error = (...args) => {
@@ -455,7 +456,7 @@ global.CONFIG = {
                 },
             ],
             tabs: [
-                {name: "Название", key: "name"},
+                {name: "Название", key: "name", component: MockInterviewName},
                 {name: "Статус", key: "status"},
                 {name: "Режим", key: "mode"},
             ],
