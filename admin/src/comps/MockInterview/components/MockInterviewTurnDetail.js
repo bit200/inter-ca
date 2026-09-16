@@ -32,6 +32,7 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId
                 </div>
             </div>
             <MockInterviewEvaluationBlock
+                key={turn.question_id}
                 evaluation={turn.evaluate}
                 adviceRules={adviceRules}
                 metricSchemas={metricSchemas}
