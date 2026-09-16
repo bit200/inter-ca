@@ -59,6 +59,11 @@ export default function VideoPreview({src, time, id}) {
     />;
 }
 
+// Карточка интервью (libs/Smart) на всплытии гасит клик - preventDefault
+// в обёртке поля, и браузер не переходит по ссылке. Клик по ссылке дальше
+// не пускаем, чтобы вкладка открывалась.
+const keepLinkClick = e => e.stopPropagation();
+
 function VideoNotice({title, text, href, action}) {
     return <div className="videoNotice" role="note">
         <div className="videoNoticeIcon iconoir-video-camera-off" aria-hidden="true"></div>
@@ -66,6 +71,6 @@ function VideoNotice({title, text, href, action}) {
             <div className="videoNoticeTitle">{title}</div>
             <div className="videoNoticeText">{text}</div>
         </div>
-        {href && <a className="videoNoticeAction" href={href} target="_blank" rel="noopener noreferrer">{action}</a>}
+        {href && <a className="videoNoticeAction" href={href} target="_blank" rel="noopener noreferrer" onClick={keepLinkClick}>{action}</a>}
     </div>;
 }
