@@ -21,7 +21,7 @@ let VolumeOffIcon = () => <svg {...iconProps(17)}><path d="M11 5 6 9H2v6h4l5 4z"
 
 // Плеер записи: круглая кнопка, перемотка на 15 секунд, волна, скорость и громкость
 const CallPlayer = forwardRef(function CallPlayer(
-    {src, disabled, onError, onEnded, onPlay, onPause, onCanPlay, onLoadStart},
+    {src, disabled, onError, onEnded, onPlay, onPause, onCanPlay, onLoadStart, onTimeUpdate},
     ref,
 ) {
     let audioRef = useRef(null);
@@ -75,7 +75,7 @@ const CallPlayer = forwardRef(function CallPlayer(
             onEnded={() => { setPlaying(false); onEnded && onEnded(); }}
             onDurationChange={e => readDuration(e.currentTarget)}
             onLoadedMetadata={e => { e.currentTarget.playbackRate = rate; readDuration(e.currentTarget); }}
-            onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime)}
+            onTimeUpdate={e => { setCurrentTime(e.currentTarget.currentTime); onTimeUpdate && onTimeUpdate(e); }}
         />
         <button type="button" className="call-player-play" disabled={idle}
                 aria-label={playing ? 'Пауза' : 'Слушать запись'}

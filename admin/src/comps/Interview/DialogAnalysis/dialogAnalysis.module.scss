@@ -371,8 +371,7 @@ button.turnSpeaker{
   border-radius: 8px;
   background: var(--dlg-card);
 
-  video,
-  audio{
+  video{
     display: block;
     width: 100%;
   }
