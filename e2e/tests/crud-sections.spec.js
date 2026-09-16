@@ -281,7 +281,7 @@ test('requests: таблица, поиск, фильтр по статусу, ad
   await expect(page.locator('.ReactModal__Content')).toBeVisible();
 });
 
-test('interviews: таблица, поиск, фильтр по статусу, add-button открывает форму', async ({ page }) => {
+test('interviews: таблица, поиск, фильтр по статусу, add-button сразу создаёт интервью без формы', async ({ page }) => {
   await page.goto('/interviews');
 
   await expect(table.rows(page)).toHaveCount(4);
@@ -299,8 +299,11 @@ test('interviews: таблица, поиск, фильтр по статусу, 
   await expect(table.rows(page).first()).toContainText('Interview Gamma');
 
   await table.search(page, '');
+  // createOnAdd: клик сразу шлёт POST /my-interview, окна «Создать запись» нет.
+  const created = page.waitForRequest((r) => r.method() === 'POST' && r.url().includes('/api/my-interview'));
   await table.clickAdd(page);
-  await expect(page.locator('.ReactModal__Content')).toBeVisible();
+  await created;
+  await expect(page.locator('.ReactModal__Content')).toHaveCount(0);
 });
 
 test('quiz: таблица, поиск, три статус-фильтра, add-button отсутствует (woAdd:true)', async ({ page }) => {
