@@ -672,6 +672,8 @@ describe('таб разбора диалога', () => {
             expect(container.querySelector('section').getAttribute('aria-label')).toBe('Итог интервью');
             expect(within(summary).getByRole('img', {name: /^Общая оценка [\d,]+ из 10: техническая 6,5, нетехническая [\d,]+ с весом 0,6$/})).toBeInTheDocument();
             expect(within(summary).getByText('техника')).toBeInTheDocument();
+            expect(within(summary).getByText('общение')).toBeInTheDocument();
+            expect(within(summary).queryByText(/×/)).not.toBeInTheDocument();
             expect(within(summary).getByText('Технически уверен, на вопросы про мотивацию отвечает уклончиво.')).toBeInTheDocument();
             expect(within(summary).getByText('Приветствие есть')).toBeInTheDocument();
             expect(within(summary).getByText('Прощания нет')).toBeInTheDocument();
