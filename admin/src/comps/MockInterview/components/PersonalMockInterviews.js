@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styles from '../mockInterview.module.scss';
 
 function formatDate(cd) {
@@ -68,6 +68,13 @@ function PersonalMockInterviews() {
                     <div className={styles.personalName}>
                         Персональное интервью
                         {row.cd && <span className="text-muted"> от {formatDate(row.cd)}</span>}
+                        {/* Обратная сторона связи: откуда взяты вопросы - разбор
+                            того интервью, где на них ответили слабо. */}
+                        {row.sourceInterviewId != null && <Link
+                            className={styles.personalSource}
+                            data-testid="personal-mock-interview-source"
+                            to={`/interviews/${row.sourceInterviewId}?tab=dialog`}
+                        >по разбору интервью</Link>}
                     </div>
                     <button
                         className="btn btn-sm btn-primary"

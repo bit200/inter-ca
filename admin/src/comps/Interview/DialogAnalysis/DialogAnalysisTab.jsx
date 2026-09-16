@@ -12,6 +12,8 @@ import {
     stepState,
 } from './dialogAnalysisState';
 import {formatScore, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
+import {mocksByBlockNumber, readMockUiVariant} from './weakMocks';
+import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
 import {
     capabilityLabel,
@@ -256,6 +258,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         [answers.result, conversation.turns, answersActive, sendingAnswers]
     );
 
+    let weakMocks = useWeakMocks(interviewId);
+
     let markersById = useMemo(() => {
         let map = new Map();
         conversation.markers.forEach(marker => marker && map.set(marker.id, marker));
@@ -271,6 +275,13 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     // Итог - то, ради чего открывают карточку, поэтому он над процессами и расшифровкой.
     let overall = dialogDone ? combineOverall(readOverall(answers.result), blocks) : null;
     let greeting = dialogDone ? readGreeting(answers.result) : null;
+    // Мок-интервью по слабым ответам - сразу под итогом: это продолжение его
+    // «слабых сторон». Вариант подачи - ?mockUi=strip|summary|questions.
+    let mockUi = readMockUiVariant(typeof window === 'undefined' ? '' : window.location.search);
+    let mockMarks = useMemo(
+        () => mockUi === 'questions' ? mocksByBlockNumber(weakMocks, blocks) : null,
+        [mockUi, weakMocks, blocks]
+    );
     let dialogMetrics = dialogDone ? readDialogMetrics(answers.result) : null;
 
     return <div className={styles.tab}>
@@ -280,6 +291,10 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             metrics={dialogMetrics}
             summarizing={answers.status === 'summarizing'}
         />}
+
+        {mockUi === 'strip' && <WeakMocksStrip mocks={weakMocks}/>}
+        {mockUi === 'summary' && <WeakMocksProgress mocks={weakMocks} blocks={blocks}/>}
+        {mockUi === 'questions' && <WeakMocksNote mocks={weakMocks} blocks={blocks}/>}
 
         <PipelineCard
             title="Разбор диалога"
@@ -317,6 +332,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             onOpenTurn={setOpenTurn}
             media={media}
             interviewId={interviewId}
+            mockMarks={mockMarks}
         />}
     </div>;
 }
@@ -368,7 +384,7 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
     </section>;
 }
 
-function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId}) {
+function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId, mockMarks}) {
     let {turns, summary, capabilities} = conversation;
     let markers = useMemo(() => candidateMarkers(conversation.turns, conversation.markers), [conversation.turns, conversation.markers]);
     // Вариант B: линза меняет акценты ленты, шкала показывает, где в интервью
@@ -611,6 +627,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     block={block}
                     interviewId={interviewId}
                     seriesStart={seriesStarts.has(block.key)}
+                    mocks={mockMarks ? mockMarks.get(block.number) : null}
                     lens={lens}
                     linking={linking === block.key}
                     choosing={linking !== null}
@@ -641,7 +658,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 // вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
-function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking = false, choosing = false, onFindAnswer, children}) {
+function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 'all', linking = false, choosing = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
     // Скобка цепочки с баллом - у технического вопроса по баллу evaluate, у
@@ -700,6 +717,7 @@ function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking
                     {KIND_LABELS[String(block.technical)]}
                 </span>
                 {showsBehavior(lens) && seriesStart && <span className={styles.flag} data-kind="evasive">Серия пропусков</span>}
+                <WeakMockMark mocks={mocks}/>
             </div>
             <div className={styles.qaActions}>
                 {missing && <span className={styles.flag} data-kind="evasive">Ответ не найден</span>}
