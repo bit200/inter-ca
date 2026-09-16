@@ -351,6 +351,8 @@ global.CONFIG = {
             autoSave: 200,
             url: "/my-interview",
             saveInTabs: true,
+            // Новое интервью сразу открываем на «Обзоре» - там загрузка записи.
+            openAfterCreate: '?tab=overview',
             // Интервью, где оценка записи ждёт разметки ролей участников.
             TopComp: RolesPendingInterviews,
             top_filters: [

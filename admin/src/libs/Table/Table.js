@@ -304,8 +304,15 @@ class Table extends React.Component {
                 // });
                 // this.props.cb();
                 this.setState({open: false})
-                this.loadInfo();
                 this.props.opts.onCreate && this.props.opts.onCreate();
+                // openAfterCreate: сразу открыть созданную запись в карточке;
+                // строка - хвост адреса карточки (например, нужная вкладка).
+                let {openAfterCreate} = this.props.opts;
+                if (openAfterCreate && r && r._id) {
+                    let tail = typeof openAfterCreate === 'string' ? openAfterCreate : '';
+                    return global.navigate(window.location.pathname + '/' + r._id + tail)
+                }
+                this.loadInfo();
             })
             .catch(() => {
                 this.setState({loading: false});
