@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Perc from '../Suggest/Perc';
-import {startVideoProcess, buildJobAttachInfo, uploadVideoState, uploadErrorMessage, reportUploadEvent, NO_RESPONSE_MESSAGE} from '../videoProcessUpload';
+import {startVideoProcess, buildJobAttachInfo, uploadVideoState, uploadErrorMessage, reportUploadEvent, uploadVideoFromResponse, NO_RESPONSE_MESSAGE} from '../videoProcessUpload';
 import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDropzone';
 
 // Загрузка записи прямо с карточки интервью (вкладка «Обзор»), вместо
@@ -33,6 +33,9 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
     let [err, setErr] = useState('');
     let [dragOver, setDragOver] = useState(false);
     let [uploaded, setUploaded] = useState(null);
+    // Пока запись по videoUploadId не дочитана, дропзону не показываем:
+    // иначе привязанное видео на миг выглядит как «ничего не загружено».
+    let [loadingUploaded, setLoadingUploaded] = useState(!!videoUploadId);
     // Запись только что привязана - бэк уже поставил её на разбор сам
     // (services/interviewAutoPipeline.js), говорим, где ждать результат.
     let [justUploaded, setJustUploaded] = useState(false);
@@ -41,9 +44,11 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
 
     useEffect(() => {
         if (!videoUploadId) return setUploaded(null);
+        setLoadingUploaded(true);
         global.http.get(`/my-upload-video/${videoUploadId}`, {}, {wo_notify: true})
-            .then(r => setUploaded((r && r.data) || null))
-            .catch(() => {});
+            .then(r => setUploaded(uploadVideoFromResponse(r)))
+            .catch(() => {})
+            .then(() => setLoadingUploaded(false));
     }, [videoUploadId]);
 
     let uploadedState = uploadVideoState(uploaded);
@@ -51,7 +56,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
         if (!uploaded || !uploaded._id || uploadedState !== 'processing') return;
         let timer = setTimeout(() => {
             global.http.get(`/my-upload-video/${uploaded._id}`, {}, {wo_notify: true})
-                .then(r => r && r.data && setUploaded(r.data))
+                .then(r => setUploaded(uploadVideoFromResponse(r) || {...uploaded}))
                 .catch(() => setUploaded({...uploaded}));
         }, PROCESSING_POLL_MS);
         return () => clearTimeout(timer);
@@ -156,6 +161,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
         </div>;
     }
 
+    if (!stage && loadingUploaded && videoUploadId) return null;
     if (!stage && !shouldShowVideoDropzone({stage, videoLink})) return null;
 
     return <div className="interviewVideoUpload">
