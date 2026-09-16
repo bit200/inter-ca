@@ -513,3 +513,39 @@
   font-weight: 600;
   color: var(--bs-warning-text-emphasis);
 }
+
+// Секция персональных интервью над таблицей попыток (PersonalMockInterviews.js).
+.personalSection {
+  margin: 8px 0 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--bs-border-color);
+}
+
+.personalTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.personalHint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--bs-text-muted);
+}
+
+.personalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 0;
+
+  & + & {
+    border-top: 1px solid var(--bs-border-color-translucent);
+  }
+}
+
+.personalName {
+  font-weight: 500;
+  min-width: 0;
+}

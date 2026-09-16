@@ -50,6 +50,7 @@ import colorTheme from "./comps/ColorTheme";
 import Agreement from "./comps/Agreement";
 import AutoConfirm from "./comps/AutoConfirm";
 import ColorTheme from "./comps/ColorTheme";
+import PersonalMockInterviews from "./comps/MockInterview/components/PersonalMockInterviews";
 
 let err = console.error;
 console.error = (...args) => {
@@ -431,6 +432,9 @@ global.CONFIG = {
             woModal: true,
             url: "/mock-interview/my-list",
             tabsTitle: "mockInterviews",
+            // Персональные интервью (без курса и шаблона экзамена) - отдельной
+            // секцией над таблицей попыток, см. PersonalMockInterviews.js.
+            TopComp: PersonalMockInterviews,
             top_filters: [
                 {
                     key: "status",
