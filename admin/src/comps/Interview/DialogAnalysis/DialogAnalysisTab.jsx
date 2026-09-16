@@ -12,7 +12,7 @@ import {
     stepState,
 } from './dialogAnalysisState';
 import {formatScore, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
-import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, withSoftFallback} from './dialogSummary';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
 import {
     capabilityLabel,
     capabilityStatusLabel,
@@ -269,7 +269,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             : 'Загрузите запись во вкладке «Обзор» — без видео разбирать нечего.';
 
     // Итог - то, ради чего открывают карточку, поэтому он над процессами и расшифровкой.
-    let overall = dialogDone ? withSoftFallback(readOverall(answers.result), blocks) : null;
+    let overall = dialogDone ? combineOverall(readOverall(answers.result), blocks) : null;
     let greeting = dialogDone ? readGreeting(answers.result) : null;
     let dialogMetrics = dialogDone ? readDialogMetrics(answers.result) : null;
 
@@ -893,7 +893,7 @@ function InterviewSummary({overall, greeting, metrics, summarizing}) {
 
         {overall
             ? <div className={styles.summaryBody}>
-                {overall.score !== null && <SummaryScore score={overall.score} max={overall.max} basis={overall.basis}/>}
+                {overall.score !== null && <SummaryScore score={overall.score} max={overall.max} basis={overall.basis} parts={overall.parts}/>}
                 <div className={styles.summaryText}>
                     {overall.summary && <p>{overall.summary}</p>}
                     {overall.message && !overall.summary && <p className={styles.summaryMuted}>Итог не собран: {overall.message}</p>}
@@ -928,15 +928,19 @@ function CourtesyMark({value, yes, no, unknown}) {
 }
 
 // Общий балл - та же шкала из делений, что у балла вопроса, только крупнее.
-function SummaryScore({score, max, basis}) {
+function SummaryScore({score, max, basis, parts}) {
     let cells = Math.min(20, Math.max(1, Math.round(max > 20 ? 10 : max)));
     let filled = Math.round(score / max * cells);
-    return <div className={styles.summaryScore} role="img" aria-label={`${basis === 'soft' ? 'Оценка по нетехнической части' : 'Общая оценка'} ${formatScore(score)} из ${formatScore(max)}`}>
+    return <div className={styles.summaryScore} role="img" aria-label={`${basis === 'soft' ? 'Оценка по нетехнической части' : 'Общая оценка'} ${formatScore(score)} из ${formatScore(max)}${parts ? `: техническая ${formatScore(parts.technical)}, нетехническая ${formatScore(parts.soft)} с весом ${formatScore(parts.softWeight)}` : ''}`}>
         <span className={styles.summaryScoreValue}>{formatScore(score)}<small>/{formatScore(max)}</small></span>
         <span className={styles.scoreBar} aria-hidden="true">
             {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
         </span>
         {basis === 'soft' && <span className={styles.summaryScoreBasis} aria-hidden="true">по нетехническим ответам</span>}
+        {parts && <dl className={styles.summaryScoreParts} aria-hidden="true">
+            <div><dt>техника</dt><dd>{formatScore(parts.technical)}</dd></div>
+            <div><dt>общение ×{formatScore(parts.softWeight)}</dt><dd>{formatScore(parts.soft)}</dd></div>
+        </dl>}
     </div>;
 }
 
