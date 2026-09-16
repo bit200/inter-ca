@@ -17,6 +17,13 @@ const setupHttp = (payload, answers = null) => {
 
 const flush = async () => { await act(async () => { await Promise.resolve(); }); };
 
+// Блоки вопросов изначально свёрнуты - раскрываем по шапке, чтобы добраться до реплик.
+const expand = (region) => {
+    const toggle = within(region).getAllByRole('button').find(node => node.hasAttribute('aria-controls'));
+    if (toggle.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle);
+    return region;
+};
+
 beforeEach(() => { global.t = (key) => key; });
 
 describe('таб разбора диалога', () => {
@@ -404,7 +411,7 @@ describe('таб разбора диалога', () => {
             await flush();
 
             expect(screen.queryByRole('button', {name: /Оценить ответы/})).toBeNull();
-            const first = screen.getByRole('region', {name: 'Вопрос 1'});
+            const first = expand(screen.getByRole('region', {name: 'Вопрос 1'}));
             expect(within(first).getByText('Технический')).toBeInTheDocument();
             // Текст вопроса - в шапке блока и в самой реплике интервьюера.
             expect(within(first).getAllByText('Что такое замыкание?')).toHaveLength(2);
@@ -506,17 +513,18 @@ describe('таб разбора диалога', () => {
             const block = screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(block).queryByText('Вопрос 1')).toBeNull();
             const toggle = within(block).getByRole('button', {name: 'Что такое замыкание?'});
-            expect(toggle).toHaveAttribute('aria-expanded', 'true');
-            expect(within(block).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
-
-            fireEvent.click(toggle);
+            // Изначально вопрос свёрнут: видна только шапка с темой.
             expect(toggle).toHaveAttribute('aria-expanded', 'false');
             expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
             expect(within(block).queryByText('Определение верное')).toBeNull();
             expect(within(block).getByText('Технический')).toBeInTheDocument();
 
             fireEvent.click(toggle);
+            expect(toggle).toHaveAttribute('aria-expanded', 'true');
             expect(within(block).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+
+            fireEvent.click(toggle);
+            expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
         });
 
         test('линзы: технический и нетехнический баллы, флаги и счётчики - из настоящей оценки ответов', async () => {
@@ -594,7 +602,7 @@ describe('таб разбора диалога', () => {
             render(<DialogAnalysisTab item={interview(null)} answerLinks={{b1: [1]}}/>);
             await flush();
 
-            const first = screen.getByRole('region', {name: 'Вопрос 1'});
+            const first = expand(screen.getByRole('region', {name: 'Вопрос 1'}));
             expect(within(first).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
             expect(within(first).queryByText('Ответ не найден')).toBeNull();
         });
@@ -638,7 +646,7 @@ describe('таб разбора диалога', () => {
             expect(within(summary).getByText('42 с')).toBeInTheDocument();
 
             expect(within(screen.getByRole('region', {name: 'Вопрос 1'})).getByText('пауза перед ответом 1,5 с')).toBeInTheDocument();
-            const second = screen.getByRole('region', {name: 'Вопрос 2'});
+            const second = expand(screen.getByRole('region', {name: 'Вопрос 2'}));
             expect(within(second).getByText('Уклончиво')).toBeInTheDocument();
             expect(within(second).getByText('Формально')).toBeInTheDocument();
             expect(within(second).getByText('Про причину ухода не сказал')).toBeInTheDocument();
