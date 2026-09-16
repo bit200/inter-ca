@@ -193,19 +193,41 @@
     &:last-child{ border-right: 0; }
   }
 
-  span{
+  > div > span{
     display: block;
     color: var(--dlg-muted);
     font-size: 11px;
   }
 
-  strong{
+  > div > strong,
+  .metricButton strong{
     display: block;
     margin-top: 4px;
     color: var(--dlg-strong);
     font-size: 18px;
     font-weight: 600;
   }
+}
+
+// Число в сводке, которое раскрывается попапом: выглядит как соседние цифры,
+// а кнопку выдаёт подложка при наведении - как у балла за ответ.
+.metrics .metricButton{
+  display: block;
+  margin: 4px -6px -2px;
+  padding: 0 6px 2px;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  strong{ margin-top: 0; text-decoration: underline dotted var(--dlg-muted); text-underline-offset: 4px; }
+
+  &:hover,
+  &[aria-expanded="true"]{ background: var(--dlg-card); box-shadow: inset 0 0 0 1px var(--dlg-line); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 1px; }
 }
 
 @media (max-width: 767px){
@@ -215,13 +237,6 @@
     > div{ border-bottom: 1px solid var(--dlg-line); }
     > div:nth-child(2n){ border-right: 0; }
   }
-}
-
-.chips{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin: 14px 0 0;
 }
 
 .chip{
@@ -883,6 +898,9 @@ button.turnSpeaker{
 }
 
 .brief[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
+// Попап под метрикой в сводке: метрика может стоять в левой колонке, поэтому
+// раскрываем вправо от неё, чтобы не уйти за край.
+.brief[data-place="start"]{ right: auto; left: -6px; }
 .brief[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
 
 .briefHead{

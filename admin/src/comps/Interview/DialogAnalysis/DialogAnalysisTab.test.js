@@ -80,7 +80,40 @@ describe('таб разбора диалога', () => {
         expect(screen.getByText('Интервьюер')).toBeInTheDocument();
         expect(screen.getByText('Кандидат')).toBeInTheDocument();
         expect(screen.getByText('2:05')).toBeInTheDocument();
-        expect(screen.getByText('Слово-паразит · 1')).toBeInTheDocument();
+    });
+
+    test('замечания по видам - не отдельной строкой, а попапом по клику на их число', async () => {
+        setupHttp({
+            status: 'done',
+            result: {
+                conversation: {
+                    summary: {durationMs: 125000},
+                    markers: [
+                        {id: 'm1', category: 'filler', matchedPhrase: 'ну'},
+                        {id: 'm2', category: 'filler', matchedPhrase: 'как бы'},
+                        {id: 'm3', category: 'uncertainty', matchedPhrase: 'наверное'},
+                    ],
+                    turns: [
+                        {id: 't1', role: 'manager', startMs: 0, endMs: 4000, text: 'Расскажите о себе'},
+                        {id: 't2', role: 'client', startMs: 5000, endMs: 9000, text: 'Ну, как бы, наверное', markerIds: ['m1', 'm2', 'm3']},
+                    ],
+                },
+            },
+        });
+        render(<DialogAnalysisTab item={interview(null)}/>);
+        await flush();
+
+        expect(screen.queryByText('Слово-паразит · 2')).toBeNull();
+        expect(screen.queryByRole('dialog', {name: 'Замечания по видам'})).toBeNull();
+
+        const count = screen.getByRole('button', {name: /Замечания: 3/});
+        fireEvent.click(count);
+        const popover = screen.getByRole('dialog', {name: 'Замечания по видам'});
+        const rows = within(popover).getAllByRole('listitem').map(row => row.textContent);
+        expect(rows).toEqual(['Слово-паразит2', 'Неуверенность1']);
+
+        fireEvent.keyDown(document, {key: 'Escape'});
+        expect(screen.queryByRole('dialog', {name: 'Замечания по видам'})).toBeNull();
     });
 
     test('клик по реплике раскрывает её детализацию', async () => {
