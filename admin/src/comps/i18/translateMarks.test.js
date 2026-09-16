@@ -1,4 +1,4 @@
-import {markTranslation, stripMarks} from './translateMarks';
+import {markTranslation, markValue, stripMarks} from './translateMarks';
 
 describe('markTranslation', () => {
     it('ставит метку один раз', () => {
@@ -22,5 +22,17 @@ describe('stripMarks', () => {
         expect(stripMarks('**Статус**')).toBe('Статус');
         expect(stripMarks('-')).toBe('-');
         expect(stripMarks(5)).toBe(5);
+    });
+});
+
+describe('markValue', () => {
+    it('значение без перевода выводится без меток «&&&&&&&»', () => {
+        expect(markValue('emty', '')).toBe('emty');
+        expect(markValue('&&&&&&& emty&&&&&&&', '')).toBe('emty');
+        expect(markValue('0', '')).toBe('0');
+    });
+    it('переведённое значение помечается один раз', () => {
+        expect(markValue('tech', 'Тех')).toBe('*Тех*');
+        expect(markValue('tech', 'Тех', true)).toBe('Тех');
     });
 });
