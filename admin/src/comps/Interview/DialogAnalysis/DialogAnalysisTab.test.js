@@ -603,10 +603,13 @@ describe('таб разбора диалога', () => {
             expect(within(bar).getByText('Без ответа · 0')).toBeInTheDocument();
             expect(within(bar).queryByText(/Невежливо/)).toBeNull();
 
+            // Блоки изначально свёрнуты - скобки с баллом видны в развёрнутых.
+            const expand = () => ['Вопрос 1', 'Вопрос 2'].forEach(name => fireEvent.click(within(screen.getByRole('region', {name})).getByTitle('Развернуть вопрос')));
+            expand();
             const brackets = () => Array.from(container.querySelectorAll('[data-bracket="done"] > [class*="bracket"]')).map(node => node.textContent);
             expect(brackets()).toEqual(['8', '0']);
             const second = screen.getByRole('region', {name: 'Вопрос 2'});
-            expect(within(second).getByRole('img', {name: 'Оценка 0 из 10'})).toBeInTheDocument();
+            expect(within(second).getByRole('button', {name: 'Оценка 0 из 10, показать детализацию'})).toBeInTheDocument();
             expect(within(second).getByText('Не по вопросу')).toBeInTheDocument();
             fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
             expect(Array.from(container.querySelectorAll('[class*="answerScore"]')).map(node => node.textContent)).toEqual(['8', '0']);
@@ -616,6 +619,7 @@ describe('таб разбора диалога', () => {
             fireEvent.click(screen.getByRole('radio', {name: 'По вопросам'}));
             expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
             expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
+            expand();
             expect(brackets()).toEqual(['8']);
             fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
             expect(brackets()).toEqual(['0']);

@@ -3,7 +3,7 @@ import {markTranslation, markValue, stripMarks} from './translateMarks';
 describe('markTranslation', () => {
     it('ставит метку один раз', () => {
         expect(markTranslation('Название', true)).toBe('*Название*');
-        expect(markTranslation('emty', false)).toBe('&&&&&&& emty&&&&&&& ');
+        expect(markTranslation('emty', false)).toBe('&emty&');
     });
     it('повторный вызов на уже помеченном не добавляет меток', () => {
         const once = markTranslation('emty', false);
@@ -26,10 +26,11 @@ describe('stripMarks', () => {
 });
 
 describe('markValue', () => {
-    it('значение без перевода выводится без меток «&&&&&&&»', () => {
-        expect(markValue('emty', '')).toBe('emty');
-        expect(markValue('&&&&&&& emty&&&&&&&', '')).toBe('emty');
-        expect(markValue('0', '')).toBe('0');
+    it('значение без перевода помечается одним «&», а не «&&&&&&&»', () => {
+        expect(markValue('emty', '')).toBe('&emty&');
+        expect(markValue('&&&&&&& emty&&&&&&&', '')).toBe('&emty&');
+        expect(markValue('0', '')).toBe('&0&');
+        expect(markValue('0', '', true)).toBe('0');
     });
     it('переведённое значение помечается один раз', () => {
         expect(markValue('tech', 'Тех')).toBe('*Тех*');

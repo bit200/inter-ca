@@ -43,7 +43,7 @@ global.env.nameFn = (name) => {
     return markTranslation(fName || name || '-', !!fName, isHttps)
 }
 
-// Перевод значения из данных: нет перевода — возвращает значение без меток.
+// Перевод значения из данных: нет перевода — значение с одной меткой «&».
 global.env.valueFn = (value) => {
     if (value === undefined || value === null || value === '') return '-';
     if (typeof value !== 'string') return value;

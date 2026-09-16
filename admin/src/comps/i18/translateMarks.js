@@ -1,6 +1,6 @@
-// Отладочные метки перевода: '*' — перевод найден, '&&&&&&& ' — перевода нет.
+// Отладочные метки перевода: '*' — перевод найден, '&' — перевода нет (по одной с каждой стороны).
 export const FOUND_MARK = '*';
-export const MISSING_MARK = '&&&&&&& ';
+export const MISSING_MARK = '&';
 
 // Снимает уже навешанные метки (в т.ч. многократные, от t(t(x)) и повторных рендеров).
 export function stripMarks(v) {
@@ -27,8 +27,8 @@ export function markTranslation(text, found, isHttps) {
     return mark + clean + mark;
 }
 
-// Значение из данных (ячейка таблицы): не ключ перевода — показываем как есть, без метки «перевода нет».
+// Значение из данных (ячейка таблицы): без перевода — одна метка «&», чтобы было видно, что текст не переведён.
 export function markValue(value, translated, isHttps) {
-    if (!translated) return stripMarks(value);
+    if (!translated) return markTranslation(value, false, isHttps);
     return markTranslation(translated, true, isHttps);
 }
