@@ -8,6 +8,12 @@ function formatDate(cd) {
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+// Название попытки для таблицы /mock-interviews: без него строка выходит пустой.
+export function personalName(row) {
+    const date = row.cd ? formatDate(row.cd) : '';
+    return date ? `Персональное интервью от ${date}` : 'Персональное интервью';
+}
+
 // Секция "Собрано по вашим ответам" над списком попыток /mock-interviews.
 // Персональные мок-интервью (PersonalMockInterviewGeneration в itk-platform-en)
 // не привязаны ни к курсу, ни к шаблону экзамена, поэтому источник у них свой -
@@ -15,6 +21,8 @@ function formatDate(cd) {
 // тем же POST /mock-interview/my-list с interviewId, что у курса и экзамена:
 // он резолвит существующую попытку или создаёт новую, дальше обычная страница
 // /mock-interviews/:id. Нет записей или ручка недоступна - секцию не рисуем.
+// Интервью, по которому у кандидата уже есть попытка (начатая или пройденная),
+// в секции не показываем: оно уже строка таблицы ниже, второй вход не нужен.
 function PersonalMockInterviews() {
     const navigate = useNavigate();
     const [items, setItems] = useState([]);
@@ -22,15 +30,26 @@ function PersonalMockInterviews() {
 
     useEffect(() => {
         global.http.get('/my-personal-mock-interview', {}, { wo_notify: true })
-            .then(r => setItems(r?.items || []))
+            .then(r => {
+                const personal = r?.items || [];
+                if (!personal.length) return [];
+                const interviewId = { $in: personal.map(row => row.interviewId) };
+                return global.http.get('/mock-interview/my-list', { filter: { interviewId } }, { wo_notify: true })
+                    .then(attempts => {
+                        const taken = new Set((attempts?.items || []).map(a => String(a.interviewId)));
+                        return personal.filter(row => !taken.has(String(row.interviewId)));
+                    });
+            })
+            .then(setItems)
             .catch(() => setItems([]));
     }, []);
 
     if (!items.length) return null;
 
-    const start = (interviewId) => {
+    const start = (row) => {
+        const interviewId = row.interviewId;
         setStartingId(interviewId);
-        global.http.post('/mock-interview/my-list', { interviewId }, { wo_notify: true })
+        global.http.post('/mock-interview/my-list', { interviewId, name: personalName(row) }, { wo_notify: true })
             .then(({ item }) => navigate(`/mock-interviews/${item._id}`))
             .catch(() => {
                 global.notify.warning('Не удалось открыть интервью. Попробуйте ещё раз.');
@@ -54,7 +73,7 @@ function PersonalMockInterviews() {
                         className="btn btn-sm btn-primary"
                         data-testid="personal-mock-interview-start"
                         disabled={!!startingId}
-                        onClick={() => start(row.interviewId)}
+                        onClick={() => start(row)}
                     >
                         {startingId === row.interviewId ? 'Открываем...' : 'Начать'}
                     </button>
