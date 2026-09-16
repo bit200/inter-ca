@@ -35,6 +35,15 @@ describe('превью записи интервью', () => {
         expect(link).toHaveAttribute('target', '_blank');
     });
 
+    test('ссылку не глушит обёртка карточки, которая на всплытии зовёт preventDefault', () => {
+        const drive = 'https://drive.google.com/file/d/1aI/view?usp=drive_link';
+        render(<div onClick={e => e.preventDefault()}><VideoPreview src={drive} time={{}}/></div>);
+        const link = screen.getByRole('link', {name: 'Открыть на Google Диске'});
+        const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+        link.dispatchEvent(click);
+        expect(click.defaultPrevented).toBe(false);
+    });
+
     test('файл не загрузился: плеер заменяется плашкой', () => {
         const {container} = render(<VideoPreview src="https://x.test/stream" time={{}}/>);
         const video = container.querySelector('video');
