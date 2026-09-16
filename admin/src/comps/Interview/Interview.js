@@ -138,6 +138,21 @@ function InsertFromExel({localItem}) {
 }
 
 let pp = {}
+
+// Поле загрузки записи на «Обзоре». Объявлено здесь, а не стрелкой внутри
+// Interview: новая функция на каждый рендер карточки - для React новый тип
+// компонента, и загрузка пересоздавалась с нуля, теряя прогресс и статус.
+function InterviewVideoUploadField({item}) {
+    return <InterviewVideoUpload
+        interviewId={item._id}
+        videoUploadId={item.videoUpload}
+        videoLink={item.video}
+        onDone={(patch) => {
+            patch && Object.assign(item, patch);
+            global.onGlobalChange && global.onGlobalChange({...item});
+        }}
+    />;
+}
 let Comp = () => {
     let {props, selId, item, userId, onChangeInfoByUsers} = pp;
     return <div>
@@ -266,15 +281,7 @@ function Interview({props}) {
                                         },
                                         {
                                             size: 12,
-                                            Component: ({item}) => <InterviewVideoUpload
-                                                interviewId={item._id}
-                                                videoUploadId={item.videoUpload}
-                                                videoLink={item.video}
-                                                onDone={(patch) => {
-                                                    patch && Object.assign(item, patch);
-                                                    global.onGlobalChange && global.onGlobalChange({...item});
-                                                }}
-                                            />
+                                            Component: InterviewVideoUploadField
                                         },
                                         {name: 'videoLink', size: 4, key: 'video', type: 'input'},
                                         {type: 'HR', size: 12},

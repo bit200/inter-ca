@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent, NO_RESPONSE_MESSAGE} from './videoProcessUpload';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent, NO_RESPONSE_MESSAGE, uploadVideoFromResponse} from './videoProcessUpload';
 
 // Поддельный XHR: отвечает по очереди из responses и запоминает запросы
 function makeXHR(responses, log) {
@@ -171,5 +171,27 @@ describe('reportUploadEvent', () => {
     it('сбой отправки журнала не роняет загрузку', async () => {
         const http = {post: () => Promise.reject(new Error('offline'))};
         await expect(reportUploadEvent({interviewId: 1004, http, event: 'progress', percent: 25})).resolves.toBeUndefined();
+    });
+});
+
+describe('uploadVideoFromResponse', () => {
+    it('global.http уже развернул {data} - запись берётся из самого ответа', () => {
+        const doc = {_id: 1007, status: 'processing', info: {name: 'a.mp4'}};
+        expect(uploadVideoFromResponse(doc)).toBe(doc);
+        expect(uploadVideoFromResponse({data: doc})).toBe(doc);
+        expect(uploadVideoFromResponse(null)).toBe(null);
+        expect(uploadVideoFromResponse({})).toBe(null);
+    });
+
+    it('карточка интервью читает запись через uploadVideoFromResponse, а не r.data', () => {
+        const card = fs.readFileSync(path.join(__dirname, 'Interview/InterviewVideoUpload.jsx'), 'utf8');
+        expect(card).not.toMatch(/r\.data/);
+        expect(card.match(/uploadVideoFromResponse\(r\)/g)).toHaveLength(2);
+    });
+
+    it('поле загрузки на «Обзоре» - стабильный компонент, не стрелка внутри рендера', () => {
+        const src = fs.readFileSync(path.join(__dirname, 'Interview/Interview.js'), 'utf8');
+        expect(src).toContain('Component: InterviewVideoUploadField');
+        expect(src).not.toMatch(/Component: \(\{item\}\) => <InterviewVideoUpload/);
     });
 });

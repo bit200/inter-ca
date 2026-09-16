@@ -137,3 +137,12 @@ export function uploadVideoState(upload) {
     }
     return 'done';
 }
+
+// Запись UploadVideo из ответа GET /my-upload-video/:id. global.http сам
+// разворачивает {data} и отдаёт документ, а карточка читала r.data - получала
+// undefined и сбрасывала загруженную запись, показывая дропзону заново.
+// Принимаем обе формы: документ и {data: документ}.
+export function uploadVideoFromResponse(r) {
+    const doc = r && r.data && typeof r.data === 'object' ? r.data : r;
+    return doc && doc._id ? doc : null;
+}
