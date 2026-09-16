@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Perc from '../Suggest/Perc';
-import {startVideoProcess, buildJobAttachInfo, uploadVideoState, uploadErrorMessage} from '../videoProcessUpload';
+import {startVideoProcess, buildJobAttachInfo, uploadVideoState, uploadErrorMessage, reportUploadEvent} from '../videoProcessUpload';
 import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDropzone';
 
 // Загрузка записи прямо с карточки интервью (вкладка «Обзор»), вместо
@@ -36,6 +36,8 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
     // Запись только что привязана - бэк уже поставил её на разбор сам
     // (services/interviewAutoPipeline.js), говорим, где ждать результат.
     let [justUploaded, setJustUploaded] = useState(false);
+    // Последняя четверть прогресса, ушедшая в журнал: пишем 25/50/75%, а не каждый onprogress.
+    let reportedQuarter = useRef(0);
 
     useEffect(() => {
         if (!videoUploadId) return setUploaded(null);
@@ -76,25 +78,38 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
         setErr('');
 
         getDuration(picked, async (duration) => {
+            let report = (event) => reportUploadEvent({interviewId, name: originalFileName, ...event});
             if (fileSize > 500 * 1000 * 1000) {
                 setFile(null);
+                report({event: 'failed', fileSize, error: t('tooBig')});
                 return setErr(t('tooBig'));
             }
             if (!duration) {
                 setFile(null);
+                report({event: 'failed', fileSize, error: t('errIncorrect')});
                 return setErr(t('errIncorrect'));
             }
 
             let domain = global.env.VIDEO_DOMAIN;
             let token = user.get_token();
+            reportedQuarter.current = 0;
             try {
                 setStage('upload');
+                report({event: 'started', fileSize, duration});
                 let started = await startVideoProcess({
                     domain, token, file: picked,
                     user: user.get_id(),
-                    onUploadProgress: setProgress,
+                    onUploadProgress: (percent) => {
+                        setProgress(percent);
+                        let quarter = Math.floor(percent / 25) * 25;
+                        if (quarter > reportedQuarter.current && quarter < 100) {
+                            reportedQuarter.current = quarter;
+                            report({event: 'progress', percent: quarter});
+                        }
+                    },
                 });
                 setProgress(100);
+                report({event: 'sent', jobId: started.id});
 
                 let res = await global.http.post(`/my-interview/${interviewId}/video-upload`,
                     buildJobAttachInfo({jobId: started.id, name: originalFileName, duration}));
@@ -105,6 +120,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
             } catch (e) {
                 setStage('error');
                 setErr(uploadErrorMessage(e));
+                report({event: 'failed', error: uploadErrorMessage(e)});
             }
         });
     };

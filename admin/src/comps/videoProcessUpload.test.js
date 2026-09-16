@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage} from './videoProcessUpload';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent} from './videoProcessUpload';
 
 // Поддельный XHR: отвечает по очереди из responses и запоминает запросы
 function makeXHR(responses, log) {
@@ -145,5 +145,19 @@ describe('uploadErrorMessage', () => {
             expect(src).toContain('setErr(uploadErrorMessage(e))');
             expect(src).not.toContain('e.message || e.toString()');
         }
+    });
+});
+
+describe('reportUploadEvent', () => {
+    it('шлёт этап загрузки в журнал интервью без уведомлений', async () => {
+        const calls = [];
+        const http = {post: (...args) => { calls.push(args); return Promise.resolve({ok: true}); }};
+        await reportUploadEvent({interviewId: 1004, http, event: 'started', name: 'a.mp4', fileSize: 1000, duration: 3});
+        expect(calls).toEqual([['/my-interview/1004/video-upload-event', {event: 'started', name: 'a.mp4', fileSize: 1000, duration: 3}, {wo_notify: true}]]);
+    });
+
+    it('сбой отправки журнала не роняет загрузку', async () => {
+        const http = {post: () => Promise.reject(new Error('offline'))};
+        await expect(reportUploadEvent({interviewId: 1004, http, event: 'progress', percent: 25})).resolves.toBeUndefined();
     });
 });

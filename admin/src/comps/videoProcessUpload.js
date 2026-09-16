@@ -107,6 +107,16 @@ export function buildJobAttachInfo({jobId, name, duration}) {
     return {jobId, name, duration};
 }
 
+// Этап передачи файла - в журнал «Разбор видео» админки
+// (POST /my-interview/:id/video-upload-event, interviews/api
+// controllers/interviewVideoUpload.js uploadEvent). Байты идут прямо на multer,
+// и без этого API узнаёт о загрузке, только когда файл уже принят целиком.
+// Сбой отправки журнала загрузку не ломает - ошибку глотаем.
+export function reportUploadEvent({interviewId, http = global.http, ...event}) {
+    return http.post(`/my-interview/${interviewId}/video-upload-event`, event, {wo_notify: true})
+        .catch(() => {});
+}
+
 // Статус записи UploadVideo для карточки: processing - сервер ещё сжимает,
 // error - сжатие упало, done - всё остальное (в т.ч. старые записи без статуса).
 export function uploadVideoState(upload) {
