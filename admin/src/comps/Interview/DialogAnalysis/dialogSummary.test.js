@@ -1,4 +1,4 @@
-import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall} from './dialogSummary';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, withSoftFallback} from './dialogSummary';
 
 // Форма metrics - как её считает services/dialogMetrics.js в itk-platform-api.
 const metrics = {
@@ -45,6 +45,18 @@ describe('итог интервью и метрики разговора', () =>
         expect(readOverall({overall: {score: 4, maxScore: 5}})).toMatchObject({max: 5});
         expect(readOverall({overall: {}})).toBeNull();
         expect(readOverall({blocks: []})).toBeNull();
+    });
+
+    it('без технических вопросов итоговый балл - среднее по нетехническим ответам', () => {
+        let soft = score => ({technical: false, soft: {state: 'done', score, max: 10}});
+        let overall = {score: 0, max: 10, summary: 'Технической оценки нет', strengths: [], weaknesses: [], message: ''};
+        expect(withSoftFallback(overall, [soft(9), soft(6), {technical: false, soft: {state: 'unanswered'}}]))
+            .toEqual({...overall, score: 7.5, basis: 'soft'});
+        expect(withSoftFallback(null, [soft(7)])).toBeNull();
+        // Есть технический вопрос - балл сервиса не трогаем.
+        expect(withSoftFallback(overall, [soft(9), {technical: true, soft: null}])).toBe(overall);
+        // Нечего усреднять - тоже.
+        expect(withSoftFallback(overall, [{technical: false, soft: {state: 'pending'}}])).toBe(overall);
     });
 
     it('тайминги пишутся секундами, длинные - минутами', () => {

@@ -47,6 +47,23 @@ export function readOverall(result) {
     return {score, max, summary, strengths, weaknesses, message};
 }
 
+// Технических вопросов в интервью нет - технической оценки тоже нет, и общий балл
+// от сервиса выходит нулём. Тогда итоговой оценкой показываем среднее по мягким
+// оценкам нетехнических ответов, а basis помечает, что балл за нетехническую часть.
+// Итога ещё нет (пишется) - не подставляем: блок итога показывает ожидание.
+export function withSoftFallback(overall, blocks) {
+    if (!overall) return overall;
+    let list = Array.isArray(blocks) ? blocks : [];
+    if (list.some(block => block && block.technical === true)) return overall;
+    let rated = list.map(block => block && block.soft)
+        .filter(soft => soft && soft.state === 'done' && typeof soft.score === 'number');
+    if (!rated.length) return overall;
+    let max = rated[0].max || 10;
+    let mean = rated.reduce((sum, soft) => sum + soft.score / (soft.max || 10) * max, 0) / rated.length;
+    let score = Math.round(mean * 10) / 10;
+    return {...overall, score, max, basis: 'soft'};
+}
+
 // Приветствие и прощание - отдельный чек по началу и концу разговора, не блок:
 // группировка эти реплики пропускает. null у отметки - чек о ней ничего не сказал.
 export function readGreeting(result) {

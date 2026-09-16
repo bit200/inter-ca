@@ -1083,6 +1083,13 @@ button.turnSpeaker{
   }
 }
 
+.summaryScoreBasis{
+  max-width: 11ch;
+  color: var(--dlg-muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
 .summaryText{
   display: grid;
   gap: 12px;
