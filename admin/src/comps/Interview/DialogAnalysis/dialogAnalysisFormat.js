@@ -179,6 +179,16 @@ export function readConversation(result) {
     };
 }
 
+// Замечания оцениваем только по речи кандидата: у интервьюера это общие
+// замечания, к оценке кандидата они не относятся. Роли берём уже с ручными правками.
+export function candidateMarkers(turns, markers) {
+    let ids = new Set();
+    (turns || []).forEach(turn => {
+        if (turn && normalizedRole(turn.role) === 'client' && Array.isArray(turn.markerIds)) turn.markerIds.forEach(id => ids.add(id));
+    });
+    return (markers || []).filter(marker => marker && ids.has(marker.id));
+}
+
 // Сколько раз встретился каждый вид замечания - это и есть краткий итог разбора.
 export function markerCounts(markers) {
     let counts = new Map();

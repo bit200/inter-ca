@@ -82,7 +82,7 @@ describe('таб разбора диалога', () => {
         expect(screen.getByText('2:05')).toBeInTheDocument();
     });
 
-    test('замечания по видам - не отдельной строкой, а попапом по клику на их число', async () => {
+    test('замечания по видам - попапом по клику на их число, и только по речи кандидата', async () => {
         setupHttp({
             status: 'done',
             result: {
@@ -92,9 +92,11 @@ describe('таб разбора диалога', () => {
                         {id: 'm1', category: 'filler', matchedPhrase: 'ну'},
                         {id: 'm2', category: 'filler', matchedPhrase: 'как бы'},
                         {id: 'm3', category: 'uncertainty', matchedPhrase: 'наверное'},
+                        {id: 'm4', category: 'filler', matchedPhrase: 'короче'},
+                        {id: 'm5', category: 'hedging', matchedPhrase: 'в принципе'},
                     ],
                     turns: [
-                        {id: 't1', role: 'manager', startMs: 0, endMs: 4000, text: 'Расскажите о себе'},
+                        {id: 't1', role: 'manager', startMs: 0, endMs: 4000, text: 'Короче, в принципе расскажите о себе', markerIds: ['m4', 'm5']},
                         {id: 't2', role: 'client', startMs: 5000, endMs: 9000, text: 'Ну, как бы, наверное', markerIds: ['m1', 'm2', 'm3']},
                     ],
                 },
