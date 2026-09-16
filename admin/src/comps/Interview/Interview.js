@@ -260,6 +260,7 @@ function Interview({props}) {
                                             Component: ({item}) => <InterviewVideoUpload
                                                 interviewId={item._id}
                                                 videoUploadId={item.videoUpload}
+                                                videoLink={item.video}
                                                 onDone={(patch) => {
                                                     patch && Object.assign(item, patch);
                                                     global.onGlobalChange && global.onGlobalChange({...item});
