@@ -26,6 +26,8 @@ describe('итог интервью и метрики разговора', () =>
         expect(readDialogMetrics({metrics: {speech: {managerMs: 1000, clientMs: 3000}}}).speech)
             .toMatchObject({managerPercent: 25, clientPercent: 75});
         expect(readDialogMetrics({metrics: {}})).toBeNull();
+        expect(readDialogMetrics({metrics: {speech: {managerMs: 0, clientMs: 0, managerPercent: 0, clientPercent: 0}}})).toBeNull();
+        expect(readDialogMetrics({metrics: {speech: {managerPercent: 0, clientPercent: 0}, interruptions: {total: 1, managerInterruptedClient: 1}}}).speech).toBeNull();
         expect(readDialogMetrics({blocks: []})).toBeNull();
         expect(readDialogMetrics(null)).toBeNull();
     });

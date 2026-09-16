@@ -105,7 +105,9 @@ export function readDialogMetrics(result) {
     }
     if (managerPercent === null && clientPercent !== null) managerPercent = 100 - clientPercent;
     if (clientPercent === null && managerPercent !== null) clientPercent = 100 - managerPercent;
-    let speech = managerPercent === null ? null : {managerPercent, clientPercent, managerMs, clientMs};
+    // Нулевые доли у обоих - речи не насчитано вовсе, пустую полосу «0% / 0%» не показываем.
+    let speechless = !(managerPercent > 0) && !(clientPercent > 0);
+    let speech = managerPercent === null || speechless ? null : {managerPercent, clientPercent, managerMs, clientMs};
 
     let interruptSource = asObject(source.interruptions) || {};
     let byManager = firstNumber(interruptSource.managerInterruptedClient, interruptSource.byManager, interruptSource.manager);
