@@ -309,18 +309,42 @@ describe('таб разбора диалога', () => {
         };
         const evaluations = post => post.mock.calls.filter(([url]) => /answers-evaluation/.test(url)).length;
 
-        test('когда заполнены обе роли, оценка ответов запускается сама один раз', async () => {
+        const roleSends = post => post.mock.calls.filter(([url]) => /speaker-roles/.test(url));
+
+        test('когда заполнены обе роли, они один раз уходят на бэк — он и продолжает оценку', async () => {
             const post = setupHttp(unassigned, answersDone);
             const onChange = jest.fn();
             render(<DialogAnalysisTab item={interview(null)} onSpeakerRolesChange={onChange}/>);
             await flush();
 
             await pick('Первый голос', 'Интервьюер');
-            expect(evaluations(post)).toBe(0);
+            expect(roleSends(post)).toHaveLength(0);
 
             await pick('Второй голос', 'Кандидат');
-            await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/answers-evaluation', {}));
+            await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/speaker-roles', {roles: {SPEAKER_00: 'manager', SPEAKER_01: 'client'}}));
+            expect(roleSends(post)).toHaveLength(1);
+            expect(evaluations(post)).toBe(0);
             expect(onChange).toHaveBeenLastCalledWith({SPEAKER_00: 'manager', SPEAKER_01: 'client'});
+        });
+
+        test('роли не определились автоматически — уведомление просит отметить их и продолжает оценку', async () => {
+            const post = setupHttp({...unassigned, rolesPending: true}, {answersEvaluation: {status: ''}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const notice = screen.getByTestId('roles-pending-notice');
+            expect(within(notice).getByText('Отметьте, кто интервьюер, а кто кандидат')).toBeInTheDocument();
+            const next = within(notice).getByRole('button', {name: 'Продолжить оценку'});
+            expect(next).toBeDisabled();
+
+            // У двух участников хватает одного выбора — второй становится кандидатом сам.
+            const first = within(notice).getByText('Первый голос').closest('li');
+            fireEvent.click(within(first).getByRole('button', {name: 'Интервьюер'}));
+            const second = within(notice).getByText('Второй голос').closest('li');
+            expect(within(second).getByRole('button', {name: 'Кандидат'})).toHaveAttribute('aria-pressed', 'true');
+
+            fireEvent.click(next);
+            await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/speaker-roles', {roles: {SPEAKER_00: 'manager', SPEAKER_01: 'client'}}));
         });
 
         test('если обе роли уже были, смена роли оценку не перезапускает', async () => {

@@ -37,7 +37,10 @@ import {
     rolesJustCompleted,
     speakerKey,
     speakerLabels,
+    listSpeakers,
 } from './dialogAnalysisFormat';
+import RolesPendingNotice from './RolesPendingNotice';
+import {shouldSendRoles} from './speakerRolesDraft';
 import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
 import {pickDialogMedia, readPlayerPinned, savePlayerPinned, turnIndexAt} from './dialogMedia';
@@ -94,6 +97,7 @@ const ANSWERS_STEP_LABELS = {
 };
 
 const ANSWERS_HINTS = {
+    rolesPending: 'Оценка начнётся сама, как только вы отметите роли участников.',
     '': 'Разобьём расшифровку на вопросы и оценим ответы кандидата: технические — баллом, остальные — по теме ли и развёрнуто ли. В конце напишем итог интервью.',
     queued: 'Оценка ждёт свободного слота. Страницу можно закрыть — она не прервётся.',
     grouping: 'Собираем реплики в вопросы: основной вопрос, ответ и уточнения.',
@@ -136,6 +140,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     let answers = useMemo(() => answersStale ? normalizeAnswers(null) : loadedAnswers, [answersStale, loadedAnswers]);
     let staleRerun = useRef(null);
     let [sendingAnswers, setSendingAnswers] = useState(false);
+    let [sendingRoles, setSendingRoles] = useState(false);
     let mounted = useRef(true);
     let media = pickDialogMedia(value, analysis);
 
@@ -239,16 +244,34 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
 
     let answersActive = isActiveStatus(answers.status, ANSWERS_PIPELINE_STEPS);
 
-    function assignRole(key, role) {
-        let next = {...roles, [key]: role};
+    // Роли уходят на бэк: он кладёт их в разбор (их читает оценка ответов) и,
+    // если теперь есть и интервьюер, и кандидат, сам продолжает оценку, а за
+    // ней - сборку мок-интервью по слабым ответам.
+    function sendRoles(next) {
+        if (!interviewId || !global.http) return;
+        setSendingRoles(true);
+        global.http.post(`/my-interview/${interviewId}/speaker-roles`, {roles: next})
+            .then(payload => {
+                apply(payload);
+                payload && payload.answersStarted && mounted.current && setAnswers(normalizeAnswers({status: 'queued'}));
+            })
+            .catch(() => {})
+            .finally(() => { mounted.current && setSendingRoles(false); });
+    }
+
+    function assignRoles(patch) {
+        let next = {...roles, ...patch};
         setRoles(next);
         onSpeakerRolesChange && onSpeakerRolesChange(next);
-        // Обе роли появились только сейчас - оценка ответов считалась без них,
-        // пересчитываем сами, не заставляя искать кнопку «Оценить ответы заново».
-        if (dialogDone && !answersActive && !sendingAnswers
-            && rolesJustCompleted(rawConversation.turns, roles, next)) {
-            runAnswersEvaluation();
+        let justCompleted = rolesJustCompleted(rawConversation.turns, roles, next);
+        if (dialogDone && !answersActive && !sendingRoles
+            && shouldSendRoles({rolesPending: analysis.rolesPending, justCompleted})) {
+            sendRoles(next);
         }
+    }
+
+    function assignRole(key, role) {
+        assignRoles({[key]: role});
     }
     let blocks = useMemo(
         () => readQaBlocks(answers.result, conversation.turns, {
@@ -296,6 +319,13 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         {mockUi === 'summary' && <WeakMocksProgress mocks={weakMocks} blocks={blocks}/>}
         {mockUi === 'questions' && <WeakMocksNote mocks={weakMocks} blocks={blocks}/>}
 
+        {dialogDone && analysis.rolesPending && <RolesPendingNotice
+            speakers={listSpeakers(rawConversation.turns).filter(entry => entry.sample)}
+            savedRoles={roles}
+            sending={sendingRoles}
+            onSubmit={assignRoles}
+        />}
+
         <PipelineCard
             title="Разбор диалога"
             hint={hint}
@@ -310,7 +340,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
 
         {dialogDone && <PipelineCard
             title="Оценка ответов"
-            hint={ANSWERS_HINTS[answers.status] || ''}
+            hint={!answers.status && analysis.rolesPending ? ANSWERS_HINTS.rolesPending : ANSWERS_HINTS[answers.status] || ''}
             button={answersButton}
             actionLabel="Оценить ответы"
             onRun={evaluateAnswers}

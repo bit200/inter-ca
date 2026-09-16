@@ -1789,3 +1789,90 @@ button.turnSpeaker{
   .mockRow .mockAction{ grid-column: 2; grid-row: 1 / span 2; }
   .mockProgressSide{ margin-left: 0; }
 }
+
+// Оценка ждёт ролей участников. Рамка тёплая целиком, без полосы слева:
+// это не сбой, а шаг, который может сделать только человек.
+.rolesNotice{
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--dlg-warn);
+  border-radius: 8px;
+  background: var(--dlg-warn-soft);
+}
+
+.rolesSpeakers{
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rolesSpeaker{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  background: var(--dlg-card);
+}
+
+.rolesSpeakerText{
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+// Первая фраза - то, по чему человек узнаёт голос; длинную обрезаем до двух строк.
+.rolesSample{
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--dlg-strong);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.rolesMeta{
+  color: var(--dlg-muted);
+  font-size: 12px;
+}
+
+.rolesChoice{
+  display: inline-flex;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.rolesOption{
+  padding: 5px 12px;
+  border: 0;
+  background: var(--dlg-card);
+  color: var(--dlg-ink);
+  font-size: 12px;
+  cursor: pointer;
+
+  & + &{ border-left: 1px solid var(--dlg-line); }
+
+  &:focus-visible{
+    outline: 2px solid var(--dlg-accent);
+    outline-offset: -2px;
+  }
+
+  &[aria-pressed="true"][data-role="manager"]{
+    background: var(--dlg-host);
+    color: var(--dlg-card);
+  }
+
+  &[aria-pressed="true"][data-role="client"]{
+    background: var(--dlg-strong);
+    color: var(--dlg-card);
+  }
+}

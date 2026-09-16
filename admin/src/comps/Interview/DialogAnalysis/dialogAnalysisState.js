@@ -57,6 +57,9 @@ export function normalizeAnalysis(source, steps = PIPELINE_STEPS) {
         result: value.result && typeof value.result === 'object' ? value.result : null,
         // Отдельная аудиозапись разбора: к ней привязываем реплики, если у интервью нет видео.
         audioUrl: typeof value.audioUrl === 'string' ? value.audioUrl : '',
+        // Роли участников не определились автоматически - оценка ответов ждёт
+        // разметки руками (services/interviewAutoPipeline.js на бэке).
+        rolesPending: value.rolesPending === true,
     };
 }
 
