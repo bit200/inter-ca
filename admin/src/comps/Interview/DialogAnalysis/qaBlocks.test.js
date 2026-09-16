@@ -1,4 +1,4 @@
-import {questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
+import {questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown} from './qaBlocks';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -77,6 +77,20 @@ describe('мягкая оценка нетехнических блоков', ()
         expect(soft({relevance: 'off_topic', complete: true, engaged: true})).toMatchObject({band: 'poor', score: 3});
         [soft({relevance: 'evasive', complete: true}), soft({relevance: 'off_topic', complete: false})]
             .forEach(value => expect(scoreBand(value.score, value.max)).toBe(value.band));
+    });
+
+    it('детализация мягкой оценки раскладывает балл на слагаемые и поправку полосой', () => {
+        let soft = softEvaluate => readQaBlocks([{technical: false, turnIndexes: [0, 1], softEvaluate}], turns)[0].soft;
+        let full = softBreakdown(soft({relevance: 'on_topic', complete: true}));
+        expect(full.rows.map(row => [row.label, row.points, row.max])).toEqual([
+            ['По теме', 6, 6], ['Развёрнуто', 3, 3], ['Без встречных вопросов', 0, 1],
+        ]);
+        expect(full).toMatchObject({raw: 9, score: 9, max: 10});
+
+        let formal = soft({relevance: 'on_topic', complete: false, engaged: true});
+        expect(softBreakdown(formal)).toMatchObject({raw: 7, score: formal.score});
+        expect(softBreakdown(formal).score).toBe(6);
+        expect(softBreakdown(soft({relevance: 'evasive', complete: false}))).toMatchObject({raw: 3, score: 4});
     });
 
     it('без мягкой оценки блок ждёт её, пока идёт оценка, иначе не оценивается', () => {

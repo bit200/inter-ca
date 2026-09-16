@@ -1,24 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
-import {formatScore, scoreBand} from './qaBlocks';
+import {formatScore, scoreBand, softBreakdown} from './qaBlocks';
 import {answerBrief, loadEvaluationReference} from './answerBrief';
 
 const SEGMENTS = 5;
 
 // Попап под баллом технического вопроса: короткая детализация оценки - за что
 // поставлен балл, - и ссылка на страницу с полным разбором ответа.
-export default function AnswerBriefPopover({evaluation, href, onClose}) {
-    let box = useRef(null);
-    let [reference, setReference] = useState(null);
-
+// Клик мимо и Escape закрывают попап; сам балл закроет его своим переключением.
+function useDismiss(box, onClose) {
     useEffect(() => {
-        let alive = true;
-        loadEvaluationReference().then(value => alive && setReference(value));
-        return () => { alive = false; };
-    }, []);
-
-    useEffect(() => {
-        // Клик мимо закрывает попап; сам балл закроет его своим переключением.
         function onDown(event) {
             let target = event.target;
             if (box.current && box.current.contains(target)) return;
@@ -34,7 +25,20 @@ export default function AnswerBriefPopover({evaluation, href, onClose}) {
             document.removeEventListener('mousedown', onDown);
             document.removeEventListener('keydown', onKey);
         };
-    }, [onClose]);
+    }, [box, onClose]);
+}
+
+export default function AnswerBriefPopover({evaluation, href, onClose}) {
+    let box = useRef(null);
+    let [reference, setReference] = useState(null);
+
+    useEffect(() => {
+        let alive = true;
+        loadEvaluationReference().then(value => alive && setReference(value));
+        return () => { alive = false; };
+    }, []);
+
+    useDismiss(box, onClose);
 
     let brief = answerBrief(evaluation.result, reference ? reference.schemas : [], reference ? reference.rules : []);
     let score = brief.score === null ? evaluation.score : brief.score;
@@ -85,5 +89,45 @@ export default function AnswerBriefPopover({evaluation, href, onClose}) {
         </div>}
 
         {href && <a className={styles.briefLink} href={href} onClick={open}>Открыть полный разбор ответа</a>}
+    </div>;
+}
+
+// Попап под баллом нетехнического вопроса: сервис баллов не ставит, балл сведён
+// из отметок - показываем, сколько дала каждая и где сумму поправила полоса уровня.
+export function SoftBriefPopover({evaluation, onClose}) {
+    let box = useRef(null);
+    useDismiss(box, onClose);
+
+    let {rows, raw, score, max} = softBreakdown(evaluation);
+    return <div
+        ref={box}
+        className={styles.brief}
+        role="dialog"
+        aria-label="Детализация оценки"
+        data-band={scoreBand(score, max)}
+        onClick={event => event.stopPropagation()}
+    >
+        <div className={styles.briefHead}>
+            <span className={styles.briefVerdict}>Из чего сложилась оценка</span>
+            <span className={styles.briefScore}>{formatScore(score)}<small> из {formatScore(max)}</small></span>
+        </div>
+
+        <ul className={styles.briefRows} data-kind="points">
+            {rows.map(row => <li key={row.key} data-band={scoreBand(row.points, row.max)}>
+                <span className={styles.briefLabel}>{row.label}</span>
+                <span className={styles.briefPoints}>+{formatScore(row.points)}<small> из {formatScore(row.max)}</small></span>
+            </li>)}
+        </ul>
+
+        {raw !== score && <p className={styles.briefNote}>
+            {raw > score
+                ? `Сумма ${formatScore(raw)}, но ответ ${evaluation.relevance === 'off_topic' ? 'не по вопросу' : evaluation.relevance === 'evasive' ? 'уклончивый' : 'формальный'} — балл ограничен ${formatScore(score)}.`
+                : `Сумма ${formatScore(raw)} поднята до ${formatScore(score)} — нижней границы для такого ответа.`}
+        </p>}
+
+        {evaluation.note && <div className={styles.briefAdvice}>
+            <b>Комментарий оценки</b>
+            <p>{evaluation.note}</p>
+        </div>}
     </div>;
 }

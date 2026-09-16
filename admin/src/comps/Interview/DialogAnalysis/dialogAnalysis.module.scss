@@ -943,6 +943,20 @@ button.turnSpeaker{
   i[data-on="true"]{ background: var(--dlg-band); }
 }
 
+.briefRows[data-kind="points"] li{
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+// Очки за отметку: цвет полосы - сколько взято из возможного.
+.briefPoints{
+  color: var(--dlg-band);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  small{ color: var(--dlg-muted); font-size: 12px; font-weight: 400; }
+}
+
 .briefPct{
   color: var(--dlg-muted);
   font-variant-numeric: tabular-nums;

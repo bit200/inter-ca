@@ -393,6 +393,28 @@ describe('таб разбора диалога', () => {
             delete global.navigate;
         });
 
+        test('по клику на балл нетехнического вопроса попап показывает, из чего сложилась оценка', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'on_topic', complete: false, engaged: true, note: 'Ответил в двух словах'}},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const block = screen.getByRole('region', {name: 'Вопрос 1'});
+            fireEvent.click(within(block).getByRole('button', {name: 'Оценка 6 из 10, показать детализацию'}));
+            const popup = screen.getByRole('dialog', {name: 'Детализация оценки'});
+            expect(within(popup).getByText('Из чего сложилась оценка')).toBeInTheDocument();
+            expect(within(popup).getByText('По теме')).toBeInTheDocument();
+            expect(within(popup).getByText('Формально')).toBeInTheDocument();
+            expect(within(popup).getByText('Встречные вопросы')).toBeInTheDocument();
+            expect(within(popup).getByText('Сумма 7, но ответ формальный — балл ограничен 6.')).toBeInTheDocument();
+            expect(within(popup).getByText('Ответил в двух словах')).toBeInTheDocument();
+            expect(within(popup).queryByText('Загружаем показатели…')).toBeNull();
+
+            fireEvent.keyDown(document, {key: 'Escape'});
+            expect(screen.queryByRole('dialog', {name: 'Детализация оценки'})).toBeNull();
+        });
+
         test('в шапке вопроса его текст вместо номера, по шапке вопрос сворачивается и разворачивается', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
