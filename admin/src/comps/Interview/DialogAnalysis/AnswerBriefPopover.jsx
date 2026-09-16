@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
 import {formatScore, scoreBand, softBreakdown} from './qaBlocks';
 import {answerBrief, loadEvaluationReference} from './answerBrief';
+import {markerCounts, markerLabel} from './dialogAnalysisFormat';
 
 const SEGMENTS = 5;
 
@@ -129,5 +130,33 @@ export function SoftBriefPopover({evaluation, onClose}) {
             <b>Комментарий оценки</b>
             <p>{evaluation.note}</p>
         </div>}
+    </div>;
+}
+
+// Попап под числом замечаний: сколько каких видов, от частых к редким.
+export function MarkersPopover({markers, onClose}) {
+    let box = useRef(null);
+    useDismiss(box, onClose);
+
+    let counts = markerCounts(markers).sort((a, b) => b.count - a.count);
+    return <div
+        ref={box}
+        className={styles.brief}
+        data-place="start"
+        role="dialog"
+        aria-label="Замечания по видам"
+        onClick={event => event.stopPropagation()}
+    >
+        <div className={styles.briefHead}>
+            <span className={styles.briefVerdict}>Замечания по видам</span>
+            <span className={styles.briefScore}>{markers.length}</span>
+        </div>
+
+        <ul className={styles.briefRows} data-kind="points">
+            {counts.map(({category, count}) => <li key={category || 'other'}>
+                <span className={styles.briefLabel}>{markerLabel(category)}</span>
+                <span className={styles.briefPoints}>{count}</span>
+            </li>)}
+        </ul>
     </div>;
 }

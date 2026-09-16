@@ -25,7 +25,6 @@ import {
     formatPercent,
     formatSeconds,
     hasRecordingSignals,
-    markerCounts,
     markerLabel,
     normalizedRole,
     readConversation,
@@ -39,7 +38,7 @@ import {
 import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
 import {pickDialogMedia, readPlayerPinned, savePlayerPinned, turnIndexAt} from './dialogMedia';
-import AnswerBriefPopover, {SoftBriefPopover} from './AnswerBriefPopover';
+import AnswerBriefPopover, {MarkersPopover, SoftBriefPopover} from './AnswerBriefPopover';
 import {answerDetailPath} from './answerBrief';
 import {
     BEHAVIOR_FLAG_LABELS,
@@ -545,16 +544,8 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         <div className={styles.metrics}>
             <div><span>Реплики</span><strong>{turns.length}</strong></div>
             <div><span>Длительность</span><strong>{formatDuration(summary.durationMs || 0)}</strong></div>
-            <div><span>Замечания</span><strong>{markers.length}</strong></div>
+            <div><span>Замечания</span><MarkersMetric markers={markers}/></div>
             <div><span>Участники</span><strong>{roleSummary(turns)}</strong></div>
-        </div>
-
-        <div className={styles.chips}>
-            {markerCounts(markers).map(({category, count}) => <span
-                key={category || 'other'}
-                className={styles.chip}
-            >{markerLabel(category)} · {count}</span>)}
-            {!markers.length && <span className={styles.chip} data-severity="info">Замечаний не найдено</span>}
         </div>
 
         <EmotionSummary sources={summary.emotionSources}/>
@@ -736,6 +727,25 @@ function QaBlock({block, interviewId, seriesStart = false, lens = 'all', linking
         </p>}
         </div>}
     </section>;
+}
+
+// Число замечаний в сводке - кнопка: по клику попап раскладывает его по видам,
+// как балл раскладывается на показатели. Без замечаний раскладывать нечего.
+function MarkersMetric({markers}) {
+    let [open, setOpen] = useState(false);
+    let close = useCallback(() => setOpen(false), []);
+    if (!markers.length) return <strong>0</strong>;
+    return <div className={styles.scoreAnchor}>
+        <button
+            type="button"
+            className={styles.metricButton}
+            aria-label={`Замечания: ${markers.length}, показать по видам`}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            onClick={() => setOpen(!open)}
+        ><strong>{markers.length}</strong></button>
+        {open && <MarkersPopover markers={markers} onClose={close}/>}
+    </div>;
 }
 
 // Балл за ответ: число и шкала из делений - по шкале уровень виден, не читая цифры.
