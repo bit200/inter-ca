@@ -3,7 +3,7 @@ import Perc from "./Suggest/Perc";
 import Input from "../libs/Input";
 import Textarea from "../libs/Textarea";
 import MyModal from "../libs/MyModal";
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo} from "./videoProcessUpload";
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, uploadErrorMessage} from "./videoProcessUpload";
 import {isFileDrag, pickDroppedFile} from "./videoDropzone";
 
 function Layout2(props) {
@@ -107,7 +107,7 @@ function Layout2(props) {
                 setStage('done')
             } catch (e) {
                 setStage('error')
-                setErr(e.message || e.toString())
+                setErr(uploadErrorMessage(e))
             }
         });
     }
