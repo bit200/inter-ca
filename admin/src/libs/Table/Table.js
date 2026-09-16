@@ -382,7 +382,13 @@ class Table extends React.Component {
     }
 
     onAdd(v) {
-        this.openPoint(_.extend({}, this.props.opts.on_add_obj, v))
+        let obj = _.extend({}, this.props.opts.on_add_obj, v);
+        // createOnAdd: без окна «Создать запись» - сразу создаём и уходим в карточку
+        // (вместе с openAfterCreate), поля заполняются уже там.
+        if (this.props.opts.createOnAdd) {
+            return this.post(obj)
+        }
+        this.openPoint(obj)
     }
 
 

@@ -14,9 +14,15 @@ describe('открытие записи сразу после создания (
         expect(post).toMatch(/global\.navigate\(window\.location\.pathname \+ '\/' \+ r\._id \+ tail\)/);
     });
 
+    it('createOnAdd: кнопка добавления сразу создаёт запись, минуя окно', () => {
+        const onAdd = tableJs.slice(tableJs.indexOf('    onAdd(v) {'), tableJs.indexOf('    closeModal() {'));
+        expect(onAdd).toMatch(/if \(this\.props\.opts\.createOnAdd\) \{\s*return this\.post\(obj\)/);
+    });
+
     it('новое интервью открывается на вкладке «Обзор»', () => {
         const at = appJs.indexOf('        interviews: {');
         const block = appJs.slice(at, appJs.indexOf('        quiz: {', at));
         expect(block).toMatch(/openAfterCreate: '\?tab=overview'/);
+        expect(block).toMatch(/createOnAdd: true/);
     });
 });

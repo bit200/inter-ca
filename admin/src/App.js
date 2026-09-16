@@ -353,6 +353,8 @@ global.CONFIG = {
             saveInTabs: true,
             // Новое интервью сразу открываем на «Обзоре» - там загрузка записи.
             openAfterCreate: '?tab=overview',
+            // Кнопка «Добавить» создаёт интервью сразу, без окна с названием.
+            createOnAdd: true,
             // Интервью, где оценка записи ждёт разметки ролей участников.
             TopComp: RolesPendingInterviews,
             top_filters: [
