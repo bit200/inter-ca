@@ -221,6 +221,8 @@ export function readQaBlocks(result, turns, options) {
             startMs: starts.length ? Math.min(...starts) : null,
             endMs: ends.length ? Math.max(...ends) : null,
             evaluation: readEvaluation(block, technical, active),
+            // Сохранённая расшифровка оценки (кнопка «Расшифровать оценку»).
+            explain: asObject(block.explain),
             soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client')),
             timing: readTiming(block, timings[position]),
         };

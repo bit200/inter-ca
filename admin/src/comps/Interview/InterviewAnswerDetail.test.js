@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter, Routes, Route} from 'react-router-dom';
 import InterviewAnswerDetail from './InterviewAnswerDetail';
 import {resetEvaluationReference} from './DialogAnalysis/answerBrief';
@@ -22,6 +22,9 @@ const renderPage = (path) => {
                 : url === '/eval-metric-schemas' ? {items: [{key: 'evaluation.depth.depth_score', group: 'Глубина', min: 0, max: 10}]}
                 : {items: []}
         )),
+        post: jest.fn(() => Promise.resolve({explain: {summary: 'Опыта с микрофронтендами нет', components: [
+            {name: 'depth', score: 2, verdict: 'Только теория', suggestion: 'Разберите пример Module Federation'},
+        ]}})),
     };
     return render(
         <MemoryRouter initialEntries={[path]}>
@@ -44,6 +47,24 @@ describe('InterviewAnswerDetail: полная детализация техни�
         expect(screen.getByText('Пока нет, только теория')).toBeInTheDocument();
         expect(screen.getByText('Не отличает микрофронтенды от микросервисов')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '← Разбор диалога'})).toHaveAttribute('href', '/interviews/1000?tab=dialog');
+    });
+
+    it('кнопка «Расшифровать оценку» запрашивает расшифровку этого вопроса и показывает вывод и разбор', async () => {
+        renderPage('/interviews/1000/answers/2');
+
+        fireEvent.click(await screen.findByTestId('evaluate-explain-button'));
+        expect(global.http.post).toHaveBeenCalledWith('/my-interview/1000/answers-evaluation/2/explain', {}, {wo_notify: true});
+        expect(await screen.findByText('Опыта с микрофронтендами нет')).toBeInTheDocument();
+        expect(screen.getByText('Разберите пример Module Federation')).toBeInTheDocument();
+        expect(screen.queryByTestId('evaluate-explain-button')).not.toBeInTheDocument();
+    });
+
+    it('сохранённая расшифровка показывается сразу, без кнопки', async () => {
+        answers.answersEvaluation.result.blocks[1].explain = {summary: 'Уже расшифровано', components: []};
+        renderPage('/interviews/1000/answers/2');
+        expect(await screen.findByText('Уже расшифровано')).toBeInTheDocument();
+        expect(screen.queryByTestId('evaluate-explain-button')).not.toBeInTheDocument();
+        delete answers.answersEvaluation.result.blocks[1].explain;
     });
 
     it('несуществующий номер вопроса - понятное сообщение, а не пустая страница', async () => {

@@ -4,6 +4,7 @@ import {Link, useParams} from 'react-router-dom';
 import styles from '../EvaluationDetail/evaluationDetail.module.scss';
 import ScoreStrip from '../EvaluationDetail/components/ScoreStrip';
 import AdviceSection from '../EvaluationDetail/components/AdviceSection';
+import ExplainSection from '../EvaluationDetail/components/ExplainSection';
 import {scoreVerdict} from '../EvaluationDetail/components/scoreVerdict';
 import {normalizeAnswers} from './DialogAnalysis/dialogAnalysisState';
 import {questionTitle, readQaBlocks, shortQuestionTitle} from './DialogAnalysis/qaBlocks';
@@ -30,6 +31,11 @@ export default function InterviewAnswerDetail() {
     const [block, setBlock] = useState(null);
     const [loading, setLoading] = useState(true);
     const [reference, setReference] = useState({schemas: [], rules: []});
+    // Как на /evaluations/:id: кнопка расшифровки стоит в шапке рядом с вопросом,
+    // а общий вывод - карточкой сразу под ответом. callback-ref через useState,
+    // чтобы порталы ExplainSection получили уже смонтированные узлы.
+    const [explainSlot, setExplainSlot] = useState(null);
+    const [summarySlot, setSummarySlot] = useState(null);
 
     useEffect(() => {
         setLoading(true);
@@ -70,6 +76,7 @@ export default function InterviewAnswerDetail() {
     const score = evaluation.state === 'done' ? evaluation.score : null;
     const questionText = result.question || questionTitle(block);
     const answerText = result.text || textsOf(block, 'client').join(' ');
+    const explainAnswer = () => global.http.post(`/my-interview/${id}/answers-evaluation/${block.number}/explain`, {}, {wo_notify: true});
 
     return (
         <div className={styles.page}>
@@ -91,6 +98,11 @@ export default function InterviewAnswerDetail() {
                                 <span className={`${styles.chip} ${styles.chipVerdict}`}>{scoreVerdict(score, evaluation.max)}</span>
                             )}
                         </div>
+                    </div>
+
+                    <div className={styles.heroActions}>
+                        {/* Сюда ExplainSection порталом кладёт "Расшифровать оценку" */}
+                        <div ref={setExplainSlot} className={styles.heroSlot}/>
                     </div>
                 </div>
             </div>
@@ -122,6 +134,7 @@ export default function InterviewAnswerDetail() {
                                 {evaluation.feedback && <p className={styles.answerText} style={{marginTop: 12}}>{evaluation.feedback}</p>}
                             </div>
                         </div>
+                        <div ref={setSummarySlot} className={styles.summarySlot}/>
                     </div>
                 )}
 
@@ -131,6 +144,12 @@ export default function InterviewAnswerDetail() {
                     </div>
                 )}
             </div>
+
+            {score != null && (
+                <ExplainSection onExplain={explainAnswer} initialExplain={block.explain}
+                                buttonSlot={explainSlot} summarySlot={summarySlot}
+                                buttonClassName={`btn btn-sm ${styles.explainAction}`}/>
+            )}
         </div>
     );
 }
