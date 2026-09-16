@@ -703,7 +703,7 @@ class Table extends React.Component {
                                                     }} className={'search_it'}>=></small>}
                                                     {type === 'text' && !Component && !tab.href &&
                                                         <span
-                                                            className={tab.className || ''}>{global.env.nameFn(value)}</span>}
+                                                            className={tab.className || ''}>{global.env.valueFn(value)}</span>}
                                                     {type === 'array' || type === 'arr' &&
                                                         <span>{(value && value.map ? value : []).map((item, ind) => {
                                                             return (<div key={ind} className={"ib mr-5"}>

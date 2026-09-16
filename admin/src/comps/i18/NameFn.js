@@ -2,7 +2,7 @@ import _ from 'underscore';
 import obj from './lngs';
 import Storage from './../Storage'
 import ColorTheme from "../ColorTheme";
-import {markTranslation, stripMarks} from './translateMarks';
+import {markTranslation, markValue, stripMarks} from './translateMarks';
 
 function getParameterByName(name, url = window.location.href) {
     const regex = new RegExp(`[?&]${name}=([^&#]*)`);
@@ -41,6 +41,15 @@ global.env.nameFn = (name) => {
     let fName = (obj[_name] || {})[lng] || ''
 
     return markTranslation(fName || name || '-', !!fName, isHttps)
+}
+
+// Перевод значения из данных: нет перевода — возвращает значение без меток.
+global.env.valueFn = (value) => {
+    if (value === undefined || value === null || value === '') return '-';
+    if (typeof value !== 'string') return value;
+    let clean = stripMarks(value);
+    let found = obj[clean.trim().toLowerCase()] || obj[clean];
+    return markValue(clean, (found || {})[lng] || '', isHttps)
 }
 
 global.nameFn = global.env.nameFn;

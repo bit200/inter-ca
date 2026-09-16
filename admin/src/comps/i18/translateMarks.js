@@ -26,3 +26,9 @@ export function markTranslation(text, found, isHttps) {
     let mark = found ? FOUND_MARK : MISSING_MARK;
     return mark + clean + mark;
 }
+
+// Значение из данных (ячейка таблицы): не ключ перевода — показываем как есть, без метки «перевода нет».
+export function markValue(value, translated, isHttps) {
+    if (!translated) return stripMarks(value);
+    return markTranslation(translated, true, isHttps);
+}
