@@ -11,10 +11,12 @@ const block = (selector) => {
 };
 
 describe('липкий плеер записи в разборе диалога', () => {
-    test('держится ниже фиксированного хэдера', () => {
+    test('прижат к сжатой при скролле шапке, без зазора', () => {
         const player = block('.player');
         expect(player).toMatch(/position: sticky;/);
-        expect(player).toMatch(/top: calc\(var\(--bs-topbar-height[^;]*\)\s*\+\s*\d+px\);/);
+        const top = player.match(/top: calc\(var\(--bs-topbar-height[^)]*\) - 20px \+ (\d+)px\);/);
+        expect(top).not.toBeNull();
+        expect(Number(top[1])).toBeLessThanOrEqual(6);
     });
 
     test('видео по высоте помещается в окно под хэдером', () => {
