@@ -1,4 +1,4 @@
-import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, withSoftFallback} from './dialogSummary';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall, SOFT_WEIGHT} from './dialogSummary';
 
 // Форма metrics - как её считает services/dialogMetrics.js в itk-platform-api.
 const metrics = {
@@ -50,13 +50,23 @@ describe('итог интервью и метрики разговора', () =>
     it('без технических вопросов итоговый балл - среднее по нетехническим ответам', () => {
         let soft = score => ({technical: false, soft: {state: 'done', score, max: 10}});
         let overall = {score: 0, max: 10, summary: 'Технической оценки нет', strengths: [], weaknesses: [], message: ''};
-        expect(withSoftFallback(overall, [soft(9), soft(6), {technical: false, soft: {state: 'unanswered'}}]))
+        expect(combineOverall(overall, [soft(9), soft(6), {technical: false, soft: {state: 'unanswered'}}]))
             .toEqual({...overall, score: 7.5, basis: 'soft'});
-        expect(withSoftFallback(null, [soft(7)])).toBeNull();
-        // Есть технический вопрос - балл сервиса не трогаем.
-        expect(withSoftFallback(overall, [soft(9), {technical: true, soft: null}])).toBe(overall);
+        expect(combineOverall(null, [soft(7)])).toBeNull();
+        // Есть технический вопрос, но нечего сводить с нетехнической частью - балл сервиса не трогаем.
+        expect(combineOverall({...overall, score: 5}, [{technical: true, soft: null}])).toEqual({...overall, score: 5});
         // Нечего усреднять - тоже.
-        expect(withSoftFallback(overall, [{technical: false, soft: {state: 'pending'}}])).toBe(overall);
+        expect(combineOverall(overall, [{technical: false, soft: {state: 'pending'}}])).toBe(overall);
+    });
+
+    it('итог сводит техническую и нетехническую оценки, нетехническая с весом 0.6', () => {
+        let overall = {score: 4.6, max: 10, summary: 'Средний уровень', strengths: [], weaknesses: [], message: ''};
+        let blocks = [{technical: true, soft: null}, {technical: false, soft: {state: 'done', score: 8, max: 10}},
+            {technical: false, soft: {state: 'done', score: 3, max: 5}}];
+        // Нетехническая - среднее 8 и 6 = 7; итог (4.6 + 7 * 0.6) / 1.6 = 5.5.
+        expect(SOFT_WEIGHT).toBe(0.6);
+        expect(combineOverall(overall, blocks)).toEqual({...overall, score: 5.5, basis: 'combined',
+            parts: {technical: 4.6, soft: 7, softWeight: 0.6}});
     });
 
     it('тайминги пишутся секундами, длинные - минутами', () => {

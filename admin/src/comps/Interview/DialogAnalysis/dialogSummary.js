@@ -47,21 +47,28 @@ export function readOverall(result) {
     return {score, max, summary, strengths, weaknesses, message};
 }
 
-// Технических вопросов в интервью нет - технической оценки тоже нет, и общий балл
-// от сервиса выходит нулём. Тогда итоговой оценкой показываем среднее по мягким
-// оценкам нетехнических ответов, а basis помечает, что балл за нетехническую часть.
+// Итог интервью сводит обе части: балл сервиса - техническая оценка, среднее мягких
+// оценок нетехнических ответов - нетехническая. Нетехническая идёт с весом SOFT_WEIGHT,
+// чтобы итог говорил об интервью целиком, а не только о технических ответах.
+// Технических вопросов нет - балл сервиса выходит нулём, итог только по нетехнической
+// части (basis 'soft'). Нечего усреднять - балл сервиса как есть.
 // Итога ещё нет (пишется) - не подставляем: блок итога показывает ожидание.
-export function withSoftFallback(overall, blocks) {
+export const SOFT_WEIGHT = 0.6;
+
+export function combineOverall(overall, blocks) {
     if (!overall) return overall;
     let list = Array.isArray(blocks) ? blocks : [];
-    if (list.some(block => block && block.technical === true)) return overall;
     let rated = list.map(block => block && block.soft)
         .filter(soft => soft && soft.state === 'done' && typeof soft.score === 'number');
     if (!rated.length) return overall;
-    let max = rated[0].max || 10;
-    let mean = rated.reduce((sum, soft) => sum + soft.score / (soft.max || 10) * max, 0) / rated.length;
-    let score = Math.round(mean * 10) / 10;
-    return {...overall, score, max, basis: 'soft'};
+    let max = overall.max || 10;
+    let round = value => Math.round(value * 10) / 10;
+    let soft = round(rated.reduce((sum, item) => sum + item.score / (item.max || 10) * max, 0) / rated.length);
+    let hasTechnical = list.some(block => block && block.technical === true);
+    if (!hasTechnical || overall.score === null) return {...overall, score: soft, max, basis: 'soft'};
+    let technical = overall.score;
+    let score = round((technical + soft * SOFT_WEIGHT) / (1 + SOFT_WEIGHT));
+    return {...overall, score, max, basis: 'combined', parts: {technical, soft, softWeight: SOFT_WEIGHT}};
 }
 
 // Приветствие и прощание - отдельный чек по началу и концу разговора, не блок:

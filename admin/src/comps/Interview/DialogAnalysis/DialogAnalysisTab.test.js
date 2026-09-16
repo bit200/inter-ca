@@ -629,12 +629,13 @@ describe('таб разбора диалога', () => {
 
             const summary = screen.getByRole('region', {name: 'Итог интервью'});
             expect(container.querySelector('section').getAttribute('aria-label')).toBe('Итог интервью');
-            expect(within(summary).getByRole('img', {name: 'Общая оценка 6,5 из 10'})).toBeInTheDocument();
+            expect(within(summary).getByRole('img', {name: /^Общая оценка [\d,]+ из 10: техническая 6,5, нетехническая [\d,]+ с весом 0,6$/})).toBeInTheDocument();
+            expect(within(summary).getByText('техника')).toBeInTheDocument();
             expect(within(summary).getByText('Технически уверен, на вопросы про мотивацию отвечает уклончиво.')).toBeInTheDocument();
             expect(within(summary).getByText('Приветствие есть')).toBeInTheDocument();
             expect(within(summary).getByText('Прощания нет')).toBeInTheDocument();
             expect(within(summary).getByText('Кандидат 65%')).toBeInTheDocument();
-            expect(within(summary).getByText('4')).toBeInTheDocument();
+            expect(within(within(summary).getByText('Перебивания').closest('div')).getByText('4')).toBeInTheDocument();
             expect(within(summary).getByText('42 с')).toBeInTheDocument();
 
             expect(within(screen.getByRole('region', {name: 'Вопрос 1'})).getByText('пауза перед ответом 1,5 с')).toBeInTheDocument();
