@@ -361,7 +361,9 @@ button.turnSpeaker{
 
 .player{
   position: sticky;
-  top: calc(var(--bs-topbar-height, 0px) + 12px);
+  // Липнет только после скролла, а тогда хэдер уже сжат на 20px
+  // (.topbar:has(.nav-sticky) в app.min.scss) - от полной высоты оставался зазор.
+  top: calc(var(--bs-topbar-height, 20px) - 20px + 4px);
   z-index: 1;
   align-self: start;
   padding: 10px;
