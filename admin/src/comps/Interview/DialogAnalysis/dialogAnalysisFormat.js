@@ -207,6 +207,15 @@ export function applySpeakerRoles(turns, roles) {
     });
 }
 
+// Роли стали полными от ручной правки: до неё в записи не было кандидата или
+// интервьюера, после - есть оба. Оценка ответов, посчитанная без одной из ролей,
+// бессмысленна (0% речи, вопросы без ответов), поэтому её пора пересчитать.
+export function rolesJustCompleted(turns, prevRoles, nextRoles) {
+    let before = roleSummary(applySpeakerRoles(turns, prevRoles));
+    let after = roleSummary(applySpeakerRoles(turns, nextRoles));
+    return before !== 'Определены' && after === 'Определены';
+}
+
 // Участники записи для выбора роли: сколько реплик и сколько времени говорил
 // каждый и с чего начал - по первой фразе человек узнаёт голос.
 export function listSpeakers(turns) {

@@ -31,6 +31,7 @@ import {
     roleSummary,
     speakerLabel,
     applySpeakerRoles,
+    rolesJustCompleted,
     speakerKey,
     speakerLabels,
 } from './dialogAnalysisFormat';
@@ -184,6 +185,10 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
 
     function evaluateAnswers() {
         if (!interviewId || !global.http || answersButton.disabled) return;
+        runAnswersEvaluation();
+    }
+
+    function runAnswersEvaluation() {
         setSendingAnswers(true);
         global.http.post(`/my-interview/${interviewId}/answers-evaluation`, {})
             .then(payload => {
@@ -213,12 +218,19 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         [rawConversation, roles]
     );
 
+    let answersActive = isActiveStatus(answers.status, ANSWERS_PIPELINE_STEPS);
+
     function assignRole(key, role) {
         let next = {...roles, [key]: role};
         setRoles(next);
         onSpeakerRolesChange && onSpeakerRolesChange(next);
+        // Обе роли появились только сейчас - оценка ответов считалась без них,
+        // пересчитываем сами, не заставляя искать кнопку «Оценить ответы заново».
+        if (dialogDone && !answersActive && !sendingAnswers
+            && rolesJustCompleted(rawConversation.turns, roles, next)) {
+            runAnswersEvaluation();
+        }
     }
-    let answersActive = isActiveStatus(answers.status, ANSWERS_PIPELINE_STEPS);
     let blocks = useMemo(
         () => readQaBlocks(answers.result, conversation.turns, {
             active: answersActive || sendingAnswers,
