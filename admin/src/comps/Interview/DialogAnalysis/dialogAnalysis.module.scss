@@ -1601,3 +1601,191 @@ button.turnSpeaker{
   font-weight: 600;
 }
 
+
+// Мок-интервью по слабым ответам (WeakMocks.jsx). Три варианта подачи делят
+// одни токены вкладки: блок стоит под итогом и выглядит его продолжением -
+// та же карточка, тот же заголовок, без своей палитры.
+.mockPanel{
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  background: var(--dlg-card);
+}
+
+.mockHead{ display: grid; gap: 2px; }
+
+.mockTitle{
+  margin: 0;
+  color: var(--dlg-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mockHint{
+  margin: 0;
+  max-width: 70ch;
+  color: var(--dlg-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mockList{
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mockRow{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--dlg-line);
+
+  &:first-child{ border-top: 0; padding-top: 2px; }
+}
+
+.mockRowMain{ display: grid; gap: 2px; min-width: 0; }
+
+.mockName{
+  color: var(--dlg-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mockTopics{
+  overflow: hidden;
+  color: var(--dlg-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mockStatus{
+  color: var(--dlg-muted);
+  font-size: 12px;
+
+  &[data-phase="building"]{ color: var(--dlg-accent); }
+  &[data-phase="failed"]{ color: var(--dlg-bad); }
+}
+
+.mockAction{
+  padding: 4px 12px;
+  border: 1px solid var(--dlg-accent);
+  border-radius: 4px;
+  color: var(--dlg-accent);
+  background: var(--dlg-card);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &[data-kind="start"], &[data-kind="continue"]{ color: var(--dlg-card); background: var(--dlg-accent); }
+  &:hover{ filter: brightness(.95); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
+  &:disabled{ opacity: .6; cursor: default; }
+}
+
+// «Было -> стало»: два балла крупно, между ними стрелка-линия. Балл мок-интервью
+// окрашен по сдвигу относительно интервью, пока попыток нет - прочерк.
+.mockProgress{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.mockScore{
+  display: grid;
+  gap: 4px;
+  --mock-tone: var(--dlg-strong);
+
+  &[data-trend="up"]{ --mock-tone: var(--dlg-accent); }
+  &[data-trend="down"]{ --mock-tone: var(--dlg-bad); }
+  &[data-empty]{ --mock-tone: var(--dlg-line); }
+}
+
+.mockScoreValue{
+  color: var(--mock-tone);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mockScoreLabel{
+  color: var(--dlg-muted);
+  font-size: 11px;
+}
+
+.mockArrow{
+  position: relative;
+  align-self: flex-start;
+  width: 44px;
+  height: 2px;
+  margin-top: 16px;
+  background: var(--dlg-line);
+
+  &::after{
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: -4px;
+    border: 5px solid transparent;
+    border-left: 7px solid var(--dlg-line);
+    border-right: 0;
+  }
+}
+
+.mockProgressSide{
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-left: auto;
+  max-width: 34ch;
+
+  .mockStatus{ line-height: 1.4; }
+}
+
+// Вариант «на вопросах»: одна строка над расшифровкой и метки в шапках вопросов.
+.mockNote{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  color: var(--dlg-ink);
+  background: var(--dlg-soft);
+  font-size: 13px;
+}
+
+.mockMark{
+  align-self: center;
+  padding: 2px 8px;
+  border: 1px dashed var(--dlg-warn);
+  border-radius: 999px;
+  color: var(--dlg-warn);
+  background: var(--dlg-warn-soft);
+  font-size: 11px;
+  white-space: nowrap;
+
+  &:is(button){ cursor: pointer; }
+  &:is(button):hover{ border-style: solid; }
+  &:focus-visible{ outline: 2px solid var(--dlg-warn); outline-offset: 2px; }
+  &[data-phase="building"]{ border-color: var(--dlg-line); color: var(--dlg-muted); background: var(--dlg-card); }
+}
+
+@media (max-width: 767px){
+  .mockRow{ grid-template-columns: minmax(0, 1fr) auto; }
+  .mockRow .mockStatus{ grid-column: 1; grid-row: 2; }
+  .mockRow .mockAction{ grid-column: 2; grid-row: 1 / span 2; }
+  .mockProgressSide{ margin-left: 0; }
+}

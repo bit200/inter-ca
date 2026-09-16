@@ -33,6 +33,14 @@ describe('PersonalMockInterviews', () => {
         expect(global.http.get).toHaveBeenCalledWith('/my-personal-mock-interview', {}, { wo_notify: true });
     });
 
+    it('ведёт к разбору интервью, по слабым ответам которого собрано', async () => {
+        setupHttp([{ interviewId: 'p1', sourceInterviewId: 5, state: 'published', cd: '2026-09-10' }]);
+        renderSection();
+
+        const link = await screen.findByTestId('personal-mock-interview-source');
+        expect(link).toHaveAttribute('href', '/interviews/5?tab=dialog');
+    });
+
     it('без персональных интервью секцию не показывает', async () => {
         setupHttp([]);
         renderSection();
