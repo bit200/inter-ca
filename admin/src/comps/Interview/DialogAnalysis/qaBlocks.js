@@ -114,7 +114,7 @@ const RELEVANCE_ALIASES = {
 // candidateLed - блок открыл сам кандидат («Время работы какое?»): разговор ведёт он,
 // и встречные вопросы тут неприменимы, что бы ни ответила модель - её промпт
 // рассчитан на вопрос интервьюера.
-function readSoftEvaluation(block, technical, active, answered, candidateLed) {
+function readSoftEvaluation(block, technical, active, answered, candidateLed, delivery) {
     if (technical !== false) return null;
     if (!answered) return {state: 'unanswered'};
     let source = asObject(block.softEvaluate) || asObject(block.softEvaluation);
@@ -141,7 +141,8 @@ function readSoftEvaluation(block, technical, active, answered, candidateLed) {
     let band = relevance === 'off_topic' ? 'poor'
         : relevance === 'evasive' || complete === false ? 'fair'
         : 'good';
-    return {state: 'done', relevance, complete, engaged, note, band, score: softScore(relevance, complete, engaged, band), max: SOFT_MAX};
+    return {state: 'done', relevance, complete, engaged, note, band, delivery,
+        score: softBreakdown({relevance, complete, engaged, band, delivery}).score, max: SOFT_MAX};
 }
 
 // Балл мягкой оценки: по теме - 6, уклончиво - 3, мимо - 0; развёрнуто +3 (не
@@ -155,13 +156,10 @@ const SOFT_MAX = 10;
 const RELEVANCE_POINTS = {on_topic: 6, evasive: 3, off_topic: 0};
 const BAND_RANGES = {good: [7, 10], fair: [4, 6], poor: [0, 3]};
 
-function softScore(relevance, complete, engaged, band) {
-    return softBreakdown({relevance, complete, engaged, band}).score;
-}
-
-// Из чего сложился балл мягкой оценки: слагаемые по отметкам и поправка, если
-// сумма не влезла в полосу уровня ответа. Попап над баллом показывает ровно это.
-export function softBreakdown({relevance, complete, engaged, band}) {
+// Из чего сложился балл мягкой оценки: «Содержание» - слагаемые по отметкам и
+// поправка, если сумма не влезла в полосу уровня ответа, - и «Подача» - штрафы
+// за речь. Итог - 70% содержания плюс 30% содержания, помноженные на долю подачи. Попап над баллом показывает ровно это.
+export function softBreakdown({relevance, complete, engaged, band, delivery}) {
     let counted = typeof engaged === 'boolean';
     let completeMax = counted ? 3 : 4;
     let rows = [
@@ -174,8 +172,125 @@ export function softBreakdown({relevance, complete, engaged, band}) {
     ].filter(Boolean);
     let raw = rows.reduce((sum, row) => sum + row.points, 0);
     let [low, high] = BAND_RANGES[band];
-    let score = Math.min(high, Math.max(low, raw));
-    return {rows, raw, score, max: SOFT_MAX};
+    let content = Math.min(high, Math.max(low, raw));
+    let speech = deliveryBreakdown(delivery);
+    // Подача взвешивается от балла содержания, а не от 10: гладкая речь не
+    // поднимает ответ мимо вопроса, а только снимает до 30% с того, что заработано.
+    let score = speech
+        ? Math.round(content * (CONTENT_WEIGHT + DELIVERY_WEIGHT * speech.score / speech.max) * 10) / 10
+        : content;
+    return {rows, raw, content, delivery: speech, score, max: SOFT_MAX,
+        weights: {content: CONTENT_WEIGHT, delivery: DELIVERY_WEIGHT}};
+}
+
+// «Подача» из 10: по смыслу ответ может быть безупречен, но паразиты, запинки и
+// долгие паузы делают его не на 10. Штрафы детерминированные и считаются по уже
+// размеченным данным: паразиты - маркеры разбора, запинки - по тексту реплик,
+// паузы - тайминги. Паразиты берём плотностью на 100 слов, а не штуками: четыре
+// «ну» в длинном рассказе и в двух фразах - разная речь.
+const CONTENT_WEIGHT = 0.7;
+const DELIVERY_WEIGHT = 0.3;
+const FILLER_STEPS = [[10, 6], [6, 4], [3, 2]];
+const DISFLUENCY_MAX = 3;
+const LONG_DELAY_MS = 4500;
+const VERY_LONG_DELAY_MS = 8000;
+const INNER_PAUSE_MS = 3000;
+const INNER_PAUSE_MAX = 2;
+
+function plural(count, one, few, many) {
+    let mod10 = count % 10;
+    let mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+    return many;
+}
+
+function seconds(ms) {
+    return formatScore(Math.round(ms / 100) / 10) + ' с';
+}
+
+export function deliveryBreakdown(delivery) {
+    if (!delivery) return null;
+    let {words = 0, fillers = 0, disfluencies = 0, delayMs = null, innerPauses = 0} = delivery;
+    let rows = [];
+
+    let density = words ? fillers / words * 100 : 0;
+    let fillerStep = FILLER_STEPS.find(([limit]) => density >= limit);
+    rows.push({key: 'fillers',
+        label: fillers
+            ? `${fillers} ${plural(fillers, 'паразит', 'паразита', 'паразитов')} на ${words} ${plural(words, 'слово', 'слова', 'слов')}`
+            : 'Без слов-паразитов',
+        penalty: fillerStep ? fillerStep[1] : 0});
+
+    rows.push({key: 'disfluencies',
+        label: disfluencies
+            ? `${disfluencies} ${plural(disfluencies, 'речевой сбой', 'речевых сбоя', 'речевых сбоев')}`
+            : 'Без речевых сбоев',
+        penalty: Math.min(DISFLUENCY_MAX, disfluencies)});
+
+    typeof delayMs === 'number' && rows.push({key: 'delay',
+        label: 'Пауза перед ответом ' + seconds(delayMs),
+        penalty: delayMs >= VERY_LONG_DELAY_MS ? 2 : delayMs >= LONG_DELAY_MS ? 1 : 0});
+
+    innerPauses > 0 && rows.push({key: 'innerPauses',
+        label: `${innerPauses} ${plural(innerPauses, 'долгая пауза', 'долгие паузы', 'долгих пауз')} в ответе`,
+        penalty: Math.min(INNER_PAUSE_MAX, innerPauses)});
+
+    let score = Math.max(0, SOFT_MAX - rows.reduce((sum, row) => sum + row.penalty, 0));
+    return {rows, score, max: SOFT_MAX};
+}
+
+// Речевые сбои в тексте ответа: «эээ»/«ммм», повтор слова подряд («я я»),
+// самоперебив многоточием посреди реплики («У меня… Я был») и оборванная
+// в конце ответа фраза («офисов этой…»).
+const HESITATION = /^(э{2,}|м{2,}|эм+|хм+|а{3,})$/;
+
+export function countDisfluencies(texts) {
+    let count = 0;
+    let list = texts.map(text => String(text || '').trim()).filter(Boolean);
+    list.forEach((text, position) => {
+        let words = text.toLowerCase().split(/[^\p{L}\d-]+/u).filter(Boolean);
+        words.forEach((word, index) => {
+            if (HESITATION.test(word)) count++;
+            else if (index > 0 && word === words[index - 1] && !HESITATION.test(word)) count++;
+        });
+        let breaks = text.match(/(…|\.{3})(?=\s*\S)/g);
+        if (breaks) count += breaks.length;
+        if (position === list.length - 1 && /(…|\.{3})$/.test(text)) count++;
+    });
+    return count;
+}
+
+function countWords(text) {
+    return String(text || '').split(/\s+/).filter(word => /[\p{L}\d]/u.test(word)).length;
+}
+
+// Сырые данные подачи по репликам кандидата в блоке. markersById - маркеры
+// разбора по id: паразит - маркер filler у реплики. Пауза внутри ответа - разрыв
+// между соседними репликами кандидата без реплики интервьюера между ними.
+function readDelivery(items, markersById, timing) {
+    let answers = items.filter(item => item.turn.role === 'client');
+    if (!answers.length) return null;
+    let words = answers.reduce((sum, item) => sum + countWords(item.turn.text), 0);
+    let fillers = answers.reduce((sum, item) => sum + (Array.isArray(item.turn.markerIds) ? item.turn.markerIds : [])
+        .filter(id => {
+            let marker = markersById.get(id);
+            return marker && marker.category === 'filler';
+        }).length, 0);
+    let innerPauses = 0;
+    items.forEach((item, index) => {
+        let prev = items[index - 1];
+        if (!prev || item.turn.role !== 'client' || prev.turn.role !== 'client') return;
+        let gap = Number(item.turn.startMs) - Number(prev.turn.endMs);
+        if (isFinite(gap) && gap >= INNER_PAUSE_MS) innerPauses++;
+    });
+    return {
+        words,
+        fillers,
+        disfluencies: countDisfluencies(answers.map(item => item.turn.text)),
+        delayMs: timing ? timing.delayMs : null,
+        innerPauses,
+    };
 }
 
 const RELEVANCE_TITLES = {on_topic: 'По теме', evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
@@ -207,7 +322,9 @@ function readTiming(block, metrics) {
 export function readQaBlocks(result, turns, options) {
     let list = readQaBlockList(result);
     let feed = Array.isArray(turns) ? turns : [];
-    let {active = false, timings = []} = options || {};
+    let {active = false, timings = [], markers = []} = options || {};
+    let markersById = new Map();
+    (Array.isArray(markers) ? markers : []).forEach(marker => marker && marker.id !== undefined && markersById.set(marker.id, marker));
 
     return list.map((raw, position) => {
         let block = asObject(raw) || {};
@@ -222,6 +339,7 @@ export function readQaBlocks(result, turns, options) {
         });
         let starts = items.map(item => Number(item.turn.startMs)).filter(isFinite);
         let ends = items.map(item => Number(item.turn.endMs)).filter(isFinite);
+        let timing = readTiming(block, timings[position]);
 
         return {
             key: block.id || block._id || 'qa' + position,
@@ -234,8 +352,8 @@ export function readQaBlocks(result, turns, options) {
             // Сохранённая расшифровка оценки (кнопка «Расшифровать оценку»).
             explain: asObject(block.explain),
             soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client'),
-                items.length > 0 && items[0].turn.role === 'client'),
-            timing: readTiming(block, timings[position]),
+                items.length > 0 && items[0].turn.role === 'client', readDelivery(items, markersById, timing)),
+            timing,
         };
     }).filter(block => block.items.length);
 }
