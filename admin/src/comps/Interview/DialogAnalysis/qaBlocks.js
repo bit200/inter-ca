@@ -148,12 +148,27 @@ const RELEVANCE_POINTS = {on_topic: 6, evasive: 3, off_topic: 0};
 const BAND_RANGES = {good: [7, 10], fair: [4, 6], poor: [0, 3]};
 
 function softScore(relevance, complete, engaged, band) {
-    let raw = (relevance ? RELEVANCE_POINTS[relevance] : 6)
-        + (complete === true ? 3 : complete === null ? 2 : 0)
-        + (engaged === true ? 1 : 0);
-    let [low, high] = BAND_RANGES[band];
-    return Math.min(high, Math.max(low, raw));
+    return softBreakdown({relevance, complete, engaged, band}).score;
 }
+
+// Из чего сложился балл мягкой оценки: слагаемые по отметкам и поправка, если
+// сумма не влезла в полосу уровня ответа. Попап над баллом показывает ровно это.
+export function softBreakdown({relevance, complete, engaged, band}) {
+    let rows = [
+        {key: 'relevance', label: relevance ? RELEVANCE_TITLES[relevance] : 'Тема ответа не определена',
+            points: relevance ? RELEVANCE_POINTS[relevance] : 6, max: 6},
+        {key: 'complete', label: complete === true ? 'Развёрнуто' : complete === false ? 'Формально' : 'Полнота не определена',
+            points: complete === true ? 3 : complete === null ? 2 : 0, max: 3},
+        {key: 'engaged', label: engaged === true ? 'Встречные вопросы' : 'Без встречных вопросов',
+            points: engaged === true ? 1 : 0, max: 1},
+    ];
+    let raw = rows.reduce((sum, row) => sum + row.points, 0);
+    let [low, high] = BAND_RANGES[band];
+    let score = Math.min(high, Math.max(low, raw));
+    return {rows, raw, score, max: SOFT_MAX};
+}
+
+const RELEVANCE_TITLES = {on_topic: 'По теме', evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
 
 // Полоса оценки: зелёная - уверенный ответ, жёлтая - с пробелами, красная - мимо.
 export function scoreBand(score, max) {

@@ -35,7 +35,7 @@ import {
     speakerLabels,
 } from './dialogAnalysisFormat';
 import {pickDialogMedia, readPlayerPinned, savePlayerPinned, turnIndexAt} from './dialogMedia';
-import AnswerBriefPopover from './AnswerBriefPopover';
+import AnswerBriefPopover, {SoftBriefPopover} from './AnswerBriefPopover';
 import {answerDetailPath} from './answerBrief';
 import {
     BEHAVIOR_FLAG_LABELS,
@@ -731,7 +731,8 @@ function QaScore({evaluation, number, interviewId}) {
                 {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
             </span>
         </button>
-        {open && <AnswerBriefPopover
+        {open && evaluation.relevance !== undefined && <SoftBriefPopover evaluation={evaluation} onClose={close}/>}
+        {open && evaluation.relevance === undefined && <AnswerBriefPopover
             evaluation={evaluation}
             href={interviewId ? answerDetailPath(interviewId, number) : ''}
             onClose={close}
