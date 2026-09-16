@@ -31,6 +31,7 @@ import {
     roleSummary,
     speakerLabel,
     applySpeakerRoles,
+    candidateMarkers,
     rolesJustCompleted,
     speakerKey,
     speakerLabels,
@@ -368,7 +369,8 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
 }
 
 function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId}) {
-    let {turns, markers, summary, capabilities} = conversation;
+    let {turns, summary, capabilities} = conversation;
+    let markers = useMemo(() => candidateMarkers(conversation.turns, conversation.markers), [conversation.turns, conversation.markers]);
     // Вариант B: линза меняет акценты ленты, шкала показывает, где в интервью
     // какой вопрос, а вопрос без ответа связывается с репликой кандидата руками.
     let [lens, setLens] = useState('all');
@@ -443,10 +445,10 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     // Реплика одинакова в ленте и в блоке вопроса: index - место в ленте разбора
     // (-1 у реплики, которую блок принёс текстом), по нему подсвечивается звучащая.
     function renderTurn(turn, index, key, followUp) {
-        let turnMarkers = Array.isArray(turn.markerIds)
+        let isClient = normalizedRole(turn.role) === 'client';
+        let turnMarkers = isClient && Array.isArray(turn.markerIds)
             ? turn.markerIds.map(id => markersById.get(id)).filter(Boolean)
             : [];
-        let isClient = normalizedRole(turn.role) === 'client';
         // По вопросам балл и мягкая оценка уже стоят в шапке вопроса, поэтому у
         // реплики они только в сплошной ленте.
         let inFeed = isClient && index > -1 && !byQuestions;
