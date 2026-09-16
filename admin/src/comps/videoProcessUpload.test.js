@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, DEFAULT_MODE} from './videoProcessUpload';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE} from './videoProcessUpload';
 
 // Поддельный XHR: отвечает по очереди из responses и запоминает запросы
 function makeXHR(responses, log) {
@@ -96,5 +96,25 @@ describe('UploadVideo', () => {
         expect(src).not.toMatch(/file\.slice\(/);
         expect(src).toMatch(/startVideoProcess/);
         expect(src).toMatch(/buildS3UploadInfo/);
+    });
+});
+
+describe('фоновая доводка загрузки', () => {
+    it('в API уходит jobId сразу после приёма файла, без ключа S3', () => {
+        expect(buildJobAttachInfo({jobId: 'j1', name: 'a.mp4', duration: 3})).toEqual({jobId: 'j1', name: 'a.mp4', duration: 3});
+    });
+
+    it('uploadVideoState: processing и error - как есть, остальное (и старые записи) - done', () => {
+        expect(uploadVideoState({status: 'processing'})).toBe('processing');
+        expect(uploadVideoState({status: 'error'})).toBe('error');
+        expect(uploadVideoState({status: 'loading', info: {key: 'k'}})).toBe('done');
+        expect(uploadVideoState(null)).toBe('done');
+    });
+
+    it('карточка интервью не ждёт сжатия в браузере', () => {
+        const src = fs.readFileSync(path.join(__dirname, 'Interview', 'InterviewVideoUpload.jsx'), 'utf8');
+        expect(src).not.toMatch(/waitVideoProcess/);
+        expect(src).toMatch(/buildJobAttachInfo/);
+        expect(src).not.toMatch(/страницу не закрывайте/);
     });
 });
