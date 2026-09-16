@@ -2,6 +2,7 @@ import {
     ANSWERS_PIPELINE_STEPS,
     PIPELINE_STEPS,
     answersButtonState,
+    answersOutdated,
     normalizeAnswers,
     evaluateButtonState,
     isActiveStatus,
@@ -140,5 +141,21 @@ describe('кнопка «Оценить ответы»', () => {
         expect(normalizeAnswers({status: 'done', blocks: [{id: 'b1'}]}).result).toEqual({blocks: [{id: 'b1'}]});
         expect(normalizeAnswers({status: 'done', blocks: [], metrics: {speech: {}}, greeting: {greeted: true}, overall: {score: 7}}).result)
             .toEqual({blocks: [], metrics: {speech: {}}, greeting: {greeted: true}, overall: {score: 7}});
+    });
+});
+
+describe('устаревшая оценка ответов', () => {
+    const dialog = analyzedAt => normalizeAnalysis({status: 'done', result: {analyzedAt}});
+    const answers = (analyzedAt, status = 'done') => normalizeAnswers({status, result: {analyzedAt, blocks: []}});
+
+    it('оценка по другому разбору записи устарела', () => {
+        expect(answersOutdated(dialog('2026-09-16T10:16:48Z'), answers('2026-09-14T11:41:40Z'))).toBe(true);
+    });
+
+    it('оценка по тому же разбору, идущая или без метки - не устарела', () => {
+        expect(answersOutdated(dialog('2026-09-16T10:16:48Z'), answers('2026-09-16T10:16:48Z'))).toBe(false);
+        expect(answersOutdated(dialog('2026-09-16T10:16:48Z'), answers('2026-09-14T11:41:40Z', 'evaluating'))).toBe(false);
+        expect(answersOutdated(dialog('2026-09-16T10:16:48Z'), answers(undefined))).toBe(false);
+        expect(answersOutdated(normalizeAnalysis({status: 'analyzing'}), answers('2026-09-14T11:41:40Z'))).toBe(false);
     });
 });

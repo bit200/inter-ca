@@ -286,6 +286,41 @@ describe('таб разбора диалога', () => {
         });
     });
 
+    describe('оценка ответов по прошлому разбору записи', () => {
+        const reanalyzed = {
+            status: 'done',
+            result: {analyzedAt: '2026-09-16T10:16:48.674Z', conversation: {turns: [
+                {id: 't1', role: 'manager', startMs: 0, endMs: 3000, text: 'Что такое DRY?'},
+                {id: 't2', role: 'client', startMs: 3000, endMs: 9000, text: 'DRY - это Don\'t Repeat Yourself'},
+            ]}},
+        };
+        const evaluatedBy = analyzedAt => ({answersEvaluation: {status: 'done', result: {analyzedAt, blocks: [{
+            question: 'Что такое DRY?', answer: 'Stride - это Don\'t Repeat Yourself', turnIds: ['t1', 't2'],
+            technical: true, evaluate: {score: 1, maxScore: 10, feedback: 'Stride - не принцип программирования'},
+        }]}}});
+        const evaluations = post => post.mock.calls.filter(([url]) => /answers-evaluation/.test(url)).length;
+
+        test('оценка по старому разбору не показывается и пересчитывается один раз', async () => {
+            const post = setupHttp(reanalyzed, evaluatedBy('2026-09-14T11:41:40.579Z'));
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/answers-evaluation', {}));
+            await flush();
+            expect(evaluations(post)).toBe(1);
+            expect(screen.queryByText('Stride - не принцип программирования')).toBeNull();
+        });
+
+        test('оценка по текущему разбору не перезапускается', async () => {
+            const post = setupHttp(reanalyzed, evaluatedBy('2026-09-16T10:16:48.674Z'));
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+            await flush();
+
+            expect(evaluations(post)).toBe(0);
+        });
+    });
+
     describe('оценка ответов по вопросам', () => {
         const done = {
             status: 'done',
