@@ -4,6 +4,7 @@ import {
     ANSWERS_PIPELINE_STEPS,
     PIPELINE_STEPS,
     answersButtonState,
+    answersOutdated,
     evaluateButtonState,
     isActiveStatus,
     normalizeAnalysis,
@@ -124,7 +125,12 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     let [sending, setSending] = useState(false);
     let [openTurn, setOpenTurn] = useState(null);
     let [roles, setRoles] = useState(() => ({...(speakerRoles || {})}));
-    let [answers, setAnswers] = useState(() => normalizeAnswers(answersOf(value)));
+    let [loadedAnswers, setAnswers] = useState(() => normalizeAnswers(answersOf(value)));
+    // Оценка, посчитанная по прошлому разбору записи, судит текст до коррекции
+    // терминов ASR - её не показываем, а пересчитываем (эффект ниже).
+    let answersStale = answersOutdated(analysis, loadedAnswers);
+    let answers = useMemo(() => answersStale ? normalizeAnswers(null) : loadedAnswers, [answersStale, loadedAnswers]);
+    let staleRerun = useRef(null);
     let [sendingAnswers, setSendingAnswers] = useState(false);
     let mounted = useRef(true);
     let media = pickDialogMedia(value, analysis);
@@ -211,6 +217,15 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             .catch(() => {})
             .finally(() => { mounted.current && setSending(false); });
     }
+
+    // Разбор записи переделан после оценки ответов - пересчитываем её сами, один
+    // раз на каждый новый разбор, чтобы упавший запуск не зациклился.
+    useEffect(() => {
+        let analyzedAt = analysis.result && analysis.result.analyzedAt;
+        if (!answersStale || sendingAnswers || staleRerun.current === analyzedAt) return;
+        staleRerun.current = analyzedAt;
+        runAnswersEvaluation();
+    });
 
     let rawConversation = useMemo(() => readConversation(analysis.result), [analysis.result]);
     let conversation = useMemo(

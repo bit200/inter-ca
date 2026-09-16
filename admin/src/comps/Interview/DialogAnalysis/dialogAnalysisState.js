@@ -111,6 +111,16 @@ export function answersButtonState(dialog, answers, options) {
     return evaluateButtonState(answers, {...(options || {}), hasVideo: true, steps: ANSWERS_PIPELINE_STEPS});
 }
 
+// Оценка ответов устарела: она готова, но посчитана по другому разбору записи
+// (answersEvaluate.analyzedAt - метка разбора, по репликам которого оценивали).
+// Повторный разбор правит текст реплик коррекцией терминов ASR, а старая оценка
+// так и судит нераспознанный текст. Без метки у оценки сравнивать не с чем.
+export function answersOutdated(dialog, answers) {
+    let current = dialog && dialog.status === 'done' && dialog.result && dialog.result.analyzedAt;
+    let evaluated = answers && answers.status === 'done' && answers.result && answers.result.analyzedAt;
+    return Boolean(current && evaluated) && String(current) !== String(evaluated);
+}
+
 // Индекс текущего шага в дорожке: по нему подсвечиваются пройденные этапы.
 export function stepIndex(status, steps = PIPELINE_STEPS) {
     let index = steps.indexOf(status);
