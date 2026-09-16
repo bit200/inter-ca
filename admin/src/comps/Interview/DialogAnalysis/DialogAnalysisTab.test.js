@@ -728,3 +728,46 @@ describe('таб разбора диалога', () => {
         });
     });
 });
+
+describe('скелетон таба разбора диалога', () => {
+    test('пока разбор не пришёл, вместо шапки «Оценить» стоит скелетон', async () => {
+        let resolve;
+        global.http = {
+            get: jest.fn(url => /dialog-analysis/.test(url) ? new Promise(done => { resolve = done; }) : Promise.resolve(null)),
+            post: jest.fn(), put: jest.fn(),
+        };
+        render(<DialogAnalysisTab item={interview(null)}/>);
+
+        expect(screen.getByTestId('dialog-skeleton')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /Оценить/})).toBeNull();
+
+        await act(async () => { resolve(null); });
+        await flush();
+        expect(screen.queryByTestId('dialog-skeleton')).toBeNull();
+        expect(screen.getByRole('button', {name: /Оценить/})).toBeInTheDocument();
+    });
+
+    test('готовый разбор ждёт оценку ответов, чтобы итог не сдвинул расшифровку', async () => {
+        let resolveAnswers;
+        global.http = {
+            get: jest.fn(url => /answers-evaluation/.test(url)
+                ? new Promise(done => { resolveAnswers = done; })
+                : Promise.resolve({status: 'done', result: {conversation: {turns: [{id: 't1', role: 'manager', startMs: 0, endMs: 1000, text: 'Привет'}]}}})),
+            post: jest.fn(), put: jest.fn(),
+        };
+        render(<DialogAnalysisTab item={interview(null)}/>);
+        await flush();
+        expect(screen.getByTestId('dialog-skeleton')).toBeInTheDocument();
+
+        await act(async () => { resolveAnswers(null); });
+        await flush();
+        expect(screen.queryByTestId('dialog-skeleton')).toBeNull();
+    });
+
+    test('ошибка запроса тоже снимает скелетон', async () => {
+        global.http = {get: jest.fn(() => Promise.reject(new Error('404'))), post: jest.fn(), put: jest.fn()};
+        render(<DialogAnalysisTab item={interview(null)}/>);
+        await flush();
+        expect(screen.queryByTestId('dialog-skeleton')).toBeNull();
+    });
+});

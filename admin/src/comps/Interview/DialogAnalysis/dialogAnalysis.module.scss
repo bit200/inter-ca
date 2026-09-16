@@ -1876,3 +1876,54 @@ button.turnSpeaker{
     color: var(--dlg-card);
   }
 }
+
+// Скелетон таба на время первой загрузки. Заглушки повторяют итог и свёрнутые
+// блоки вопросов по размерам; пульс один на весь таб, без бегущей волны.
+.skeletonLine{
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--dlg-line);
+}
+
+.skeletonScore{
+  display: block;
+  width: 132px;
+  height: 84px;
+  border-radius: 8px;
+  background: var(--dlg-soft);
+}
+
+.skeletonText{
+  display: grid;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.skeletonBlocks{
+  display: grid;
+  gap: 12px;
+}
+
+// Как у .qaBlock: полоса роли слева, поэтому левые углы прямые.
+.skeletonBlock{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  padding: 10px 14px 10px 17px;
+  border: 1px solid var(--dlg-line);
+  border-left: 3px solid var(--dlg-line);
+  border-radius: 0 8px 8px 0;
+  background: var(--dlg-soft);
+}
+
+.skeletonSummary, .skeletonBlocks{ animation: dlgPulse 1.4s ease-in-out infinite; }
+
+@keyframes dlgPulse{ 50%{ opacity: .55; } }
+
+@media (prefers-reduced-motion: reduce){
+  .skeletonSummary, .skeletonBlocks{ animation: none; }
+}

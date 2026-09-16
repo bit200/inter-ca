@@ -164,3 +164,13 @@ describe('устаревшая оценка ответов', () => {
         expect(answersOutdated(normalizeAnalysis({status: 'analyzing'}), answers('2026-09-14T11:41:40Z'))).toBe(false);
     });
 });
+
+describe('dialogTabLoading', () => {
+    it('ждёт разбор, а у готового разбора - ещё и оценку ответов', () => {
+        const {dialogTabLoading} = require('./dialogAnalysisState');
+        expect(dialogTabLoading({analysisLoaded: false})).toBe(true);
+        expect(dialogTabLoading({analysisLoaded: true, dialogDone: false, answersLoaded: false})).toBe(false);
+        expect(dialogTabLoading({analysisLoaded: true, dialogDone: true, answersLoaded: false})).toBe(true);
+        expect(dialogTabLoading({analysisLoaded: true, dialogDone: true, answersLoaded: true})).toBe(false);
+    });
+});
