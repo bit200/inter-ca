@@ -228,10 +228,19 @@ function Interview({props}) {
                             size: 12,
                             tabs: tabs = withTabSave([
                                 {
-                                    name: t('questions'), urlKey: 'questions', save: true, childs: [
+                                    // Порядок: «Разбор диалога» → «Обзор» → «Вопросы».
+                                    // Карточка открывается на разборе (первая вкладка =
+                                    // вкладка по умолчанию, см. tabIndexFromKey).
+                                    name: t('dialogAnalysis'), urlKey: 'dialog', childs: [
                                         {
                                             size: 12,
-                                            Component: Comp
+                                            Component: ({item: parent}) => <DialogAnalysisTab
+                                                interview={parent || item}
+                                                speakerRoles={infoByUsersInterview.dialogSpeakerRoles}
+                                                onSpeakerRolesChange={dialogSpeakerRoles => onChangeInfoByUsers({dialogSpeakerRoles})}
+                                                answerLinks={infoByUsersInterview.dialogAnswerLinks}
+                                                onAnswerLinksChange={dialogAnswerLinks => onChangeInfoByUsers({dialogAnswerLinks})}
+                                            />
                                         }
                                     ]
                                 },
@@ -318,16 +327,10 @@ function Interview({props}) {
                                     ]
                                 },
                                 {
-                                    name: t('dialogAnalysis'), urlKey: 'dialog', childs: [
+                                    name: t('questions'), urlKey: 'questions', save: true, childs: [
                                         {
                                             size: 12,
-                                            Component: ({item: parent}) => <DialogAnalysisTab
-                                                interview={parent || item}
-                                                speakerRoles={infoByUsersInterview.dialogSpeakerRoles}
-                                                onSpeakerRolesChange={dialogSpeakerRoles => onChangeInfoByUsers({dialogSpeakerRoles})}
-                                                answerLinks={infoByUsersInterview.dialogAnswerLinks}
-                                                onAnswerLinksChange={dialogAnswerLinks => onChangeInfoByUsers({dialogAnswerLinks})}
-                                            />
+                                            Component: Comp
                                         }
                                     ]
                                 },
