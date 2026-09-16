@@ -43,13 +43,15 @@ function request({method, url, token, body, onUploadProgress, XHR}) {
 // Текст ошибки для показа человеку. Ошибки приходят в разном виде: Error,
 // строка, тело ответа global.http ({msg|error|message|errmsg}, где error
 // бывает и вложенным объектом) - без разбора в UI попадало «[object Object]».
+// Строка «[object Object]» - это уже испорченный где-то по пути объект, в ней
+// нет смысла, поэтому она считается пустой.
 export function uploadErrorMessage(e, fallback = 'Неизвестная ошибка') {
     if (!e) return fallback;
-    if (typeof e === 'string') return e.trim() || fallback;
+    if (typeof e === 'string') return meaningful(e) || fallback;
     if (typeof e !== 'object') return String(e);
     for (const key of ['msg', 'message', 'error', 'errmsg']) {
         const v = e[key];
-        if (v && typeof v === 'string') return v;
+        if (v && typeof v === 'string' && meaningful(v)) return meaningful(v);
         if (v && typeof v === 'object') {
             const nested = uploadErrorMessage(v, '');
             if (nested) return nested;
@@ -57,6 +59,15 @@ export function uploadErrorMessage(e, fallback = 'Неизвестная оши�
     }
     return fallback;
 }
+
+function meaningful(text) {
+    const trimmed = text.trim();
+    return trimmed === '[object Object]' ? '' : trimmed;
+}
+
+// global.http при оборванном соединении (сервер упал, не ответив) отдаёт пустой
+// объект - текста ошибки нет вовсе, и человек видел «Неизвестная ошибка».
+export const NO_RESPONSE_MESSAGE = 'сервер не ответил, запись не сохранена';
 
 export function startVideoProcess({domain, token, file, user, mode = DEFAULT_MODE, onUploadProgress, XHR = XMLHttpRequest}) {
     const formData = new FormData();

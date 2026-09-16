@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent} from './videoProcessUpload';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent, NO_RESPONSE_MESSAGE} from './videoProcessUpload';
 
 // Поддельный XHR: отвечает по очереди из responses и запоминает запросы
 function makeXHR(responses, log) {
@@ -139,10 +139,22 @@ describe('uploadErrorMessage', () => {
         await expect(startVideoProcess({domain: 'http://m', token: 't', file, XHR})).rejects.toThrow('Диск переполнен');
     });
 
+    it('строка «[object Object]» не выдаётся за текст ошибки', () => {
+        expect(uploadErrorMessage(new Error('[object Object]'), 'HTTP 500')).toBe('HTTP 500');
+        expect(uploadErrorMessage({error: '[object Object]', msg: 'Нет места'})).toBe('Нет места');
+        expect(uploadErrorMessage('[object Object]')).toBe('Неизвестная ошибка');
+    });
+
+    it('оборванное соединение (global.http отдаёт {}) - «сервер не ответил»', () => {
+        expect(uploadErrorMessage({}, NO_RESPONSE_MESSAGE)).toBe('сервер не ответил, запись не сохранена');
+        expect(String(new Error(uploadErrorMessage({}, NO_RESPONSE_MESSAGE)))).not.toContain('[object Object]');
+    });
+
     it('карточка интервью и страница /video показывают ошибку через uploadErrorMessage', () => {
-        for (const f of ['Interview/InterviewVideoUpload.jsx', 'UploadVideo.js']) {
-            const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
-            expect(src).toContain('setErr(uploadErrorMessage(e))');
+        expect(fs.readFileSync(path.join(__dirname, 'UploadVideo.js'), 'utf8')).toContain('setErr(uploadErrorMessage(e))');
+        const card = fs.readFileSync(path.join(__dirname, 'Interview/InterviewVideoUpload.jsx'), 'utf8');
+        expect(card).toContain('uploadErrorMessage(e, NO_RESPONSE_MESSAGE)');
+        for (const src of [card, fs.readFileSync(path.join(__dirname, 'UploadVideo.js'), 'utf8')]) {
             expect(src).not.toContain('e.message || e.toString()');
         }
     });
