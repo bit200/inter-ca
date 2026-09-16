@@ -583,7 +583,7 @@ class Table extends React.Component {
                                     {this.props.children}
                                 </div>
 
-                                {!!TopComp && <div>
+                                {!!TopComp && <div className="datatable-top-comp">
                                     <TopComp></TopComp></div>}
 
                                 {!!Comp && <>
