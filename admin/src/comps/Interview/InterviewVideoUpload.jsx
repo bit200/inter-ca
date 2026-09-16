@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import Perc from '../Suggest/Perc';
 import {startVideoProcess, waitVideoProcess, buildS3UploadInfo} from '../videoProcessUpload';
-import {isFileDrag, pickDroppedFile} from '../videoDropzone';
+import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDropzone';
 
 // Загрузка записи прямо с карточки интервью (вкладка «Обзор»), вместо
 // отдельной несвязанной страницы /video: кандидат раньше грузил файл вслепую
@@ -19,7 +19,8 @@ import {isFileDrag, pickDroppedFile} from '../videoDropzone';
 // (обычное число), поэтому карточка интервью его не populate'ит - детали
 // (имя файла, длительность) подтягиваются здесь отдельным запросом.
 // onDone(uploadedInterview) - патч интервью с новым videoUpload.
-export default function InterviewVideoUpload({interviewId, videoUploadId, onDone}) {
+// videoLink - item.video, ссылка на запись; есть ссылка - дропзону не показываем.
+export default function InterviewVideoUpload({interviewId, videoUploadId, videoLink, onDone}) {
     let [file, setFile] = useState(null);
     let [progress, setProgress] = useState(0);
     let [stage, setStage] = useState('');
@@ -105,6 +106,8 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, onDone
         </div>;
     }
 
+    if (!stage && !shouldShowVideoDropzone({stage, videoLink})) return null;
+
     return <div className="interviewVideoUpload">
         {stage === 'upload' && <>
             Загрузка файла: {progress}%
@@ -118,7 +121,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, onDone
         </>}
         {stage === 'error' && <div className="text-danger">Не удалось загрузить видео: {err}. Выберите файл ещё раз</div>}
 
-        {(stage === '' || stage === 'error') && <div
+        {shouldShowVideoDropzone({stage, videoLink}) && <div
             role="button"
             tabIndex={0}
             className={'videoDropzone' + (dragOver ? ' dragOver' : '')}

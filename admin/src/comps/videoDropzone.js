@@ -14,3 +14,11 @@ export function pickDroppedFile(dataTransfer) {
         || files.find((f) => !f.type)
         || null;
 }
+
+// Показывать ли дропзону загрузки записи на карточке интервью: если ссылка
+// на видео уже вписана руками (поле «Видео ссылка»), запись есть и звать
+// загружать её ещё раз незачем.
+export function shouldShowVideoDropzone({stage, videoLink} = {}) {
+    if (stage !== '' && stage !== 'error' && stage !== undefined) return false;
+    return !String(videoLink || '').trim();
+}
