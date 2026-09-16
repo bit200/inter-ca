@@ -2,6 +2,7 @@ import _ from 'underscore';
 import obj from './lngs';
 import Storage from './../Storage'
 import ColorTheme from "../ColorTheme";
+import {markTranslation, stripMarks} from './translateMarks';
 
 function getParameterByName(name, url = window.location.href) {
     const regex = new RegExp(`[?&]${name}=([^&#]*)`);
@@ -35,13 +36,11 @@ global.env.nameFn = (name) => {
         obj[toLower(ind)] = item
     })
 
+    name = stripMarks(name)
     let _name = toLower(name)
     let fName = (obj[_name] || {})[lng] || ''
 
-    let isGood = isHttps ? '' : fName ? '*' : '&&&&&&& ';
-    // let isGood = fName ? '' : '';
-
-    return isGood + (fName || name || '-') + isGood
+    return markTranslation(fName || name || '-', !!fName, isHttps)
 }
 
 global.nameFn = global.env.nameFn;
