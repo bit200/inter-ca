@@ -56,13 +56,12 @@ function weakList(row) {
 }
 
 // Что человек может сделать со сборкой прямо сейчас.
-// start - попыток ещё нет; continue - последняя попытка не закончена (ручка
-// my-list вернёт её же); results - последняя попытка закончена, открываем её.
+// start - попыток ещё нет, заводим первую; open - попытка уже есть, просто
+// переходим на последнюю: оттуда видно результаты и можно пройти заново.
 function actionOf(phase, lastAttempt) {
     if (phase !== 'ready') return null;
     if (!lastAttempt) return {kind: 'start'};
-    if (!isAttemptFinished(lastAttempt)) return {kind: 'continue'};
-    return {kind: 'results', attemptId: lastAttempt._id};
+    return {kind: 'open', attemptId: lastAttempt._id};
 }
 
 // generations - записи сборки одного интервью, attempts - все попытки кандидата.

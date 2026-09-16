@@ -45,13 +45,13 @@ describe('связь интервью с мок-интервью по слабы
         expect(mock.attempts.map(a => a._id)).toEqual(['a1', 'a2']);
         expect(mock.finished).toBe(2);
         expect(mock.bestScore).toBe(9);
-        expect(mock.action).toEqual({kind: 'results', attemptId: 'a2'});
+        expect(mock.action).toEqual({kind: 'open', attemptId: 'a2'});
         expect(mock.weak).toEqual([{index: 0, question: 'Что такое замыкание?'}, {index: 2, question: 'Как работает event loop?'}]);
     });
 
     test('действие зависит от состояния сборки и последней попытки', () => {
         expect(linkWeakMocks([generation()], [], 7)[0].action).toEqual({kind: 'start'});
-        expect(linkWeakMocks([generation()], [{_id: 'd', interviewId: 'mesh-1', status: 'started'}], 7)[0].action).toEqual({kind: 'continue'});
+        expect(linkWeakMocks([generation()], [{_id: 'd', interviewId: 'mesh-1', status: 'started'}], 7)[0].action).toEqual({kind: 'open', attemptId: 'd'});
         let building = linkWeakMocks([generation({state: 'audio_pending', interviewId: null})], [], 7)[0];
         expect(building.phase).toBe('building');
         expect(building.action).toBeNull();
@@ -114,8 +114,16 @@ describe('три варианта подачи на вкладке разбор�
         render(<WeakMocksProgress mocks={linkWeakMocks([generation()], [finished()], 7)} blocks={blocks}/>);
         expect(screen.getByText('3,5')).toBeInTheDocument();
         expect(screen.getByText('7')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', {name: 'Результаты'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Открыть'}));
         expect(global.navigate).toHaveBeenCalledWith('/mock-interviews/a1');
+        expect(global.http.post).not.toHaveBeenCalled();
+    });
+
+    test('начатая попытка: «Открыть» ведёт на неё, новое интервью не заводится', () => {
+        render(<WeakMocksStrip mocks={linkWeakMocks([generation()], [{_id: 'd', interviewId: 'mesh-1', status: 'started'}], 7)}/>);
+        expect(screen.queryByRole('button', {name: 'Продолжить'})).toBeNull();
+        fireEvent.click(screen.getByRole('button', {name: 'Открыть'}));
+        expect(global.navigate).toHaveBeenCalledWith('/mock-interviews/d');
         expect(global.http.post).not.toHaveBeenCalled();
     });
 
