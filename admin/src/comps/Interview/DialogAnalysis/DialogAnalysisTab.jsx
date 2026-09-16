@@ -949,7 +949,7 @@ function SummaryScore({score, max, basis, parts}) {
         {basis === 'soft' && <span className={styles.summaryScoreBasis} aria-hidden="true">по нетехническим ответам</span>}
         {parts && <dl className={styles.summaryScoreParts} aria-hidden="true">
             <div><dt>техника</dt><dd>{formatScore(parts.technical)}</dd></div>
-            <div><dt>общение ×{formatScore(parts.softWeight)}</dt><dd>{formatScore(parts.soft)}</dd></div>
+            <div><dt>общение</dt><dd>{formatScore(parts.soft)}</dd></div>
         </dl>}
     </div>;
 }
