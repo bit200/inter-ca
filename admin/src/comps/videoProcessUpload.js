@@ -81,3 +81,20 @@ export function buildS3UploadInfo({job, name, duration}) {
     }
     return info;
 }
+
+// Фоновая доводка: сразу после 202 от мультера фронт отдаёт jobId в
+// POST /my-interview/:id/video-upload, дальше сжатие и запуск оценки доводит
+// бэк (interviews/api/services/uploadVideoJobWatcher.js) - страницу можно закрыть.
+export function buildJobAttachInfo({jobId, name, duration}) {
+    return {jobId, name, duration};
+}
+
+// Статус записи UploadVideo для карточки: processing - сервер ещё сжимает,
+// error - сжатие упало, done - всё остальное (в т.ч. старые записи без статуса).
+export function uploadVideoState(upload) {
+    const status = upload && upload.status;
+    if (status === 'processing' || status === 'error') {
+        return status;
+    }
+    return 'done';
+}

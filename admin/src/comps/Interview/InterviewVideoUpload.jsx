@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import Perc from '../Suggest/Perc';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo} from '../videoProcessUpload';
+import {startVideoProcess, buildJobAttachInfo, uploadVideoState} from '../videoProcessUpload';
 import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDropzone';
 
 // Загрузка записи прямо с карточки интервью (вкладка «Обзор»), вместо
@@ -13,6 +13,10 @@ import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDrop
 //
 // Файл, как и раньше, идёт напрямую в multer (VIDEO_DOMAIN) - через API
 // байты не гонит никто, это осталось как было в comps/UploadVideo.js.
+// Держать страницу открытой нужно только пока идут байты: как только multer
+// принял файл, запись привязывается к интервью со статусом processing, а
+// сжатие и запуск оценки доводит бэк сам. Пока запись processing, карточка
+// перечитывает её раз в PROCESSING_POLL_MS.
 //
 // videoUploadId - item.videoUpload (число, id записи UploadVideo) или пусто,
 // если видео ещё не загружено. Interview.videoUpload - не mongoose ref
@@ -20,6 +24,8 @@ import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDrop
 // (имя файла, длительность) подтягиваются здесь отдельным запросом.
 // onDone(uploadedInterview) - патч интервью с новым videoUpload.
 // videoLink - item.video, ссылка на запись; есть ссылка - дропзону не показываем.
+const PROCESSING_POLL_MS = 15000;
+
 export default function InterviewVideoUpload({interviewId, videoUploadId, videoLink, onDone}) {
     let [file, setFile] = useState(null);
     let [progress, setProgress] = useState(0);
@@ -37,6 +43,17 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
             .then(r => setUploaded((r && r.data) || null))
             .catch(() => {});
     }, [videoUploadId]);
+
+    let uploadedState = uploadVideoState(uploaded);
+    useEffect(() => {
+        if (!uploaded || !uploaded._id || uploadedState !== 'processing') return;
+        let timer = setTimeout(() => {
+            global.http.get(`/my-upload-video/${uploaded._id}`, {}, {wo_notify: true})
+                .then(r => r && r.data && setUploaded(r.data))
+                .catch(() => setUploaded({...uploaded}));
+        }, PROCESSING_POLL_MS);
+        return () => clearTimeout(timer);
+    }, [uploaded, uploadedState]);
 
     let getDuration = (file, cb) => {
         let video = document.createElement('video');
@@ -78,12 +95,9 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
                     onUploadProgress: setProgress,
                 });
                 setProgress(100);
-                setStage('processing');
 
-                let job = await waitVideoProcess({domain, token, id: started.id});
-                let s3Info = buildS3UploadInfo({job, name: originalFileName, duration});
-
-                let res = await global.http.post(`/my-interview/${interviewId}/video-upload`, s3Info);
+                let res = await global.http.post(`/my-interview/${interviewId}/video-upload`,
+                    buildJobAttachInfo({jobId: started.id, name: originalFileName, duration}));
                 setUploaded((res && res.uploadVideo) || null);
                 setJustUploaded(true);
                 setStage('');
@@ -95,15 +109,25 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
         });
     };
 
-    if (uploaded && uploaded._id && stage !== 'upload' && stage !== 'processing') {
+    if (uploaded && uploaded._id && stage !== 'upload') {
         let info = uploaded.info || {};
         return <div className="interviewVideoUpload">
-            <div className="text-success">
+            {uploadedState === 'processing' && <>
+                Файл загружен, сервер сжимает видео. Это займёт несколько минут — страницу можно закрыть,
+                оценка запустится сама
+                <div className="progress" style={{height: '3px'}}>
+                    <div className="progress-bar progress-bar-striped progress-bar-animated" style={{width: '100%'}}/>
+                </div>
+            </>}
+            {uploadedState === 'error' && <div className="text-danger">
+                Не удалось обработать видео{info.error ? `: ${info.error}` : ''}. Загрузите запись ещё раз
+            </div>}
+            {uploadedState === 'done' && <div className="text-success">
                 <i className="iconoir-check-circle" style={{marginRight: '5px'}}></i>
                 {info.name || `Запись #${uploaded._id}`}
                 {info.duration ? ` · ${(+info.duration).toFixed(0)} мин` : ''}
-            </div>
-            {justUploaded && <div className="text-muted">
+            </div>}
+            {justUploaded && uploadedState === 'done' && <div className="text-muted">
                 Оценка запустилась сама: разбор диалога, оценка ответов и мок-интервью по слабым
                 местам появятся во вкладке «Разбор диалога».
             </div>}
@@ -119,14 +143,8 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
 
     return <div className="interviewVideoUpload">
         {stage === 'upload' && <>
-            Загрузка файла: {progress}%
+            Загрузка файла: {progress}%. Не закрывайте страницу, пока файл не загрузится
             <Perc value={progress} height={3}/>
-        </>}
-        {stage === 'processing' && <>
-            Файл загружен, сервер сжимает видео. Это займёт несколько минут, страницу не закрывайте
-            <div className="progress" style={{height: '3px'}}>
-                <div className="progress-bar progress-bar-striped progress-bar-animated" style={{width: '100%'}}/>
-            </div>
         </>}
         {stage === 'error' && <div className="text-danger">Не удалось загрузить видео: {err}. Выберите файл ещё раз</div>}
 
