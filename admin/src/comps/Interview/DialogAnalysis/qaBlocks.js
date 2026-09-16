@@ -111,7 +111,10 @@ const RELEVANCE_ALIASES = {
 // answered - есть ли в блоке реплика кандидата. Без неё модель оценила бы чужие
 // слова - группировка иногда кладёт уточнение интервьюера в «ответ», - поэтому
 // такую оценку не показываем: блок остаётся «Ответ не найден».
-function readSoftEvaluation(block, technical, active, answered) {
+// candidateLed - блок открыл сам кандидат («Время работы какое?»): разговор ведёт он,
+// и встречные вопросы тут неприменимы, что бы ни ответила модель - её промпт
+// рассчитан на вопрос интервьюера.
+function readSoftEvaluation(block, technical, active, answered, candidateLed) {
     if (technical !== false) return null;
     if (!answered) return {state: 'unanswered'};
     let source = asObject(block.softEvaluate) || asObject(block.softEvaluation);
@@ -123,7 +126,8 @@ function readSoftEvaluation(block, technical, active, answered) {
     let complete = typeof source.complete === 'boolean' ? source.complete
         : typeof source.completeness === 'string' ? source.completeness.toLowerCase() === 'complete'
         : null;
-    let engaged = typeof source.engaged === 'boolean' ? source.engaged
+    let engaged = candidateLed ? null
+        : typeof source.engaged === 'boolean' ? source.engaged
         : typeof source.engagement === 'boolean' ? source.engagement
         : null;
     let note = firstText(source.note, source.comment, source.feedback);
@@ -229,7 +233,8 @@ export function readQaBlocks(result, turns, options) {
             evaluation: readEvaluation(block, technical, active),
             // Сохранённая расшифровка оценки (кнопка «Расшифровать оценку»).
             explain: asObject(block.explain),
-            soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client')),
+            soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client'),
+                items.length > 0 && items[0].turn.role === 'client'),
             timing: readTiming(block, timings[position]),
         };
     }).filter(block => block.items.length);

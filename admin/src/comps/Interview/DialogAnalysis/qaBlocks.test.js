@@ -110,6 +110,14 @@ describe('мягкая оценка нетехнических блоков', ()
         expect(asked.score).toBe(10);
     });
 
+    it('блок, который открыл сам кандидат, не штрафуется за встречные вопросы', () => {
+        let led = readQaBlocks([{technical: false, turnIndexes: [1, 2, 3],
+            softEvaluate: {relevance: 'on_topic', complete: true, engaged: false}}], turns)[0].soft;
+        expect(led.engaged).toBeNull();
+        expect(softBreakdown(led).rows.map(row => row.label)).toEqual(['По теме', 'Развёрнуто']);
+        expect(led.score).toBe(10);
+    });
+
     it('без мягкой оценки блок ждёт её, пока идёт оценка, иначе не оценивается', () => {
         let block = {technical: false, turnIndexes: [0, 1]};
         expect(readQaBlocks([block], turns, {active: true})[0].soft.state).toBe('pending');
