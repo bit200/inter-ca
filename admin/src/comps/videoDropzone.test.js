@@ -36,3 +36,12 @@ describe('UploadVideo', () => {
         expect(src).toMatch(/pickDroppedFile\(/);
     });
 });
+
+describe('InterviewVideoUpload', () => {
+    it('блок загрузки отделён отступами от соседних полей формы', () => {
+        const css = fs.readFileSync(path.join(__dirname, 'Interview', 'Interview.css'), 'utf8');
+        const rule = css.match(/\.interviewVideoUpload\s*\{([^}]*)\}/);
+        expect(rule).not.toBeNull();
+        expect(rule[1]).toMatch(/margin(-block)?\s*:\s*[1-9]/);
+    });
+});

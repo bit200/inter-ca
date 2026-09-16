@@ -5,6 +5,9 @@
 
 /* Загрузка записи на вкладке «Обзор» карточки интервью (InterviewVideoUpload.jsx) -
    те же стили дропзоны, что были на отдельной странице /video (comps/UploadVideo.js). */
+/* Дропзона стоит между рядами полей - без собственных отступов прилипает
+   к инпутам сверху и к подписи «Видео ссылка» снизу. */
+.interviewVideoUpload { margin-block: 16px; }
 .interviewVideoUpload .videoDropzone {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 4px; min-height: 100px; padding: 16px; text-align: center; cursor: pointer;
