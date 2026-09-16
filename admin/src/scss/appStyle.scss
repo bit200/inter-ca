@@ -29,6 +29,14 @@
   float: right;
 }
 
+// Верхний блок таблицы (TopComp) - отдельной строкой на всю ширину под
+// фильтрами, а не плавающим справа div'ом, как остальные дети .datatable-top.
+.datatable-top > .datatable-top-comp {
+  float: none;
+  clear: both;
+  width: 100%;
+}
+
 .datatable-selector {
   padding: 6px;
 }
