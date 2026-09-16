@@ -171,7 +171,12 @@ describe('таб разбора диалога', () => {
             await flush();
 
             expect(container.querySelector('video')).toBeNull();
-            expect(container.querySelector('audio')).toHaveAttribute('src', 'https://example.test/call.mp3');
+            const audio = container.querySelector('audio');
+            expect(audio).toHaveAttribute('src', 'https://example.test/call.mp3');
+            // Аудио играет в фирменном плеере проекта, а не в стандартном браузерном
+            expect(audio).not.toHaveAttribute('controls');
+            expect(audio.closest('.call-player')).not.toBeNull();
+            expect(screen.getByRole('button', {name: 'Слушать запись'})).toBeInTheDocument();
             expect(screen.getAllByRole('button', {name: /Воспроизвести с/})).toHaveLength(2);
         });
 

@@ -36,6 +36,8 @@ import {
     speakerKey,
     speakerLabels,
 } from './dialogAnalysisFormat';
+import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
+import '../../TrainMethods/AudioShort/Player.css';
 import {pickDialogMedia, readPlayerPinned, savePlayerPinned, turnIndexAt} from './dialogMedia';
 import AnswerBriefPopover, {SoftBriefPopover} from './AnswerBriefPopover';
 import {answerDetailPath} from './answerBrief';
@@ -587,7 +589,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         {media && <div className={styles.player} data-pinned={pinned ? 'true' : 'false'}>
             {media.kind === 'video'
                 ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
-                : <audio ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
+                : <CallPlayer ref={player} src={media.src} onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
             <div className={styles.playerFoot}>
                 <p className={styles.playerHint}>
                     {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
