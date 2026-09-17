@@ -106,6 +106,9 @@ describe('InterviewAnswerModal: разбор ответа интервью в м
         const rule = selector => (css.match(new RegExp(selector.replace(/[.>]/g, m => '\\' + m) + '\\s*\\{([^}]*)\\}')) || [])[1] || '';
         expect(rule('.answer-modal > .card')).toMatch(/background:\s*var\(--bs-body-bg\)/);
         expect(parseInt((rule('.answer-modal .mmodal > .iconoir-xmark').match(/font-size:\s*(\d+)px/) || [])[1], 10)).toBeGreaterThanOrEqual(20);
+        const xmark = rule('.answer-modal .mmodal > .iconoir-xmark');
+        expect(xmark).toMatch(/position:\s*absolute/);
+        expect(parseInt((xmark.match(/top:\s*(\d+)px/) || [])[1], 10)).toBeLessThanOrEqual(12);
     });
 
     it('без номера вопроса модалка закрыта и ничего не грузит', () => {
