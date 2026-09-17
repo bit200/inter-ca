@@ -86,3 +86,14 @@
         transition: none;
     }
 }
+
+/* Полоса над карточкой: «Назад» у левого края, как хлебные крошки,
+   «Сохранить» (если он в шапке) уходит к правому. */
+.edit-actions--above {
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.edit-actions--above .edit-actions__back {
+    margin-left: -14px;
+}

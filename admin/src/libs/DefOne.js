@@ -162,16 +162,16 @@ function ProjectDetails(params) {
     }
     // console.log("qqqqq GETTERRRRRRRRRRR RELOAD", timerFN(), obj, prevGetter);
 
-    return  <div className="card">
+    // «Назад» (у интервью - «К списку интервью») стоит над белой карточкой
+    // у левого края: это навигация по странице, а не часть формы.
+    return  <>
+            <EditActions className="edit-actions--above">
+                <BackButton config={props}/>
+                {spots.header && <SaveButton onSave={() => saveItem(obj)}/>}
+            </EditActions>
+            <div className="card">
                 <div className="card-body">
                     <div className={'row justify-content-center'}>
-                        <div className="col-12 ">
-
-                            <EditActions className="zSMax">
-                                <BackButton config={props}/>
-                                {spots.header && <SaveButton onSave={() => saveItem(obj)}/>}
-                            </EditActions>
-                        </div>
                         <div className="col-12">
                             <Smart
                                 _this={this}
@@ -193,6 +193,7 @@ function ProjectDetails(params) {
                     </div>
                 </div>
             </div>
+            </>
 
 }
 
