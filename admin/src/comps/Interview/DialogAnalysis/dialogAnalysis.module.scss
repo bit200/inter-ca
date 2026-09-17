@@ -423,31 +423,22 @@ button.turnSpeaker{
   background: var(--dlg-accent);
 }
 
-// Расшифровка рядом с записью. Видео стоит справа и едет вместе со скроллом,
-// чтобы при чтении длинного разговора собеседник оставался в кадре; аудио -
-// узкая полоса плеера над репликами, которая тоже не уезжает.
+// Док с записью и вкладками разделов над «Обзором» и «Диалогом»: при
+// закреплении едет вместе со скроллом, как в карточке звонка.
 // Липнет плеер под фиксированным хэдером админки (.topbar), а не к краю окна:
 // с top у самого края видео при скролле уезжало под хэдер. Высота видео тоже
 // считается от видимой под хэдером части окна, чтобы подпись не срезалась.
-.transcript{
-  display: grid;
-  gap: 14px;
-}
-
 .player{
   position: sticky;
   // Липнет только после скролла, а тогда хэдер уже сжат на 20px
   // (.topbar:has(.nav-sticky) в app.min.scss) - от полной высоты оставался зазор.
   top: calc(var(--bs-topbar-height, 20px) - 20px + 4px);
-  z-index: 1;
-  align-self: start;
+  z-index: 3;
   display: grid;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--dlg-line);
-  border-radius: 6px;
-  background: var(--dlg-card);
-  box-shadow: 0 10px 24px -22px rgba(20, 32, 26, .5);
+  margin-top: 18px;
+  padding-top: 1px;
+  background: var(--bs-body-bg, var(--dlg-card));
+  box-shadow: 0 12px 20px -20px rgba(20, 32, 26, .45);
 
   video{
     display: block;
@@ -455,7 +446,7 @@ button.turnSpeaker{
   }
 
   video{
-    max-height: min(60vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
+    max-height: min(40vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
     border-radius: 4px;
     background: #000;
   }
@@ -463,6 +454,17 @@ button.turnSpeaker{
 
 .player[data-pinned="false"]{
   position: static;
+}
+
+// Док карточки звонка: запись строкой над вкладками разделов, общая рамка.
+.playerRow{
+  display: grid;
+  gap: 12px;
+  padding: 11px 16px;
+  border: 1px solid var(--dlg-line);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: var(--dlg-card);
 }
 
 // Шапка записи: плитка с волной, название и подсказка - как «Запись звонка».
@@ -505,7 +507,7 @@ button.turnSpeaker{
 
 // Аудио на широком экране - одна строка: шапка слева, плеер-капсула справа.
 @media (min-width: 992px){
-  .player[data-kind="audio"]{
+  .playerRow[data-kind="audio"]{
     grid-template-columns: minmax(300px, 36%) minmax(0, 1fr) auto;
     align-items: center;
     gap: 18px;
@@ -528,13 +530,196 @@ button.turnSpeaker{
   &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
 }
 
-@media (min-width: 992px){
-  .transcript[data-media="video"]{
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
+// Вкладки разделов - как «Обзор / Чек-лист / Диалог» в карточке звонка:
+// высокие кнопки через разделитель, активная подчёркнута зелёным снизу.
+.sectionTabs{
+  display: flex;
+  overflow-x: auto;
+  border: 1px solid var(--dlg-line);
+  border-radius: 0 0 6px 6px;
+  background: var(--dlg-card);
+  scrollbar-width: none;
 
-    .player{ grid-column: 2; grid-row: 1; }
-    .turns{ grid-column: 1; grid-row: 1; }
-  }
+  &::-webkit-scrollbar{ display: none; }
+}
+
+.player[data-media="none"] .sectionTabs{ border-radius: 6px; }
+
+.sectionTab{
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 0 19px;
+  border: 0;
+  border-right: 1px solid var(--dlg-line);
+  border-bottom: 3px solid transparent;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); background: var(--dlg-soft); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: -2px; }
+  &[aria-current="page"]{ color: var(--dlg-strong); border-bottom-color: var(--dlg-accent); }
+}
+
+.tabCounter{
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--dlg-muted);
+  background: var(--dlg-soft);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.sectionTab[aria-current="page"] .tabCounter{ color: var(--dlg-accent); background: var(--dlg-accent-soft); }
+
+// Раздел под доком - секция карточки звонка: шапка с подписью и заметкой справа.
+.panel{
+  margin-top: 18px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  background: var(--dlg-card);
+
+  .turns{ border: 0; border-radius: 0 0 6px 6px; }
+  .lensBar{ margin-top: 0; }
+}
+
+.panelHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  min-height: 78px;
+  padding: 16px 19px;
+  border-bottom: 1px solid var(--dlg-line);
+}
+
+.panelNote{
+  color: var(--dlg-muted);
+  font-size: 12px;
+}
+
+.panelBody{
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.panel > .empty{ margin: 16px; }
+
+// «Ход разговора»: дорожка на роль, отрезок - реплика. Цвет - связь с оценкой.
+.review{
+  --dlg-tone-speech: #5fae82;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dlg-line);
+}
+
+.reviewHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 18px;
+
+  h5{ margin: 0; color: var(--dlg-strong); font-size: 13px; font-weight: 700; }
+  span{ color: var(--dlg-muted); font-size: 11px; }
+}
+
+.reviewLegend{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 12px 0 14px;
+  color: var(--dlg-muted);
+  font-size: 11px;
+
+  span{ display: inline-flex; align-items: center; gap: 5px; }
+  i{ width: 8px; height: 8px; border-radius: 2px; }
+}
+
+.reviewLegend i,
+.reviewSegment{
+  background: var(--dlg-tone-speech);
+
+  &[data-tone="warning"]{ background: #c98a1b; }
+  &[data-tone="critical"]{ background: #d6455a; }
+}
+
+.reviewTrack{
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 7px 0;
+
+  > span{ color: var(--dlg-muted); font-size: 11px; }
+}
+
+.reviewLane{
+  position: relative;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--dlg-soft);
+}
+
+.reviewSegment{
+  position: absolute;
+  top: 5px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  box-shadow: inset -1px 0 var(--dlg-card);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible,
+  &[data-active="true"]{ z-index: 2; outline: 2px solid var(--dlg-strong); outline-offset: 1px; }
+}
+
+.reviewPlayhead{
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  z-index: 3;
+  width: 2px;
+  background: var(--dlg-strong);
+  pointer-events: none;
+}
+
+.reviewTicks{
+  display: flex;
+  justify-content: space-between;
+  margin-left: 94px;
+  color: var(--dlg-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewCurrent{
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  margin-top: 12px;
+  color: var(--dlg-muted);
+  font-size: 11px;
+
+  span{ overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}
+
+@media (max-width: 640px){
+  .review{ padding: 16px; }
+  .reviewTrack{ grid-template-columns: 74px minmax(0, 1fr); gap: 4px; }
+  .reviewTicks{ margin-left: 78px; }
+  .sectionTab{ padding: 0 14px; }
 }
 
 // Узкий экран: плеер стоит над расшифровкой и перекрывает её целиком, поэтому
@@ -544,13 +729,13 @@ button.turnSpeaker{
 @media (max-width: 991px){
   .player{
     top: calc(var(--bs-topbar-height, 20px) - 20px + 4px);
-    padding: 8px 10px;
 
     video{
-      max-height: min(34vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
+      max-height: min(28vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
     }
   }
 
+  .playerRow{ padding: 8px 10px; }
   .playerIcon{ width: 32px; height: 32px; }
 }
 
@@ -710,15 +895,6 @@ button.turnSpeaker{
 .roleOption[aria-checked="true"][data-role="client"]{ color: var(--dlg-guest); background: var(--dlg-guest-soft); box-shadow: inset 0 0 0 1px var(--dlg-guest); }
 .roleOption[aria-checked="true"][data-role="manager"]{ color: var(--dlg-host); background: var(--dlg-host-soft); box-shadow: inset 0 0 0 1px var(--dlg-host); }
 
-// Расшифровка по вопросам или сплошной лентой - переключатель у заголовка.
-.transcriptHead{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  margin: 30px 0 14px;
-}
 
 .viewSwitch{
   display: inline-flex;
@@ -1460,16 +1636,7 @@ button.turnSpeaker{
 }
 
 // ── Линзы расшифровки (вариант B) ───────────────────────────────────────────
-// Лента и всё, что над ней в режиме связывания, - одна колонка рядом с видео.
-.feed{
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-}
 
-@media (min-width: 992px){
-  .transcript[data-media="video"] .feed{ grid-column: 1; grid-row: 1; }
-}
 
 // Панель линз: переключатель акцента слева, итоговые баллы справа, под ними шкала.
 .lensBar{

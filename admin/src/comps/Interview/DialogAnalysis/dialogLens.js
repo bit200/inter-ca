@@ -193,3 +193,53 @@ export function skipSeriesStarts(blocks) {
     });
     return starts;
 }
+
+// «Ход разговора» как в карточке звонка: по дорожке на роль, реплика - отрезок
+// своей длины. Цвет - не эмоция, а связь с оценкой: ответ с низким баллом или
+// мимо вопроса - critical, средний балл, уклончивость или замечания - warning.
+const TRACK_LABELS = {manager: 'Интервьюер', client: 'Кандидат', unknown: 'Роль не определена'};
+
+function roleOf(role) {
+    let value = String(role || '').toLowerCase();
+    if (['manager', 'our', 'near_end', 'interviewer'].includes(value)) return 'manager';
+    if (['client', 'external', 'far_end', 'candidate'].includes(value)) return 'client';
+    return 'unknown';
+}
+
+function band(score, max) {
+    let ratio = score / (max || 10);
+    return ratio >= 0.7 ? 'good' : ratio >= 0.4 ? 'fair' : 'poor';
+}
+
+export function turnTone(index, turn, scores, flags) {
+    let rated = scores && scores.get(index);
+    let flag = flags && flags.get(index);
+    let level = rated && typeof rated.score === 'number' ? band(rated.score, rated.max) : null;
+    if (level === 'poor' || flag === 'off_topic') return 'critical';
+    let marked = turn && Array.isArray(turn.markerIds) && turn.markerIds.length > 0;
+    if (level === 'fair' || flag === 'evasive' || marked) return 'warning';
+    return 'speech';
+}
+
+export function conversationTracks(turns, durationMs, scores, flags) {
+    if (!durationMs) return [];
+    let byRole = {manager: [], client: [], unknown: []};
+    (turns || []).forEach((turn, index) => {
+        if (!turn) return;
+        let startMs = Math.max(0, Number(turn.startMs) || 0);
+        let endMs = Math.max(startMs, Number(turn.endMs) || startMs);
+        let left = percent(startMs, durationMs);
+        byRole[roleOf(turn.role)].push({
+            index,
+            startMs,
+            endMs,
+            left,
+            width: percent(endMs, durationMs) - left,
+            tone: turnTone(index, turn, scores, flags),
+            text: String(turn.text || ''),
+        });
+    });
+    return ['manager', 'client', 'unknown']
+        .filter(role => byRole[role].length)
+        .map(role => ({role, label: TRACK_LABELS[role], segments: byRole[role]}));
+}
