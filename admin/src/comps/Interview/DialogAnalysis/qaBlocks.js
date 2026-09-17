@@ -53,6 +53,16 @@ function readTurns(block, turns) {
             }
             return asObject(ref) ? {turn: ref, index: -1} : null;
         }).filter(Boolean);
+        // Группировка бэкенда бывает, кладёт одну реплику в блок дважды (ответ и
+        // уточнение пересеклись) - в блоке реплика одна, иначе фразы дублируются
+        // и подача считает паразиты дважды.
+        let seen = new Set();
+        resolved = resolved.filter(item => {
+            if (item.index < 0) return true;
+            if (seen.has(item.index)) return false;
+            seen.add(item.index);
+            return true;
+        });
         if (resolved.length) return resolved;
     }
 
