@@ -1,3 +1,5 @@
+import {buildGroupPercents} from '../../EvaluationDetail/components/metricGroups';
+
 // Q&A-блоки оценки ответов: корневой вопрос интервьюера, ответ кандидата и
 // уточнения, если были. Бэкенд группирует реплики разбора в блоки, помечает
 // технические и отдаёт их в evaluate. Схема ответа ещё устаканивается, поэтому
@@ -171,8 +173,26 @@ export function softProblemMarks({relevance, complete}) {
 // Основные замечания к вопросу - бейджами в строке «Обзора», чтобы не раскрывать
 // диалог. Только явные: то, что оценка сказала прямо (критическая ошибка, уход от
 // темы, ни одного примера из практики, мимо вопроса, формально). Нашлось одно -
-// показываем одно, ничего не додумываем из процентов показателей.
+// показываем одно. Проваленные показатели (глубина 1/10, речь 1/10) - тоже явное
+// замечание: их выводим все, кроме тех, что уже названы флагом (практика 0 при
+// «Без примеров из практики»).
 const REMARKS_LIMIT = 3;
+const FAILED_GROUP_PCT = 30;
+// Префикс показателей группы -> ключ флага, который её уже называет.
+const GROUP_FLAGS = [['evaluation.practice.', 'practice'], ['evaluation.relevance.', 'offtop'],
+    ['evaluation.errors.', 'critical'], ['evaluation.errors.', 'errors']];
+
+function failedGroupRemarks(schemas, result, flags) {
+    if (!Array.isArray(schemas) || !schemas.length || !asObject(result)) return [];
+    let covered = new Set();
+    schemas.forEach(schema => {
+        let hit = schema && schema.key && GROUP_FLAGS.find(([prefix, flag]) => schema.key.startsWith(prefix) && flags.has(flag));
+        if (hit) covered.add(schema.group || 'Общее');
+    });
+    return buildGroupPercents(schemas, result)
+        .filter(row => row.pct <= FAILED_GROUP_PCT && !covered.has(row.group) && row.label !== 'Без ошибок')
+        .map(row => ({key: 'group:' + row.group, text: `${row.label} ${Math.round(row.pct / 10)}/10`, tone: 'poor'}));
+}
 
 function evaluationErrors(result) {
     let errors = asObject(asObject(asObject(result) && result.evaluation) && result.evaluation.errors);
@@ -182,7 +202,7 @@ function evaluationErrors(result) {
     return {critical: Boolean(errors && Number(errors.is_critical)), list};
 }
 
-export function questionRemarks(block) {
+export function questionRemarks(block, schemas = []) {
     if (!block) return [];
     if (block.soft) return block.soft.state === 'done' ? softProblemMarks(block.soft).slice(0, REMARKS_LIMIT) : [];
     let evaluation = block.evaluation || {};
@@ -191,12 +211,14 @@ export function questionRemarks(block) {
     let relevance = asObject(evaluated.relevance) || {};
     let practice = asObject(evaluated.practice) || {};
     let errors = evaluationErrors(evaluation.result);
-    return [
+    let flags = [
         errors.critical && {key: 'critical', text: 'Критическая ошибка', tone: 'poor', hint: errors.list.join('\n')},
         Number(relevance.is_offtop) > 0 && {key: 'offtop', text: 'Уход от темы', tone: 'poor'},
         !errors.critical && errors.list.length > 0 && {key: 'errors', text: 'Неточности', tone: 'fair', hint: errors.list.join('\n')},
         practice.count === 0 && {key: 'practice', text: 'Без примеров из практики', tone: 'fair'},
-    ].filter(Boolean).slice(0, REMARKS_LIMIT);
+    ].filter(Boolean);
+    let groups = failedGroupRemarks(schemas, evaluation.result, new Set(flags.map(flag => flag.key)));
+    return [...flags, ...groups];
 }
 
 export function softBreakdown({relevance, complete, engaged, band, delivery}) {
