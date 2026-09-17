@@ -1,13 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {saveLabel} from './saveSpots';
+import {backTarget} from './backTarget';
 import './EditActions.css';
 
 // «Назад» - тихая кнопка без заливки: она уводит со страницы и не должна
-// спорить с «Сохранить» за внимание.
-export function BackButton() {
-    return <button type="button" className="edit-actions__back" onClick={() => global.navigate(-1)}>
+// спорить с «Сохранить» за внимание. Куда ведёт - см. backTarget.
+export function BackButton({config}) {
+    let {to, label} = backTarget(config);
+    return <button type="button" className="edit-actions__back" onClick={() => global.navigate(to)}>
         <i className="iconoir-arrow-left"></i>
-        <span>{t('back')}</span>
+        <span>{t(label)}</span>
     </button>
 }
 

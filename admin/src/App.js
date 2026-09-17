@@ -351,6 +351,8 @@ global.CONFIG = {
             autoSave: 200,
             url: "/my-interview",
             saveInTabs: true,
+            // «Назад» из карточки всегда уводит в список интервью, а не по истории.
+            backTo: {url: '/interviews', label: 'backToInterviews'},
             // Новое интервью сразу открываем на «Обзоре» - там загрузка записи.
             openAfterCreate: '?tab=overview',
             // Кнопка «Добавить» создаёт интервью сразу, без окна с названием.
