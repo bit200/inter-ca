@@ -41,6 +41,9 @@ import {
     listSpeakers,
     turnTimeRange,
     turnsCountLabel,
+    isUnrecognizedTurn,
+    UNRECOGNIZED_TURN_HINT,
+    UNRECOGNIZED_TURN_TEXT,
 } from './dialogAnalysisFormat';
 import RolesPendingNotice from './RolesPendingNotice';
 import {shouldSendRoles} from './speakerRolesDraft';
@@ -633,7 +636,9 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     }}
                     onClose={() => setRolePicker(null)}
                 />}
-                <p className={styles.turnText}>{turn.text || '—'}</p>
+                {isUnrecognizedTurn(turn)
+                    ? <p className={styles.turnText} data-empty="true" title={UNRECOGNIZED_TURN_HINT}>{UNRECOGNIZED_TURN_TEXT}</p>
+                    : <p className={styles.turnText}>{turn.text}</p>}
                 <TurnSignals turn={turn} markers={turnMarkers}/>
                 {(flag || target) && <span className={styles.turnFlags}>
                     {flag && <span className={styles.flag} data-kind={flag}>{BEHAVIOR_FLAG_LABELS[flag]}</span>}

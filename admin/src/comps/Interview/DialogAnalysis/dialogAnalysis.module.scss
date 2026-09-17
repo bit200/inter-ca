@@ -394,6 +394,13 @@ button.turnSpeaker{
   overflow-wrap: anywhere;
 }
 
+.turnText[data-empty="true"]{
+  color: var(--dlg-muted);
+  font-size: 14px;
+  font-style: italic;
+  cursor: help;
+}
+
 
 .turnPlay{
   flex: none;
