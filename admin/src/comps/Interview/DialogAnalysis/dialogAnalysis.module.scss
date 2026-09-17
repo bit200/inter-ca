@@ -18,6 +18,8 @@
   --dlg-host-soft: var(--dlg-accent-soft);
   --dlg-guest: #7c8580;
   --dlg-guest-soft: #f1f3f2;
+  // Рамка пузыря кандидата: тот же зелёный, разбавленный до линии.
+  --dlg-guest-line: #9ed5b2;
   --dlg-warn: #8a5a0b;
   --dlg-warn-soft: #fdf3e2;
   --dlg-bad: #b3261e;
@@ -37,6 +39,7 @@
   --dlg-accent-soft: #16271f;
   --dlg-guest: #a8b3ad;
   --dlg-guest-soft: #292c2b;
+  --dlg-guest-line: #2f6b47;
   --dlg-warn: #e3b465;
   --dlg-warn-soft: #2c2416;
   --dlg-bad: #ef8f88;
@@ -183,11 +186,11 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 18px;
   border: 1px solid var(--dlg-line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dlg-card);
 
   > div{
-    padding: 12px 16px;
+    padding: 16px 18px;
     border-right: 1px solid var(--dlg-line);
 
     &:last-child{ border-right: 0; }
@@ -197,15 +200,19 @@
     display: block;
     color: var(--dlg-muted);
     font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
   }
 
   > div > strong,
   .metricButton strong{
     display: block;
-    margin-top: 4px;
+    margin-top: 8px;
     color: var(--dlg-strong);
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -251,112 +258,165 @@
 .chip[data-severity="critical"]{ color: var(--dlg-bad); background: var(--dlg-bad-soft); }
 .chip[data-severity="info"]{ color: var(--dlg-accent); background: var(--dlg-accent-soft); }
 
+// Заголовок раздела как в карточке звонка: зелёная подпись над крупным названием.
 .sectionTitle{
   margin: 26px 0 10px;
   color: var(--dlg-strong);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.heading{
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+
+  .sectionTitle, .summaryTitle{ margin: 0; }
+}
+
+.eyebrow{
+  color: var(--dlg-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.countChip{
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--dlg-muted);
+  background: var(--dlg-soft);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  vertical-align: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 // Лента расшифровки: тайм-код, участник, текст. Реплики идут одной колонкой -
 // разговор читают подряд, а не как переписку, и длинная реплика не должна
 // съезжать в узкий пузырь.
+// Лента расшифровки - переписка, как в карточке звонка: интервьюер слева,
+// кандидат справа в зелёной рамке. Пузыри стоят на мягкой подложке, поэтому
+// реплики разделяет воздух, а не линии.
 .turns{
   display: grid;
-  gap: 2px;
+  gap: 10px;
+  padding: 16px;
   border: 1px solid var(--dlg-line);
-  // Слева у реплик полоса роли - скругление угла её обрезало бы, поэтому радиус только справа.
-  border-radius: 0 8px 8px 0;
-  background: var(--dlg-card);
-
-  // Попап роли выходит за край реплики, поэтому ленту не обрезаем, а правые
-  // углы скругляем у крайних строк.
-  > :first-child{ border-top-right-radius: 8px; }
-  > :last-child{ border-bottom-right-radius: 8px; }
+  border-radius: 6px;
+  background: var(--dlg-soft);
 }
+
 
 .turn{
   position: relative;
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 34px;
-  gap: 4px 12px;
-  width: 100%;
-  padding: 11px 14px 12px;
-  border: 0;
-  border-left: 3px solid var(--dlg-line);
-  // Полоса роли идёт от края до края, поэтому слева радиуса нет вовсе.
-  border-radius: 0;
+  justify-self: start;
+  gap: 8px;
+  width: 74%;
+  padding: 12px 14px 14px 16px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
   background: var(--dlg-card);
   text-align: left;
   cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
 }
 
-.turn + .turn{ border-top: 1px solid var(--dlg-line); }
 
-.turn[data-role="manager"]{ border-left-color: var(--dlg-host); }
-.turn[data-role="client"]{ border-left-color: var(--dlg-guest); }
+.turn[data-role="client"]{
+  justify-self: end;
+  border-color: var(--dlg-guest-line);
+}
 
-.turn:hover,
-.turn:focus-visible{ background: var(--dlg-soft); outline: none; }
-.turn:focus-visible{ box-shadow: inset 0 0 0 2px var(--dlg-accent); }
+.turn:hover{ border-color: var(--dlg-accent); }
+.turn:focus-visible{ outline: none; box-shadow: 0 0 0 2px var(--dlg-accent); }
+
+@media (prefers-reduced-motion: reduce){
+  .turn{ transition: none; }
+}
+
+.turnHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  min-width: 0;
+}
+
+.turnMeta{
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
 
 .turnTime{
   color: var(--dlg-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
+
 
 .turnSpeaker{
-  color: var(--dlg-muted);
-  font-size: 12px;
+  color: var(--dlg-strong);
+  font-size: 13px;
+  font-weight: 700;
 }
-
-.turn[data-role="manager"] .turnSpeaker{ color: var(--dlg-host); }
-.turn[data-role="client"] .turnSpeaker{ color: var(--dlg-guest); }
 
 button.turnSpeaker{
   justify-self: start;
   padding: 0;
   border: 0;
-  border-bottom: 1px dashed currentColor;
+  border-bottom: 1px dashed var(--dlg-muted);
   background: transparent;
   line-height: 1.3;
   cursor: pointer;
 
-  &:hover{ color: var(--dlg-strong); }
+  &:hover{ color: var(--dlg-accent); border-bottom-color: currentColor; }
   &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
 }
 
 .turnText{
-  grid-column: 2;
   margin: 0;
-  font-size: 14px;
+  color: var(--dlg-ink);
+  font-size: 15px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
+
 .turnPlay{
-  grid-row: 1 / span 2;
-  grid-column: 3;
-  align-self: start;
-  width: 28px;
-  height: 28px;
+  flex: none;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 1px solid var(--dlg-line);
-  border-radius: 50%;
-  color: var(--dlg-muted);
-  background: transparent;
-  font-size: 11px;
+  border-radius: 6px;
+  color: var(--dlg-ink);
+  background: var(--dlg-card);
+  font-size: 10px;
   line-height: 1;
   cursor: pointer;
 }
 
-.turnPlay:hover{ color: var(--dlg-strong); background: var(--dlg-soft); }
+
+.turnPlay:hover{ border-color: var(--dlg-accent); color: var(--dlg-accent); }
 .turnPlay:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
 
 // Реплика, которая сейчас звучит в плеере: зелёная заливка и залитая кнопка
 // у любого участника - по ней глаз находит место в длинной расшифровке.
 .turn[data-playing="true"]{ background: var(--dlg-accent-soft); }
+.turn[data-playing="true"]{ border-color: var(--dlg-accent); }
 .turn[data-playing="true"] .turnPlay{
   border-color: var(--dlg-accent);
   color: var(--dlg-card);
@@ -381,10 +441,13 @@ button.turnSpeaker{
   top: calc(var(--bs-topbar-height, 20px) - 20px + 4px);
   z-index: 1;
   align-self: start;
-  padding: 10px;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
   border: 1px solid var(--dlg-line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dlg-card);
+  box-shadow: 0 10px 24px -22px rgba(20, 32, 26, .5);
 
   video{
     display: block;
@@ -402,12 +465,36 @@ button.turnSpeaker{
   position: static;
 }
 
-.playerFoot{
+// Шапка записи: плитка с волной, название и подсказка - как «Запись звонка».
+.playerIntro{
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  margin: 8px 2px 0;
+  min-width: 0;
+}
+
+.playerIcon{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  color: var(--dlg-accent);
+  background: var(--dlg-accent-soft);
+}
+
+.playerCopy{
+  display: grid;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+
+  strong{
+    color: var(--dlg-strong);
+    font-size: 15px;
+    font-weight: 700;
+  }
 }
 
 .playerHint{
@@ -416,8 +503,18 @@ button.turnSpeaker{
   font-size: 12px;
 }
 
+// Аудио на широком экране - одна строка: шапка слева, плеер-капсула справа.
+@media (min-width: 992px){
+  .player[data-kind="audio"]{
+    grid-template-columns: minmax(300px, 36%) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+  }
+}
+
 .playerPin{
   flex: none;
+  justify-self: end;
   padding: 0;
   border: 0;
   color: var(--dlg-muted);
@@ -447,22 +544,20 @@ button.turnSpeaker{
 @media (max-width: 991px){
   .player{
     top: calc(var(--bs-topbar-height, 20px) - 20px + 4px);
-    padding: 6px;
+    padding: 8px 10px;
 
     video{
       max-height: min(34vh, calc(100vh - var(--bs-topbar-height, 0px) - 90px));
     }
   }
 
-  .playerFoot{ margin-top: 4px; }
+  .playerIcon{ width: 32px; height: 32px; }
 }
 
 .turnSignals{
   display: flex;
   flex-wrap: wrap;
-  grid-column: 2;
   gap: 5px;
-  margin-top: 8px;
 }
 
 .signal{
@@ -478,14 +573,8 @@ button.turnSpeaker{
 .signal[data-kind="marker"]{ color: var(--dlg-warn); background: var(--dlg-warn-soft); }
 .signal[data-kind="noise"]{ border-style: dashed; }
 
-@media (max-width: 575px){
-  .turn{ grid-template-columns: minmax(0, 1fr) 34px; }
-  .turnText,
-  .turnSignals,
-  .turnWho{ grid-column: 1; }
-  .turnTime{ grid-column: 1; }
-  .turnPlay{ grid-column: 2; }
-  .turn[data-followup="true"]{ padding-left: 22px; }
+@media (max-width: 767px){
+  .turn, .details{ width: 92%; }
 }
 
 .signalsGrid{
@@ -538,14 +627,16 @@ button.turnSpeaker{
 // просодия и шумы не помещаются в строку списка.
 .details{
   display: grid;
+  justify-self: start;
   gap: 10px;
-  margin-top: 14px;
+  width: 74%;
   padding: 14px 16px;
-  border: 1px solid var(--dlg-line);
-  border-left: 3px solid var(--dlg-accent);
-  border-radius: 0 8px 8px 0;
-  background: var(--dlg-soft);
+  border: 1px dashed var(--dlg-accent);
+  border-radius: 6px;
+  background: var(--dlg-card);
 }
+
+.details[data-side="right"]{ justify-self: end; }
 
 .detailsHead{
   display: flex;
@@ -577,7 +668,7 @@ button.turnSpeaker{
 .rolePopover{
   position: absolute;
   bottom: calc(100% - 6px);
-  left: 90px;
+  left: 12px;
   z-index: 5;
   display: grid;
   gap: 6px;
@@ -625,10 +716,8 @@ button.turnSpeaker{
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 12px;
-  margin: 26px 0 10px;
-
-  .sectionTitle{ margin: 0; }
+  gap: 10px 16px;
+  margin: 30px 0 14px;
 }
 
 .viewSwitch{
@@ -671,8 +760,8 @@ button.turnSpeaker{
   font-size: 11px;
 }
 
-// Уточняющий вопрос отступает внутрь блока: видно, что он продолжает основной.
-.turn[data-followup="true"]{ padding-left: 28px; }
+// Уточняющий вопрос отступает внутрь ленты: видно, что он продолжает основной.
+.turn[data-followup="true"]{ margin-left: 24px; }
 
 // Вопрос интервью. Реплики внутри несут полосу роли у левого края, поэтому
 // у блока, как и у сплошной ленты, радиус только справа.
@@ -683,7 +772,7 @@ button.turnSpeaker{
 
 .qaBlock{
   border: 1px solid var(--dlg-line);
-  border-radius: 0 8px 8px 0;
+  border-radius: 6px;
   background: var(--dlg-card);
 }
 
@@ -693,10 +782,10 @@ button.turnSpeaker{
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-  padding: 10px 14px 10px 17px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--dlg-line);
-  border-top-right-radius: 8px;
-  background: var(--dlg-soft);
+  border-radius: 6px 6px 0 0;
+  background: var(--dlg-card);
 }
 
 .qaTitle{
@@ -766,7 +855,7 @@ button.turnSpeaker{
 
 .qaBlock[data-collapsed="true"] .qaHead{
   border-bottom: 0;
-  border-bottom-right-radius: 8px;
+  border-radius: 6px;
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -775,7 +864,6 @@ button.turnSpeaker{
 
 .qaTime{
   color: var(--dlg-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -800,9 +888,12 @@ button.turnSpeaker{
 
 .qaTurns{
   display: grid;
-
-  > :last-child{ border-bottom-right-radius: 8px; }
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--dlg-soft);
 }
+
+.qaTurns:last-child{ border-radius: 0 0 6px 6px; }
 
 .qaStatus{
   display: inline-flex;
@@ -1070,12 +1161,45 @@ button.turnSpeaker{
   --dlg-band: var(--dlg-muted);
   --dlg-band-soft: var(--dlg-soft);
   display: grid;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px 28px;
   margin-bottom: 12px;
-  padding: 18px 20px 16px;
+  padding: 22px 24px 18px;
   border: 1px solid var(--dlg-line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dlg-card);
+}
+
+.summary[data-scored="true"]{ grid-template-columns: minmax(0, 1fr) auto; }
+
+.summaryMain{
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+// Оценка стоит справа за вертикальной линией - как «Итоговая оценка» в карточке звонка.
+.summaryAside{
+  display: grid;
+  align-content: start;
+  justify-items: end;
+  gap: 10px;
+  padding-left: 28px;
+  border-left: 1px solid var(--dlg-line);
+}
+
+.summaryAsideLabel{
+  color: var(--dlg-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 767px){
+  .summary[data-scored="true"]{ grid-template-columns: minmax(0, 1fr); }
+  .summaryAside{ justify-items: start; padding: 14px 0 0; border-top: 1px solid var(--dlg-line); border-left: 0; }
 }
 
 .summary[data-band="good"]{ --dlg-band: var(--dlg-accent); --dlg-band-soft: var(--dlg-accent-soft); }
@@ -1085,7 +1209,7 @@ button.turnSpeaker{
 .summaryHead{
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px 16px;
 }
@@ -1093,13 +1217,14 @@ button.turnSpeaker{
 .summaryTitle{
   margin: 0;
   color: var(--dlg-strong);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .summaryBody{
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 16px 22px;
 }
@@ -1250,9 +1375,10 @@ button.turnSpeaker{
 .dialogMetrics{
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  grid-column: 1 / -1;
   margin: 0;
   border-top: 1px solid var(--dlg-line);
-  padding-top: 12px;
+  padding-top: 14px;
 }
 
 .dialogMetric{
@@ -1267,7 +1393,9 @@ button.turnSpeaker{
   dt{
     color: var(--dlg-muted);
     font-size: 11px;
-    font-weight: 400;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
   }
 
   dd{
@@ -1366,10 +1494,10 @@ button.turnSpeaker{
 .lensBar{
   display: grid;
   gap: 12px;
-  margin-top: 26px;
-  padding: 12px 14px 14px;
+  margin-top: 18px;
+  padding: 14px 16px 16px;
   border: 1px solid var(--dlg-line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dlg-card);
 }
 
@@ -1396,6 +1524,9 @@ button.turnSpeaker{
   > span:first-child{
     color: var(--dlg-muted);
     font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
   }
 
   strong{
@@ -1518,13 +1649,7 @@ button.turnSpeaker{
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  grid-column: 2;
   gap: 6px 10px;
-  margin-top: 6px;
-}
-
-@media (max-width: 575px){
-  .turnFlags{ grid-column: 1; }
 }
 
 // Балл звена цепочки у реплики кандидата.
@@ -1578,14 +1703,14 @@ button.turnSpeaker{
 // с баллом вопроса. Это левая полоса, поэтому углов у неё нет.
 .qaTurns[data-bracket]{
   position: relative;
-  padding-left: 22px;
+  padding-left: 30px;
 }
 
 .bracket{
   position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 8px;
+  top: 16px;
+  bottom: 16px;
+  left: 14px;
   width: 6px;
   border: 2px solid var(--dlg-accent);
   border-right: 0;
@@ -1967,6 +2092,8 @@ button.turnSpeaker{
   border-radius: 0 8px 8px 0;
   background: var(--dlg-soft);
 }
+
+.skeletonSummary .summaryBody{ grid-template-columns: auto minmax(0, 1fr); }
 
 .skeletonSummary, .skeletonBlocks{ animation: dlgPulse 1.4s ease-in-out infinite; }
 

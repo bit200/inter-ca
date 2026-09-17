@@ -85,6 +85,24 @@ export function roleSummary(turns) {
     return roles.size === 1 && roles.has('unknown') ? 'Не определены' : 'Частично';
 }
 
+// Счётчик у заголовка расшифровки: «1 реплика», «3 реплики», «8 реплик».
+export function turnsCountLabel(count) {
+    let n = Math.max(0, Math.floor(Number(count) || 0));
+    let tens = n % 100, ones = n % 10;
+    let word = tens >= 11 && tens <= 14 ? 'реплик' : ones === 1 ? 'реплика' : ones >= 2 && ones <= 4 ? 'реплики' : 'реплик';
+    return n + ' ' + word;
+}
+
+// Время реплики диапазоном, как в карточке звонка: «0:01–0:04». Реплика без
+// конца или короче секунды показывается одним моментом.
+export function turnTimeRange(turn) {
+    let start = Math.max(0, Number(turn && turn.startMs) || 0);
+    let end = Number(turn && turn.endMs);
+    let from = formatDuration(start);
+    let to = Number.isFinite(end) && end > start ? formatDuration(end) : from;
+    return from === to ? {from, to: null} : {from, to};
+}
+
 export function markerLabel(category) {
     return MARKER_LABELS[category] || category || 'Маркер';
 }

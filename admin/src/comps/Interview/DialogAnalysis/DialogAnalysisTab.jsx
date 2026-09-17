@@ -39,6 +39,8 @@ import {
     speakerKey,
     speakerLabels,
     listSpeakers,
+    turnTimeRange,
+    turnsCountLabel,
 } from './dialogAnalysisFormat';
 import RolesPendingNotice from './RolesPendingNotice';
 import {shouldSendRoles} from './speakerRolesDraft';
@@ -558,7 +560,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     activate();
                 }}
             >
-                <span className={styles.turnTime}>{formatDuration(turn.startMs || 0)}</span>
+                <div className={styles.turnHead}>
                 <span className={styles.turnWho}>
                 {turn.speaker && turn.speaker !== 'unknown'
                     ? <button
@@ -584,6 +586,26 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     title={(answerScore.technical ? 'Балл за ответ на вопрос: ' : 'Балл за нетехнический ответ: ') + formatScore(answerScore.score) + ' из ' + formatScore(answerScore.max)}
                 >{formatScore(answerScore.score)}</span>}
                 </span>
+                <span className={styles.turnMeta}>
+                    <TurnTime turn={turn}/>
+                    {media && (index > -1 || typeof turn.startMs === 'number') && (() => {
+                        let sounding = !paused && index > -1 && playingIndex === index;
+                        let label = sounding ? 'Пауза' : 'Воспроизвести с ' + formatDuration(turn.startMs || 0);
+                        return <button
+                            type="button"
+                            className={styles.turnPlay}
+                            aria-label={label}
+                            title={label}
+                            onClick={event => {
+                                // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
+                                event.stopPropagation();
+                                sounding ? pause() : playFrom(turn);
+                            }}
+                            onKeyDown={event => event.stopPropagation()}
+                        >{sounding ? '❚❚' : '▶'}</button>;
+                    })()}
+                </span>
+                </div>
                 {rolePicker === key && <RolePopover
                     role={normalizedRole(turn.role)}
                     onPick={role => {
@@ -593,22 +615,6 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     onClose={() => setRolePicker(null)}
                 />}
                 <p className={styles.turnText}>{turn.text || '—'}</p>
-                {media && (index > -1 || typeof turn.startMs === 'number') && (() => {
-                    let sounding = !paused && index > -1 && playingIndex === index;
-                    let label = sounding ? 'Пауза' : 'Воспроизвести с ' + formatDuration(turn.startMs || 0);
-                    return <button
-                        type="button"
-                        className={styles.turnPlay}
-                        aria-label={label}
-                        title={label}
-                        onClick={event => {
-                            // Кнопка живёт внутри реплики: без этого клик ещё и раскроет детали.
-                            event.stopPropagation();
-                            sounding ? pause() : playFrom(turn);
-                        }}
-                        onKeyDown={event => event.stopPropagation()}
-                    >{sounding ? '❚❚' : '▶'}</button>;
-                })()}
                 <TurnSignals turn={turn} markers={turnMarkers}/>
                 {(flag || target) && <span className={styles.turnFlags}>
                     {flag && <span className={styles.flag} data-kind={flag}>{BEHAVIOR_FLAG_LABELS[flag]}</span>}
@@ -649,7 +655,12 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         />}
 
         <div className={styles.transcriptHead}>
-            <h4 className={styles.sectionTitle}>Расшифровка</h4>
+            <div className={styles.heading}>
+                <span className={styles.eyebrow}>Расшифровка</span>
+                <h4 className={styles.sectionTitle}>
+                    Диалог <span className={styles.countChip}>{turnsCountLabel(turns.length)}</span>
+                </h4>
+            </div>
             {blocks.length > 0 && <div className={styles.viewSwitch} role="radiogroup" aria-label="Как показать расшифровку">
                 {[['blocks', 'По вопросам'], ['turns', 'Все реплики']].map(([key, label]) => <button
                     key={key}
@@ -662,25 +673,27 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
             </div>}
         </div>
         <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
-        {media && <div className={styles.player} data-pinned={pinned ? 'true' : 'false'}>
+        {media && <div className={styles.player} data-pinned={pinned ? 'true' : 'false'} data-kind={media.kind}>
+            <div className={styles.playerIntro}>
+                <span className={styles.playerIcon} aria-hidden="true"><WaveIcon/></span>
+                <div className={styles.playerCopy}>
+                    <strong>{media.kind === 'video' ? 'Видео интервью' : 'Запись интервью'}</strong>
+                    <span className={styles.playerHint}>Нажмите ▶ у реплики, чтобы услышать её с начала</span>
+                </div>
+            </div>
             {media.kind === 'video'
                 ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
                 : <CallPlayer ref={player} src={media.src} onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
-            <div className={styles.playerFoot}>
-                <p className={styles.playerHint}>
-                    {media.kind === 'video' ? 'Видео интервью' : 'Аудиозапись интервью'}: нажмите ▶ у реплики, чтобы услышать её с начала.
-                </p>
-                <button
-                    type="button"
-                    className={styles.playerPin}
-                    aria-pressed={pinned}
-                    title={pinned ? 'Запись прокрутится вместе с расшифровкой' : 'Запись останется на экране при прокрутке'}
-                    onClick={() => setPinned(prev => {
-                        savePlayerPinned(!prev);
-                        return !prev;
-                    })}
-                >{pinned ? 'Открепить' : 'Закрепить'}</button>
-            </div>
+            <button
+                type="button"
+                className={styles.playerPin}
+                aria-pressed={pinned}
+                title={pinned ? 'Запись прокрутится вместе с расшифровкой' : 'Запись останется на экране при прокрутке'}
+                onClick={() => setPinned(prev => {
+                    savePlayerPinned(!prev);
+                    return !prev;
+                })}
+            >{pinned ? 'Открепить' : 'Закрепить'}</button>
         </div>}
         <div className={styles.feed}>
         {linkingBlock && <div className={styles.linking} role="status">
@@ -986,9 +999,14 @@ function SoftMarks({soft}) {
 // цифры разговора. Первое, что читают на карточке, поэтому стоит над всем остальным.
 function InterviewSummary({overall, greeting, metrics, summarizing}) {
     let band = overall ? scoreBand(overall.score, overall.max) : 'none';
-    return <section className={styles.summary} data-band={band} aria-label="Итог интервью">
+    let scored = Boolean(overall) && overall.score !== null;
+    return <section className={styles.summary} data-band={band} data-scored={scored ? 'true' : undefined} aria-label="Итог интервью">
+        <div className={styles.summaryMain}>
         <header className={styles.summaryHead}>
-            <h3 className={styles.summaryTitle}>Итог интервью</h3>
+            <div className={styles.heading}>
+                <span className={styles.eyebrow}>Разбор записи</span>
+                <h3 className={styles.summaryTitle}>Итог интервью</h3>
+            </div>
             {greeting && <ul className={styles.courtesy} aria-label="Приветствие и прощание">
                 <CourtesyMark value={greeting.greeted} yes="Приветствие есть" no="Приветствия нет" unknown="Приветствие не определено"/>
                 <CourtesyMark value={greeting.farewelled} yes="Прощание есть" no="Прощания нет" unknown="Прощание не определено"/>
@@ -997,7 +1015,6 @@ function InterviewSummary({overall, greeting, metrics, summarizing}) {
 
         {overall
             ? <div className={styles.summaryBody}>
-                {overall.score !== null && <SummaryScore score={overall.score} max={overall.max} basis={overall.basis} parts={overall.parts}/>}
                 <div className={styles.summaryText}>
                     {overall.summary && <p>{overall.summary}</p>}
                     {overall.message && !overall.summary && <p className={styles.summaryMuted}>Итог не собран: {overall.message}</p>}
@@ -1019,6 +1036,11 @@ function InterviewSummary({overall, greeting, metrics, summarizing}) {
             </p>}
 
         {greeting && greeting.note && <p className={styles.courtesyNote}>{greeting.note}</p>}
+        </div>
+        {scored && <aside className={styles.summaryAside}>
+            <span className={styles.summaryAsideLabel}>Итоговая оценка</span>
+            <SummaryScore score={overall.score} max={overall.max} basis={overall.basis} parts={overall.parts}/>
+        </aside>}
         {metrics && <DialogMetrics metrics={metrics}/>}
     </section>;
 }
@@ -1169,7 +1191,7 @@ function TurnDetails({turn, label, markers, onClose}) {
     let startMs = Number(turn.startMs || 0);
     let endMs = Math.max(startMs, Number(turn.endMs || startMs));
 
-    return <div className={styles.details}>
+    return <div className={styles.details} data-side={normalizedRole(turn.role) === 'client' ? 'right' : 'left'}>
         <div className={styles.detailsHead}>
             <strong>{label || speakerLabel(turn.role, turn.speaker)} · {formatDuration(startMs)}–{formatDuration(endMs)}</strong>
             <button type="button" className={styles.detailsClose} onClick={onClose} aria-label="Свернуть реплику">×</button>
@@ -1205,6 +1227,21 @@ function TurnDetails({turn, label, markers, onClose}) {
             <span>{formatDuration(event.startMs || 0)}–{formatDuration(event.endMs || 0)}</span>
         </div>)}
     </div>;
+}
+
+// Время реплики в шапке пузыря. Начало и конец - отдельными узлами: по началу
+// реплику ищут глазами, конец только подсказывает её длину.
+function TurnTime({turn}) {
+    let {from, to} = turnTimeRange(turn);
+    return <span className={styles.turnTime}>
+        <span>{from}</span>{to && <>–<span>{to}</span></>}
+    </span>;
+}
+
+function WaveIcon() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 10v4"/>
+    </svg>;
 }
 
 function EmotionSummary({sources}) {
