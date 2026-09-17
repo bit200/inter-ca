@@ -12,7 +12,7 @@ import {
     normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
-import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
+import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softProblemMarks} from './qaBlocks';
 import {mocksByBlockNumber, readMockUiVariant} from './weakMocks';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
@@ -1021,8 +1021,8 @@ function QaScore({evaluation, number, interviewId}) {
 }
 
 // Мягкая оценка нетехнического ответа - две-три отметки и балл из них той же шкалой,
-// что у технического вопроса. Цвет общий: зелёный - по делу, жёлтый - с пробелами, красный - мимо.
-const RELEVANCE_LABELS = {on_topic: 'По теме', evasive: 'Уклончиво', off_topic: 'Не по вопросу'};
+// что у технического вопроса. Отметки показываем только про проблемы: «По теме», «Развёрнуто»
+// и прочие зелёные не выводим, их и так видно по баллу.
 
 function SoftMarks({soft}) {
     if (soft.state === 'unanswered') return null;
@@ -1033,18 +1033,12 @@ function SoftMarks({soft}) {
     if (soft.state === 'missing') return <span className={styles.qaStatus}>Без оценки</span>;
     if (soft.state === 'error') return <span className={styles.qaStatus} data-state="error">Ошибка оценки</span>;
 
-    let marks = [
-        soft.relevance && {key: 'relevance', text: RELEVANCE_LABELS[soft.relevance],
-            tone: soft.relevance === 'on_topic' ? 'good' : soft.relevance === 'evasive' ? 'fair' : 'poor'},
-        soft.complete !== null && {key: 'complete', text: soft.complete ? 'Развёрнуто' : 'Формально',
-            tone: soft.complete ? 'good' : 'fair'},
-        soft.engaged === true && {key: 'engaged', text: 'Встречные вопросы', tone: 'good'},
-    ].filter(Boolean);
+    let marks = softProblemMarks(soft);
 
     return <>
-        <ul className={styles.softMarks} data-band={soft.band} aria-label="Оценка ответа">
+        {marks.length > 0 && <ul className={styles.softMarks} data-band={soft.band} aria-label="Оценка ответа">
             {marks.map(mark => <li key={mark.key} className={styles.softMark} data-tone={mark.tone}>{mark.text}</li>)}
-        </ul>
+        </ul>}
         <QaScore evaluation={soft}/>
     </>;
 }

@@ -159,6 +159,15 @@ const BAND_RANGES = {good: [7, 10], fair: [4, 6], poor: [0, 3]};
 // Из чего сложился балл мягкой оценки: «Содержание» - слагаемые по отметкам и
 // поправка, если сумма не влезла в полосу уровня ответа, - и «Подача» - штрафы
 // за речь. Итог - 70% содержания плюс 30% содержания, помноженные на долю подачи. Попап над баллом показывает ровно это.
+// Отметки нетехнического ответа для строки вопроса - только проблемные (жёлтые и красные).
+export function softProblemMarks({relevance, complete}) {
+    return [
+        relevance && relevance !== 'on_topic' && {key: 'relevance', text: RELEVANCE_TITLES[relevance],
+            tone: relevance === 'evasive' ? 'fair' : 'poor'},
+        complete === false && {key: 'complete', text: 'Формально', tone: 'fair'},
+    ].filter(Boolean);
+}
+
 export function softBreakdown({relevance, complete, engaged, band, delivery}) {
     let counted = typeof engaged === 'boolean';
     let completeMax = counted ? 3 : 4;
