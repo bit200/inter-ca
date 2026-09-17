@@ -593,7 +593,7 @@ describe('таб разбора диалога', () => {
             expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
         });
 
-        test('линзы: технический и нетехнический баллы, флаги и счётчики - из настоящей оценки ответов', async () => {
+        test('оценка ответов: баллы и флаги в вопросах и ленте, фильтр частей и легенда на ходе разговора', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {score: 8}},
                 {id: 'b2', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'off_topic', complete: false}},
@@ -603,12 +603,8 @@ describe('таб разбора диалога', () => {
 
             expect(container.querySelector('[role="tooltip"]')).toBeNull();
             expect(screen.queryByText(/ДЕМО/)).toBeNull();
-            const bar = screen.getByRole('region', {name: 'Оценка интервью'});
-            expect(within(bar).getByText('Техническая').parentElement).toHaveTextContent('8/10');
-            expect(within(bar).getByText('Нетехническая').parentElement).toHaveTextContent('0/1');
-            expect(within(bar).getByText('Не по вопросу · 1')).toBeInTheDocument();
-            expect(within(bar).getByText('Без ответа · 0')).toBeInTheDocument();
-            expect(within(bar).queryByText(/Невежливо/)).toBeNull();
+            // Строки баллов со шкалой вопросов над списком больше нет.
+            expect(screen.queryByRole('region', {name: 'Оценка интервью'})).toBeNull();
 
             // Блоки изначально свёрнуты. В развёрнутых нет зелёной полосы-скобки
             // слева: балл уже стоит в шапке вопроса справа.
@@ -622,10 +618,20 @@ describe('таб разбора диалога', () => {
             expect(Array.from(container.querySelectorAll('[class*="answerScore"]')).map(node => node.textContent)).toEqual(['8', '0']);
             expect(container.querySelectorAll('[class*="turnFlags"] [data-kind="off_topic"]').length).toBe(1);
 
-            fireEvent.click(screen.getByRole('button', {name: /^Обзор/}));
-            fireEvent.click(within(screen.getByRole('region', {name: 'Оценка интервью'})).getByRole('radio', {name: 'Техника'}));
-            expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
-            expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
+            const lane = screen.getByRole('group', {name: 'Части интервью'});
+            expect(Array.from(lane.children).map(node => node.getAttribute('data-part'))).toEqual(['tech', 'behavior']);
+            fireEvent.click(within(screen.getByRole('radiogroup', {name: 'Часть интервью'})).getByRole('radio', {name: 'Техническая'}));
+            expect(Array.from(lane.children).map(node => node.getAttribute('data-dimmed'))).toEqual([null, 'true']);
+            const dimmed = () => Array.from(container.querySelectorAll('[class*="reviewSegment"]')).map(node => node.getAttribute('data-dimmed') === 'true');
+            expect(dimmed()).toEqual([false, true, false, true]);
+
+            fireEvent.click(within(screen.getByRole('radiogroup', {name: 'Часть интервью'})).getByRole('radio', {name: 'Всё'}));
+            const speech = within(screen.getByRole('group', {name: 'Шкала оценок'})).getByRole('button', {name: 'Речь без замечаний'});
+            expect(speech).toHaveAttribute('aria-pressed', 'true');
+            fireEvent.click(speech);
+            expect(speech).toHaveAttribute('aria-pressed', 'false');
+            const tones = Array.from(container.querySelectorAll('[class*="reviewSegment"]')).map(node => node.getAttribute('data-tone'));
+            expect(dimmed()).toEqual(tones.map(tone => tone === 'speech'));
         });
 
         test('без оценки ответов выдуманной разбивки на вопросы нет - только лента реплик', async () => {

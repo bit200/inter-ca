@@ -652,7 +652,6 @@ button.turnSpeaker{
   background: var(--dlg-card);
 
   .turns{ border: 0; border-radius: 0 0 6px 6px; }
-  .lensBar{ margin-top: 0; }
 }
 
 .panelHead{
@@ -697,16 +696,76 @@ button.turnSpeaker{
   span{ color: var(--dlg-muted); font-size: 11px; }
 }
 
+.reviewControls{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 18px;
+  margin: 12px 0 14px;
+}
+
 .reviewLegend{
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
-  margin: 12px 0 14px;
+  align-items: center;
+  gap: 4px 6px;
   color: var(--dlg-muted);
   font-size: 11px;
 
-  span{ display: inline-flex; align-items: center; gap: 5px; }
+  > span{ margin-right: 4px; }
   i{ width: 8px; height: 8px; border-radius: 2px; }
+}
+
+// Пункт легенды - переключатель: выключенный бледнеет и гасит свои отрезки.
+.legendToggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--dlg-strong);
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+
+  &:hover{ border-color: var(--dlg-line); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 1px; }
+  &[aria-pressed="false"]{ color: var(--dlg-muted); text-decoration: line-through; }
+  &[aria-pressed="false"] i{ opacity: .3; }
+}
+
+.viewOption[data-part]{ display: inline-flex; align-items: center; gap: 6px; }
+
+// Цвет части: техническая - наш зелёный, нетехническая - серо-зелёный гость,
+// live coding - штриховка, чтобы не спорить с цветами оценок на дорожках.
+.partSwatch,
+.partSegment{
+  background: var(--dlg-accent);
+
+  &[data-part="behavior"]{ background: var(--dlg-guest); }
+  &[data-part="live"]{
+    background: repeating-linear-gradient(-45deg, var(--dlg-soft) 0 3px, var(--dlg-strong) 3px 5px);
+  }
+}
+
+.partSwatch{ width: 8px; height: 8px; border-radius: 2px; }
+
+.partLane{
+  position: relative;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--dlg-soft);
+}
+
+.partSegment{
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-shadow: inset -2px 0 var(--dlg-card);
+
+  &[data-dimmed="true"]{ opacity: .15; }
 }
 
 .reviewLegend i,
@@ -747,6 +806,7 @@ button.turnSpeaker{
   &:hover,
   &:focus-visible,
   &[data-active="true"]{ z-index: 2; outline: 2px solid var(--dlg-strong); outline-offset: 1px; }
+  &[data-dimmed="true"]{ opacity: .15; }
 }
 
 .reviewPlayhead{
@@ -1703,148 +1763,6 @@ button.turnSpeaker{
 
 // ── Линзы расшифровки (вариант B) ───────────────────────────────────────────
 
-
-// Панель линз: переключатель акцента слева, итоговые баллы справа, под ними шкала.
-.lensBar{
-  display: grid;
-  gap: 12px;
-  margin-top: 18px;
-  padding: 14px 16px 16px;
-  border: 1px solid var(--dlg-line);
-  border-radius: 6px;
-  background: var(--dlg-card);
-}
-
-.lensHead{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-}
-
-.lensScores{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 22px;
-}
-
-.lensScore{
-  --dlg-band: var(--dlg-accent);
-  display: grid;
-  gap: 2px;
-
-  > span:first-child{
-    color: var(--dlg-muted);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .02em;
-    text-transform: uppercase;
-  }
-
-  strong{
-    color: var(--dlg-band);
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-
-  strong[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
-  strong[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
-  strong[data-band="none"]{ --dlg-band: var(--dlg-muted); }
-
-  small{
-    margin-left: 1px;
-    color: var(--dlg-muted);
-    font-size: 12px;
-    font-weight: 400;
-  }
-}
-
-.lensCounts{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-// Шкала интервью: отрезки вопросов (технические плотнее), точки поведения и
-// текущая позиция записи. Отрезок - кнопка, он ведёт к вопросу.
-.timeline{
-  position: relative;
-  height: 30px;
-  border: 1px solid var(--dlg-line);
-  border-radius: 4px;
-  background: var(--dlg-soft);
-}
-
-.timelineSegment{
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  padding: 0;
-  border: 0;
-  border-radius: 2px;
-  background: var(--dlg-guest);
-  opacity: .35;
-  cursor: pointer;
-
-  &[data-technical="true"]{ background: var(--dlg-accent); opacity: .55; }
-  &[data-dimmed="true"]{ opacity: .15; }
-  &:hover{ opacity: .85; }
-  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; opacity: .85; }
-}
-
-// Участок live-coding: штриховка на всю высоту шкалы под отрезками вопросов,
-// чтобы пустая часть шкалы читалась как отдельная секция, а не как пропуск.
-.timelineLiveCoding{
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  border-left: 1px solid var(--dlg-muted);
-  border-right: 1px solid var(--dlg-muted);
-  background: repeating-linear-gradient(-45deg, transparent 0 5px, var(--dlg-line) 5px 7px);
-  color: var(--dlg-muted);
-  font-size: 11px;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: default;
-
-  span{
-    margin-left: 6px;
-    padding: 2px 4px;
-    background: var(--dlg-soft);
-  }
-}
-
-.timelineEvent{
-  position: absolute;
-  top: -6px;
-  display: block;
-  margin-left: -5px;
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--dlg-card);
-  border-radius: 50%;
-  background: var(--dlg-warn);
-
-  &[data-kind="off_topic"]{ background: var(--dlg-bad); }
-}
-
-.timelineNow{
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--dlg-strong);
-  pointer-events: none;
-}
 
 // Флаги поведения и «Ответ не найден»: тот же размер, что у чипов замечаний.
 .flag{
