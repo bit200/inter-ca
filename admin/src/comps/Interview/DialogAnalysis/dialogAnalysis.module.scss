@@ -1131,41 +1131,6 @@ button.turnSpeaker{
   }
 }
 
-// Заголовок вопроса - сам текст вопроса и одновременно переключатель: шеврон
-// показывает, развёрнут ли блок. Метаданные (время, пауза, тема) - строкой ниже.
-.qaToggle{
-  display: flex;
-  flex: 1 1 100%;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-  margin: 0 0 0 -4px;
-  padding: 2px 4px;
-  border: 0;
-  border-radius: 4px;
-  color: inherit;
-  background: none;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover .qaQuestion{ color: var(--dlg-accent); }
-  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 1px; }
-}
-
-.qaChevron{
-  flex: none;
-  width: 7px;
-  height: 7px;
-  margin-top: 6px;
-  border-right: 2px solid var(--dlg-muted);
-  border-bottom: 2px solid var(--dlg-muted);
-  transform: rotate(45deg);
-  transition: transform .15s ease;
-
-  .qaToggle[aria-expanded="false"] &{ margin-top: 4px; transform: rotate(-45deg); }
-}
-
 // Длинный вопрос (интервьюер рассказывает минуту) обрезается до двух строк:
 // шапка остаётся шапкой, полный текст - в реплике ниже и во всплывающей подсказке.
 .qaTitle strong.qaQuestion{
@@ -1181,13 +1146,70 @@ button.turnSpeaker{
   transition: color .15s ease;
 }
 
-.qaBlock[data-collapsed="true"] .qaHead{
+// Вопрос в «Обзоре» - одна строка: ▶ слева, вопрос с темой и замечаниями, справа
+// балл и «К диалогу». Реплики не раскрываются, поэтому разделителя под шапкой нет.
+.qaHead{
+  flex-wrap: nowrap;
+  align-items: flex-start;
   border-bottom: 0;
   border-radius: 6px;
 }
 
+.qaTitle{
+  flex: 1 1 auto;
+  align-items: center;
+
+  strong.qaQuestion{ flex: 1 1 100%; }
+}
+
+.qaPlay{
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--dlg-line);
+  border-radius: 50%;
+  color: var(--dlg-ink);
+  background: var(--dlg-card);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+
+  &:hover{ border-color: var(--dlg-accent); color: var(--dlg-accent); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
+  &[aria-pressed="true"]{ border-color: var(--dlg-accent); color: var(--dlg-card); background: var(--dlg-accent); }
+}
+
+.qaBlock[data-playing="true"]{ border-color: var(--dlg-accent); }
+
+.qaJump{
+  padding: 3px 2px;
+  border: 0;
+  color: var(--dlg-accent);
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover{ text-decoration: underline; text-underline-offset: 3px; }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; border-radius: 4px; }
+}
+
+@media (max-width: 640px){
+  .qaHead{ flex-wrap: wrap; }
+  .qaActions{ flex: 1 1 100%; }
+}
+
 @media (prefers-reduced-motion: reduce){
-  .qaChevron, .qaTitle strong.qaQuestion{ transition: none; }
+  .qaTitle strong.qaQuestion, .qaPlay{ transition: none; }
+}
+
+// Реплики вопроса, открытого из «Обзора» кнопкой «К диалогу».
+.turn[data-focused="true"]{
+  border-color: var(--dlg-accent);
+  box-shadow: 0 0 0 3px var(--dlg-accent-soft);
 }
 
 .qaKind{

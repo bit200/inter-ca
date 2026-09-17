@@ -17,13 +17,6 @@ const setupHttp = (payload, answers = null) => {
 
 const flush = async () => { await act(async () => { await Promise.resolve(); }); };
 
-// Блоки вопросов изначально свёрнуты - раскрываем по шапке, чтобы добраться до реплик.
-const expand = (region) => {
-    const toggle = within(region).getAllByRole('button').find(node => node.hasAttribute('aria-controls'));
-    if (toggle.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle);
-    return region;
-};
-
 beforeEach(() => { global.t = (key) => key; });
 
 describe('таб разбора диалога', () => {
@@ -473,12 +466,12 @@ describe('таб разбора диалога', () => {
             await flush();
 
             expect(screen.queryByRole('button', {name: /Оценить ответы/})).toBeNull();
-            const first = expand(screen.getByRole('region', {name: 'Вопрос 1'}));
+            const first = screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(first).getByText('Технический')).toBeInTheDocument();
-            // Текст вопроса - в шапке блока и в самой реплике интервьюера.
-            expect(within(first).getAllByText('Что такое замыкание?')).toHaveLength(2);
+            // В «Обзоре» только сам вопрос: реплики диалога не раскрываются.
+            expect(within(first).getAllByText('Что такое замыкание?')).toHaveLength(1);
+            expect(within(first).queryByText('Функция с доступом к внешней области')).toBeNull();
             expect(within(first).getByRole('button', {name: 'Оценка 8 из 10, показать детализацию'})).toBeInTheDocument();
-            expect(within(first).getByText('Определение верное')).toBeInTheDocument();
 
             // Неоцениваемый вопрос в «Обзор» не попадает - там только то, что оцениваем.
             expect(screen.queryByRole('region', {name: 'Вопрос 2'})).toBeNull();
@@ -549,28 +542,35 @@ describe('таб разбора диалога', () => {
             expect(screen.queryByRole('dialog', {name: 'Детализация оценки'})).toBeNull();
         });
 
-        test('в шапке вопроса его текст вместо номера, по шапке вопрос сворачивается и разворачивается', async () => {
+        test('вопрос в «Обзоре» не раскрывается: ▶ слушает его отрезок, «К диалогу» открывает его в ленте', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
             ]}}});
-            render(<DialogAnalysisTab item={interview(null)}/>);
+            const {container} = render(<DialogAnalysisTab item={interview(null)}/>);
             await flush();
 
             const block = screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(block).queryByText('Вопрос 1')).toBeNull();
-            const toggle = within(block).getByRole('button', {name: 'Что такое замыкание?'});
-            // Изначально вопрос свёрнут: видна только шапка с темой.
-            expect(toggle).toHaveAttribute('aria-expanded', 'false');
+            expect(within(block).getByText('Что такое замыкание?')).toBeInTheDocument();
+            expect(within(block).queryByTitle('Развернуть вопрос')).toBeNull();
+            expect(within(block).queryByRole('button', {name: 'Что такое замыкание?'})).toBeNull();
             expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
-            expect(within(block).queryByText('Определение верное')).toBeNull();
-            expect(within(block).getByText('Технический')).toBeInTheDocument();
 
-            fireEvent.click(toggle);
-            expect(toggle).toHaveAttribute('aria-expanded', 'true');
-            expect(within(block).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+            const video = container.querySelector('video');
+            video.play = jest.fn(() => Promise.resolve());
+            video.pause = jest.fn();
+            fireEvent.click(within(block).getByRole('button', {name: 'Прослушать вопрос с 0:00'}));
+            expect(video.play).toHaveBeenCalled();
+            fireEvent.play(video);
+            expect(within(block).getByRole('button', {name: 'Пауза'})).toHaveAttribute('aria-pressed', 'true');
+            // Дошли до конца вопроса (9 с) - запись встаёт сама.
+            Object.defineProperty(video, 'currentTime', {value: 9.2, writable: true, configurable: true});
+            fireEvent.timeUpdate(video);
+            expect(video.pause).toHaveBeenCalled();
 
-            fireEvent.click(toggle);
-            expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
+            fireEvent.click(within(block).getByRole('button', {name: 'К диалогу'}));
+            expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
+            expect(Array.from(container.querySelectorAll('[data-focused="true"]')).map(node => node.id)).toEqual(['dlg-turn-0', 'dlg-turn-1']);
         });
 
         test('оценка ответов: баллы и флаги в вопросах и ленте, секции с подсказкой и легенда на ходе разговора', async () => {
@@ -586,10 +586,7 @@ describe('таб разбора диалога', () => {
             // Строки баллов со шкалой вопросов над списком больше нет.
             expect(screen.queryByRole('region', {name: 'Оценка интервью'})).toBeNull();
 
-            // Блоки изначально свёрнуты. В развёрнутых нет зелёной полосы-скобки
-            // слева: балл уже стоит в шапке вопроса справа.
-            const expand = () => ['Вопрос 1', 'Вопрос 2'].forEach(name => fireEvent.click(within(screen.getByRole('region', {name})).getByTitle('Развернуть вопрос')));
-            expand();
+            // Нет зелёной полосы-скобки слева: балл уже стоит в строке вопроса справа.
             expect(container.querySelectorAll('[data-bracket], [class*="bracket"]').length).toBe(0);
             const second = screen.getByRole('region', {name: 'Вопрос 2'});
             expect(within(second).getByRole('button', {name: 'Оценка 0 из 10, показать детализацию'})).toBeInTheDocument();
@@ -642,12 +639,13 @@ describe('таб разбора диалога', () => {
 
             const first = () => screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(first()).getByText('Ответ не найден')).toBeInTheDocument();
+            // Реплик в «Обзоре» нет - ответ выбирают в ленте «Диалога».
             fireEvent.click(within(first()).getByRole('button', {name: 'Найти ответ'}));
             expect(screen.getByRole('status')).toHaveTextContent('Связываем ответ с вопросом 1');
 
             fireEvent.click(screen.getByText('Функция с доступом к внешней области'));
             expect(screen.queryByRole('status')).toBeNull();
-            expect(within(first()).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: /^Обзор/}));
             expect(within(first()).queryByText('Ответ не найден')).toBeNull();
             expect(onAnswerLinksChange).toHaveBeenCalledWith({b1: [1]});
         });
@@ -660,8 +658,7 @@ describe('таб разбора диалога', () => {
             render(<DialogAnalysisTab item={interview(null)} answerLinks={{b1: [1]}}/>);
             await flush();
 
-            const first = expand(screen.getByRole('region', {name: 'Вопрос 1'}));
-            expect(within(first).getByText('Функция с доступом к внешней области')).toBeInTheDocument();
+            const first = screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(first).queryByText('Ответ не найден')).toBeNull();
         });
 
@@ -710,10 +707,9 @@ describe('таб разбора диалога', () => {
             const firstQuestion = screen.getByRole('region', {name: 'Вопрос 1'});
             expect(within(firstQuestion).queryByText(/пауза перед ответом|ответ начат до конца вопроса/)).toBeNull();
             expect(within(firstQuestion.querySelector('header')).queryByText(/\d+:\d{2}[–-]\d+:\d{2}/)).toBeNull();
-            const second = expand(screen.getByRole('region', {name: 'Вопрос 2'}));
-            expect(within(second).getByText('Уклончиво')).toBeInTheDocument();
-            expect(within(second).getByText('Формально')).toBeInTheDocument();
-            expect(within(second).getByText('Про причину ухода не сказал')).toBeInTheDocument();
+            // Замечания - бейджами прямо под вопросом, без раскрытия диалога.
+            const second = screen.getByRole('region', {name: 'Вопрос 2'});
+            expect(within(within(second).getByRole('list', {name: 'Замечания к ответу'})).getAllByRole('listitem').map(node => node.textContent)).toEqual(['Уклончиво', 'Формально']);
             expect(within(second).queryByText('Не оцениваем')).toBeNull();
         });
 

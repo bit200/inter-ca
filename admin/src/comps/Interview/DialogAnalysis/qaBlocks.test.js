@@ -1,4 +1,4 @@
-import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softProblemMarks} from './qaBlocks';
+import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionRemarks, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softProblemMarks} from './qaBlocks';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -247,5 +247,28 @@ describe('подача нетехнического ответа', () => {
         expect(texts({relevance: 'on_topic', complete: true, engaged: true})).toEqual([]);
         expect(texts({relevance: 'evasive', complete: false})).toEqual([['Уклончиво', 'fair'], ['Формально', 'fair']]);
         expect(texts({relevance: 'off_topic', complete: null})).toEqual([['Не по вопросу', 'poor']]);
+    });
+    describe('замечания к вопросу бейджами', () => {
+        let texts = block => questionRemarks(block).map(mark => [mark.text, mark.tone]);
+        let technical = evaluation => readQaBlocks({blocks: [{technical: true, turnIndexes: [0, 1], evaluate: {score: 3, evaluation}}]}, turns)[0];
+
+        it('технический: только явные замечания из оценки - одно, если оно одно', () => {
+            expect(texts(technical({errors: {is_critical: 1, errors: ['Путает замыкание с классом']}}))).toEqual([['Критическая ошибка', 'poor']]);
+            expect(questionRemarks(technical({errors: {is_critical: 1, errors: ['Путает замыкание с классом']}}))[0].hint).toBe('Путает замыкание с классом');
+            expect(texts(technical({relevance: {is_offtop: 1}, errors: {is_critical: 0, errors: ['Неверный термин']}, practice: {count: 0}})))
+                .toEqual([['Уход от темы', 'poor'], ['Неточности', 'fair'], ['Без примеров из практики', 'fair']]);
+            // Низкая глубина без явного вывода оценки замечанием не считается.
+            expect(texts(technical({depth: {depth_score: 2}, relevance: {is_offtop: 0}, practice: {count: 2}}))).toEqual([]);
+        });
+
+        it('нетехнический: проблемные отметки мягкой оценки', () => {
+            let [block] = readQaBlocks({blocks: [{technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'evasive', complete: true}}]}, turns);
+            expect(texts(block)).toEqual([['Уклончиво', 'fair']]);
+        });
+
+        it('без готовой оценки замечаний нет', () => {
+            let [block] = readQaBlocks({blocks: [{technical: true, turnIndexes: [0, 1]}]}, turns, {active: true});
+            expect(questionRemarks(block)).toEqual([]);
+        });
     });
 });

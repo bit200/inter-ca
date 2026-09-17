@@ -168,6 +168,37 @@ export function softProblemMarks({relevance, complete}) {
     ].filter(Boolean);
 }
 
+// Основные замечания к вопросу - бейджами в строке «Обзора», чтобы не раскрывать
+// диалог. Только явные: то, что оценка сказала прямо (критическая ошибка, уход от
+// темы, ни одного примера из практики, мимо вопроса, формально). Нашлось одно -
+// показываем одно, ничего не додумываем из процентов показателей.
+const REMARKS_LIMIT = 3;
+
+function evaluationErrors(result) {
+    let errors = asObject(asObject(asObject(result) && result.evaluation) && result.evaluation.errors);
+    let list = errors && Array.isArray(errors.errors) ? errors.errors.map(error => firstText(
+        typeof error === 'string' ? error : asObject(error) && (error.text || error.message || error.description)
+    )).filter(Boolean) : [];
+    return {critical: Boolean(errors && Number(errors.is_critical)), list};
+}
+
+export function questionRemarks(block) {
+    if (!block) return [];
+    if (block.soft) return block.soft.state === 'done' ? softProblemMarks(block.soft).slice(0, REMARKS_LIMIT) : [];
+    let evaluation = block.evaluation || {};
+    if (evaluation.state !== 'done') return [];
+    let evaluated = asObject(asObject(evaluation.result) && evaluation.result.evaluation) || {};
+    let relevance = asObject(evaluated.relevance) || {};
+    let practice = asObject(evaluated.practice) || {};
+    let errors = evaluationErrors(evaluation.result);
+    return [
+        errors.critical && {key: 'critical', text: 'Критическая ошибка', tone: 'poor', hint: errors.list.join('\n')},
+        Number(relevance.is_offtop) > 0 && {key: 'offtop', text: 'Уход от темы', tone: 'poor'},
+        !errors.critical && errors.list.length > 0 && {key: 'errors', text: 'Неточности', tone: 'fair', hint: errors.list.join('\n')},
+        practice.count === 0 && {key: 'practice', text: 'Без примеров из практики', tone: 'fair'},
+    ].filter(Boolean).slice(0, REMARKS_LIMIT);
+}
+
 export function softBreakdown({relevance, complete, engaged, band, delivery}) {
     let counted = typeof engaged === 'boolean';
     let completeMax = counted ? 3 : 4;
