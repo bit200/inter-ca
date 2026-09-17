@@ -1,4 +1,4 @@
-import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown} from './qaBlocks';
+import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softProblemMarks} from './qaBlocks';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -241,5 +241,11 @@ describe('подача нетехнического ответа', () => {
         expect(off).toMatchObject({content: 0, score: 0});
         let fine = softBreakdown({relevance: 'on_topic', complete: true, band: 'good', delivery: {words: 20}});
         expect(fine).toMatchObject({content: 10, score: 10});
+    });
+    it('в строке вопроса нетехнический ответ показывает только проблемные отметки, зелёные скрыты', () => {
+        let texts = soft => softProblemMarks(soft).map(mark => [mark.text, mark.tone]);
+        expect(texts({relevance: 'on_topic', complete: true, engaged: true})).toEqual([]);
+        expect(texts({relevance: 'evasive', complete: false})).toEqual([['Уклончиво', 'fair'], ['Формально', 'fair']]);
+        expect(texts({relevance: 'off_topic', complete: null})).toEqual([['Не по вопросу', 'poor']]);
     });
 });
