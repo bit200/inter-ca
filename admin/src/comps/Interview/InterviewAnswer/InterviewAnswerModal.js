@@ -8,7 +8,7 @@ import InterviewAnswerView from './InterviewAnswerView';
 export default function InterviewAnswerModal({interviewId, number, onClose}) {
     const isOpen = number != null;
     return (
-        <MyModal isOpen={isOpen} onClose={onClose} size="full">
+        <MyModal isOpen={isOpen} onClose={onClose} size="full" defClass="answer-modal">
             {isOpen && <InterviewAnswerView interviewId={interviewId} number={number}/>}
         </MyModal>
     );

@@ -1,4 +1,6 @@
 import React from 'react';
+import fs from 'fs';
+import path from 'path';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter, Routes, Route} from 'react-router-dom';
 import InterviewAnswerDetail from './InterviewAnswerDetail';
@@ -92,6 +94,18 @@ describe('InterviewAnswerModal: разбор ответа интервью в м
 
         fireEvent.click(document.querySelector('.iconoir-xmark'));
         expect(onClose).toHaveBeenCalled();
+    });
+
+    it('модалка во весь экран без белой полосы над разбором и с крупным крестиком', async () => {
+        mockHttp();
+        render(<InterviewAnswerModal interviewId={1000} number={2} onClose={jest.fn()}/>);
+        await screen.findByTestId('interview-answer-view');
+        expect(document.querySelector('.ReactModal__Content')).toHaveClass('answer-modal');
+
+        const css = fs.readFileSync(path.join(__dirname, '../../libs/MyModal/myModal.css'), 'utf8');
+        const rule = selector => (css.match(new RegExp(selector.replace(/[.>]/g, m => '\\' + m) + '\\s*\\{([^}]*)\\}')) || [])[1] || '';
+        expect(rule('.answer-modal > .card')).toMatch(/background:\s*var\(--bs-body-bg\)/);
+        expect(parseInt((rule('.answer-modal .mmodal > .iconoir-xmark').match(/font-size:\s*(\d+)px/) || [])[1], 10)).toBeGreaterThanOrEqual(20);
     });
 
     it('без номера вопроса модалка закрыта и ничего не грузит', () => {
