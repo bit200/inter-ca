@@ -48,7 +48,7 @@ import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
 import {pickDialogMedia, playerView, readPlayerAudioOnly, readPlayerPinned, savePlayerAudioOnly, savePlayerPinned, turnIndexAt} from './dialogMedia';
 import AnswerBriefPopover, {MarkersPopover, SoftBriefPopover} from './AnswerBriefPopover';
-import {answerDetailPath} from './answerBrief';
+import InterviewAnswerModal from '../InterviewAnswer/InterviewAnswerModal';
 import {
     BEHAVIOR_FLAG_LABELS,
     PART_LABELS,
@@ -980,8 +980,9 @@ function MarkersMetric({markers}) {
 }
 
 // Балл за ответ: число и шкала из делений - по шкале уровень виден, не читая цифры.
-// Балл - кнопка: по клику попап раскладывает его на показатели и ведёт на
-// страницу с полной детализацией.
+// Балл - кнопка: у технического ответа по клику открывается модалка с полным
+// разбором, как на странице /interviews/:id/answers/:number; у нетехнического -
+// попап, из чего сложилась оценка.
 function QaScore({evaluation, number, interviewId}) {
     let [open, setOpen] = useState(false);
     let close = useCallback(() => setOpen(false), []);
@@ -1012,9 +1013,14 @@ function QaScore({evaluation, number, interviewId}) {
             </span>
         </button>
         {open && evaluation.relevance !== undefined && <SoftBriefPopover evaluation={evaluation} onClose={close}/>}
-        {open && evaluation.relevance === undefined && <AnswerBriefPopover
+        {evaluation.relevance === undefined && interviewId && <InterviewAnswerModal
+            interviewId={interviewId}
+            number={open ? number : null}
+            onClose={close}
+        />}
+        {open && evaluation.relevance === undefined && !interviewId && <AnswerBriefPopover
             evaluation={evaluation}
-            href={interviewId ? answerDetailPath(interviewId, number) : ''}
+            href=''
             onClose={close}
         />}
     </div>;
