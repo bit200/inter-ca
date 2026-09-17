@@ -50,8 +50,9 @@ import {shouldSendRoles} from './speakerRolesDraft';
 import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
 import {pickDialogMedia, playerView, readPlayerAudioOnly, readPlayerPinned, savePlayerAudioOnly, savePlayerPinned, turnIndexAt} from './dialogMedia';
-import AnswerBriefPopover, {MarkersPopover, SoftBriefPopover} from './AnswerBriefPopover';
+import AnswerBriefPopover, {MarkersPopover} from './AnswerBriefPopover';
 import InterviewAnswerModal from '../InterviewAnswer/InterviewAnswerModal';
+import SoftAnswerModal from '../InterviewAnswer/SoftAnswerModal';
 import {
     BEHAVIOR_FLAG_LABELS,
     PART_LABELS,
@@ -965,7 +966,7 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
                     aria-pressed={linking}
                     onClick={onFindAnswer}
                 >{linking ? 'Отменить' : 'Найти ответ'}</button>}
-                {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation} number={block.number} interviewId={interviewId}/>}
+                {block.soft ? <SoftMarks soft={block.soft} block={block}/> : <QaScore evaluation={evaluation} number={block.number} interviewId={interviewId}/>}
                 {onOpenDialog && <button type="button" className={styles.qaJump} onClick={onOpenDialog}>К диалогу</button>}
             </div>
         </header>
@@ -1000,8 +1001,8 @@ function MarkersMetric({markers}) {
 // Балл за ответ: число и шкала из делений - по шкале уровень виден, не читая цифры.
 // Балл - кнопка: у технического ответа по клику открывается модалка с полным
 // разбором, как на странице /interviews/:id/answers/:number; у нетехнического -
-// попап, из чего сложилась оценка.
-function QaScore({evaluation, number, interviewId}) {
+// такая же модалка: вопрос, ответ и из чего сложилась оценка.
+function QaScore({evaluation, number, interviewId, block}) {
     let [open, setOpen] = useState(false);
     let close = useCallback(() => setOpen(false), []);
     let {state, score, max} = evaluation;
@@ -1030,7 +1031,7 @@ function QaScore({evaluation, number, interviewId}) {
                 {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
             </span>
         </button>
-        {open && evaluation.relevance !== undefined && <SoftBriefPopover evaluation={evaluation} onClose={close}/>}
+        {evaluation.relevance !== undefined && block && <SoftAnswerModal block={block} evaluation={evaluation} isOpen={open} onClose={close}/>}
         {evaluation.relevance === undefined && interviewId && <InterviewAnswerModal
             interviewId={interviewId}
             number={open ? number : null}
@@ -1047,7 +1048,7 @@ function QaScore({evaluation, number, interviewId}) {
 // Мягкая оценка нетехнического ответа - балл той же шкалой, что у технического
 // вопроса. Проблемные отметки стоят бейджами под вопросом (questionRemarks).
 
-function SoftMarks({soft}) {
+function SoftMarks({soft, block}) {
     if (soft.state === 'unanswered') return null;
     if (soft.state === 'skipped') return <span className={styles.qaStatus}>Не оцениваем</span>;
     if (soft.state === 'pending') return <span className={styles.qaStatus} data-state="pending">
@@ -1056,7 +1057,7 @@ function SoftMarks({soft}) {
     if (soft.state === 'missing') return <span className={styles.qaStatus}>Без оценки</span>;
     if (soft.state === 'error') return <span className={styles.qaStatus} data-state="error">Ошибка оценки</span>;
 
-    return <QaScore evaluation={soft}/>;
+    return <QaScore evaluation={soft} block={block}/>;
 }
 
 // Итог интервью: общий балл и сводка, рядом - отметки приветствия и прощания, ниже -

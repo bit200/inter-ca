@@ -1331,6 +1331,17 @@ button.turnSpeaker{
 // раскрываем вправо от неё, чтобы не уйти за край.
 .brief[data-place="start"]{ right: auto; left: -6px; }
 .brief[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
+// Та же раскладка внутри карточки модалки разбора: карточка уже даёт рамку и
+// поля, поэтому своё всплытие снимаем.
+.brief[data-place="page"]{
+  position: static;
+  width: auto;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  font-size: 14px;
+}
 
 .briefHead{
   display: flex;

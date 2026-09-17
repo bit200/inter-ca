@@ -93,22 +93,19 @@ export default function AnswerBriefPopover({evaluation, href, onClose}) {
     </div>;
 }
 
-// Попап под баллом нетехнического вопроса: сервис баллов не ставит, балл сведён
-// из отметок - показываем, сколько дала каждая и где сумму поправила полоса уровня,
-// а рядом «Подачу» - штрафы за паразитов, речевые сбои и паузы - и вес обеих частей.
-export function SoftBriefPopover({evaluation, onClose}) {
-    let box = useRef(null);
-    useDismiss(box, onClose);
-
+// Раскладка балла нетехнического вопроса для модалки разбора: сервис баллов не
+// ставит, балл сведён из отметок - показываем, сколько дала каждая и где сумму
+// поправила полоса уровня, а рядом «Подачу» - штрафы за паразитов, речевые сбои
+// и паузы - и вес обеих частей.
+export function SoftBrief({evaluation}) {
     let {rows, raw, content, delivery, score, max, weights} = softBreakdown(evaluation);
     let percent = weight => Math.round(weight * 100) + '%';
     return <div
-        ref={box}
         className={styles.brief}
-        role="dialog"
+        data-place="page"
+        role="region"
         aria-label="Детализация оценки"
         data-band={scoreBand(score, max)}
-        onClick={event => event.stopPropagation()}
     >
         <div className={styles.briefHead}>
             <span className={styles.briefVerdict}>Из чего сложилась оценка</span>
