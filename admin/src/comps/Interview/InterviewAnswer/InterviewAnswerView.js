@@ -11,7 +11,7 @@ import AnswerDialogCard from './AnswerDialogCard';
 
 // Реплика блока по роли: вопрос - первая реплика интервьюера, ответ - все
 // реплики кандидата подряд.
-function textsOf(block, role) {
+export function textsOf(block, role) {
     return block.items
         .filter(item => item.turn.role === role && item.turn.text)
         .map(item => String(item.turn.text).trim());

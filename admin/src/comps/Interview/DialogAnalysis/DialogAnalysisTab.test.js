@@ -516,7 +516,7 @@ describe('таб разбора диалога', () => {
             expect(score).toHaveAttribute('aria-expanded', 'false');
         });
 
-        test('по клику на балл нетехнического вопроса попап показывает, из чего сложилась оценка', async () => {
+        test('по клику на балл нетехнического вопроса открывается модалка разбора: вопрос, ответ и из чего сложилась оценка', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'on_topic', complete: false, engaged: true, note: 'Ответил в двух словах'}},
             ]}}});
@@ -525,7 +525,12 @@ describe('таб разбора диалога', () => {
 
             const block = screen.getByRole('region', {name: 'Вопрос 1'});
             fireEvent.click(within(block).getByRole('button', {name: 'Оценка 6 из 10, показать детализацию'}));
-            const popup = screen.getByRole('dialog', {name: 'Детализация оценки'});
+            const score = within(block).getByRole('button', {name: 'Оценка 6 из 10, показать детализацию'});
+            const view = await screen.findByTestId('soft-answer-view');
+            expect(within(view).getByText('Вопрос 1 из интервью')).toBeInTheDocument();
+            expect(within(view).getByText('Нетехнический')).toBeInTheDocument();
+            expect(within(view).getByText('Как прошёл ответ')).toBeInTheDocument();
+            const popup = within(view).getByRole('region', {name: 'Детализация оценки'});
             expect(within(popup).getByText('Из чего сложилась оценка')).toBeInTheDocument();
             expect(within(popup).getByText('По теме')).toBeInTheDocument();
             expect(within(popup).getByText('Формально')).toBeInTheDocument();
@@ -538,8 +543,9 @@ describe('таб разбора диалога', () => {
             expect(within(popup).getByText('Ответил в двух словах')).toBeInTheDocument();
             expect(within(popup).queryByText('Загружаем показатели…')).toBeNull();
 
-            fireEvent.keyDown(document, {key: 'Escape'});
-            expect(screen.queryByRole('dialog', {name: 'Детализация оценки'})).toBeNull();
+            fireEvent.click(document.querySelector('.iconoir-xmark'));
+            await waitFor(() => expect(screen.queryByTestId('soft-answer-view')).toBeNull());
+            expect(score).toHaveAttribute('aria-expanded', 'false');
         });
 
         test('вопрос в «Обзоре» не раскрывается: ▶ слушает его отрезок, «К диалогу» открывает его в ленте', async () => {
