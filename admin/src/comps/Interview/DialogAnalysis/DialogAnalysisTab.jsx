@@ -741,7 +741,7 @@ const KIND_LABELS = {true: 'Технический', false: 'Нетехниче�
 function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 'all', linking = false, choosing = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
-    // Скобка цепочки с баллом - у технического вопроса по баллу evaluate, у
+    // Скобка цепочки - у технического вопроса по баллу evaluate, у
     // нетехнического по мягкой оценке: оба вида блоков выглядят одинаково.
     let rated = block.technical === true ? evaluation : block.soft;
     let bracket = Boolean(rated) && rated.state !== 'unanswered' && rated.state !== 'skipped'
@@ -782,17 +782,6 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
                     <span className={styles.qaChevron} aria-hidden="true"/>
                     <strong className={styles.qaQuestion} title={title}>{shortTitle}</strong>
                 </button>
-                {block.startMs !== null && <span className={styles.qaTime}>
-                    {formatDuration(block.startMs)}–{formatDuration(block.endMs === null ? block.startMs : block.endMs)}
-                </span>}
-                {block.timing && block.timing.delayMs !== null && <span
-                    className={styles.qaTiming}
-                    data-early={block.timing.delayMs < 0 ? 'true' : undefined}
-                >
-                    {block.timing.delayMs < 0
-                        ? 'ответ начат до конца вопроса'
-                        : 'пауза перед ответом ' + formatMs(block.timing.delayMs)}
-                </span>}
                 <span className={styles.qaKind} data-technical={String(block.technical)}>
                     {KIND_LABELS[String(block.technical)]}
                 </span>
@@ -812,9 +801,7 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
         </header>
         {!shut && <div id={bodyId}>
         <div className={styles.qaTurns} data-bracket={bracket ? (rated.state === 'done' ? 'done' : 'pending') : undefined}>
-            {bracket && <span className={styles.bracket} aria-hidden="true">
-                {rated.state === 'done' && <b data-band={scoreBand(rated.score, rated.max)}>{formatScore(rated.score)}</b>}
-            </span>}
+            {bracket && <span className={styles.bracket} aria-hidden="true"/>}
             {children}
         </div>
         {evaluation.state === 'done' && evaluation.feedback && <p className={styles.qaFeedback}>{evaluation.feedback}</p>}

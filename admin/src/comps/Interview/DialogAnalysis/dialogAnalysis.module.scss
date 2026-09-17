@@ -862,12 +862,6 @@ button.turnSpeaker{
   .qaChevron, .qaTitle strong.qaQuestion{ transition: none; }
 }
 
-.qaTime{
-  color: var(--dlg-muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 .qaKind{
   align-self: center;
   padding: 2px 8px;
@@ -876,12 +870,6 @@ button.turnSpeaker{
   color: var(--dlg-muted);
   background: var(--dlg-card);
   font-size: 11px;
-}
-
-.qaKind[data-technical="true"]{
-  border-color: var(--dlg-accent);
-  color: var(--dlg-accent);
-  background: var(--dlg-accent-soft);
 }
 
 .qaKind[data-technical="null"]{ border-style: dashed; }
@@ -1471,13 +1459,6 @@ button.turnSpeaker{
   &[data-tone="poor"]{ border-color: var(--dlg-bad); color: var(--dlg-bad); background: var(--dlg-bad-soft); }
 }
 
-.qaTiming{
-  color: var(--dlg-muted);
-  font-size: 12px;
-
-  &[data-early="true"]{ color: var(--dlg-warn); }
-}
-
 // ── Линзы расшифровки (вариант B) ───────────────────────────────────────────
 // Лента и всё, что над ней в режиме связывания, - одна колонка рядом с видео.
 .feed{
@@ -1700,7 +1681,7 @@ button.turnSpeaker{
 }
 
 // Скобка цепочки в жёлобе слева от реплик: от первого звена до последнего,
-// с баллом вопроса. Это левая полоса, поэтому углов у неё нет.
+// без балла: он уже стоит в шапке вопроса. Это левая полоса, поэтому углов у неё нет.
 .qaTurns[data-bracket]{
   position: relative;
   padding-left: 30px;
@@ -1716,25 +1697,6 @@ button.turnSpeaker{
   border-right: 0;
   border-radius: 0;
 
-  b{
-    --dlg-band: var(--dlg-accent);
-    position: absolute;
-    top: 50%;
-    left: -9px;
-    min-width: 18px;
-    padding: 1px 3px;
-    border-radius: 3px;
-    color: var(--dlg-card);
-    background: var(--dlg-band);
-    font-size: 10px;
-    line-height: 14px;
-    text-align: center;
-    transform: translateY(-50%);
-    font-variant-numeric: tabular-nums;
-  }
-
-  b[data-band="fair"]{ --dlg-band: var(--dlg-warn); }
-  b[data-band="poor"]{ --dlg-band: var(--dlg-bad); }
 }
 
 .qaTurns[data-bracket="pending"] .bracket{ border-style: dashed; border-right: 0; border-color: var(--dlg-muted); }
