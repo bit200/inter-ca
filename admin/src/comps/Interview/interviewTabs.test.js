@@ -28,11 +28,11 @@ describe('вкладка интервью в адресе', () => {
 // Порядок вкладок задан литералом в Interview.js; компонент тянет весь редактор,
 // поэтому порядок urlKey проверяем по исходнику.
 describe('порядок вкладок карточки интервью', () => {
-    test('первым идёт разбор диалога, затем обзор, затем вопросы', () => {
+    test('первым идёт разбор диалога, затем обзор; вкладки «Вопросы» нет', () => {
         const fs = require('fs');
         const path = require('path');
         const src = fs.readFileSync(path.join(__dirname, 'Interview.js'), 'utf8');
         const keys = [...src.matchAll(/urlKey: '([a-z]+)'/g)].map(m => m[1]);
-        expect(keys).toEqual(['dialog', 'overview', 'questions', 'admin']);
+        expect(keys).toEqual(['dialog', 'overview', 'admin']);
     });
 });
