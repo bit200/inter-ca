@@ -15,6 +15,7 @@ import {
 import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, questionRemarks, shortQuestionTitle} from './qaBlocks';
 import {mocksByBlockNumber, readMockUiVariant} from './weakMocks';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
+import {useSoftWeights} from './softScoreWeights';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
 import {
     capabilityLabel,
@@ -285,13 +286,16 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     function assignRole(key, role) {
         assignRoles({[key]: role});
     }
+    // Веса балла нетехнического ответа из админки: пока грузятся - дефолтные.
+    let softWeights = useSoftWeights();
     let blocks = useMemo(
         () => readQaBlocks(answers.result, conversation.turns, {
             active: answersActive || sendingAnswers,
             timings: readBlockTimings(answers.result),
             markers: conversation.markers,
+            softWeights,
         }),
-        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers]
+        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers, softWeights]
     );
 
     let weakMocks = useWeakMocks(interviewId);
@@ -309,7 +313,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             : 'Загрузите запись во вкладке «Обзор» — без видео разбирать нечего.';
 
     // Итог - то, ради чего открывают карточку, поэтому он над процессами и расшифровкой.
-    let overall = dialogDone ? combineOverall(readOverall(answers.result), blocks) : null;
+    let overall = dialogDone ? combineOverall(readOverall(answers.result), blocks, softWeights.overall) : null;
     let greeting = dialogDone ? readGreeting(answers.result) : null;
     // Мок-интервью по слабым ответам - сразу под итогом: это продолжение его
     // «слабых сторон». Вариант подачи - ?mockUi=strip|summary|questions.

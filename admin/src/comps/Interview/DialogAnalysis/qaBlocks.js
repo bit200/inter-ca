@@ -1,3 +1,4 @@
+import {getSoftWeights} from './softScoreWeights';
 import {buildGroupPercents} from '../../EvaluationDetail/components/metricGroups';
 
 // Q&A-блоки оценки ответов: корневой вопрос интервьюера, ответ кандидата и
@@ -116,7 +117,7 @@ const RELEVANCE_ALIASES = {
 // candidateLed - блок открыл сам кандидат («Время работы какое?»): разговор ведёт он,
 // и встречные вопросы тут неприменимы, что бы ни ответила модель - её промпт
 // рассчитан на вопрос интервьюера.
-function readSoftEvaluation(block, technical, active, answered, candidateLed, delivery) {
+function readSoftEvaluation(block, technical, active, answered, candidateLed, delivery, weights) {
     if (technical !== false) return null;
     if (!answered) return {state: 'unanswered'};
     let source = asObject(block.softEvaluate) || asObject(block.softEvaluation);
@@ -144,18 +145,19 @@ function readSoftEvaluation(block, technical, active, answered, candidateLed, de
         : relevance === 'evasive' || complete === false ? 'fair'
         : 'good';
     return {state: 'done', relevance, complete, engaged, note, band, delivery,
-        score: softBreakdown({relevance, complete, engaged, band, delivery}).score, max: SOFT_MAX};
+        score: softBreakdown({relevance, complete, engaged, band, delivery}, weights).score, max: SOFT_MAX};
 }
 
-// Балл мягкой оценки: по теме - 6, уклончиво - 3, мимо - 0; развёрнуто +3 (не
-// известно +2), встречные вопросы +1. Встречные нужны не на каждом вопросе: если
+// Балл мягкой оценки (числа - дефолтные веса, правятся в админке, см.
+// softScoreWeights.js): по теме - 6, уклончиво - 3, мимо - 0; развёрнуто +3 (не
+// известно +2), встречные вопросы +1. Сумма очков сводится к 10: если веса
+// в сумме дают не 10, отметки сохраняют доли, а шкала остаётся из 10. Встречные нужны не на каждом вопросе: если
 // модель сочла их неприменимыми (engaged: null), слагаемого нет вовсе, а его балл
 // уходит в полноту (+4, не известно +3) - шкала остаётся из 10 и ответ не теряет
 // балл за то, чего от него не ждали. «Без встречных вопросов 0 из 1» - только
 // когда повод спросить был (engaged: false). Итог зажат в полосу уровня ответа,
 // чтобы цвет цифры не спорил с отметками: «по теме, но формально» остаётся жёлтым.
 const SOFT_MAX = 10;
-const RELEVANCE_POINTS = {on_topic: 6, evasive: 3, off_topic: 0};
 const BAND_RANGES = {good: [7, 10], fair: [4, 6], poor: [0, 3]};
 
 // Из чего сложился балл мягкой оценки: «Содержание» - слагаемые по отметкам и
@@ -221,31 +223,48 @@ export function questionRemarks(block, schemas = []) {
     return [...flags, ...groups];
 }
 
-export function softBreakdown({relevance, complete, engaged, band, delivery}) {
+export function softBreakdown({relevance, complete, engaged, band, delivery}, weights = getSoftWeights()) {
     let counted = typeof engaged === 'boolean';
-    let completeMax = counted ? 3 : 4;
+    let completeMax = counted ? weights.complete : weights.complete + weights.engaged;
+    let relevancePoints = {on_topic: weights.on_topic, evasive: Math.min(weights.evasive, weights.on_topic), off_topic: 0};
     let rows = [
         {key: 'relevance', label: relevance ? RELEVANCE_TITLES[relevance] : 'Тема ответа не определена',
-            points: relevance ? RELEVANCE_POINTS[relevance] : 6, max: 6},
+            points: relevance ? relevancePoints[relevance] : weights.on_topic, max: weights.on_topic},
         {key: 'complete', label: complete === true ? 'Развёрнуто' : complete === false ? 'Формально' : 'Полнота не определена',
-            points: complete === true ? completeMax : complete === null ? completeMax - 1 : 0, max: completeMax},
+            points: complete === true ? completeMax : complete === null ? Math.max(0, completeMax - 1) : 0, max: completeMax},
         counted && {key: 'engaged', label: engaged ? 'Встречные вопросы' : 'Без встречных вопросов',
-            points: engaged ? 1 : 0, max: 1},
+            points: engaged ? weights.engaged : 0, max: weights.engaged},
     ].filter(Boolean);
-    let raw = rows.reduce((sum, row) => sum + row.points, 0);
+    let points = rows.reduce((sum, row) => sum + row.points, 0);
+    let pointsMax = rows.reduce((sum, row) => sum + row.max, 0);
+    let raw = pointsMax ? Math.round(points / pointsMax * SOFT_MAX * 10) / 10 : 0;
     let [low, high] = BAND_RANGES[band];
     let content = Math.min(high, Math.max(low, raw));
-    let speech = deliveryBreakdown(delivery);
+    let speech = deliveryBreakdown(delivery, weights);
     // Подача взвешивается от балла содержания, а не от 10: гладкая речь не
-    // поднимает ответ мимо вопроса, а только снимает до 30% с того, что заработано.
+    // поднимает ответ мимо вопроса, а только снимает долю подачи с того, что
+    // заработано. Доли сводятся к единице, чтобы балл не вышел за 10.
+    let share = weights.content + weights.delivery;
+    let parts = share ? {content: weights.content / share, delivery: weights.delivery / share} : {content: 1, delivery: 0};
     let score = speech
-        ? Math.round(content * (CONTENT_WEIGHT + DELIVERY_WEIGHT * speech.score / speech.max) * 10) / 10
+        ? Math.round(content * (parts.content + parts.delivery * speech.score / speech.max) * 10) / 10
         : content;
-    return {rows, raw, content, delivery: speech, score, max: SOFT_MAX,
-        weights: {content: CONTENT_WEIGHT, delivery: DELIVERY_WEIGHT}};
+    return {rows, raw, content, delivery: speech, score, max: SOFT_MAX, weights: parts};
 }
 
 // Что означает показатель мягкой оценки - подсказка при наведении в модалке разбора.
+// Числа в подсказках - из текущих весов, чтобы подсказка не спорила с баллом.
+export function softHints(weights = getSoftWeights()) {
+    let {weights: parts} = softBreakdown({relevance: null, complete: null, engaged: null, band: 'good', delivery: null}, weights);
+    let percent = value => Math.round(value * 100) + '%';
+    return {
+        ...SOFT_HINTS,
+        content: `Насколько ответ по сути: попал ли в вопрос, раскрыт ли и был ли живой диалог. Даёт ${percent(parts.content)} итогового балла.`,
+        delivery: `Как ответ прозвучал: слова-паразиты, запинки и паузы. Не добавляет баллов, а снимает до ${percent(parts.delivery)} заработанного за содержание.`,
+        relevance: `Попал ли ответ в заданный вопрос: по теме - ${formatScore(weights.on_topic)} ${plural(weights.on_topic, 'балл', 'балла', 'баллов')}, уклончиво - ${formatScore(Math.min(weights.evasive, weights.on_topic))}, не по вопросу - 0.`,
+    };
+}
+
 export const SOFT_HINTS = {
     content: 'Насколько ответ по сути: попал ли в вопрос, раскрыт ли и был ли живой диалог. Даёт 70% итогового балла.',
     delivery: 'Как ответ прозвучал: слова-паразиты, запинки и паузы. Не добавляет баллов, а снимает до 30% заработанного за содержание.',
@@ -274,14 +293,11 @@ export function softAdviceMetrics(evaluation) {
 // размеченным данным: паразиты - маркеры разбора, запинки - по тексту реплик,
 // паузы - тайминги. Паразиты берём плотностью на 100 слов, а не штуками: четыре
 // «ну» в длинном рассказе и в двух фразах - разная речь.
-const CONTENT_WEIGHT = 0.7;
-const DELIVERY_WEIGHT = 0.3;
-const FILLER_STEPS = [[10, 6], [6, 4], [3, 2]];
-const DISFLUENCY_MAX = 3;
+// Плотность паразитов на 100 слов -> доля наибольшего штрафа (вес fillers).
+const FILLER_STEPS = [[10, 1], [6, 2 / 3], [3, 1 / 3]];
 const LONG_DELAY_MS = 4500;
 const VERY_LONG_DELAY_MS = 8000;
 const INNER_PAUSE_MS = 3000;
-const INNER_PAUSE_MAX = 2;
 
 function plural(count, one, few, many) {
     let mod10 = count % 10;
@@ -291,11 +307,18 @@ function plural(count, one, few, many) {
     return many;
 }
 
+function roundTenth(value) {
+    return Math.round(value * 10) / 10;
+}
+
 function seconds(ms) {
     return formatScore(Math.round(ms / 100) / 10) + ' с';
 }
 
-export function deliveryBreakdown(delivery) {
+// Штрафы - доли весов fillers, disfluencies, delay, inner_pauses: сбой и пауза в
+// ответе стоят по баллу до своего потолка, пауза перед ответом - половину веса
+// за долгую и весь вес за очень долгую.
+export function deliveryBreakdown(delivery, weights = getSoftWeights()) {
     if (!delivery) return null;
     let {words = 0, fillers = 0, disfluencies = 0, delayMs = null, innerPauses = 0} = delivery;
     let rows = [];
@@ -306,23 +329,23 @@ export function deliveryBreakdown(delivery) {
         label: fillers
             ? `${fillers} ${plural(fillers, 'паразит', 'паразита', 'паразитов')} на ${words} ${plural(words, 'слово', 'слова', 'слов')}`
             : 'Без слов-паразитов',
-        penalty: fillerStep ? fillerStep[1] : 0});
+        penalty: fillerStep ? roundTenth(weights.fillers * fillerStep[1]) : 0});
 
     rows.push({key: 'disfluencies',
         label: disfluencies
             ? `${disfluencies} ${plural(disfluencies, 'речевой сбой', 'речевых сбоя', 'речевых сбоев')}`
             : 'Без речевых сбоев',
-        penalty: Math.min(DISFLUENCY_MAX, disfluencies)});
+        penalty: Math.min(weights.disfluencies, disfluencies)});
 
     typeof delayMs === 'number' && rows.push({key: 'delay',
         label: 'Пауза перед ответом ' + seconds(delayMs),
-        penalty: delayMs >= VERY_LONG_DELAY_MS ? 2 : delayMs >= LONG_DELAY_MS ? 1 : 0});
+        penalty: delayMs >= VERY_LONG_DELAY_MS ? weights.delay : delayMs >= LONG_DELAY_MS ? roundTenth(weights.delay / 2) : 0});
 
     innerPauses > 0 && rows.push({key: 'innerPauses',
         label: `${innerPauses} ${plural(innerPauses, 'долгая пауза', 'долгие паузы', 'долгих пауз')} в ответе`,
-        penalty: Math.min(INNER_PAUSE_MAX, innerPauses)});
+        penalty: Math.min(weights.inner_pauses, innerPauses)});
 
-    let score = Math.max(0, SOFT_MAX - rows.reduce((sum, row) => sum + row.penalty, 0));
+    let score = Math.max(0, roundTenth(SOFT_MAX - rows.reduce((sum, row) => sum + row.penalty, 0)));
     return {rows, score, max: SOFT_MAX};
 }
 
@@ -408,7 +431,7 @@ function readTiming(block, metrics) {
 export function readQaBlocks(result, turns, options) {
     let list = readQaBlockList(result);
     let feed = Array.isArray(turns) ? turns : [];
-    let {active = false, timings = [], markers = []} = options || {};
+    let {active = false, timings = [], markers = [], softWeights = getSoftWeights()} = options || {};
     let markersById = new Map();
     (Array.isArray(markers) ? markers : []).forEach(marker => marker && marker.id !== undefined && markersById.set(marker.id, marker));
 
@@ -438,7 +461,7 @@ export function readQaBlocks(result, turns, options) {
             // Сохранённая расшифровка оценки (кнопка «Расшифровать оценку»).
             explain: asObject(block.explain),
             soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client'),
-                items.length > 0 && items[0].turn.role === 'client', readDelivery(items, markersById, timing)),
+                items.length > 0 && items[0].turn.role === 'client', readDelivery(items, markersById, timing), softWeights),
             timing,
         };
     }).filter(block => block.items.length);

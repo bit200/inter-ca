@@ -1,4 +1,5 @@
-import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionRemarks, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softProblemMarks} from './qaBlocks';
+import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionRemarks, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softHints, softProblemMarks} from './qaBlocks';
+import {DEFAULT_SOFT_WEIGHTS} from './softScoreWeights';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -93,6 +94,29 @@ describe('мягкая оценка нетехнических блоков', ()
         expect(soft({relevance: 'off_topic', complete: true, engaged: true})).toMatchObject({band: 'poor', content: 3});
         [soft({relevance: 'evasive', complete: true}), soft({relevance: 'off_topic', complete: false})]
             .forEach(value => expect(scoreBand(value.content, value.max)).toBe(value.band));
+    });
+
+    it('веса мягкой оценки из админки меняют очки отметок, штрафы подачи и доли частей', () => {
+        let weights = {...DEFAULT_SOFT_WEIGHTS, content: 0.5, delivery: 0.5, on_topic: 8, evasive: 4, complete: 2,
+            engaged: 0, fillers: 3, disfluencies: 1, delay: 4, inner_pauses: 0};
+        let evaluation = {relevance: 'evasive', complete: true, engaged: null, band: 'fair',
+            delivery: {words: 40, fillers: 4, disfluencies: 2, delayMs: 5000, innerPauses: 2}};
+        let breakdown = softBreakdown(evaluation, weights);
+        expect(breakdown.rows.map(row => [row.key, row.points, row.max])).toEqual([['relevance', 4, 8], ['complete', 2, 2]]);
+        // 6 очков из 10 возможных - 6 из 10; полоса «уклончиво» 4-6 не мешает.
+        expect(breakdown).toMatchObject({raw: 6, content: 6, weights: {content: 0.5, delivery: 0.5}});
+        // Паразиты 10 на 100 слов - весь вес 3, сбои до 1, долгая пауза - половина веса 4, паузы в ответе - 0.
+        expect(breakdown.delivery.rows.map(row => row.penalty)).toEqual([3, 1, 2, 0]);
+        expect(breakdown.delivery.score).toBe(4);
+        // 6 * (0.5 + 0.5 * 0.4) = 4.2
+        expect(breakdown.score).toBe(4.2);
+
+        let [block] = readQaBlocks([{technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'on_topic', complete: false}}],
+            turns, {softWeights: {...DEFAULT_SOFT_WEIGHTS, on_topic: 9, complete: 1}});
+        // Формально по теме: 9 из 11 = 8.2, зажато полосой «формально» до 6.
+        expect(block.soft.score).toBe(6);
+        expect(softHints(weights).content).toMatch('Даёт 50% итогового балла');
+        expect(softHints(weights).relevance).toMatch('по теме - 8 баллов, уклончиво - 4');
     });
 
     it('детализация мягкой оценки раскладывает балл на слагаемые и поправку полосой', () => {
