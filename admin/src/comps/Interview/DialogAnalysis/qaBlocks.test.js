@@ -261,6 +261,20 @@ describe('подача нетехнического ответа', () => {
             expect(texts(technical({depth: {depth_score: 2}, relevance: {is_offtop: 0}, practice: {count: 2}}))).toEqual([]);
         });
 
+        it('технический: проваленные показатели выводятся все, а не один флаг практики', () => {
+            let schemas = [
+                {key: 'evaluation.depth.depth_score', group: 'Глубина', min: 0, max: 10},
+                {key: 'evaluation.speech.clarity', group: 'Речь', min: 0, max: 10},
+                {key: 'evaluation.practice.count', group: 'Практика', min: 0, max: 10},
+                {key: 'evaluation.relevance.relevance', group: 'Релевантность', min: 0, max: 10},
+            ];
+            let block = technical({depth: {depth_score: 1}, speech: {clarity: 1}, practice: {count: 0}, relevance: {relevance: 9, is_offtop: 0}});
+            expect(questionRemarks(block, schemas).map(mark => mark.text))
+                .toEqual(['Без примеров из практики', 'Глубина 1/10', 'Речь 1/10']);
+            // Без схем показателей - только явные флаги, как раньше.
+            expect(texts(block)).toEqual([['Без примеров из практики', 'fair']]);
+        });
+
         it('нетехнический: проблемные отметки мягкой оценки', () => {
             let [block] = readQaBlocks({blocks: [{technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'evasive', complete: true}}]}, turns);
             expect(texts(block)).toEqual([['Уклончиво', 'fair']]);

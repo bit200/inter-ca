@@ -51,6 +51,7 @@ import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
 import {pickDialogMedia, playerView, readPlayerAudioOnly, readPlayerPinned, savePlayerAudioOnly, savePlayerPinned, turnIndexAt} from './dialogMedia';
 import AnswerBriefPopover, {MarkersPopover} from './AnswerBriefPopover';
+import {loadEvaluationReference} from './answerBrief';
 import InterviewAnswerModal from '../InterviewAnswer/InterviewAnswerModal';
 import SoftAnswerModal from '../InterviewAnswer/SoftAnswerModal';
 import {
@@ -920,6 +921,19 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
 // Вопрос интервью строкой «Обзора», как момент в карточке звонка: сам диалог не
 // раскрывается - его слушают кнопкой ▶ и открывают в ленте кнопкой «К диалогу».
 // Под вопросом - тема и основные замечания бейджами, справа - балл.
+// Схемы показателей нужны, чтобы назвать проваленные группы (глубина, речь) так же,
+// как попап над баллом. Запрос общий на все вопросы - см. loadEvaluationReference.
+function useMetricSchemas(enabled) {
+    let [schemas, setSchemas] = useState([]);
+    useEffect(() => {
+        if (!enabled) return undefined;
+        let alive = true;
+        loadEvaluationReference().then(value => alive && setSchemas(value.schemas));
+        return () => { alive = false; };
+    }, [enabled]);
+    return schemas;
+}
+
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
 function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 'all', linking = false, onFindAnswer, playing = false, onPlay = null, onOpenDialog}) {
@@ -928,7 +942,8 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
     // В строке - короткая версия вопроса, полный текст - в подсказке и в ленте диалога.
     let title = questionTitle(block);
     let shortTitle = shortQuestionTitle(title);
-    let remarks = questionRemarks(block);
+    let schemas = useMetricSchemas(!block.soft && evaluation.state === 'done');
+    let remarks = questionRemarks(block, schemas);
     let playLabel = playing ? 'Пауза' : 'Прослушать вопрос с ' + formatDuration(block.startMs || 0);
     return <section
         id={'dlg-q-' + block.key}
