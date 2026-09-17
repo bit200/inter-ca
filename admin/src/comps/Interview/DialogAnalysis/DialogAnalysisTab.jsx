@@ -12,7 +12,7 @@ import {
     normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
-import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softProblemMarks} from './qaBlocks';
+import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, questionRemarks, shortQuestionTitle} from './qaBlocks';
 import {mocksByBlockNumber, readMockUiVariant} from './weakMocks';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
@@ -519,12 +519,32 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     // ход разговора и вся лента. Без вопросов открывать пустой обзор незачем.
     let [section, setSection] = useState(() => scoredBlocks.length > 0 ? 'overview' : 'dialog');
     let byQuestions = section === 'overview' && scoredBlocks.length > 0;
+    // «К диалогу» у вопроса: переключаемся на ленту, докручиваем до его первой
+    // реплики и на пару секунд подсвечиваем все реплики вопроса.
+    let [focus, setFocus] = useState(null);
+    function openInDialog(block) {
+        let indexes = block.items.map(item => item.index).filter(index => index > -1);
+        setSection('dialog');
+        setFocus(indexes.length ? {key: block.key, indexes} : null);
+    }
+    useEffect(() => {
+        if (!focus || section !== 'dialog') return undefined;
+        let target = document.getElementById('dlg-turn-' + focus.indexes[0]);
+        target && target.scrollIntoView && target.scrollIntoView({block: 'center', behavior: 'smooth'});
+        let timer = setTimeout(() => setFocus(null), 2400);
+        return () => clearTimeout(timer);
+    }, [focus, section]);
 
     // Реплика перематывает запись на своё начало и сразу запускает её:
     // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
-    function playFrom(turn) {
+    // clip - вопрос из «Обзора»: запись играет только его отрезок и встаёт на конце.
+    let clipEnd = useRef(null);
+    let [clipKey, setClipKey] = useState(null);
+    function playFrom(turn, clip = null) {
         let el = player.current;
         if (!el) return;
+        clipEnd.current = clip && typeof clip.endMs === 'number' ? clip.endMs : null;
+        setClipKey(clip ? clip.key : null);
         el.currentTime = Math.max(0, Number(turn.startMs || 0)) / 1000;
         let started = el.play && el.play();
         started && started.catch && started.catch(() => {});
@@ -539,6 +559,11 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 
     function onTimeUpdate(event) {
         let ms = event.currentTarget.currentTime * 1000;
+        if (clipEnd.current !== null && ms >= clipEnd.current) {
+            clipEnd.current = null;
+            setClipKey(null);
+            pause();
+        }
         let index = turnIndexAt(turns, ms);
         setPlayingIndex(prev => prev === index ? prev : index);
         // Шкале хватает точности до секунды - чаще перерисовывать незачем.
@@ -569,6 +594,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 data-role={normalizedRole(turn.role)}
                 data-playing={media && index > -1 && playingIndex === index ? 'true' : undefined}
                 data-followup={followUp ? 'true' : undefined}
+                data-focused={focus && focus.indexes.includes(index) ? 'true' : undefined}
                 data-target={target ? 'true' : undefined}
                 role="button"
                 tabIndex={0}
@@ -741,16 +767,17 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                             seriesStart={seriesStarts.has(block.key)}
                             mocks={mockMarks ? mockMarks.get(block.number) : null}
                             linking={linking === block.key}
-                            choosing={linking !== null}
-                            onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
-                        >
-                            {block.items.map((item, position) => renderTurn(
-                                item.turn,
-                                item.index,
-                                item.index > -1 ? (item.turn.id || item.index) : block.key + ':' + position,
-                                item.followUp
-                            ))}
-                        </QaBlock>)}
+                            onFindAnswer={() => {
+                                // Ответ выбирают из ленты: в «Обзоре» реплик нет.
+                                setLinking(linking === block.key ? null : block.key);
+                                linking !== block.key && setSection('dialog');
+                            }}
+                            playing={media && !paused && clipKey === block.key}
+                            onPlay={media && block.startMs !== null
+                                ? () => (!paused && clipKey === block.key ? pause() : playFrom({startMs: block.startMs}, block))
+                                : null}
+                            onOpenDialog={() => openInDialog(block)}
+                        />)}
                     </div>
                 </div>
                 : <p className={styles.empty}>Вопросы появятся после оценки ответов — запустите «Оценить ответы» выше.</p>}
@@ -884,52 +911,44 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
     </div>;
 }
 
-// Вопрос интервью целиком: основной вопрос, ответ и уточнения. В шапке - тема
-// вопроса и балл за ответ, если вопрос технический; разбор ответа - под репликами.
+// Вопрос интервью строкой «Обзора», как момент в карточке звонка: сам диалог не
+// раскрывается - его слушают кнопкой ▶ и открывают в ленте кнопкой «К диалогу».
+// Под вопросом - тема и основные замечания бейджами, справа - балл.
 const KIND_LABELS = {true: 'Технический', false: 'Нетехнический', null: 'Тема не определена'};
 
-function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 'all', linking = false, choosing = false, onFindAnswer, children}) {
+function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 'all', linking = false, onFindAnswer, playing = false, onPlay = null, onOpenDialog}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
-    // Длинный вопрос занимает экран целиком - свёрнутый остаётся одной шапкой.
-    // Изначально блоки свёрнуты: расшифровка читается оглавлением вопросов.
-    let [collapsed, setCollapsed] = useState(true);
-    // Пока ищут ответ, реплики кандидата должны быть видны во всех вопросах, а
-    // вопрос, к которому ответ привязали, остаётся раскрытым - видно, что связалось.
-    let wasLinking = useRef(linking);
-    useEffect(() => {
-        if (wasLinking.current && !linking && !missing) setCollapsed(false);
-        wasLinking.current = linking;
-    }, [linking, missing]);
-    let shut = collapsed && !choosing;
-    // В шапке - короткая версия вопроса, полный текст - репликой в самом блоке и в подсказке.
+    // В строке - короткая версия вопроса, полный текст - в подсказке и в ленте диалога.
     let title = questionTitle(block);
     let shortTitle = shortQuestionTitle(title);
-    let bodyId = 'dlg-q-body-' + block.key;
+    let remarks = questionRemarks(block);
+    let playLabel = playing ? 'Пауза' : 'Прослушать вопрос с ' + formatDuration(block.startMs || 0);
     return <section
         id={'dlg-q-' + block.key}
         className={styles.qaBlock}
         data-technical={String(block.technical)}
         data-dimmed={lensDimmed(lens, block.technical) ? 'true' : undefined}
+        data-playing={playing ? 'true' : undefined}
         aria-label={'Вопрос ' + block.number}
-        data-collapsed={shut ? 'true' : undefined}
     >
         <header className={styles.qaHead}>
+            {onPlay && <button
+                type="button"
+                className={styles.qaPlay}
+                aria-label={playLabel}
+                title={playLabel}
+                aria-pressed={playing}
+                onClick={onPlay}
+            >{playing ? '❚❚' : '▶'}</button>}
             <div className={styles.qaTitle}>
-                <button
-                    type="button"
-                    className={styles.qaToggle}
-                    aria-expanded={!shut}
-                    aria-controls={bodyId}
-                    title={shut ? 'Развернуть вопрос' : 'Свернуть вопрос'}
-                    onClick={() => setCollapsed(!shut)}
-                >
-                    <span className={styles.qaChevron} aria-hidden="true"/>
-                    <strong className={styles.qaQuestion} title={title}>{shortTitle}</strong>
-                </button>
+                <strong className={styles.qaQuestion} title={title}>{shortTitle}</strong>
                 <span className={styles.qaKind} data-technical={String(block.technical)}>
                     {KIND_LABELS[String(block.technical)]}
                 </span>
+                {remarks.length > 0 && <ul className={styles.softMarks} aria-label="Замечания к ответу">
+                    {remarks.map(mark => <li key={mark.key} className={styles.softMark} data-tone={mark.tone} title={mark.hint || undefined}>{mark.text}</li>)}
+                </ul>}
                 {showsBehavior(lens) && seriesStart && <span className={styles.flag} data-kind="evasive">Серия пропусков</span>}
                 <WeakMockMark mocks={mocks}/>
             </div>
@@ -942,21 +961,15 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
                     onClick={onFindAnswer}
                 >{linking ? 'Отменить' : 'Найти ответ'}</button>}
                 {block.soft ? <SoftMarks soft={block.soft}/> : <QaScore evaluation={evaluation} number={block.number} interviewId={interviewId}/>}
+                {onOpenDialog && <button type="button" className={styles.qaJump} onClick={onOpenDialog}>К диалогу</button>}
             </div>
         </header>
-        {!shut && <div id={bodyId}>
-        <div className={styles.qaTurns}>
-            {children}
-        </div>
-        {evaluation.state === 'done' && evaluation.feedback && <p className={styles.qaFeedback}>{evaluation.feedback}</p>}
-        {block.soft && block.soft.state === 'done' && block.soft.note && <p className={styles.qaFeedback}>{block.soft.note}</p>}
-        {block.soft && block.soft.state === 'error' && <p className={styles.qaError}>
-            Ответ не оценён: {block.soft.message || 'оценка не сообщила причину.'}
-        </p>}
         {evaluation.state === 'error' && <p className={styles.qaError}>
             Ответ не оценён: {evaluation.message || 'сервис оценки не сообщил причину.'}
         </p>}
-        </div>}
+        {block.soft && block.soft.state === 'error' && <p className={styles.qaError}>
+            Ответ не оценён: {block.soft.message || 'оценка не сообщила причину.'}
+        </p>}
     </section>;
 }
 
@@ -1020,9 +1033,8 @@ function QaScore({evaluation, number, interviewId}) {
     </div>;
 }
 
-// Мягкая оценка нетехнического ответа - две-три отметки и балл из них той же шкалой,
-// что у технического вопроса. Отметки показываем только про проблемы: «По теме», «Развёрнуто»
-// и прочие зелёные не выводим, их и так видно по баллу.
+// Мягкая оценка нетехнического ответа - балл той же шкалой, что у технического
+// вопроса. Проблемные отметки стоят бейджами под вопросом (questionRemarks).
 
 function SoftMarks({soft}) {
     if (soft.state === 'unanswered') return null;
@@ -1033,14 +1045,7 @@ function SoftMarks({soft}) {
     if (soft.state === 'missing') return <span className={styles.qaStatus}>Без оценки</span>;
     if (soft.state === 'error') return <span className={styles.qaStatus} data-state="error">Ошибка оценки</span>;
 
-    let marks = softProblemMarks(soft);
-
-    return <>
-        {marks.length > 0 && <ul className={styles.softMarks} data-band={soft.band} aria-label="Оценка ответа">
-            {marks.map(mark => <li key={mark.key} className={styles.softMark} data-tone={mark.tone}>{mark.text}</li>)}
-        </ul>}
-        <QaScore evaluation={soft}/>
-    </>;
+    return <QaScore evaluation={soft}/>;
 }
 
 // Итог интервью: общий балл и сводка, рядом - отметки приветствия и прощания, ниже -
