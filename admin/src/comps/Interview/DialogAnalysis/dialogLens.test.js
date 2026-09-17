@@ -5,6 +5,7 @@ import {
     behaviorFlags,
     behaviorScore,
     lensDimmed,
+    liveCodingSegments,
     skipSeriesStarts,
     technicalAverage,
     timelineSegments,
@@ -49,6 +50,22 @@ describe('линзы расшифровки', () => {
             {key: 'q1', number: 1, technical: true, startMs: 0, left: 0, width: 50},
         ]);
         expect(timelineSegments([block('q1', true, [0])], 0)).toEqual([]);
+    });
+
+    test('подряд идущие реплики live-coding склеиваются в один отрезок шкалы', () => {
+        let feed = [
+            {startMs: 0, endMs: 1000},
+            {startMs: 1000, endMs: 2000, liveCoding: true},
+            {startMs: 2000, endMs: 5000, liveCoding: true},
+            {startMs: 5000, endMs: 6000},
+            {startMs: 8000, endMs: 9000, liveCoding: true},
+        ];
+        expect(liveCodingSegments(feed, 10000)).toEqual([
+            {key: 'live-1000', startMs: 1000, endMs: 5000, left: 10, width: 40},
+            {key: 'live-8000', startMs: 8000, endMs: 9000, left: 80, width: 10},
+        ]);
+        expect(liveCodingSegments(feed, 0)).toEqual([]);
+        expect(liveCodingSegments([{startMs: 0, endMs: 1000}], 10000)).toEqual([]);
     });
 
     test('реплика кандидата, сделанная ответом, переезжает в вопрос без ответа', () => {
