@@ -360,6 +360,13 @@ export function readQaBlocks(result, turns, options) {
 
 // Заголовок блока - сам вопрос интервьюера, а не порядковый номер: по номеру
 // не понять, о чём речь, пока не прочтёшь реплики. Уточнения в заголовок не идут.
+// Вопрос, который не оценивается («Не оцениваем»), в «Обзоре» не показываем:
+// там только вопросы с результатом. В ходе разговора и ленте он остаётся.
+export function isScoredBlock(block) {
+    let status = block.soft || block.evaluation;
+    return !status || status.state !== 'skipped';
+}
+
 export function questionTitle(block) {
     let items = block && Array.isArray(block.items) ? block.items : [];
     let main = items.find(item => item.turn && item.turn.role === 'manager' && !item.followUp && firstText(item.turn.text));

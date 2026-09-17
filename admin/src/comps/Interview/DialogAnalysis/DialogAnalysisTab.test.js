@@ -480,10 +480,10 @@ describe('таб разбора диалога', () => {
             expect(within(first).getByRole('button', {name: 'Оценка 8 из 10, показать детализацию'})).toBeInTheDocument();
             expect(within(first).getByText('Определение верное')).toBeInTheDocument();
 
-            const second = screen.getByRole('region', {name: 'Вопрос 2'});
-            expect(within(second).getByText('Нетехнический')).toBeInTheDocument();
-            expect(within(second).getByText('Не оцениваем')).toBeInTheDocument();
-            expect(within(second).queryByRole('img')).toBeNull();
+            // Неоцениваемый вопрос в «Обзор» не попадает - там только то, что оцениваем.
+            expect(screen.queryByRole('region', {name: 'Вопрос 2'})).toBeNull();
+            expect(screen.queryByText('Не оцениваем')).toBeNull();
+            expect(screen.getByRole('button', {name: /^Обзор/})).toHaveTextContent('Обзор1');
 
             fireEvent.click(screen.getByRole('button', {name: /^Диалог/}));
             expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();

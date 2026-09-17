@@ -1,4 +1,4 @@
-import {countDisfluencies, deliveryBreakdown, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown} from './qaBlocks';
+import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown} from './qaBlocks';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
 const turns = [
@@ -9,6 +9,15 @@ const turns = [
 ];
 
 describe('Q&A-блоки оценки ответов', () => {
+    it('неоцениваемый вопрос isScoredBlock отсекает, оцениваемые и ждущие оценки оставляет', () => {
+        let blocks = readQaBlocks({blocks: [
+            {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8}},
+            {id: 'b2', technical: false, turnIndexes: [2, 3]},
+            {id: 'b3', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'on_topic', complete: true}},
+        ]}, turns);
+        expect(blocks.filter(isScoredBlock).map(block => block.key)).toEqual([blocks[0].key, blocks[2].key]);
+    });
+
     it('блок по индексам реплик берёт их из ленты и отмечает уточнение', () => {
         let [block] = readQaBlocks({blocks: [{id: 'b1', technical: true, turnIndexes: [0, 1, 2, 3], evaluation: {score: 8, feedback: 'Точно'}}]}, turns);
         expect(block.items.map(item => item.index)).toEqual([0, 1, 2, 3]);
