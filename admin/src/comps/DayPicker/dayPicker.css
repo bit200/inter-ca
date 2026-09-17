@@ -1,0 +1,420 @@
+/* Селектор дня: поле со стрелками по бокам и календарь в раскрывающемся окне.
+   Цвета, радиусы и подсветка — те же, что у календаря периода в FnsBank
+   (fnsBank.css): это один и тот же элемент админки, только про сутки. */
+
+.dp {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    gap: 4px;
+}
+
+/* Шаг на сутки вынесен из окна наружу: соседний день — самый частый переход
+   на дежурном экране, и он должен стоить одно нажатие. */
+.dp_step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.dp_step:hover {
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+.dp_step:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 1px;
+}
+
+.dp_control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 190px;
+    min-height: 38px;
+    padding: 4px 26px 4px 10px;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.dp_control:hover {
+    border-color: #bbf7d0;
+}
+
+.dp_control:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 1px;
+}
+
+.dp_control_open {
+    border-color: #22c55e;
+}
+
+.dp_ico {
+    color: #94a3b8;
+    font-size: 15px;
+}
+
+.dp_label {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Название готового дня рядом с числом: видно, почему стоит именно эта дата */
+.dp_tag {
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: #dcfce7;
+    color: #16a34a;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+/* Сброс даты — тихая кнопка внутри поля: видна только когда дата стоит,
+   и весит меньше, чем сама дата рядом. */
+.dp_clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #b6c0cf;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.dp_clear:hover {
+    background: #f2f5f9;
+    color: #16a34a;
+}
+
+.dp_clear:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 1px;
+}
+
+/* В форме селектор стоит в колонке сетки и тянется по её ширине, а не по
+   своему минимуму: соседние поля Smart-формы тоже во всю колонку. */
+.dp_wide {
+    display: flex;
+    width: 100%;
+}
+
+.dp_wide .dp_control {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.dp_caret {
+    position: absolute;
+    right: 7px;
+    color: #94a3b8;
+    font-size: 15px;
+    pointer-events: none;
+}
+
+/* Окно календаря висит на body и позиционируется от поля (см. DayPicker.js):
+   внутри формы оно попадало в прокрутку модалки — низ срезался, а само окно
+   заезжало на соседние поля. z-index выше модального слоя (myModal.css:
+   .ReactModal__Overlay = 2000000000): окно должно лежать поверх формы, из
+   которой его открыли. */
+.dp_pop {
+    position: fixed;
+    z-index: 2000000100;
+    padding: 10px;
+    /* Ширина подобрана под ряд готовых отрезков: «Прошлый квартал» — самая
+       длинная подпись, и переносом она разрывала бы ряд пополам. */
+    width: 288px;
+    background: #fff;
+    border: 1px solid #e9edf3;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .12);
+}
+
+/* Окно, развёрнутое вверх (снизу не хватило места): тень падает в ту же
+   сторону, куда окно открылось, иначе оно выглядит приклеенным не к тому полю. */
+.dp_pop_up {
+    box-shadow: 0 -10px 30px rgba(15, 23, 42, .12);
+}
+
+.dp_presets {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 7px;
+    background: #f2f5f9;
+}
+
+/* Ряд отрезков идёт следом за днями. Подписи в одно слово, поэтому кегль тот
+   же, что у дней: два ряда стоят как одна шкала, а не как главный и мелкий. */
+.dp_presets_wide {
+    margin-top: 4px;
+}
+
+.dp_tab {
+    flex: 1 1 auto;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    padding: 3px 6px;
+    font-size: 12px;
+    line-height: 18px;
+    color: #64748b;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.dp_tab:hover {
+    color: #16a34a;
+}
+
+.dp_tab_on {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(34, 197, 94, .35);
+}
+
+.dp_tab_on:hover {
+    color: #fff;
+}
+
+.dp_tab:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 1px;
+}
+
+.dp_nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 0 2px;
+}
+
+.dp_arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid #e3e8ef;
+    border-radius: 7px;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.dp_arrow:hover {
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+.dp_arrow:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 1px;
+}
+
+.dp_month {
+    font-size: 12px;
+    color: #334155;
+    text-transform: capitalize;
+}
+
+.dp_grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+}
+
+.dp_wd {
+    padding-bottom: 4px;
+    text-align: center;
+    font-size: 10px;
+    color: #b6c0cf;
+}
+
+.dp_day {
+    position: relative;
+    height: 28px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #334155;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+
+.dp_day:hover {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.dp_day:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: -2px;
+}
+
+.dp_day_out {
+    color: #cbd5e1;
+}
+
+/* Середина отрезка — светлая лента между закрашенными концами: период читается
+   одной формой, а не россыпью выделенных чисел. */
+.dp_day_in {
+    background: #dcfce7;
+    color: #16a34a;
+    border-radius: 0;
+}
+
+.dp_day_on {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(34, 197, 94, .35);
+}
+
+.dp_day_on:hover {
+    background: #16a34a;
+    color: #fff;
+}
+
+/* Сегодня отмечено точкой — точка отсчёта, от которой считают «вчера» */
+.dp_day_today:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    width: 3px;
+    height: 3px;
+    margin-left: -1.5px;
+    border-radius: 50%;
+    background: #22c55e;
+}
+
+.dp_day_on.dp_day_today:after {
+    background: #fff;
+}
+
+/* Свой период задаётся кликами по календарю, поэтому строка снизу — не украшение,
+   а единственное место, где сказано, как его задать. */
+.dp_hint {
+    margin-top: 6px;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Время в поле рядом с датой: тот же кегль, что у даты, но моноширинными
+   цифрами — «14:30» и «9:05» стоят одной шириной и не дёргают подпись. */
+.dp_at {
+    flex: 0 0 auto;
+    font-size: 13px;
+    color: #334155;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Иконка, крестик и каретка не сжимаются: в узкой колонке поле отдаёт ширину
+   только подписи, иначе крестик наезжал на каретку и стоял мимо середины. */
+.dp_ico,
+.dp_clear {
+    flex: 0 0 auto;
+}
+
+/* Час встречи — последняя строка окна, сразу под числами: дату и время задают
+   одним заходом. Отделена линией, как отдельный шаг, а не как часть сетки. */
+.dp_time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f3f8;
+}
+
+.dp_time_ico {
+    color: #94a3b8;
+    font-size: 15px;
+}
+
+.dp_time_input,
+.dp_time_part {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid #e3e8ef;
+    border-radius: 7px;
+    background: #fff;
+    color: #334155;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.dp_time_input:hover,
+.dp_time_part:hover {
+    border-color: #bbf7d0;
+}
+
+.dp_time_input:focus,
+.dp_time_part:focus {
+    outline: none;
+    border-color: #22c55e;
+}
+
+/* Часы и минуты — два списка, между ними двоеточие: пара читается как время,
+   а не как два независимых поля. Обоим одинаковая доля ширины, чтобы 09 и 55
+   стояли ровно, а не прыгали по длине надписи. */
+.dp_time_part {
+    flex: 1 1 0;
+    text-align: center;
+    cursor: pointer;
+}
+
+.dp_time_colon {
+    flex: 0 0 auto;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+/* Закрыть окно после выбора часа: клик по числу его больше не закрывает */
+.dp_time_done {
+    flex: 0 0 auto;
+    height: 28px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 7px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.dp_time_done:hover {
+    background: #16a34a;
+}
+
+.dp_time_done:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 1px;
+}
