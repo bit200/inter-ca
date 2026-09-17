@@ -173,9 +173,9 @@ export function softProblemMarks({relevance, complete}) {
 // Основные замечания к вопросу - бейджами в строке «Обзора», чтобы не раскрывать
 // диалог. Только явные: то, что оценка сказала прямо (критическая ошибка, уход от
 // темы, ни одного примера из практики, мимо вопроса, формально). Нашлось одно -
-// показываем одно. Проваленные показатели (глубина 1/10, речь 1/10) - тоже явное
+// показываем одно. Проваленные показатели (глубина, речь) - тоже явное
 // замечание: их выводим все, кроме тех, что уже названы флагом (практика 0 при
-// «Без примеров из практики»). Итог не выводим - балл и так виден рядом.
+// «Без примеров из практики»). Итог и число не выводим - балл и так виден рядом.
 const REMARKS_LIMIT = 3;
 const FAILED_GROUP_PCT = 30;
 // Префикс показателей группы -> ключ флага, который её уже называет.
@@ -191,7 +191,7 @@ function failedGroupRemarks(schemas, result, flags) {
     });
     return buildGroupPercents(schemas, result)
         .filter(row => row.pct <= FAILED_GROUP_PCT && !covered.has(row.group) && row.group !== 'Итог' && row.label !== 'Без ошибок')
-        .map(row => ({key: 'group:' + row.group, text: `${row.label} ${Math.round(row.pct / 10)}/10`, tone: 'poor'}));
+        .map(row => ({key: 'group:' + row.group, text: row.label, tone: 'poor'}));
 }
 
 function evaluationErrors(result) {

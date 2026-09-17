@@ -272,7 +272,7 @@ describe('подача нетехнического ответа', () => {
             ];
             let block = technical({depth: {depth_score: 1}, speech: {clarity: 1}, practice: {count: 0}, relevance: {relevance: 9, is_offtop: 0}});
             expect(questionRemarks(block, schemas).map(mark => mark.text))
-                .toEqual(['Без примеров из практики', 'Глубина 1/10', 'Речь 1/10']);
+                .toEqual(['Без примеров из практики', 'Глубина', 'Речь']);
             // Без схем показателей - только явные флаги, как раньше.
             expect(texts(block)).toEqual([['Без примеров из практики', 'fair']]);
         });
