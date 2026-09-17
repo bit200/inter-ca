@@ -77,9 +77,12 @@ describe('таб разбора диалога', () => {
 
         expect(screen.queryByRole('button', {name: /^Оценить( заново)?$/})).toBeNull();
         expect(screen.getByText('Расскажите о себе')).toBeInTheDocument();
-        expect(screen.getByText('Интервьюер')).toBeInTheDocument();
-        expect(screen.getByText('Кандидат')).toBeInTheDocument();
-        expect(screen.getByText('2:05')).toBeInTheDocument();
+        // Роль - у реплики и подписью дорожки «Хода разговора», как в карточке звонка.
+        expect(screen.getAllByText('Интервьюер')).toHaveLength(2);
+        expect(screen.getAllByText('Кандидат')).toHaveLength(2);
+        expect(screen.getByRole('group', {name: 'Реплики: Кандидат'}).children).toHaveLength(1);
+        // Длительность - в сведениях и концом шкалы.
+        expect(screen.getAllByText('2:05')).toHaveLength(2);
     });
 
     test('замечания по видам - попапом по клику на их число, и только по речи кандидата', async () => {
@@ -482,7 +485,7 @@ describe('таб разбора диалога', () => {
             expect(within(second).getByText('Не оцениваем')).toBeInTheDocument();
             expect(within(second).queryByRole('img')).toBeNull();
 
-            fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
+            fireEvent.click(screen.getByRole('button', {name: /^Диалог/}));
             expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
         });
@@ -617,17 +620,17 @@ describe('таб разбора диалога', () => {
             const second = screen.getByRole('region', {name: 'Вопрос 2'});
             expect(within(second).getByRole('button', {name: 'Оценка 0 из 10, показать детализацию'})).toBeInTheDocument();
             expect(within(second).getByText('Не по вопросу')).toBeInTheDocument();
-            fireEvent.click(screen.getByRole('radio', {name: 'Все реплики'}));
+            fireEvent.click(screen.getByRole('button', {name: /^Диалог/}));
             expect(Array.from(container.querySelectorAll('[class*="answerScore"]')).map(node => node.textContent)).toEqual(['8', '0']);
             expect(container.querySelectorAll('[class*="turnFlags"] [data-kind="off_topic"]').length).toBe(1);
 
-            fireEvent.click(within(bar).getByRole('radio', {name: 'Техника'}));
-            fireEvent.click(screen.getByRole('radio', {name: 'По вопросам'}));
+            fireEvent.click(screen.getByRole('button', {name: /^Обзор/}));
+            fireEvent.click(within(screen.getByRole('region', {name: 'Оценка интервью'})).getByRole('radio', {name: 'Техника'}));
             expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
             expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
             expand();
             expect(brackets()).toEqual(['Вопрос 1']);
-            fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
+            fireEvent.click(within(screen.getByRole('region', {name: 'Оценка интервью'})).getByRole('radio', {name: 'Поведение'}));
             expect(brackets()).toEqual(['Вопрос 2']);
         });
 

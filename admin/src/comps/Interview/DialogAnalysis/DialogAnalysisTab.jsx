@@ -65,6 +65,7 @@ import {
     technicalAverage,
     liveCodingSegments,
     timelinePosition,
+    conversationTracks,
     timelineSegments,
     withoutAnswer,
 } from './dialogLens';
@@ -498,8 +499,10 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let [paused, setPaused] = useState(true);
     let [pinned, setPinned] = useState(() => readPlayerPinned());
     let [rolePicker, setRolePicker] = useState(null);
-    let [view, setView] = useState('blocks');
-    let byQuestions = view === 'blocks' && blocks.length > 0;
+    // Разделы как в карточке звонка: «Обзор» - вопросы с результатами, «Диалог» -
+    // ход разговора и вся лента. Без вопросов открывать пустой обзор незачем.
+    let [section, setSection] = useState(() => blocks.length > 0 ? 'overview' : 'dialog');
+    let byQuestions = section === 'overview' && blocks.length > 0;
 
     // Реплика перематывает запись на своё начало и сразу запускает её:
     // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
@@ -547,6 +550,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         return <React.Fragment key={key}>
             <div
                 className={styles.turn}
+                id={index > -1 && !byQuestions ? 'dlg-turn-' + index : undefined}
                 data-role={normalizedRole(turn.role)}
                 data-playing={media && index > -1 && playingIndex === index ? 'true' : undefined}
                 data-followup={followUp ? 'true' : undefined}
@@ -631,6 +635,15 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         </p>;
     }
 
+    let durationMs = interviewDuration(summary, turns);
+    let tracks = conversationTracks(turns, durationMs, scores, flags);
+    let questionsLabel = blocks.length + ' ' + (blocks.length % 10 === 1 && blocks.length % 100 !== 11 ? 'вопрос'
+        : [2, 3, 4].includes(blocks.length % 10) && ![12, 13, 14].includes(blocks.length % 100) ? 'вопроса' : 'вопросов');
+    let linkingNotice = linkingBlock && <div className={styles.linking} role="status">
+        <span><strong>Связываем</strong> ответ с вопросом {linkingBlock.number} — нажмите на реплику кандидата</span>
+        <button type="button" className={styles.linkingCancel} onClick={() => setLinking(null)}>Отмена · Esc</button>
+    </div>;
+
     return <>
         <div className={styles.metrics}>
             <div><span>Реплики</span><strong>{turns.length}</strong></div>
@@ -641,97 +654,171 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 
         <EmotionSummary sources={summary.emotionSources}/>
 
-        {blocks.length > 0 && <LensBar
-            lens={lens}
-            onLens={setLens}
-            blocks={blocks}
-            answersDone={answersDone}
-            turns={turns}
-            flags={flags}
-            markers={markers}
-            durationMs={interviewDuration(summary, turns)}
-            currentMs={media ? currentMs : null}
-            onJump={jumpTo}
-        />}
-
-        <div className={styles.transcriptHead}>
-            <div className={styles.heading}>
-                <span className={styles.eyebrow}>Расшифровка</span>
-                <h4 className={styles.sectionTitle}>
-                    Диалог <span className={styles.countChip}>{turnsCountLabel(turns.length)}</span>
-                </h4>
-            </div>
-            {blocks.length > 0 && <div className={styles.viewSwitch} role="radiogroup" aria-label="Как показать расшифровку">
-                {[['blocks', 'По вопросам'], ['turns', 'Все реплики']].map(([key, label]) => <button
+        {/* Док как в карточке звонка: запись и вкладки разделов одним блоком,
+            при закреплении он едет вместе со скроллом. */}
+        <div className={styles.player} data-pinned={pinned ? 'true' : 'false'} data-media={media ? media.kind : 'none'}>
+            {media && <div className={styles.playerRow} data-kind={media.kind}>
+                <div className={styles.playerIntro}>
+                    <span className={styles.playerIcon} aria-hidden="true"><WaveIcon/></span>
+                    <div className={styles.playerCopy}>
+                        <strong>{media.kind === 'video' ? 'Видео интервью' : 'Запись интервью'}</strong>
+                        <span className={styles.playerHint}>Нажмите ▶ у реплики, чтобы услышать её с начала</span>
+                    </div>
+                </div>
+                {media.kind === 'video'
+                    ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
+                    : <CallPlayer ref={player} src={media.src} onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
+                <button
+                    type="button"
+                    className={styles.playerPin}
+                    aria-pressed={pinned}
+                    title={pinned ? 'Запись прокрутится вместе с расшифровкой' : 'Запись останется на экране при прокрутке'}
+                    onClick={() => setPinned(prev => {
+                        savePlayerPinned(!prev);
+                        return !prev;
+                    })}
+                >{pinned ? 'Открепить' : 'Закрепить'}</button>
+            </div>}
+            <nav className={styles.sectionTabs} aria-label="Разделы разбора интервью">
+                {[['overview', 'Обзор', blocks.length], ['dialog', 'Диалог', turns.length]].map(([key, label, count]) => <button
                     key={key}
                     type="button"
-                    role="radio"
-                    aria-checked={view === key}
-                    className={styles.viewOption}
-                    onClick={() => setView(key)}
-                >{label}</button>)}
-            </div>}
+                    className={styles.sectionTab}
+                    aria-current={section === key ? 'page' : undefined}
+                    onClick={() => setSection(key)}
+                >{label}<span className={styles.tabCounter}>{count}</span></button>)}
+            </nav>
         </div>
-        <div className={styles.transcript} data-media={media ? media.kind : 'none'}>
-        {media && <div className={styles.player} data-pinned={pinned ? 'true' : 'false'} data-kind={media.kind}>
-            <div className={styles.playerIntro}>
-                <span className={styles.playerIcon} aria-hidden="true"><WaveIcon/></span>
-                <div className={styles.playerCopy}>
-                    <strong>{media.kind === 'video' ? 'Видео интервью' : 'Запись интервью'}</strong>
-                    <span className={styles.playerHint}>Нажмите ▶ у реплики, чтобы услышать её с начала</span>
+
+        {section === 'overview' && <section className={styles.panel} aria-label="Обзор">
+            <header className={styles.panelHead}>
+                <div className={styles.heading}>
+                    <span className={styles.eyebrow}>Результаты</span>
+                    <h4 className={styles.sectionTitle}>
+                        Вопросы {blocks.length > 0 && <span className={styles.countChip}>{questionsLabel}</span>}
+                    </h4>
                 </div>
-            </div>
-            {media.kind === 'video'
-                ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
-                : <CallPlayer ref={player} src={media.src} onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
-            <button
-                type="button"
-                className={styles.playerPin}
-                aria-pressed={pinned}
-                title={pinned ? 'Запись прокрутится вместе с расшифровкой' : 'Запись останется на экране при прокрутке'}
-                onClick={() => setPinned(prev => {
-                    savePlayerPinned(!prev);
-                    return !prev;
-                })}
-            >{pinned ? 'Открепить' : 'Закрепить'}</button>
-        </div>}
-        <div className={styles.feed}>
-        {linkingBlock && <div className={styles.linking} role="status">
-            <span><strong>Связываем</strong> ответ с вопросом {linkingBlock.number} — нажмите на реплику кандидата</span>
-            <button type="button" className={styles.linkingCancel} onClick={() => setLinking(null)}>Отмена · Esc</button>
-        </div>}
-        {byQuestions
-            ? <div className={styles.qaList}>
-                {blocks.map(block => <QaBlock
-                    key={block.key}
-                    block={block}
-                    interviewId={interviewId}
-                    seriesStart={seriesStarts.has(block.key)}
-                    mocks={mockMarks ? mockMarks.get(block.number) : null}
-                    lens={lens}
-                    linking={linking === block.key}
-                    choosing={linking !== null}
-                    onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
-                >
-                    {block.items.map((item, position) => renderTurn(
-                        item.turn,
-                        item.index,
-                        item.index > -1 ? (item.turn.id || item.index) : block.key + ':' + position,
-                        item.followUp
-                    ))}
-                </QaBlock>)}
-            </div>
-            : <div className={styles.turns}>
+                <span className={styles.panelNote}>Нажмите на балл, чтобы увидеть детализацию ответа</span>
+            </header>
+            {blocks.length > 0
+                ? <div className={styles.panelBody}>
+                    <LensBar
+                        lens={lens}
+                        onLens={setLens}
+                        blocks={blocks}
+                        answersDone={answersDone}
+                        turns={turns}
+                        flags={flags}
+                        markers={markers}
+                        durationMs={durationMs}
+                        currentMs={media ? currentMs : null}
+                        onJump={jumpTo}
+                    />
+                    {linkingNotice}
+                    <div className={styles.qaList}>
+                        {blocks.map(block => <QaBlock
+                            key={block.key}
+                            block={block}
+                            interviewId={interviewId}
+                            seriesStart={seriesStarts.has(block.key)}
+                            mocks={mockMarks ? mockMarks.get(block.number) : null}
+                            lens={lens}
+                            linking={linking === block.key}
+                            choosing={linking !== null}
+                            onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
+                        >
+                            {block.items.map((item, position) => renderTurn(
+                                item.turn,
+                                item.index,
+                                item.index > -1 ? (item.turn.id || item.index) : block.key + ':' + position,
+                                item.followUp
+                            ))}
+                        </QaBlock>)}
+                    </div>
+                </div>
+                : <p className={styles.empty}>Вопросы появятся после оценки ответов — запустите «Оценить ответы» выше.</p>}
+        </section>}
+
+        {section === 'dialog' && <section className={styles.panel} aria-label="Диалог">
+            <header className={styles.panelHead}>
+                <div className={styles.heading}>
+                    <span className={styles.eyebrow}>Расшифровка</span>
+                    <h4 className={styles.sectionTitle}>
+                        Диалог <span className={styles.countChip}>{turnsCountLabel(turns.length)}</span>
+                    </h4>
+                </div>
+                <span className={styles.panelNote}>Нажмите ▶ у реплики, чтобы прослушать только этот фрагмент</span>
+            </header>
+            {tracks.length > 0 && <ConversationTimeline
+                tracks={tracks}
+                durationMs={durationMs}
+                currentMs={media ? currentMs : null}
+                playingIndex={media && !paused ? playingIndex : -1}
+                onSelect={segment => {
+                    media && playFrom({startMs: segment.startMs});
+                    let target = document.getElementById('dlg-turn-' + segment.index);
+                    target && target.scrollIntoView && target.scrollIntoView({block: 'center', behavior: 'smooth'});
+                }}
+            />}
+            {linkingNotice && <div className={styles.panelBody}>{linkingNotice}</div>}
+            <div className={styles.turns}>
                 {turns.map((turn, index) => renderTurn(turn, index, turn.id || index, false))}
-            </div>}
-        </div>
-        </div>
+            </div>
+        </section>}
 
         {hasRecordingSignals(capabilities) && <div className={styles.signalsGrid}>
             <AcousticEvents capability={capabilities.acousticEvents}/>
             <Capabilities capabilities={capabilities}/>
         </div>}
     </>;
+}
+
+// «Ход разговора» из карточки звонка: дорожка на роль, реплика - отрезок, цвет -
+// связь с оценкой ответа. Наведение показывает реплику строкой ниже, клик - слушать.
+const TONE_LABELS = {speech: 'Речь без замечаний', warning: 'Средний балл или замечание', critical: 'Слабый ответ или мимо вопроса'};
+
+function ConversationTimeline({tracks, durationMs, currentMs, playingIndex, onSelect}) {
+    let [peek, setPeek] = useState(null);
+    let all = tracks.flatMap(track => track.segments.map(segment => ({...segment, label: track.label})));
+    let shown = peek !== null ? all.find(segment => segment.index === peek)
+        : all.find(segment => segment.index === playingIndex);
+    let playhead = currentMs !== null && currentMs > 0 ? timelinePosition(currentMs, durationMs) : null;
+    return <div className={styles.review}>
+        <div className={styles.reviewHead}>
+            <h5>Ход разговора</h5>
+            <span>Наведите для просмотра · нажмите, чтобы прослушать</span>
+        </div>
+        <div className={styles.reviewLegend} aria-label="Обозначения на шкале">
+            <span>Шкала оценок:</span>
+            {Object.keys(TONE_LABELS).map(tone => <span key={tone}><i data-tone={tone}/>{TONE_LABELS[tone]}</span>)}
+        </div>
+        {tracks.map(track => <div className={styles.reviewTrack} key={track.role}>
+            <span>{track.label}</span>
+            <div className={styles.reviewLane} role="group" aria-label={'Реплики: ' + track.label}>
+                {playhead !== null && <i className={styles.reviewPlayhead} style={{left: playhead + '%'}} aria-hidden="true"/>}
+                {track.segments.map(segment => <button
+                    key={segment.index}
+                    type="button"
+                    className={styles.reviewSegment}
+                    data-tone={segment.tone}
+                    data-active={segment.index === peek || segment.index === playingIndex ? 'true' : undefined}
+                    style={{left: segment.left + '%', width: 'max(3px, ' + segment.width + '%)', maxWidth: (100 - segment.left) + '%'}}
+                    aria-label={track.label + ', ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs) + '. ' + TONE_LABELS[segment.tone]}
+                    onMouseEnter={() => setPeek(segment.index)}
+                    onMouseLeave={() => setPeek(null)}
+                    onFocus={() => setPeek(segment.index)}
+                    onBlur={() => setPeek(null)}
+                    onClick={() => onSelect(segment)}
+                />)}
+            </div>
+        </div>)}
+        <div className={styles.reviewTicks} aria-hidden="true">
+            <span>{formatDuration(0)}</span><span>{formatDuration(durationMs / 2)}</span><span>{formatDuration(durationMs)}</span>
+        </div>
+        <div className={styles.reviewCurrent}>{shown
+            ? <span>▶ {formatDuration(shown.startMs)} · {shown.label} — {shown.text}</span>
+            : <span>Цвета показывают оценку ответов, а не эмоции. Манеру общения можно проверить, прослушав запись.</span>}</div>
+    </div>;
 }
 
 // Вопрос интервью целиком: основной вопрос, ответ и уточнения. В шапке - тема
