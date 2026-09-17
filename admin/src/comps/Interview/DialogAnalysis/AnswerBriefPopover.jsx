@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
-import {formatScore, scoreBand, softBreakdown, SOFT_HINTS} from './qaBlocks';
+import {formatScore, scoreBand, softBreakdown, softHints} from './qaBlocks';
+import {useSoftWeights} from './softScoreWeights';
 import {answerBrief, loadEvaluationReference} from './answerBrief';
 import {markerCounts, markerLabel} from './dialogAnalysisFormat';
 
@@ -119,7 +120,9 @@ function HintLabel({hint, className, children}) {
 // поправила полоса уровня, а рядом «Подачу» - штрафы за паразитов, речевые сбои
 // и паузы - и вес обеих частей.
 export function SoftBrief({evaluation}) {
-    let {rows, raw, content, delivery, score, max, weights} = softBreakdown(evaluation);
+    let softWeights = useSoftWeights();
+    let {rows, raw, content, delivery, score, max, weights} = softBreakdown(evaluation, softWeights);
+    let SOFT_HINTS = softHints(softWeights);
     let percent = weight => Math.round(weight * 100) + '%';
     return <div
         className={styles.brief}

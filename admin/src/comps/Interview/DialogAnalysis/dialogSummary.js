@@ -48,14 +48,15 @@ export function readOverall(result) {
 }
 
 // Итог интервью сводит обе части: балл сервиса - техническая оценка, среднее мягких
-// оценок нетехнических ответов - нетехническая. Нетехническая идёт с весом SOFT_WEIGHT,
+// оценок нетехнических ответов - нетехническая. Нетехническая идёт с весом softWeight
+// (дефолт SOFT_WEIGHT; правится в админке - «Веса оценки», ключ overall),
 // чтобы итог говорил об интервью целиком, а не только о технических ответах.
 // Технических вопросов нет - балл сервиса выходит нулём, итог только по нетехнической
 // части (basis 'soft'). Нечего усреднять - балл сервиса как есть.
 // Итога ещё нет (пишется) - не подставляем: блок итога показывает ожидание.
 export const SOFT_WEIGHT = 0.6;
 
-export function combineOverall(overall, blocks) {
+export function combineOverall(overall, blocks, softWeight = SOFT_WEIGHT) {
     if (!overall) return overall;
     let list = Array.isArray(blocks) ? blocks : [];
     let rated = list.map(block => block && block.soft)
@@ -67,8 +68,8 @@ export function combineOverall(overall, blocks) {
     let hasTechnical = list.some(block => block && block.technical === true);
     if (!hasTechnical || overall.score === null) return {...overall, score: soft, max, basis: 'soft'};
     let technical = overall.score;
-    let score = round((technical + soft * SOFT_WEIGHT) / (1 + SOFT_WEIGHT));
-    return {...overall, score, max, basis: 'combined', parts: {technical, soft, softWeight: SOFT_WEIGHT}};
+    let score = round((technical + soft * softWeight) / (1 + softWeight));
+    return {...overall, score, max, basis: 'combined', parts: {technical, soft, softWeight}};
 }
 
 // Приветствие и прощание - отдельный чек по началу и концу разговора, не блок:

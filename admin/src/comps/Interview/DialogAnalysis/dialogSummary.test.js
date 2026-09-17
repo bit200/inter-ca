@@ -69,6 +69,9 @@ describe('итог интервью и метрики разговора', () =>
         expect(SOFT_WEIGHT).toBe(0.6);
         expect(combineOverall(overall, blocks)).toEqual({...overall, score: 5.5, basis: 'combined',
             parts: {technical: 4.6, soft: 7, softWeight: 0.6}});
+        // Вес из админки: (4.6 + 7 * 1) / 2 = 5.8.
+        expect(combineOverall(overall, blocks, 1)).toEqual({...overall, score: 5.8, basis: 'combined',
+            parts: {technical: 4.6, soft: 7, softWeight: 1}});
     });
 
     it('тайминги пишутся секундами, длинные - минутами', () => {
