@@ -61,6 +61,7 @@ import {
     showsTech,
     skipSeriesStarts,
     technicalAverage,
+    liveCodingSegments,
     timelinePosition,
     timelineSegments,
     withoutAnswer,
@@ -882,6 +883,7 @@ function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, dura
     let counts = behaviorCounts(blocks);
     let behavior = behaviorScore(blocks);
     let segments = timelineSegments(blocks, durationMs);
+    let liveCoding = liveCodingSegments(turns, durationMs);
 
     return <section className={styles.lensBar} aria-label="Оценка интервью">
         <div className={styles.lensHead}>
@@ -918,6 +920,12 @@ function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, dura
         </div>
 
         {durationMs > 0 && <div className={styles.timeline}>
+            {liveCoding.map(segment => <span
+                key={segment.key}
+                className={styles.timelineLiveCoding}
+                style={{left: segment.left + '%', width: segment.width + '%'}}
+                title={'Live coding · ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs) + ' · вопросы здесь не выделяются'}
+            ><span>Live coding</span></span>)}
             {segments.map(segment => <button
                 key={segment.key}
                 type="button"

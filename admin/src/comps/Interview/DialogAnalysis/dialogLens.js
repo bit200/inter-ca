@@ -69,6 +69,33 @@ export function timelineSegments(blocks, durationMs) {
     });
 }
 
+// Участки live-coding на шкале: подряд идущие реплики с флагом liveCoding
+// (разметка разбора на api) склеиваются в один отрезок. Вопросов на них нет,
+// поэтому без отметки эта часть шкалы выглядит пустой.
+export function liveCodingSegments(turns, durationMs) {
+    if (!durationMs) return [];
+    let ranges = (turns || []).reduce((acc, turn, index) => {
+        if (!turn || !turn.liveCoding) return acc;
+        let startMs = Number(turn.startMs || 0);
+        let endMs = Number(turn.endMs || turn.startMs || 0);
+        let last = acc[acc.length - 1];
+        if (last && last.lastIndex === index - 1) {
+            return [...acc.slice(0, -1), {...last, endMs: Math.max(last.endMs, endMs), lastIndex: index}];
+        }
+        return [...acc, {startMs, endMs, lastIndex: index}];
+    }, []);
+    return ranges.map(range => {
+        let left = percent(range.startMs, durationMs);
+        return {
+            key: 'live-' + range.startMs,
+            startMs: range.startMs,
+            endMs: range.endMs,
+            left,
+            width: Math.max(0.5, percent(range.endMs, durationMs) - left),
+        };
+    });
+}
+
 export function timelinePosition(ms, durationMs) {
     return durationMs ? percent(ms, durationMs) : 0;
 }
