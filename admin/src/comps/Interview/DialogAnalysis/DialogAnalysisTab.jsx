@@ -51,22 +51,20 @@ import AnswerBriefPopover, {MarkersPopover, SoftBriefPopover} from './AnswerBrie
 import {answerDetailPath} from './answerBrief';
 import {
     BEHAVIOR_FLAG_LABELS,
-    LENSES,
+    PART_FILTERS,
+    PART_LABELS,
     answerScores,
     attachAnswers,
-    behaviorCounts,
     behaviorFlags,
-    behaviorScore,
     interviewDuration,
     lensDimmed,
+    partSegments,
+    segmentMuted,
     showsBehavior,
-    showsTech,
     skipSeriesStarts,
-    technicalAverage,
-    liveCodingSegments,
+    turnParts,
     timelinePosition,
     conversationTracks,
-    timelineSegments,
     withoutAnswer,
 } from './dialogLens';
 
@@ -457,9 +455,7 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
 function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId, mockMarks}) {
     let {turns, summary, capabilities} = conversation;
     let markers = useMemo(() => candidateMarkers(conversation.turns, conversation.markers), [conversation.turns, conversation.markers]);
-    // Вариант B: линза меняет акценты ленты, шкала показывает, где в интервью
-    // какой вопрос, а вопрос без ответа связывается с репликой кандидата руками.
-    let [lens, setLens] = useState('all');
+    // Вопрос без ответа связывается с репликой кандидата руками.
     let [links, setLinks] = useState(() => ({...(answerLinks || {})}));
     let [linking, setLinking] = useState(null);
     let [currentMs, setCurrentMs] = useState(0);
@@ -486,12 +482,6 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         onAnswerLinksChange && onAnswerLinksChange(next);
     }
 
-    // Отрезок шкалы перематывает запись на начало вопроса и прокручивает ленту к нему.
-    function jumpTo(segment) {
-        media && playFrom({startMs: segment.startMs});
-        let target = document.getElementById('dlg-q-' + segment.key);
-        target && target.scrollIntoView && target.scrollIntoView({block: 'start', behavior: 'smooth'});
-    }
     let labels = speakerLabels(turns);
     let labelOf = turn => labels[speakerKey(turn)] || speakerLabel(turn.role, turn.speaker);
     let player = useRef(null);
@@ -567,8 +557,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         // реплики они только в сплошной ленте.
         let inFeed = isClient && index > -1 && !byQuestions;
         let answerScore = inFeed ? scores.get(index) : null;
-        if (answerScore && !(answerScore.technical ? showsTech(lens) : showsBehavior(lens))) answerScore = null;
-        let flag = inFeed && showsBehavior(lens) ? flags.get(index) : null;
+        let flag = inFeed ? flags.get(index) : null;
         // В режиме связывания реплика кандидата не раскрывается, а становится ответом.
         let target = Boolean(linkingBlock) && isClient && index > -1
             && !linkingBlock.items.some(item => item.index === index);
@@ -662,7 +651,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     }
 
     let durationMs = interviewDuration(summary, turns);
-    let tracks = conversationTracks(turns, durationMs, scores, flags);
+    let tracks = conversationTracks(turns, durationMs, scores, flags, turnParts(blocks, turns));
     let questionsLabel = blocks.length + ' ' + (blocks.length % 10 === 1 && blocks.length % 100 !== 11 ? 'вопрос'
         : [2, 3, 4].includes(blocks.length % 10) && ![12, 13, 14].includes(blocks.length % 100) ? 'вопроса' : 'вопросов');
     let linkingNotice = linkingBlock && <div className={styles.linking} role="status">
@@ -742,18 +731,6 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
             </header>
             {blocks.length > 0
                 ? <div className={styles.panelBody}>
-                    <LensBar
-                        lens={lens}
-                        onLens={setLens}
-                        blocks={blocks}
-                        answersDone={answersDone}
-                        turns={turns}
-                        flags={flags}
-                        markers={markers}
-                        durationMs={durationMs}
-                        currentMs={media ? currentMs : null}
-                        onJump={jumpTo}
-                    />
                     {linkingNotice}
                     <div className={styles.qaList}>
                         {blocks.map(block => <QaBlock
@@ -762,7 +739,6 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                             interviewId={interviewId}
                             seriesStart={seriesStarts.has(block.key)}
                             mocks={mockMarks ? mockMarks.get(block.number) : null}
-                            lens={lens}
                             linking={linking === block.key}
                             choosing={linking !== null}
                             onFindAnswer={() => setLinking(linking === block.key ? null : block.key)}
@@ -791,6 +767,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
             </header>
             {tracks.length > 0 && <ConversationTimeline
                 tracks={tracks}
+                parts={partSegments(blocks, turns, durationMs)}
                 durationMs={durationMs}
                 currentMs={media ? currentMs : null}
                 playingIndex={media && !paused ? playingIndex : -1}
@@ -817,21 +794,66 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 // связь с оценкой ответа. Наведение показывает реплику строкой ниже, клик - слушать.
 const TONE_LABELS = {speech: 'Речь без замечаний', warning: 'Средний балл или замечание', critical: 'Слабый ответ или мимо вопроса'};
 
-function ConversationTimeline({tracks, durationMs, currentMs, playingIndex, onSelect}) {
+function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playingIndex, onSelect}) {
     let [peek, setPeek] = useState(null);
+    // Фильтр части и выключенные в легенде оценки приглушают отрезки, как линза
+    // «Техника»/«Поведение» приглушала вопросы: остальное видно, но не спорит.
+    let [part, setPart] = useState('all');
+    let [mutedTones, setMutedTones] = useState(() => new Set());
     let all = tracks.flatMap(track => track.segments.map(segment => ({...segment, label: track.label})));
     let shown = peek !== null ? all.find(segment => segment.index === peek)
         : all.find(segment => segment.index === playingIndex);
     let playhead = currentMs !== null && currentMs > 0 ? timelinePosition(currentMs, durationMs) : null;
+    let available = PART_FILTERS.filter(option => option.key === 'all' || parts.some(segment => segment.part === option.key));
+    function toggleTone(tone) {
+        setMutedTones(prev => {
+            let next = new Set(prev);
+            next.has(tone) ? next.delete(tone) : next.add(tone);
+            return next;
+        });
+    }
     return <div className={styles.review}>
         <div className={styles.reviewHead}>
             <h5>Ход разговора</h5>
             <span>Наведите для просмотра · нажмите, чтобы прослушать</span>
         </div>
-        <div className={styles.reviewLegend} aria-label="Обозначения на шкале">
-            <span>Шкала оценок:</span>
-            {Object.keys(TONE_LABELS).map(tone => <span key={tone}><i data-tone={tone}/>{TONE_LABELS[tone]}</span>)}
+        <div className={styles.reviewControls}>
+            {available.length > 1 && <div className={styles.viewSwitch} role="radiogroup" aria-label="Часть интервью">
+                {available.map(option => <button
+                    key={option.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={part === option.key}
+                    className={styles.viewOption}
+                    data-part={option.key}
+                    onClick={() => setPart(option.key)}
+                >{option.key !== 'all' && <i className={styles.partSwatch} data-part={option.key} aria-hidden="true"/>}{option.label}</button>)}
+            </div>}
+            <div className={styles.reviewLegend} role="group" aria-label="Шкала оценок">
+                <span>Шкала оценок:</span>
+                {Object.keys(TONE_LABELS).map(tone => <button
+                    key={tone}
+                    type="button"
+                    className={styles.legendToggle}
+                    aria-pressed={!mutedTones.has(tone)}
+                    title={mutedTones.has(tone) ? 'Показать на шкале' : 'Приглушить на шкале'}
+                    onClick={() => toggleTone(tone)}
+                ><i data-tone={tone}/>{TONE_LABELS[tone]}</button>)}
+            </div>
         </div>
+        {parts.length > 0 && <div className={styles.reviewTrack}>
+            <span>Часть</span>
+            <div className={styles.partLane} role="group" aria-label="Части интервью">
+                {parts.map(segment => <span
+                    key={segment.key}
+                    className={styles.partSegment}
+                    data-part={segment.part}
+                    data-dimmed={segmentMuted(segment, part, null) ? 'true' : undefined}
+                    style={{left: segment.left + '%', width: segment.width + '%'}}
+                    title={PART_LABELS[segment.part] + ' · ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs)}
+                />)}
+            </div>
+        </div>}
         {tracks.map(track => <div className={styles.reviewTrack} key={track.role}>
             <span>{track.label}</span>
             <div className={styles.reviewLane} role="group" aria-label={'Реплики: ' + track.label}>
@@ -841,6 +863,7 @@ function ConversationTimeline({tracks, durationMs, currentMs, playingIndex, onSe
                     type="button"
                     className={styles.reviewSegment}
                     data-tone={segment.tone}
+                    data-dimmed={segmentMuted(segment, part, mutedTones) ? 'true' : undefined}
                     data-active={segment.index === peek || segment.index === playingIndex ? 'true' : undefined}
                     style={{left: segment.left + '%', width: 'max(3px, ' + segment.width + '%)', maxWidth: (100 - segment.left) + '%'}}
                     aria-label={track.label + ', ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs) + '. ' + TONE_LABELS[segment.tone]}
@@ -995,83 +1018,6 @@ function QaScore({evaluation, number, interviewId}) {
             onClose={close}
         />}
     </div>;
-}
-
-// Панель линз над расшифровкой: переключатель акцента, итоговые баллы за
-// технику и поведение, счётчики и шкала времени интервью с вопросами.
-function LensBar({lens, onLens, blocks, answersDone, turns, flags, markers, durationMs, currentMs, onJump}) {
-    let tech = technicalAverage(blocks);
-    let counts = behaviorCounts(blocks);
-    let behavior = behaviorScore(blocks);
-    let segments = timelineSegments(blocks, durationMs);
-    let liveCoding = liveCodingSegments(turns, durationMs);
-
-    return <section className={styles.lensBar} aria-label="Оценка интервью">
-        <div className={styles.lensHead}>
-            <div className={styles.viewSwitch} role="radiogroup" aria-label="Линза расшифровки">
-                {LENSES.map(option => <button
-                    key={option.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={lens === option.key}
-                    className={styles.viewOption}
-                    onClick={() => onLens(option.key)}
-                >{option.label}</button>)}
-            </div>
-            <div className={styles.lensScores}>
-                <div className={styles.lensScore}>
-                    <span>Техническая</span>
-                    {tech
-                        ? <strong data-band={scoreBand(tech.score, tech.max)} title={'Средний балл по оценённым техническим вопросам: ' + tech.count}>{formatScore(tech.score)}<small>/10</small></strong>
-                        : <strong data-band="none" title={answersDone ? 'Нет оценённых технических вопросов' : 'Запустите «Оценить ответы»'}>—</strong>}
-                </div>
-                <div className={styles.lensScore}>
-                    <span>Нетехническая</span>
-                    {behavior
-                        ? <strong data-band={scoreBand(behavior.good, behavior.count)} title="Нетехнических ответов по теме и развёрнуто из оценённых">{behavior.good}<small>/{behavior.count}</small></strong>
-                        : <strong data-band="none" title={answersDone ? 'Нет оценённых нетехнических вопросов' : 'Запустите «Оценить ответы»'}>—</strong>}
-                </div>
-                <div className={styles.lensCounts}>
-                    <span className={styles.flag} data-kind="evasive">Без ответа · {counts.unanswered}</span>
-                    <span className={styles.flag} data-kind="evasive">Уклончиво · {counts.evasive}</span>
-                    <span className={styles.flag} data-kind="off_topic">Не по вопросу · {counts.off_topic}</span>
-                    <span className={styles.chip}>Замечания · {markers.length}</span>
-                </div>
-            </div>
-        </div>
-
-        {durationMs > 0 && <div className={styles.timeline}>
-            {liveCoding.map(segment => <span
-                key={segment.key}
-                className={styles.timelineLiveCoding}
-                style={{left: segment.left + '%', width: segment.width + '%'}}
-                title={'Live coding · ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs) + ' · вопросы здесь не выделяются'}
-            ><span>Live coding</span></span>)}
-            {segments.map(segment => <button
-                key={segment.key}
-                type="button"
-                className={styles.timelineSegment}
-                data-technical={String(segment.technical)}
-                data-dimmed={lensDimmed(lens, segment.technical) ? 'true' : undefined}
-                style={{left: segment.left + '%', width: segment.width + '%'}}
-                title={'Вопрос ' + segment.number + ' · ' + formatDuration(segment.startMs)}
-                aria-label={'Перейти к вопросу ' + segment.number}
-                onClick={() => onJump(segment)}
-            />)}
-            {showsBehavior(lens) && Array.from(flags).map(([index, kind]) => turns[index] && <span
-                key={index}
-                className={styles.timelineEvent}
-                data-kind={kind}
-                style={{left: timelinePosition(Number(turns[index].startMs || 0), durationMs) + '%'}}
-                title={BEHAVIOR_FLAG_LABELS[kind] + ' · ' + formatDuration(turns[index].startMs || 0)}
-            />)}
-            {currentMs !== null && <span
-                className={styles.timelineNow}
-                style={{left: timelinePosition(currentMs, durationMs) + '%'}}
-                aria-hidden="true"
-            />}
-        </div>}
-    </section>;
 }
 
 // Мягкая оценка нетехнического ответа - две-три отметки и балл из них той же шкалой,

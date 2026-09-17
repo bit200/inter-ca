@@ -221,7 +221,7 @@ export function turnTone(index, turn, scores, flags) {
     return 'speech';
 }
 
-export function conversationTracks(turns, durationMs, scores, flags) {
+export function conversationTracks(turns, durationMs, scores, flags, parts) {
     if (!durationMs) return [];
     let byRole = {manager: [], client: [], unknown: []};
     (turns || []).forEach((turn, index) => {
@@ -236,10 +236,53 @@ export function conversationTracks(turns, durationMs, scores, flags) {
             left,
             width: percent(endMs, durationMs) - left,
             tone: turnTone(index, turn, scores, flags),
+            part: (parts && parts.get(index)) || null,
             text: String(turn.text || ''),
         });
     });
     return ['manager', 'client', 'unknown']
         .filter(role => byRole[role].length)
         .map(role => ({role, label: TRACK_LABELS[role], segments: byRole[role]}));
+}
+
+// Части интервью на «Ходе разговора»: техническая, нетехническая и live coding.
+// Реплика относится к части своего вопроса, live coding - по разметке разбора
+// и важнее вопроса. Реплики вне вопросов (приветствие, прощание) части не имеют.
+export const PART_FILTERS = [
+    {key: 'all', label: 'Всё'},
+    {key: 'tech', label: 'Техническая'},
+    {key: 'behavior', label: 'Нетехническая'},
+    {key: 'live', label: 'Live coding'},
+];
+
+export const PART_LABELS = {tech: 'Техническая часть', behavior: 'Нетехническая часть', live: 'Live coding'};
+
+export function turnParts(blocks, turns) {
+    let parts = new Map();
+    (blocks || []).forEach(block => {
+        if (typeof block.technical !== 'boolean') return;
+        block.items.forEach(item => item.index > -1 && parts.set(item.index, block.technical ? 'tech' : 'behavior'));
+    });
+    (turns || []).forEach((turn, index) => turn && turn.liveCoding && parts.set(index, 'live'));
+    return parts;
+}
+
+// Полоса частей над дорожками: отрезки вопросов с известной темой и участки
+// live coding, в процентах от длительности.
+export function partSegments(blocks, turns, durationMs) {
+    let questions = timelineSegments(blocks, durationMs)
+        .filter(segment => typeof segment.technical === 'boolean')
+        .map(segment => {
+            let block = blocks.find(item => item.key === segment.key);
+            let end = block.endMs === null ? block.startMs : block.endMs;
+            return {...segment, endMs: end, part: segment.technical ? 'tech' : 'behavior'};
+        });
+    let live = liveCodingSegments(turns, durationMs).map(segment => ({...segment, part: 'live'}));
+    return [...questions, ...live];
+}
+
+// Отрезок приглушён, если он не из выбранной части или его оценку выключили в легенде.
+export function segmentMuted(segment, part, mutedTones) {
+    if (mutedTones && segment.tone && mutedTones.has(segment.tone)) return true;
+    return part !== 'all' && segment.part !== part;
 }
