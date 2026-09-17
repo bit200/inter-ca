@@ -22,3 +22,11 @@ export function shouldShowVideoDropzone({stage, videoLink} = {}) {
     if (stage !== '' && stage !== 'error' && stage !== undefined) return false;
     return !String(videoLink || '').trim();
 }
+
+// Показывать ли поле «Видео ссылка»: запись уже загружена файлом
+// (Interview.videoUpload), а ссылка пустая - поле лишнее, прячем.
+// Вписанную ссылку не прячем, чтобы её можно было поправить или стереть.
+export function shouldShowVideoLinkInput({videoUpload, video} = {}) {
+    if (String(video || '').trim()) return true;
+    return !videoUpload;
+}
