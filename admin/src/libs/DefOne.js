@@ -168,7 +168,7 @@ function ProjectDetails(params) {
                         <div className="col-12 ">
 
                             <EditActions className="zSMax">
-                                <BackButton/>
+                                <BackButton config={props}/>
                                 {spots.header && <SaveButton onSave={() => saveItem(obj)}/>}
                             </EditActions>
                         </div>

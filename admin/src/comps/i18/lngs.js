@@ -3296,6 +3296,13 @@ export default {
         en: "Number of questions",
         fr: `Nombre de questions`
     },
+    "backToInterviews": {
+        ru: "К списку интервью",
+        es: "A la lista de entrevistas",
+        de: "Zur Interviewliste",
+        en: "Back to interviews",
+        fr: `Retour aux entretiens`
+    },
     "back": {
         ru: "Вернуться",
         es: "Regresar",
