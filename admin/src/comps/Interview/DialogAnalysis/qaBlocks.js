@@ -453,6 +453,8 @@ export function readQaBlocks(result, turns, options) {
         return {
             key: block.id || block._id || 'qa' + position,
             number: position + 1,
+            // Текст вопроса по версии группировки - по нему заголовок узнаёт блок, открытый кандидатом.
+            question: firstText(block.question, block.questionText),
             technical,
             items,
             startMs: starts.length ? Math.min(...starts) : null,
@@ -469,6 +471,10 @@ export function readQaBlocks(result, turns, options) {
 
 // Заголовок блока - сам вопрос интервьюера, а не порядковый номер: по номеру
 // не понять, о чём речь, пока не прочтёшь реплики. Уточнения в заголовок не идут.
+// Блок открыл кандидат («Как у вас процесс работы?»), и группировка сама назвала
+// вопросом его реплику (question начинается с неё) - заголовок она: первая реплика
+// интервьюера в таком блоке - уже ответ или его обрывок («у»), а не вопрос. Без
+// такой отметки реплика кандидата в начале - хвост прошлого ответа, её пропускаем.
 // Вопрос, который не оценивается («Не оцениваем»), в «Обзоре» не показываем:
 // там только вопросы с результатом. В ходе разговора и ленте он остаётся.
 export function isScoredBlock(block) {
@@ -478,6 +484,10 @@ export function isScoredBlock(block) {
 
 export function questionTitle(block) {
     let items = block && Array.isArray(block.items) ? block.items : [];
+    let opener = items.find(item => item.turn && firstText(item.turn.text));
+    if (opener && opener.turn.role === 'client' && firstText(block.question) && firstText(block.question).startsWith(firstText(opener.turn.text))) {
+        return firstText(opener.turn.text);
+    }
     let main = items.find(item => item.turn && item.turn.role === 'manager' && !item.followUp && firstText(item.turn.text));
     return main ? firstText(main.turn.text) : 'Вопрос ' + (block && block.number);
 }

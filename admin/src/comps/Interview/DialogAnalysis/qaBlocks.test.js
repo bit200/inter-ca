@@ -195,6 +195,17 @@ describe('мягкая оценка нетехнических блоков', ()
         expect(questionTitle({number: 4, items: [{turn: {role: 'client', text: 'Ответ'}, followUp: false}]})).toBe('Вопрос 4');
     });
 
+    it('блок открыл кандидат - заголовок его вопрос, а не обрывок ответа интервьюера', () => {
+        let feed = [
+            {id: 's1', role: 'client', startMs: 0, endMs: 16000, text: 'Процесс работы спрошу у вас. Scrum стандартный, спринты?'},
+            {id: 's2', role: 'manager', startMs: 13000, endMs: 13400, text: 'у'},
+            {id: 's3', role: 'manager', startMs: 15000, endMs: 25000, text: 'Есть встречки с грумингом и планированием.'},
+            {id: 's4', role: 'client', startMs: 20000, endMs: 20400, text: 'планированием,'},
+        ];
+        let [block] = readQaBlocks([{turnIds: ['s1', 's2', 's3', 's4'], technical: false, question: feed[0].text}], feed);
+        expect(questionTitle(block)).toBe('Процесс работы спрошу у вас. Scrum стандартный, спринты?');
+    });
+
     it('короткая версия вопроса для шапки короче полной реплики', () => {
         let long = 'пока что, да. К сожалению, я не смогу сориентироваться, поскольку мы сотрудничаем как с средним, так и крупным бизнесом. То есть тут я не смогу даже близко, наверное, делать что-то как-то на том же.';
         let short = shortQuestionTitle(long);
