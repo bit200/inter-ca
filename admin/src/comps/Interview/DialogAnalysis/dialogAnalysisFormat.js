@@ -93,6 +93,18 @@ export function turnsCountLabel(count) {
     return n + ' ' + word;
 }
 
+// Отрезок речи, в котором распознавание не нашло ни одного слова: диаризация
+// услышала голос (обычно короткое «угу», вдох, шум или перебивание), а ASR
+// текста не вернул. Это не низкая уверенность - текста нет вовсе.
+export function isUnrecognizedTurn(turn) {
+    let text = turn && typeof turn.text === 'string' ? turn.text.trim() : '';
+    return !text;
+}
+
+export const UNRECOGNIZED_TURN_TEXT = 'Речь не распознана';
+export const UNRECOGNIZED_TURN_HINT = 'На этом отрезке слышен голос, но распознавание не нашло ни одного слова: '
+    + 'обычно это короткое «угу», шум или перебивание. Послушайте запись, чтобы понять, что сказано.';
+
 // Время реплики диапазоном, как в карточке звонка: «0:01–0:04». Реплика без
 // конца или короче секунды показывается одним моментом.
 export function turnTimeRange(turn) {
