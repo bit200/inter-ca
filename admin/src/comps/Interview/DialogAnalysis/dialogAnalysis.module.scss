@@ -505,6 +505,70 @@ button.turnSpeaker{
   font-size: 12px;
 }
 
+// «Только аудио» - переключатель-капсула: зелёная дорожка, кружок с
+// наушниками уезжает вправо. Стоит справа в шапке записи.
+.audioSwitch{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 5px 12px 5px 5px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 999px;
+  color: var(--dlg-muted);
+  background: var(--dlg-card);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background-color .2s;
+
+  &:hover{ color: var(--dlg-strong); border-color: var(--dlg-accent); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; }
+
+  &[aria-checked="true"]{
+    color: var(--dlg-accent);
+    border-color: var(--dlg-accent);
+    background: var(--dlg-accent-soft);
+  }
+}
+
+.audioSwitchTrack{
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #cfd8d3;
+  transition: background-color .2s;
+
+  [aria-checked="true"] > &{ background: var(--dlg-accent); }
+}
+
+.audioSwitchKnob{
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #8a968f;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 32, 26, .3);
+  transition: transform .2s ease, color .2s;
+
+  [aria-checked="true"] &{
+    color: var(--dlg-accent);
+    transform: translateX(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .audioSwitch, .audioSwitchTrack, .audioSwitchKnob{ transition: none; }
+}
+
 // Аудио на широком экране - одна строка: шапка слева, плеер-капсула справа.
 @media (min-width: 992px){
   .playerRow[data-kind="audio"]{
@@ -737,6 +801,8 @@ button.turnSpeaker{
 
   .playerRow{ padding: 8px 10px; }
   .playerIcon{ width: 32px; height: 32px; }
+  .audioSwitch{ padding-right: 5px; }
+  .audioSwitch > span:last-child{ display: none; }
 }
 
 .turnSignals{

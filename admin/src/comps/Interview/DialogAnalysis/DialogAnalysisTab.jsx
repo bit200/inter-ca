@@ -46,7 +46,7 @@ import RolesPendingNotice from './RolesPendingNotice';
 import {shouldSendRoles} from './speakerRolesDraft';
 import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
-import {pickDialogMedia, readPlayerPinned, savePlayerPinned, turnIndexAt} from './dialogMedia';
+import {pickDialogMedia, playerView, readPlayerAudioOnly, readPlayerPinned, savePlayerAudioOnly, savePlayerPinned, turnIndexAt} from './dialogMedia';
 import AnswerBriefPopover, {MarkersPopover, SoftBriefPopover} from './AnswerBriefPopover';
 import {answerDetailPath} from './answerBrief';
 import {
@@ -498,6 +498,32 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let [playingIndex, setPlayingIndex] = useState(-1);
     let [paused, setPaused] = useState(true);
     let [pinned, setPinned] = useState(() => readPlayerPinned());
+    let [audioOnly, setAudioOnly] = useState(() => readPlayerAudioOnly());
+    let view = playerView(media, audioOnly);
+    // При смене видео на аудио плеер пересоздаётся: место и воспроизведение
+    // переносим в новый, чтобы запись продолжилась с той же секунды.
+    let resume = useRef(null);
+
+    function toggleAudioOnly() {
+        let el = player.current;
+        resume.current = el ? {time: el.currentTime || 0, playing: !el.paused} : null;
+        setAudioOnly(prev => {
+            savePlayerAudioOnly(!prev);
+            return !prev;
+        });
+    }
+
+    useEffect(() => {
+        let state = resume.current;
+        let el = player.current;
+        resume.current = null;
+        if (!state || !el) return;
+        el.currentTime = state.time;
+        if (state.playing) {
+            let started = el.play && el.play();
+            started && started.catch && started.catch(() => {});
+        }
+    }, [view]);
     let [rolePicker, setRolePicker] = useState(null);
     // Разделы как в карточке звонка: «Обзор» - вопросы с результатами, «Диалог» -
     // ход разговора и вся лента. Без вопросов открывать пустой обзор незачем.
@@ -657,15 +683,29 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         {/* Док как в карточке звонка: запись и вкладки разделов одним блоком,
             при закреплении он едет вместе со скроллом. */}
         <div className={styles.player} data-pinned={pinned ? 'true' : 'false'} data-media={media ? media.kind : 'none'}>
-            {media && <div className={styles.playerRow} data-kind={media.kind}>
+            {media && <div className={styles.playerRow} data-kind={view}>
                 <div className={styles.playerIntro}>
                     <span className={styles.playerIcon} aria-hidden="true"><WaveIcon/></span>
                     <div className={styles.playerCopy}>
                         <strong>{media.kind === 'video' ? 'Видео интервью' : 'Запись интервью'}</strong>
                         <span className={styles.playerHint}>Нажмите ▶ у реплики, чтобы услышать её с начала</span>
                     </div>
+                    {media.kind === 'video' && <button
+                        type="button"
+                        role="switch"
+                        className={styles.audioSwitch}
+                        aria-checked={audioOnly}
+                        aria-label="Только аудио"
+                        title={audioOnly ? 'Показать видео' : 'Слушать запись без картинки'}
+                        onClick={toggleAudioOnly}
+                    >
+                        <span className={styles.audioSwitchTrack} aria-hidden="true">
+                            <span className={styles.audioSwitchKnob}><HeadphonesIcon/></span>
+                        </span>
+                        <span>Только аудио</span>
+                    </button>}
                 </div>
-                {media.kind === 'video'
+                {view === 'video'
                     ? <video ref={player} src={media.src} controls preload="metadata" onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>
                     : <CallPlayer ref={player} src={media.src} onTimeUpdate={onTimeUpdate} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)}/>}
                 <button
@@ -1304,6 +1344,13 @@ function TurnTime({turn}) {
     return <span className={styles.turnTime}>
         <span>{from}</span>{to && <>–<span>{to}</span></>}
     </span>;
+}
+
+function HeadphonesIcon() {
+    return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 15v-3a8 8 0 0 1 16 0v3"/>
+        <path d="M4 15h3v5H5a1 1 0 0 1-1-1zM20 15h-3v5h2a1 1 0 0 0 1-1z"/>
+    </svg>;
 }
 
 function WaveIcon() {
