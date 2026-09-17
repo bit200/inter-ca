@@ -1343,6 +1343,69 @@ button.turnSpeaker{
   font-size: 14px;
 }
 
+.brief[data-place="page"] .briefRows{
+  gap: 0;
+
+  // Строки разделены линиями: в модалке место есть, и глаз ведёт по строке
+  // от названия к баллу, не перескакивая на соседнюю.
+  li{ padding: 8px 0; border-top: 1px solid var(--dlg-line); }
+}
+.brief[data-place="page"] .briefLabel{
+  overflow: visible;
+  white-space: normal;
+}
+
+// Название показателя с подсказкой: пунктир снизу говорит, что за ним есть
+// объяснение; само объяснение всплывает над названием.
+.briefHint{
+  position: relative;
+  text-decoration: underline dotted var(--dlg-muted);
+  text-underline-offset: 3px;
+  cursor: help;
+
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 2px; border-radius: 2px; }
+}
+
+.briefHintPop{
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 8;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 6px 9px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  color: var(--dlg-ink);
+  background: var(--dlg-card);
+  box-shadow: 0 4px 14px rgba(20, 32, 26, .14);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-decoration: none;
+  white-space: normal;
+  pointer-events: none;
+}
+
+// Левая колонка модалки нетехнического ответа: ответ, под ним комментарий
+// оценки и рекомендации - стопкой с общим шагом.
+.softAnswerStack{
+  display: grid;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-content: start;
+  gap: 16px;
+
+  @media (max-width: 1200px){ grid-row: auto; }
+}
+
+.softAdviceList{
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .briefHead{
   display: flex;
   align-items: baseline;

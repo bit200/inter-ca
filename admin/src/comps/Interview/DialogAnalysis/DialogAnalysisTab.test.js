@@ -516,10 +516,19 @@ describe('таб разбора диалога', () => {
             expect(score).toHaveAttribute('aria-expanded', 'false');
         });
 
-        test('по клику на балл нетехнического вопроса открывается модалка разбора: вопрос, ответ и из чего сложилась оценка', async () => {
+        test('по клику на балл нетехнического вопроса открывается модалка разбора: вопрос, ответ, комментарий, рекомендации и из чего сложилась оценка', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: false, turnIndexes: [0, 1], softEvaluate: {relevance: 'on_topic', complete: false, engaged: true, note: 'Ответил в двух словах'}},
             ]}}});
+            const answers = global.http.get.getMockImplementation();
+            global.http.get.mockImplementation(url => /eval-advice-rule/.test(url)
+                ? Promise.resolve({items: [
+                    {key: 'soft.complete', from: 0, to: 1, advice: 'Расскажите подробнее: пример и итог'},
+                    {key: 'soft.relevance', from: 0, to: 3, advice: 'Не по этому ответу'},
+                    {key: 'evaluation.depth.depth_score', from: 0, to: 10, advice: 'Технический совет'},
+                ]})
+                : /eval-metric-schemas/.test(url) ? Promise.resolve({items: [{key: 'score'}]}) : answers(url));
+            require('./answerBrief').resetEvaluationReference();
             render(<DialogAnalysisTab item={interview(null)}/>);
             await flush();
 
@@ -540,8 +549,26 @@ describe('таб разбора диалога', () => {
             const delivery = within(popup).getByRole('region', {name: 'Подача'});
             expect(delivery).toHaveTextContent('Подача вес 30%10 из 10');
             expect(within(delivery).getByText('Без слов-паразитов')).toBeInTheDocument();
-            expect(within(popup).getByText('Ответил в двух словах')).toBeInTheDocument();
             expect(within(popup).queryByText('Загружаем показатели…')).toBeNull();
+
+            // Комментарий оценки - не в разборе баллов, а сразу под «Как прошёл ответ».
+            expect(within(popup).queryByText('Ответил в двух словах')).toBeNull();
+            const note = within(view).getByRole('region', {name: 'Комментарий оценки'});
+            expect(note).toHaveTextContent('Ответил в двух словах');
+            expect(within(view).getByText('Как прошёл ответ').compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+            // Рекомендации - из «Советов по оценке», только сработавшие правила soft.*.
+            const advice = await within(view).findByRole('region', {name: 'Рекомендации'});
+            expect(within(advice).getByText('Расскажите подробнее: пример и итог')).toBeInTheDocument();
+            expect(within(advice).queryByText('Не по этому ответу')).toBeNull();
+            expect(within(advice).queryByText('Технический совет')).toBeNull();
+
+            // Наведение на показатель объясняет, что он означает.
+            expect(within(popup).queryByRole('tooltip')).toBeNull();
+            fireEvent.mouseEnter(within(popup).getByText('По теме'));
+            expect(within(popup).getByRole('tooltip')).toHaveTextContent('Попал ли ответ в заданный вопрос');
+            fireEvent.mouseLeave(within(popup).getByText('По теме'));
+            expect(within(popup).queryByRole('tooltip')).toBeNull();
 
             fireEvent.click(document.querySelector('.iconoir-xmark'));
             await waitFor(() => expect(screen.queryByTestId('soft-answer-view')).toBeNull());

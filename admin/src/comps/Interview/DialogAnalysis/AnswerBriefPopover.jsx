@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
-import {formatScore, scoreBand, softBreakdown} from './qaBlocks';
+import {formatScore, scoreBand, softBreakdown, SOFT_HINTS} from './qaBlocks';
 import {answerBrief, loadEvaluationReference} from './answerBrief';
 import {markerCounts, markerLabel} from './dialogAnalysisFormat';
 
@@ -93,6 +93,27 @@ export default function AnswerBriefPopover({evaluation, href, onClose}) {
     </div>;
 }
 
+// Название показателя с подсказкой, что он означает: всплывает при наведении
+// и при фокусе с клавиатуры. Подсказка рисуется только пока видна, чтобы её
+// текст не примешивался к названию.
+function HintLabel({hint, className, children}) {
+    let [shown, setShown] = useState(false);
+    if (!hint) return <span className={className}>{children}</span>;
+    let show = () => setShown(true);
+    let hide = () => setShown(false);
+    return <span
+        className={`${className || ''} ${styles.briefHint}`}
+        tabIndex={0}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+    >
+        {children}
+        {shown && <span className={styles.briefHintPop} role="tooltip">{hint}</span>}
+    </span>;
+}
+
 // Раскладка балла нетехнического вопроса для модалки разбора: сервис баллов не
 // ставит, балл сведён из отметок - показываем, сколько дала каждая и где сумму
 // поправила полоса уровня, а рядом «Подачу» - штрафы за паразитов, речевые сбои
@@ -114,12 +135,12 @@ export function SoftBrief({evaluation}) {
 
         <section className={styles.briefPart} aria-label="Содержание" data-band={scoreBand(content, max)}>
             {delivery && <div className={styles.briefPartHead}>
-                <span>Содержание <small>вес {percent(weights.content)}</small></span>
+                <HintLabel hint={SOFT_HINTS.content}>Содержание <small>вес {percent(weights.content)}</small></HintLabel>
                 <span className={styles.briefPoints}>{formatScore(content)}<small> из {formatScore(max)}</small></span>
             </div>}
             <ul className={styles.briefRows} data-kind="points">
                 {rows.map(row => <li key={row.key} data-band={scoreBand(row.points, row.max)}>
-                    <span className={styles.briefLabel}>{row.label}</span>
+                    <HintLabel className={styles.briefLabel} hint={SOFT_HINTS[row.key]}>{row.label}</HintLabel>
                     <span className={styles.briefPoints}>+{formatScore(row.points)}<small> из {formatScore(row.max)}</small></span>
                 </li>)}
             </ul>
@@ -132,12 +153,12 @@ export function SoftBrief({evaluation}) {
 
         {delivery && <section className={styles.briefPart} aria-label="Подача" data-band={scoreBand(delivery.score, delivery.max)}>
             <div className={styles.briefPartHead}>
-                <span>Подача <small>вес {percent(weights.delivery)}</small></span>
+                <HintLabel hint={SOFT_HINTS.delivery}>Подача <small>вес {percent(weights.delivery)}</small></HintLabel>
                 <span className={styles.briefPoints}>{formatScore(delivery.score)}<small> из {formatScore(delivery.max)}</small></span>
             </div>
             <ul className={styles.briefRows} data-kind="points">
                 {delivery.rows.map(row => <li key={row.key} data-band={row.penalty ? 'fair' : 'good'}>
-                    <span className={styles.briefLabel}>{row.label}</span>
+                    <HintLabel className={styles.briefLabel} hint={SOFT_HINTS[row.key]}>{row.label}</HintLabel>
                     <span className={styles.briefPoints}>{row.penalty ? '−' + formatScore(row.penalty) : '0'}</span>
                 </li>)}
             </ul>
@@ -145,11 +166,6 @@ export function SoftBrief({evaluation}) {
                 {`Подача весит ${percent(weights.delivery)} балла: снято ${formatScore(Math.round((content - score) * 10) / 10)} из ${formatScore(content)}.`}
             </p>}
         </section>}
-
-        {evaluation.note && <div className={styles.briefAdvice}>
-            <b>Комментарий оценки</b>
-            <p>{evaluation.note}</p>
-        </div>}
     </div>;
 }
 
