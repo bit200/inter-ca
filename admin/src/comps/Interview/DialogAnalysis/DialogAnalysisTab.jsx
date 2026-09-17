@@ -12,7 +12,7 @@ import {
     normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
-import {formatScore, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
+import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle} from './qaBlocks';
 import {mocksByBlockNumber, readMockUiVariant} from './weakMocks';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
@@ -462,6 +462,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let flags = useMemo(() => behaviorFlags(blocks), [blocks]);
     let scores = useMemo(() => answerScores(blocks), [blocks]);
     let seriesStarts = useMemo(() => skipSeriesStarts(blocks), [blocks]);
+    let scoredBlocks = useMemo(() => blocks.filter(isScoredBlock), [blocks]);
     let linkingBlock = linking ? blocks.find(block => block.key === linking) : null;
 
     useEffect(() => {
@@ -516,8 +517,8 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let [rolePicker, setRolePicker] = useState(null);
     // Разделы как в карточке звонка: «Обзор» - вопросы с результатами, «Диалог» -
     // ход разговора и вся лента. Без вопросов открывать пустой обзор незачем.
-    let [section, setSection] = useState(() => blocks.length > 0 ? 'overview' : 'dialog');
-    let byQuestions = section === 'overview' && blocks.length > 0;
+    let [section, setSection] = useState(() => scoredBlocks.length > 0 ? 'overview' : 'dialog');
+    let byQuestions = section === 'overview' && scoredBlocks.length > 0;
 
     // Реплика перематывает запись на своё начало и сразу запускает её:
     // человек нажал, чтобы услышать, а не чтобы потом искать кнопку «Play».
@@ -651,8 +652,9 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 
     let durationMs = interviewDuration(summary, turns);
     let tracks = conversationTracks(turns, durationMs, scores, flags, turnParts(blocks, turns));
-    let questionsLabel = blocks.length + ' ' + (blocks.length % 10 === 1 && blocks.length % 100 !== 11 ? 'вопрос'
-        : [2, 3, 4].includes(blocks.length % 10) && ![12, 13, 14].includes(blocks.length % 100) ? 'вопроса' : 'вопросов');
+    let questionsCount = scoredBlocks.length;
+    let questionsLabel = questionsCount + ' ' + (questionsCount % 10 === 1 && questionsCount % 100 !== 11 ? 'вопрос'
+        : [2, 3, 4].includes(questionsCount % 10) && ![12, 13, 14].includes(questionsCount % 100) ? 'вопроса' : 'вопросов');
     let linkingNotice = linkingBlock && <div className={styles.linking} role="status">
         <span><strong>Связываем</strong> ответ с вопросом {linkingBlock.number} — нажмите на реплику кандидата</span>
         <button type="button" className={styles.linkingCancel} onClick={() => setLinking(null)}>Отмена · Esc</button>
@@ -708,7 +710,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 >{pinned ? 'Открепить' : 'Закрепить'}</button>
             </div>}
             <nav className={styles.sectionTabs} aria-label="Разделы разбора интервью">
-                {[['overview', 'Обзор', blocks.length], ['dialog', 'Диалог', turns.length]].map(([key, label, count]) => <button
+                {[['overview', 'Обзор', scoredBlocks.length], ['dialog', 'Диалог', turns.length]].map(([key, label, count]) => <button
                     key={key}
                     type="button"
                     className={styles.sectionTab}
@@ -723,16 +725,16 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 <div className={styles.heading}>
                     <span className={styles.eyebrow}>Результаты</span>
                     <h4 className={styles.sectionTitle}>
-                        Вопросы {blocks.length > 0 && <span className={styles.countChip}>{questionsLabel}</span>}
+                        Вопросы {scoredBlocks.length > 0 && <span className={styles.countChip}>{questionsLabel}</span>}
                     </h4>
                 </div>
                 <span className={styles.panelNote}>Нажмите на балл, чтобы увидеть детализацию ответа</span>
             </header>
-            {blocks.length > 0
+            {scoredBlocks.length > 0
                 ? <div className={styles.panelBody}>
                     {linkingNotice}
                     <div className={styles.qaList}>
-                        {blocks.map(block => <QaBlock
+                        {scoredBlocks.map(block => <QaBlock
                             key={block.key}
                             block={block}
                             interviewId={interviewId}
