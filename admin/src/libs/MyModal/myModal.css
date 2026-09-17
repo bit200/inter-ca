@@ -110,3 +110,22 @@ div.padding-button-modal > button:first-child {
 /*.ReactModal__Overlay .fa.pull-right {*/
     /*margin-top: -20px;*/
 /*}*/
+
+/* Модалки разбора ответа (InterviewAnswerModal, SoftAnswerModal): внутри страница
+   разбора со своей подложкой (--bs-body-bg в обеих темах), поэтому белая карточка
+   модалки проступала над ней полосой сверху. Карточка берёт тот же фон, а крестик
+   крупнее обычного - модалка во весь экран, мелкий значок в углу терялся. */
+.answer-modal > .card {
+    background: var(--bs-body-bg);
+    border: 0;
+}
+.answer-modal .mmodal > .iconoir-xmark {
+    font-size: 22px;
+    padding: 6px;
+    margin-top: -14px;
+    margin-right: -18px;
+    border-radius: 6px;
+}
+.answer-modal .mmodal > .iconoir-xmark:hover {
+    background: var(--bs-secondary-bg);
+}
