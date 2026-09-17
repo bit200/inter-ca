@@ -109,6 +109,7 @@ describe('InterviewAnswerModal: разбор ответа интервью в м
         const xmark = rule('.answer-modal .mmodal > .iconoir-xmark');
         expect(xmark).toMatch(/position:\s*absolute/);
         expect(parseInt((xmark.match(/top:\s*(\d+)px/) || [])[1], 10)).toBeLessThanOrEqual(12);
+        expect(xmark).toMatch(/margin:\s*0;/);
     });
 
     it('без номера вопроса модалка закрыта и ничего не грузит', () => {
