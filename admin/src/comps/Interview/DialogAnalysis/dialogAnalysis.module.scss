@@ -740,7 +740,6 @@ button.turnSpeaker{
 
 // Цвет части: техническая - наш зелёный, нетехническая - серо-зелёный гость,
 // live coding - штриховка, чтобы не спорить с цветами оценок на дорожках.
-.partSwatch,
 .partSegment{
   background: var(--dlg-accent);
 
@@ -749,8 +748,6 @@ button.turnSpeaker{
     background: repeating-linear-gradient(-45deg, var(--dlg-soft) 0 3px, var(--dlg-strong) 3px 5px);
   }
 }
-
-.partSwatch{ width: 8px; height: 8px; border-radius: 2px; }
 
 .partLane{
   position: relative;
@@ -764,8 +761,30 @@ button.turnSpeaker{
   top: 0;
   bottom: 0;
   box-shadow: inset -2px 0 var(--dlg-card);
+  cursor: default;
 
-  &[data-dimmed="true"]{ opacity: .15; }
+  &[data-active="true"]{ outline: 2px solid var(--dlg-strong); outline-offset: 1px; z-index: 1; }
+}
+
+// Название секции над полосой при наведении.
+.sectionPopover{
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 9px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  background: var(--dlg-card);
+  box-shadow: 0 4px 14px rgba(20, 32, 26, .14);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+
+  strong{ color: var(--dlg-strong); font-size: 12px; font-weight: 600; }
+  span{ color: var(--dlg-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 }
 
 .reviewLegend i,

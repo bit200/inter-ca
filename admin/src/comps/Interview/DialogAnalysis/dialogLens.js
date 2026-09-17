@@ -245,17 +245,10 @@ export function conversationTracks(turns, durationMs, scores, flags, parts) {
         .map(role => ({role, label: TRACK_LABELS[role], segments: byRole[role]}));
 }
 
-// Части интервью на «Ходе разговора»: техническая, нетехническая и live coding.
+// Секции интервью на «Ходе разговора»: техническая, нетехническая и live coding.
 // Реплика относится к части своего вопроса, live coding - по разметке разбора
 // и важнее вопроса. Реплики вне вопросов (приветствие, прощание) части не имеют.
-export const PART_FILTERS = [
-    {key: 'all', label: 'Всё'},
-    {key: 'tech', label: 'Техническая'},
-    {key: 'behavior', label: 'Нетехническая'},
-    {key: 'live', label: 'Live coding'},
-];
-
-export const PART_LABELS = {tech: 'Техническая часть', behavior: 'Нетехническая часть', live: 'Live coding'};
+export const PART_LABELS = {tech: 'Техническая секция', behavior: 'Нетехническая секция', live: 'Live coding'};
 
 export function turnParts(blocks, turns) {
     let parts = new Map();

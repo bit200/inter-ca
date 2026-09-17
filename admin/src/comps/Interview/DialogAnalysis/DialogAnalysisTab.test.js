@@ -593,7 +593,7 @@ describe('таб разбора диалога', () => {
             expect(within(block).queryByText('Функция с доступом к внешней области')).toBeNull();
         });
 
-        test('оценка ответов: баллы и флаги в вопросах и ленте, фильтр частей и легенда на ходе разговора', async () => {
+        test('оценка ответов: баллы и флаги в вопросах и ленте, секции с подсказкой и легенда на ходе разговора', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {score: 8}},
                 {id: 'b2', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'off_topic', complete: false}},
@@ -618,14 +618,20 @@ describe('таб разбора диалога', () => {
             expect(Array.from(container.querySelectorAll('[class*="answerScore"]')).map(node => node.textContent)).toEqual(['8', '0']);
             expect(container.querySelectorAll('[class*="turnFlags"] [data-kind="off_topic"]').length).toBe(1);
 
-            const lane = screen.getByRole('group', {name: 'Части интервью'});
+            // Фильтра частей нет: секция называется всплывающей подсказкой при наведении.
+            expect(screen.queryByRole('radiogroup', {name: 'Часть интервью'})).toBeNull();
+            expect(screen.queryByText('Часть')).toBeNull();
+            const lane = screen.getByRole('group', {name: 'Секции интервью'});
+            expect(lane.parentElement).toHaveTextContent(/^Секция/);
             expect(Array.from(lane.children).map(node => node.getAttribute('data-part'))).toEqual(['tech', 'behavior']);
-            fireEvent.click(within(screen.getByRole('radiogroup', {name: 'Часть интервью'})).getByRole('radio', {name: 'Техническая'}));
-            expect(Array.from(lane.children).map(node => node.getAttribute('data-dimmed'))).toEqual([null, 'true']);
+            expect(within(lane).queryByRole('tooltip')).toBeNull();
+            fireEvent.mouseEnter(lane.children[1]);
+            expect(within(lane).getByRole('tooltip')).toHaveTextContent('Нетехническая секция');
+            fireEvent.mouseLeave(lane.children[1]);
+            expect(within(lane).queryByRole('tooltip')).toBeNull();
             const dimmed = () => Array.from(container.querySelectorAll('[class*="reviewSegment"]')).map(node => node.getAttribute('data-dimmed') === 'true');
-            expect(dimmed()).toEqual([false, true, false, true]);
+            expect(dimmed()).toEqual([false, false, false, false]);
 
-            fireEvent.click(within(screen.getByRole('radiogroup', {name: 'Часть интервью'})).getByRole('radio', {name: 'Всё'}));
             const speech = within(screen.getByRole('group', {name: 'Шкала оценок'})).getByRole('button', {name: 'Речь без замечаний'});
             expect(speech).toHaveAttribute('aria-pressed', 'true');
             fireEvent.click(speech);
