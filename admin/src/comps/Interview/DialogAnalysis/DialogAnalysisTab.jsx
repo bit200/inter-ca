@@ -51,7 +51,6 @@ import AnswerBriefPopover, {MarkersPopover, SoftBriefPopover} from './AnswerBrie
 import {answerDetailPath} from './answerBrief';
 import {
     BEHAVIOR_FLAG_LABELS,
-    PART_FILTERS,
     PART_LABELS,
     answerScores,
     attachAnswers,
@@ -796,15 +795,15 @@ const TONE_LABELS = {speech: 'Речь без замечаний', warning: 'С�
 
 function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playingIndex, onSelect}) {
     let [peek, setPeek] = useState(null);
-    // Фильтр части и выключенные в легенде оценки приглушают отрезки, как линза
-    // «Техника»/«Поведение» приглушала вопросы: остальное видно, но не спорит.
-    let [part, setPart] = useState('all');
+    // Выключенные в легенде оценки приглушают отрезки, как линза «Техника»/«Поведение»
+    // приглушала вопросы: остальное видно, но не спорит.
     let [mutedTones, setMutedTones] = useState(() => new Set());
+    // Секция под курсором на полосе секций - её название во всплывающей подсказке.
+    let [section, setSection] = useState(null);
     let all = tracks.flatMap(track => track.segments.map(segment => ({...segment, label: track.label})));
     let shown = peek !== null ? all.find(segment => segment.index === peek)
         : all.find(segment => segment.index === playingIndex);
     let playhead = currentMs !== null && currentMs > 0 ? timelinePosition(currentMs, durationMs) : null;
-    let available = PART_FILTERS.filter(option => option.key === 'all' || parts.some(segment => segment.part === option.key));
     function toggleTone(tone) {
         setMutedTones(prev => {
             let next = new Set(prev);
@@ -818,17 +817,6 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
             <span>Наведите для просмотра · нажмите, чтобы прослушать</span>
         </div>
         <div className={styles.reviewControls}>
-            {available.length > 1 && <div className={styles.viewSwitch} role="radiogroup" aria-label="Часть интервью">
-                {available.map(option => <button
-                    key={option.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={part === option.key}
-                    className={styles.viewOption}
-                    data-part={option.key}
-                    onClick={() => setPart(option.key)}
-                >{option.key !== 'all' && <i className={styles.partSwatch} data-part={option.key} aria-hidden="true"/>}{option.label}</button>)}
-            </div>}
             <div className={styles.reviewLegend} role="group" aria-label="Шкала оценок">
                 <span>Шкала оценок:</span>
                 {Object.keys(TONE_LABELS).map(tone => <button
@@ -842,16 +830,26 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
             </div>
         </div>
         {parts.length > 0 && <div className={styles.reviewTrack}>
-            <span>Часть</span>
-            <div className={styles.partLane} role="group" aria-label="Части интервью">
+            <span>Секция</span>
+            <div className={styles.partLane} role="group" aria-label="Секции интервью">
                 {parts.map(segment => <span
                     key={segment.key}
                     className={styles.partSegment}
                     data-part={segment.part}
-                    data-dimmed={segmentMuted(segment, part, null) ? 'true' : undefined}
+                    data-active={section && section.key === segment.key ? 'true' : undefined}
                     style={{left: segment.left + '%', width: segment.width + '%'}}
-                    title={PART_LABELS[segment.part] + ' · ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs)}
+                    aria-label={PART_LABELS[segment.part]}
+                    onMouseEnter={() => setSection(segment)}
+                    onMouseLeave={() => setSection(null)}
                 />)}
+                {section && <span
+                    className={styles.sectionPopover}
+                    role="tooltip"
+                    style={{left: Math.min(Math.max(section.left + section.width / 2, 8), 92) + '%'}}
+                >
+                    <strong>{PART_LABELS[section.part]}</strong>
+                    <span>{formatDuration(section.startMs)}–{formatDuration(section.endMs)}</span>
+                </span>}
             </div>
         </div>}
         {tracks.map(track => <div className={styles.reviewTrack} key={track.role}>
@@ -863,7 +861,7 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
                     type="button"
                     className={styles.reviewSegment}
                     data-tone={segment.tone}
-                    data-dimmed={segmentMuted(segment, part, mutedTones) ? 'true' : undefined}
+                    data-dimmed={segmentMuted(segment, 'all', mutedTones) ? 'true' : undefined}
                     data-active={segment.index === peek || segment.index === playingIndex ? 'true' : undefined}
                     style={{left: segment.left + '%', width: 'max(3px, ' + segment.width + '%)', maxWidth: (100 - segment.left) + '%'}}
                     aria-label={track.label + ', ' + formatDuration(segment.startMs) + '–' + formatDuration(segment.endMs) + '. ' + TONE_LABELS[segment.tone]}
