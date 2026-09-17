@@ -1,5 +1,6 @@
 import reportWebVitals from "./reportWebVitals";
 import suppressExternalWebVitalsError from "./suppressExternalWebVitalsError";
+import reloadOnFailedHotUpdate from "./reloadOnFailedHotUpdate";
 import {createRoot} from "react-dom/client";
 import React, {lazy, useEffect, useState, Suspense} from "react";
 import _ from "underscore";
@@ -734,6 +735,9 @@ reportWebVitals();
 
 // Гасим ошибку стороннего скрипта про 'startTime', чтобы не засоряла консоль
 suppressExternalWebVitalsError();
+
+// Сорванное горячее обновление в dev (reading 'call') — перезагружаем страницу, а не оставляем её упавшей
+reloadOnFailedHotUpdate(module.hot);
 
 function Team(props) {
     return <div>Commented</div>;
