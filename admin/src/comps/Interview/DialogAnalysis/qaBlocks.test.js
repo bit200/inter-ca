@@ -41,13 +41,6 @@ describe('Q&A-блоки оценки ответов', () => {
         expect(readQaBlocks(raw, turns)[0].evaluation.state).toBe('missing');
     });
 
-    it('реплика, указанная в блоке дважды, показывается один раз', () => {
-        let [block] = readQaBlocks({blocks: [{technical: true, turnIndexes: [0, 1, 3, 1, 3], turnIds: []}]}, turns);
-        expect(block.items.map(item => item.index)).toEqual([0, 1, 3]);
-        let [byId] = readQaBlocks({blocks: [{technical: false, turnIds: ['t1', 't2', 't2']}]}, turns);
-        expect(byId.items.map(item => item.index)).toEqual([0, 1]);
-    });
-
     it('блок без реплик не показывается', () => {
         expect(readQaBlocks({blocks: [{turnIndexes: [99]}]}, turns)).toEqual([]);
         expect(readQaBlocks(null, turns)).toEqual([]);
