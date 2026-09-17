@@ -26,6 +26,7 @@ import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
 import InterviewVideoUpload from "./InterviewVideoUpload";
+import DetailsToggle from "./DetailsToggle";
 import VideoPreview from "./VideoPreview/VideoPreview";
 import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
 import {EditActions, SaveButton} from "../../libs/EditActions/EditActions";
@@ -172,6 +173,7 @@ function Interview({props}) {
     const [count, setCount] = useState(0);
     const [open, setOpen] = useState(false);
     const [selId, setSelId] = useState(null)
+    const [detailsOpen, setDetailsOpen] = useState(false)
     //console.log('*.....Interview Render', props);
     let {item, onChange} = props
 
@@ -216,8 +218,6 @@ function Interview({props}) {
 
             <DebugLogs>
             </DebugLogs>
-            <strong>{t('interviewPerc')}: {item?.totalPerc || '-'}%</strong>
-            {/*Необходимо заполнить*/}
         </div>
     }
 
@@ -286,6 +286,11 @@ function Interview({props}) {
                                         {name: 'videoLink', size: 4, key: 'video', type: 'input'},
                                         {type: 'HR', size: 12},
                                         {
+                                            size: 12,
+                                            Component: () => <DetailsToggle open={detailsOpen} onToggle={setDetailsOpen}/>
+                                        },
+                                        {
+                                            isVisible: () => detailsOpen,
                                             name: t('Overall assessment of the interview'),
                                             key: `infoByUsersInterview.user${global.user.get_id()}.feedback`,
                                             minRows: 4,
@@ -293,6 +298,7 @@ function Interview({props}) {
                                             size: 4
                                         },
                                         {
+                                            isVisible: () => detailsOpen,
                                             Component({item}) {
                                                 return <>
                                                     <div>{t('top1mostInteresting')}
@@ -313,6 +319,7 @@ function Interview({props}) {
                                             // minRows: 4,
                                         },
                                         {
+                                            isVisible: () => detailsOpen,
                                             Component({item}) {
                                                 return <>
                                                     <div>{t('top3answers')}
