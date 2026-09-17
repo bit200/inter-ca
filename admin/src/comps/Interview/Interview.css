@@ -24,3 +24,13 @@
 .interviewVideoUpload .videoDropzoneHint { font-size: 12px; opacity: .75; }
 .interviewVideoUpload .videoDropzone * { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .interviewVideoUpload .videoDropzone, .interviewVideoUpload .videoDropzoneIcon { transition: none; } }
+/* Пункт «Детали» на вкладке «Обзор» (DetailsToggle.js) - свёрнут по умолчанию. */
+.interviewDetailsToggle {
+    display: inline-flex; align-items: center; gap: 6px; margin-block: 12px 4px; padding: 4px 0;
+    border: 0; background: none; color: var(--bs-secondary-color, #6c757d); font-weight: 600; cursor: pointer;
+}
+.interviewDetailsToggle:hover { color: var(--bs-body-color); }
+.interviewDetailsToggle:focus-visible { outline: 2px solid rgba(var(--bs-primary-rgb), .4); outline-offset: 2px; border-radius: 4px; }
+.interviewDetailsChevron { display: inline-block; font-size: 18px; line-height: 1; transition: transform .15s ease; }
+.interviewDetailsToggle.open .interviewDetailsChevron { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .interviewDetailsChevron { transition: none; } }
