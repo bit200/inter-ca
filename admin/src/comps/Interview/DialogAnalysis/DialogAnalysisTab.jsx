@@ -741,11 +741,6 @@ const KIND_LABELS = {true: 'Технический', false: 'Нетехниче�
 function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 'all', linking = false, choosing = false, onFindAnswer, children}) {
     let {evaluation} = block;
     let missing = withoutAnswer(block);
-    // Скобка цепочки - у технического вопроса по баллу evaluate, у
-    // нетехнического по мягкой оценке: оба вида блоков выглядят одинаково.
-    let rated = block.technical === true ? evaluation : block.soft;
-    let bracket = Boolean(rated) && rated.state !== 'unanswered' && rated.state !== 'skipped'
-        && (block.technical === true ? showsTech(lens) : showsBehavior(lens));
     // Длинный вопрос занимает экран целиком - свёрнутый остаётся одной шапкой.
     // Изначально блоки свёрнуты: расшифровка читается оглавлением вопросов.
     let [collapsed, setCollapsed] = useState(true);
@@ -800,8 +795,7 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
             </div>
         </header>
         {!shut && <div id={bodyId}>
-        <div className={styles.qaTurns} data-bracket={bracket ? (rated.state === 'done' ? 'done' : 'pending') : undefined}>
-            {bracket && <span className={styles.bracket} aria-hidden="true"/>}
+        <div className={styles.qaTurns}>
             {children}
         </div>
         {evaluation.state === 'done' && evaluation.feedback && <p className={styles.qaFeedback}>{evaluation.feedback}</p>}
