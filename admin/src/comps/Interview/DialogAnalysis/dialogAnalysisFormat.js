@@ -196,13 +196,111 @@ export function emotionDominant(summary) {
     return emotionLabel(summary.dominant) + probability;
 }
 
+const SENTENCE_END = /[.?!…]["»)]*$/;
+
+// Текст реплики вычищен распознаванием лучше, чем слова по отдельности, поэтому
+// ушедшие слова срезаем с краёв самого текста. Не сошлось - собираем из слов.
+function trimTurnText(text, all, kept) {
+    let joined = kept.map(word => String(word.text || '').trim()).filter(Boolean).join(' ');
+    let source = String(text || '');
+    let first = all.indexOf(kept[0]);
+    let last = all.indexOf(kept[kept.length - 1]);
+    let head = all.slice(0, first);
+    let tail = all.slice(last + 1).reverse();
+    let squash = value => value.replace(/\s+/g, '').toLowerCase();
+    let from = 0;
+    for (let word of head) {
+        let piece = squash(String(word.text || ''));
+        let rest = source.slice(from);
+        let skipped = rest.length - rest.trimStart().length;
+        if (!squash(rest.slice(skipped, skipped + piece.length * 2)).startsWith(piece)) return joined;
+        let consumed = 0;
+        let position = from + skipped;
+        while (consumed < piece.length && position < source.length) {
+            if (!/\s/.test(source[position])) consumed += 1;
+            position += 1;
+        }
+        from = position;
+    }
+    let to = source.length;
+    for (let word of tail) {
+        let piece = squash(String(word.text || ''));
+        let rest = source.slice(from, to).trimEnd();
+        if (!squash(rest.slice(-piece.length * 2)).endsWith(piece)) return joined;
+        let consumed = 0;
+        let position = from + rest.length;
+        while (consumed < piece.length && position > from) {
+            position -= 1;
+            if (!/\s/.test(source[position])) consumed += 1;
+        }
+        to = position;
+    }
+    return source.slice(from, to).trim() || joined;
+}
+
+// Распознавание кладёт слова на стыке двух голосов в обе реплики сразу (тот же
+// id слова): хвост ответа кандидата повторяется началом реплики интервьюера.
+// Каждое слово оставляем одной реплике. Реплика, целиком собранная из чужих
+// слов, - эхо длинной соседней, её убираем. Общий кусок двух настоящих реплик
+// режем по концу предложения: законченная фраза - хвост ранней, остальное -
+// начало поздней.
+export function separateSharedWords(turns) {
+    let wordsOf = turn => (turn && Array.isArray(turn.words) ? turn.words : []);
+    let owners = new Map();
+    turns.forEach((turn, index) => wordsOf(turn).forEach(word => {
+        if (!word || word.id == null) return;
+        if (!owners.has(word.id)) owners.set(word.id, []);
+        let list = owners.get(word.id);
+        if (list[list.length - 1] !== index) list.push(index);
+    }));
+    let shared = id => (owners.get(id) || []).length > 1;
+    if (!turns.some(turn => wordsOf(turn).some(word => word && shared(word.id)))) return turns;
+
+    let isEcho = index => {
+        let words = wordsOf(turns[index]);
+        return words.length > 0 && words.every(word => word && word.id != null
+            && owners.get(word.id).some(other => other !== index && wordsOf(turns[other]).length > words.length));
+    };
+    let dropped = new Set(turns.map((turn, index) => index).filter(isEcho));
+
+    let removed = turns.map(() => new Set());
+    let order = turns.map((turn, index) => index)
+        .filter(index => !dropped.has(index))
+        .sort((left, right) => Number(turns[left].startMs || 0) - Number(turns[right].startMs || 0) || left - right);
+    order.forEach((earlier, position) => {
+        order.slice(position + 1).forEach(later => {
+            let laterIds = new Set(wordsOf(turns[later]).map(word => word && word.id));
+            let common = wordsOf(turns[earlier]).filter(word => word && word.id != null && laterIds.has(word.id)
+                && !removed[earlier].has(word.id) && !removed[later].has(word.id));
+            if (!common.length) return;
+            let cut = -1;
+            common.forEach((word, index) => { if (SENTENCE_END.test(String(word.text || '').trim())) cut = index; });
+            common.forEach((word, index) => removed[index <= cut ? later : earlier].add(word.id));
+        });
+    });
+
+    return turns.flatMap((turn, index) => {
+        if (dropped.has(index)) return [];
+        if (!removed[index].size) return [turn];
+        let words = wordsOf(turn).filter(word => !(word && removed[index].has(word.id)));
+        if (!words.length) return [];
+        let all = wordsOf(turn);
+        let next = {...turn, words, text: trimTurnText(turn.text, all, words)};
+        // Время реплики сдвигаем только с того края, откуда ушли слова.
+        if (words[0] !== all[0] && words[0].startMs != null) next.startMs = Math.max(Number(turn.startMs || 0), Number(words[0].startMs));
+        let last = words[words.length - 1];
+        if (last !== all[all.length - 1] && last.endMs != null && turn.endMs != null) next.endMs = Math.min(Number(turn.endMs), Number(last.endMs));
+        return [next];
+    });
+}
+
 // Реплики достаём терпимо: разбор может лежать и плоско (result.turns),
 // и внутри conversation - на бэкенде форма ещё устаканивается.
 export function readConversation(result) {
     let value = result && typeof result === 'object' ? result : {};
     let conversation = value.conversation && typeof value.conversation === 'object' ? value.conversation : value;
     return {
-        turns: Array.isArray(conversation.turns) ? conversation.turns : [],
+        turns: Array.isArray(conversation.turns) ? separateSharedWords(conversation.turns) : [],
         markers: Array.isArray(conversation.markers) ? conversation.markers : [],
         summary: conversation.summary && typeof conversation.summary === 'object' ? conversation.summary : {},
         capabilities: value.capabilities && typeof value.capabilities === 'object' ? value.capabilities : {},
