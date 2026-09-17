@@ -243,7 +243,7 @@ function Interview({props}) {
                             size: 12,
                             tabs: tabs = withTabSave([
                                 {
-                                    // Порядок: «Разбор диалога» → «Обзор» → «Вопросы».
+                                    // Порядок: «Разбор диалога» → «Обзор». Вкладку «Вопросы» убрали.
                                     // Карточка открывается на разборе (первая вкладка =
                                     // вкладка по умолчанию, см. tabIndexFromKey).
                                     name: t('dialogAnalysis'), urlKey: 'dialog', childs: [
@@ -331,14 +331,6 @@ function Interview({props}) {
                                             // type: 'textarea', key: 'bestAsnwers', name: 'Лучшие ответы',
                                             // minRows: 4,
                                         },
-                                    ]
-                                },
-                                {
-                                    name: t('questions'), urlKey: 'questions', save: true, childs: [
-                                        {
-                                            size: 12,
-                                            Component: Comp
-                                        }
                                     ]
                                 },
                                 !(isSale || isAdmin) ? null : {
