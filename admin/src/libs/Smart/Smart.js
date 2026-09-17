@@ -13,7 +13,7 @@ import './smart.css';
 // import {CKEditor} from '@ckeditor/ckeditor5-react';
 // import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import MDEditorComp from '../../comps/Suggest/MDEditorComp';
-import DatePicker from "../Datepicker/Datepicker";
+import DateField from "./DateField";
 import { Editor } from '@monaco-editor/react';
 import NFN from "../../comps/i18/NFN";
 import MdPreview from "../../comps/Suggest/MdPreview";
@@ -455,27 +455,15 @@ class Smart extends React.Component {
 
 
                }}/>}
-                {/date/gi.test(type) && <>
-                    <DatePicker
-                        label={field.label || field.name}
-                        value={value}
-                        type={"date"}
-                        woLabel={field.woLabel}
-                        className={field.className || field.defClass}
-                        placeholder={name}
-                        onChange={(v) => {
-                            if (new Date(v).getTime() > 0) {
-                                this.onChange(v, key)
-                            }
-                        }}/>
-                    {/*<DatePicker*/}
-                    {/*    */}
-                    {/*    selected={value ? new Date(value) : null} onChange={(date) => {*/}
-                    {/*    let cd = new Date(date).toODB();*/}
-                    {/*    // console.log('*........ ## changeeeeeeeeeeeeee', cd, value, date);*/}
-                    {/*    this.onChange(cd, key)*/}
-                    {/*}}/>*/}
-                </>}
+                {/* Дата — своим селектором дня, а не голым react-datepicker: см. Smart/DateField.js */}
+                {/date/gi.test(type) && <DateField
+                    field={field}
+                    label={field.label || field.name}
+                    value={value}
+                    className={field.className || field.defClass}
+                    onChange={(v) => {
+                        this.onChange(v, key)
+                    }}/>}
            {type === 'textarea' && <Textarea
                label={t(field.label || field.name)}
                value={value}
