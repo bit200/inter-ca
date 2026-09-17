@@ -4,9 +4,10 @@
 // показатели и советы считаются теми же функциями, что там, - иначе попап над
 // баллом и страница детализации разошлись бы в цифрах.
 import {buildGroupPercents, weakestGroup} from '../../EvaluationDetail/components/metricGroups';
-import {groupAdvice} from '../../EvaluationDetail/components/adviceLogic';
+import {getByPath, groupAdvice} from '../../EvaluationDetail/components/adviceLogic';
 import {scoreVerdict} from '../../EvaluationDetail/components/scoreVerdict';
 import {OVERALL_GROUP} from '../../EvaluationDetail/components/ScoreStrip';
+import {softAdviceMetrics} from './qaBlocks';
 
 // Короткий вариант для попапа: вердикт словом, проценты по группам показателей,
 // критические ошибки и один совет по самому слабому месту.
@@ -27,6 +28,21 @@ export function answerBrief(result, schemas, rules) {
         criticalErrors,
         advice: advice ? {label: weak.label, text: advice.advice} : null,
     };
+}
+
+// Рекомендации к нетехническому ответу: правила с ключами soft.* из тех же
+// «Советов по оценке», что у технических. Порядок - как правила заведены.
+export function softAdvice(evaluation, rules) {
+    let metrics = softAdviceMetrics(evaluation);
+    let seen = new Set();
+    return (rules || []).filter(rule => {
+        if (!rule || !rule.advice || typeof rule.key !== 'string' || !rule.key.startsWith('soft.')) return false;
+        if (rule.from == null || rule.to == null) return false;
+        let value = getByPath(metrics, rule.key);
+        if (typeof value !== 'number' || value < rule.from || value > rule.to || seen.has(rule.advice)) return false;
+        seen.add(rule.advice);
+        return true;
+    }).map(rule => rule.advice);
 }
 
 // Страница детализации: номер вопроса - по порядку блоков в оценке, как в табе.
