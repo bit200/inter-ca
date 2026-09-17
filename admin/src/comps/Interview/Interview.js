@@ -27,6 +27,7 @@ import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
 import InterviewVideoUpload from "./InterviewVideoUpload";
 import DetailsToggle from "./DetailsToggle";
+import {shouldShowVideoLinkInput} from "../videoDropzone";
 import VideoPreview from "./VideoPreview/VideoPreview";
 import {TAB_PARAM, tabIndexFromKey, tabKeyAt} from "./interviewTabs";
 import {EditActions, SaveButton} from "../../libs/EditActions/EditActions";
@@ -283,7 +284,7 @@ function Interview({props}) {
                                             size: 12,
                                             Component: InterviewVideoUploadField
                                         },
-                                        {name: 'videoLink', size: 4, key: 'video', type: 'input'},
+                                        {name: 'videoLink', size: 4, key: 'video', type: 'input', isVisible: (obj) => shouldShowVideoLinkInput(obj)},
                                         {type: 'HR', size: 12},
                                         {
                                             size: 12,

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from './videoDropzone';
+import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone, shouldShowVideoLinkInput} from './videoDropzone';
 
 const file = (name, type) => new File(['x'], name, {type});
 
@@ -59,5 +59,18 @@ describe('shouldShowVideoDropzone', () => {
     it('карточка интервью передаёт ссылку в блок загрузки', () => {
         const src = fs.readFileSync(path.join(__dirname, 'Interview', 'Interview.js'), 'utf8');
         expect(src).toMatch(/videoLink=\{item\.video\}/);
+    });
+});
+
+describe('shouldShowVideoLinkInput', () => {
+    it('прячет пустое поле ссылки, если запись загружена файлом', () => {
+        expect(shouldShowVideoLinkInput({videoUpload: 42, video: ''})).toBe(false);
+        expect(shouldShowVideoLinkInput({videoUpload: 42, video: '  '})).toBe(false);
+        expect(shouldShowVideoLinkInput({videoUpload: 42})).toBe(false);
+    });
+    it('показывает поле, если ссылка вписана или записи нет', () => {
+        expect(shouldShowVideoLinkInput({videoUpload: 42, video: 'https://x'})).toBe(true);
+        expect(shouldShowVideoLinkInput({video: ''})).toBe(true);
+        expect(shouldShowVideoLinkInput({})).toBe(true);
     });
 });
