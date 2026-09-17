@@ -607,11 +607,13 @@ describe('таб разбора диалога', () => {
             expect(within(bar).getByText('Без ответа · 0')).toBeInTheDocument();
             expect(within(bar).queryByText(/Невежливо/)).toBeNull();
 
-            // Блоки изначально свёрнуты - скобки с баллом видны в развёрнутых.
+            // Блоки изначально свёрнуты - скобки видны в развёрнутых. Балла на
+            // скобке нет: он уже стоит в шапке вопроса справа.
             const expand = () => ['Вопрос 1', 'Вопрос 2'].forEach(name => fireEvent.click(within(screen.getByRole('region', {name})).getByTitle('Развернуть вопрос')));
             expand();
-            const brackets = () => Array.from(container.querySelectorAll('[data-bracket="done"] > [class*="bracket"]')).map(node => node.textContent);
-            expect(brackets()).toEqual(['8', '0']);
+            const brackets = () => Array.from(container.querySelectorAll('[data-bracket="done"]')).map(node => node.closest('section').getAttribute('aria-label'));
+            expect(Array.from(container.querySelectorAll('[data-bracket="done"] > [class*="bracket"]')).map(node => node.textContent)).toEqual(['', '']);
+            expect(brackets()).toEqual(['Вопрос 1', 'Вопрос 2']);
             const second = screen.getByRole('region', {name: 'Вопрос 2'});
             expect(within(second).getByRole('button', {name: 'Оценка 0 из 10, показать детализацию'})).toBeInTheDocument();
             expect(within(second).getByText('Не по вопросу')).toBeInTheDocument();
@@ -624,9 +626,9 @@ describe('таб разбора диалога', () => {
             expect(screen.getByRole('region', {name: 'Вопрос 2'})).toHaveAttribute('data-dimmed', 'true');
             expect(screen.getByRole('region', {name: 'Вопрос 1'})).not.toHaveAttribute('data-dimmed');
             expand();
-            expect(brackets()).toEqual(['8']);
+            expect(brackets()).toEqual(['Вопрос 1']);
             fireEvent.click(within(bar).getByRole('radio', {name: 'Поведение'}));
-            expect(brackets()).toEqual(['0']);
+            expect(brackets()).toEqual(['Вопрос 2']);
         });
 
         test('без оценки ответов выдуманной разбивки на вопросы нет - только лента реплик', async () => {
@@ -715,7 +717,10 @@ describe('таб разбора диалога', () => {
             expect(within(within(summary).getByText('Перебивания').closest('div')).getByText('4')).toBeInTheDocument();
             expect(within(summary).getByText('42 с')).toBeInTheDocument();
 
-            expect(within(screen.getByRole('region', {name: 'Вопрос 1'})).getByText('пауза перед ответом 1,5 с')).toBeInTheDocument();
+            // Тайминги под вопросом не показываем: ни интервал, ни паузу перед ответом.
+            const firstQuestion = screen.getByRole('region', {name: 'Вопрос 1'});
+            expect(within(firstQuestion).queryByText(/пауза перед ответом|ответ начат до конца вопроса/)).toBeNull();
+            expect(within(firstQuestion.querySelector('header')).queryByText(/\d+:\d{2}[–-]\d+:\d{2}/)).toBeNull();
             const second = expand(screen.getByRole('region', {name: 'Вопрос 2'}));
             expect(within(second).getByText('Уклончиво')).toBeInTheDocument();
             expect(within(second).getByText('Формально')).toBeInTheDocument();
