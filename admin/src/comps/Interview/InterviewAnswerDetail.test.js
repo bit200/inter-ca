@@ -2,6 +2,7 @@ import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter, Routes, Route} from 'react-router-dom';
 import InterviewAnswerDetail from './InterviewAnswerDetail';
+import InterviewAnswerModal from './InterviewAnswer/InterviewAnswerModal';
 import {resetEvaluationReference} from './DialogAnalysis/answerBrief';
 
 const answers = {answersEvaluation: {status: 'done', result: {blocks: [
@@ -14,7 +15,7 @@ const answers = {answersEvaluation: {status: 'done', result: {blocks: [
     }},
 ]}}};
 
-const renderPage = (path) => {
+const mockHttp = () => {
     resetEvaluationReference();
     global.http = {
         get: jest.fn(url => Promise.resolve(
@@ -26,6 +27,10 @@ const renderPage = (path) => {
             {name: 'depth', score: 2, verdict: 'Только теория', suggestion: 'Разберите пример Module Federation'},
         ]}})),
     };
+};
+
+const renderPage = (path) => {
+    mockHttp();
     return render(
         <MemoryRouter initialEntries={[path]}>
             <Routes>
@@ -70,5 +75,29 @@ describe('InterviewAnswerDetail: полная детализация техни�
     it('несуществующий номер вопроса - понятное сообщение, а не пустая страница', async () => {
         renderPage('/interviews/1000/answers/9');
         expect(await screen.findByText(/Вопрос 9 не найден/)).toBeInTheDocument();
+    });
+});
+
+describe('InterviewAnswerModal: разбор ответа интервью в модалке тем же набором компонентов', () => {
+    it('без роутера показывает тот же контент, что страница, и закрывается крестиком', async () => {
+        mockHttp();
+        const onClose = jest.fn();
+        render(<InterviewAnswerModal interviewId={1000} number={2} onClose={onClose}/>);
+
+        expect(await screen.findByText('Вопрос 2 из интервью')).toBeInTheDocument();
+        expect(screen.getByTestId('interview-answer-view')).toBeInTheDocument();
+        expect(screen.getByText('Ответ не засчитан')).toBeInTheDocument();
+        expect(screen.getByText('Пока нет, только теория')).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '← Разбор диалога'})).not.toBeInTheDocument();
+
+        fireEvent.click(document.querySelector('.iconoir-xmark'));
+        expect(onClose).toHaveBeenCalled();
+    });
+
+    it('без номера вопроса модалка закрыта и ничего не грузит', () => {
+        mockHttp();
+        render(<InterviewAnswerModal interviewId={1000} number={null}/>);
+        expect(screen.queryByTestId('interview-answer-view')).not.toBeInTheDocument();
+        expect(global.http.get).not.toHaveBeenCalledWith('/my-interview/1000/answers-evaluation', {}, {wo_notify: true});
     });
 });
