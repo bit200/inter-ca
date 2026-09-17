@@ -80,3 +80,28 @@ export function savePlayerPinned(pinned, storage) {
         (storage || window.localStorage).setItem(PLAYER_PINNED_KEY, pinned ? 'true' : 'false');
     } catch (e) {}
 }
+
+// Видео можно слушать как аудиодорожку: переключатель «Только аудио» прячет
+// картинку и ставит вместо неё компактный аудиоплеер. Выбор тоже запоминается.
+export const PLAYER_AUDIO_ONLY_KEY = 'dialogPlayerAudioOnly';
+
+export function readPlayerAudioOnly(storage) {
+    try {
+        return (storage || window.localStorage).getItem(PLAYER_AUDIO_ONLY_KEY) === 'true';
+    } catch (e) {
+        return false;
+    }
+}
+
+export function savePlayerAudioOnly(audioOnly, storage) {
+    try {
+        (storage || window.localStorage).setItem(PLAYER_AUDIO_ONLY_KEY, audioOnly ? 'true' : 'false');
+    } catch (e) {}
+}
+
+// Чем играть запись: видео превращается в аудио только по переключателю,
+// у аудиозаписи картинки нет вовсе.
+export function playerView(media, audioOnly) {
+    if (!media) return 'none';
+    return media.kind === 'video' && !audioOnly ? 'video' : 'audio';
+}
