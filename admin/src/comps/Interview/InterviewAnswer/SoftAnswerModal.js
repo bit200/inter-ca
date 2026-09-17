@@ -29,7 +29,7 @@ export default function SoftAnswerModal({block, evaluation, isOpen, onClose}) {
     const hasLeft = answerText || evaluation.note || advice.length > 0;
     return (
         <MyModal isOpen={isOpen} onClose={onClose} size="full" defClass="answer-modal">
-            {isOpen && <div className={styles.page} data-testid="soft-answer-view">
+            {isOpen && <div className={`${styles.page} ${dialogStyles.palette}`} data-testid="soft-answer-view">
                 <AnswerHero block={block} questionText={questionText} score={evaluation.score} max={evaluation.max}/>
                 <div className={styles.columns}>
                     {hasLeft && <div className={dialogStyles.softAnswerStack}>

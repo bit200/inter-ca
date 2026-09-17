@@ -567,6 +567,11 @@ describe('таб разбора диалога', () => {
             expect(within(popup).queryByRole('tooltip')).toBeNull();
             fireEvent.mouseEnter(within(popup).getByText('По теме'));
             expect(within(popup).getByRole('tooltip')).toHaveTextContent('Попал ли ответ в заданный вопрос');
+            // Модалка монтируется в body, вне вкладки: цвета подсказки (фон,
+            // рамка) берутся из токенов --dlg-*, поэтому корень токенов нужен
+            // и ей - иначе фон прозрачный и строки под ней просвечивают.
+            expect(within(popup).getByRole('tooltip').closest('.tab')).toBeNull();
+            expect(within(popup).getByRole('tooltip').closest('.palette')).not.toBeNull();
             fireEvent.mouseLeave(within(popup).getByText('По теме'));
             expect(within(popup).queryByRole('tooltip')).toBeNull();
 

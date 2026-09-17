@@ -2,6 +2,10 @@
 // проекта тем же приёмом, что и разбор ответа (EvaluationDetail): свои токены на
 // корне блока и второй набор значений для тёмной темы сайта. Светлый набор -
 // основной, чтобы вкладка не зависела от порядка подключения стилей.
+// Модалки разбора (react-modal) монтируются в body, вне .tab, - без своего
+// корня с токенами у всплывашек пропадал фон, и текст строк под ними
+// просвечивал насквозь. Им тот же набор даёт .palette.
+.palette,
 .tab{
   --dlg-card: #ffffff;
   --dlg-soft: #f3f6f4;
@@ -24,10 +28,11 @@
   --dlg-warn-soft: #fdf3e2;
   --dlg-bad: #b3261e;
   --dlg-bad-soft: #fbeceb;
-
-  color: var(--dlg-ink);
 }
 
+.tab{ color: var(--dlg-ink); }
+
+:global(html[data-bs-theme="dark"]) .palette,
 :global(html[data-bs-theme="dark"]) .tab{
   --dlg-card: #202221;
   --dlg-soft: #242a26;

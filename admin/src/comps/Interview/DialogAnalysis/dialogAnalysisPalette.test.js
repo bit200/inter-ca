@@ -40,6 +40,11 @@ describe('палитра разбора диалога', () => {
         expect(tokens(block).filter(({ hex }) => isBlue(hex))).toEqual([]);
     });
 
+    it('модалки разбора вне вкладки получают те же токены в обеих темах', () => {
+        expect(scss).toMatch(/\n\.palette,\n\.tab\{/);
+        expect(scss).toContain(':global(html[data-bs-theme="dark"]) .palette,\n:global(html[data-bs-theme="dark"]) .tab{');
+    });
+
     it('тени и прочие цвета вне токенов не синие', () => {
         const colors = scss.match(/rgba?\([^)]*\)|#[0-9a-f]{6}\b/gi) || [];
         expect(colors.filter(isBlue)).toEqual([]);
