@@ -175,7 +175,7 @@ export function softProblemMarks({relevance, complete}) {
 // темы, ни одного примера из практики, мимо вопроса, формально). Нашлось одно -
 // показываем одно. Проваленные показатели (глубина 1/10, речь 1/10) - тоже явное
 // замечание: их выводим все, кроме тех, что уже названы флагом (практика 0 при
-// «Без примеров из практики»).
+// «Без примеров из практики»). Итог не выводим - балл и так виден рядом.
 const REMARKS_LIMIT = 3;
 const FAILED_GROUP_PCT = 30;
 // Префикс показателей группы -> ключ флага, который её уже называет.
@@ -190,7 +190,7 @@ function failedGroupRemarks(schemas, result, flags) {
         if (hit) covered.add(schema.group || 'Общее');
     });
     return buildGroupPercents(schemas, result)
-        .filter(row => row.pct <= FAILED_GROUP_PCT && !covered.has(row.group) && row.label !== 'Без ошибок')
+        .filter(row => row.pct <= FAILED_GROUP_PCT && !covered.has(row.group) && row.group !== 'Итог' && row.label !== 'Без ошибок')
         .map(row => ({key: 'group:' + row.group, text: `${row.label} ${Math.round(row.pct / 10)}/10`, tone: 'poor'}));
 }
 
