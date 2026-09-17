@@ -267,6 +267,8 @@ describe('подача нетехнического ответа', () => {
                 {key: 'evaluation.speech.clarity', group: 'Речь', min: 0, max: 10},
                 {key: 'evaluation.practice.count', group: 'Практика', min: 0, max: 10},
                 {key: 'evaluation.relevance.relevance', group: 'Релевантность', min: 0, max: 10},
+                // Итог виден баллом рядом - бейджем не дублируется.
+                {key: 'score', group: 'Итог', min: 0, max: 10},
             ];
             let block = technical({depth: {depth_score: 1}, speech: {clarity: 1}, practice: {count: 0}, relevance: {relevance: 9, is_offtop: 0}});
             expect(questionRemarks(block, schemas).map(mark => mark.text))
