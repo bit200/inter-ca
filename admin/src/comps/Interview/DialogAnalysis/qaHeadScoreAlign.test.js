@@ -17,3 +17,13 @@ describe('балл в шапке вопроса разбора диалога', 
         expect(actions).toMatch(/justify-content: flex-end;/);
     });
 });
+
+describe('«К диалогу» в шапке вопроса разбора диалога', () => {
+    test('стоит отдельной строкой под оценкой, прижато вправо', () => {
+        const row = block('.qaJumpRow');
+        expect(row).toMatch(/flex: 1 1 100%;/);
+        expect(row).toMatch(/justify-content: flex-end;/);
+        const jsx = fs.readFileSync(path.join(__dirname, 'DialogAnalysisTab.jsx'), 'utf8');
+        expect(jsx).toMatch(/className=\{styles\.qaJumpRow\}>\s*<button[^>]*className=\{styles\.qaJump\}/);
+    });
+});

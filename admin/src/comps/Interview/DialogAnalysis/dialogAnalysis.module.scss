@@ -1183,6 +1183,13 @@ button.turnSpeaker{
 
 .qaBlock[data-playing="true"]{ border-color: var(--dlg-accent); }
 
+// «К диалогу» - отдельной строкой под оценкой, прижато вправо под балл.
+.qaJumpRow{
+  display: flex;
+  flex: 1 1 100%;
+  justify-content: flex-end;
+}
+
 .qaJump{
   padding: 3px 2px;
   border: 0;

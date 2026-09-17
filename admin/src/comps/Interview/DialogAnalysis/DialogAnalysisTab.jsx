@@ -982,7 +982,9 @@ function QaBlock({block, interviewId, mocks = null, seriesStart = false, lens = 
                     onClick={onFindAnswer}
                 >{linking ? 'Отменить' : 'Найти ответ'}</button>}
                 {block.soft ? <SoftMarks soft={block.soft} block={block}/> : <QaScore evaluation={evaluation} number={block.number} interviewId={interviewId}/>}
-                {onOpenDialog && <button type="button" className={styles.qaJump} onClick={onOpenDialog}>К диалогу</button>}
+                {onOpenDialog && <div className={styles.qaJumpRow}>
+                    <button type="button" className={styles.qaJump} onClick={onOpenDialog}>К диалогу</button>
+                </div>}
             </div>
         </header>
         {evaluation.state === 'error' && <p className={styles.qaError}>
