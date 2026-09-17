@@ -1680,27 +1680,6 @@ button.turnSpeaker{
   &[aria-pressed="true"]{ color: var(--dlg-card); background: var(--dlg-accent); }
 }
 
-// Скобка цепочки в жёлобе слева от реплик: от первого звена до последнего,
-// без балла: он уже стоит в шапке вопроса. Это левая полоса, поэтому углов у неё нет.
-.qaTurns[data-bracket]{
-  position: relative;
-  padding-left: 30px;
-}
-
-.bracket{
-  position: absolute;
-  top: 16px;
-  bottom: 16px;
-  left: 14px;
-  width: 6px;
-  border: 2px solid var(--dlg-accent);
-  border-right: 0;
-  border-radius: 0;
-
-}
-
-.qaTurns[data-bracket="pending"] .bracket{ border-style: dashed; border-right: 0; border-color: var(--dlg-muted); }
-
 // Режим связывания: строка-подсказка над лентой и подсвеченные реплики-кандидаты.
 .linking{
   display: flex;
