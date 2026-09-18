@@ -78,22 +78,68 @@ function readTurns(block, turns) {
     ].filter(Boolean);
 }
 
-// Компоненты итоговой оценки (evaluate.result.weights/breakdown) и переключатели
-// вида «не учитывать стиль ответа» - см. finalScoreWeights.js. weights/breakdown
-// всегда приходят вложенными (result), а сам score может быть продублирован и
-// плоско - поэтому их ищем в source и inner отдельно от score/result ниже.
-// Есть оба поля и хотя бы один компонент выключен - балл пересчитывается по той
-// же формуле, что использовал сервис оценки, только без выключенных слагаемых.
-function readFinalScore(source, inner, disabledTechnical) {
-    let weights = (asObject(source) && asObject(source.weights)) || (asObject(inner) && asObject(inner.weights));
-    let breakdown = (asObject(source) && asObject(source.breakdown)) || (asObject(inner) && asObject(inner.breakdown));
-    if (!weights || !breakdown) return null;
-    let disabled = disabledTechnical instanceof Set ? Array.from(disabledTechnical).filter(key => key in weights) : [];
-    if (!disabled.length) return null;
-    return computeFinalScore(breakdown, weights, disabled);
+// Показатели стиля ответа: как кандидат говорил, а не что сказал. Ключи метрик
+// приходят путями («evaluation.speech.clarity»), названия групп - по-русски из
+// evalmetricschema.group, поэтому узнаём и по ключу, и по группе: схемы заводят
+// руками, и новая стилевая метрика скорее попадёт в группу «Речь», чем повторит
+// известный ключ.
+const STYLE_METRIC_KEY = /(^|[._])(speech|speech_rate|style|fillers?|filler_words|clarity|structure)([._]|$)/i;
+const STYLE_METRIC_GROUP = /^(речь|стиль|ясность|структура|слова-паразиты|подача)$/i;
+
+export function isStyleMetric(schema) {
+    if (!schema || !schema.key) return false;
+    return STYLE_METRIC_KEY.test(String(schema.key)) || STYLE_METRIC_GROUP.test(String(schema.group || '').trim());
 }
 
-function readEvaluation(block, technical, active, disabledTechnical) {
+function averagePercent(schemas, result) {
+    let rows = buildGroupPercents(schemas, result).filter(row => row.group !== 'Итог');
+    if (!rows.length) return null;
+    return rows.reduce((sum, row) => sum + row.pct, 0) / rows.length;
+}
+
+// Балл ответа без стиля. Сервис оценки отдаёт только сам балл и показатели
+// evaluation.* - ни весов, ни слагаемых, по которым он его сложил, поэтому
+// вывести «сколько стиль добавил» точно нельзя. Считаем по тому, что видно:
+// балл двигается в ту же сторону и на ту же долю, что и средний процент по
+// группам показателей, когда стилевые группы из него убраны, - это то же
+// соотношение, которое человек видит в линейке показателей. Нет схем метрик,
+// стилевых групп или самих значений - пересчитывать нечем, балл остаётся
+// сохранённым.
+export function scoreWithoutStyle(result, schemas, max = 10) {
+    let source = asObject(result);
+    let list = (Array.isArray(schemas) ? schemas : []).filter(schema => schema && schema.key && schema.key !== 'score');
+    let score = source && typeof source.score === 'number' ? source.score : null;
+    if (score === null || !list.length) return null;
+    let kept = list.filter(schema => !isStyleMetric(schema));
+    if (!kept.length || kept.length === list.length) return null;
+    let whole = averagePercent(list, source);
+    let rest = averagePercent(kept, source);
+    if (!whole || rest === null) return null;
+    let value = Math.max(0, Math.min(max, score * rest / whole));
+    return Math.round(value * 10) / 10;
+}
+
+// Переключатели вида «не учитывать стиль ответа» - см. finalScoreWeights.js.
+// Если сервис оценки прислал слагаемые балла (weights/breakdown), балл
+// пересчитывается его же формулой без выключенных компонентов; на нынешнем
+// ответе сервиса этих полей нет - тогда работает пересчёт по показателям.
+function readFinalScore(source, inner, disabledTechnical, result, schemas, max) {
+    let disabled = disabledTechnical instanceof Set ? Array.from(disabledTechnical) : [];
+    if (!disabled.length) return null;
+    let weights = (asObject(source) && asObject(source.weights)) || (asObject(inner) && asObject(inner.weights));
+    let breakdown = (asObject(source) && asObject(source.breakdown)) || (asObject(inner) && asObject(inner.breakdown));
+    let known = weights ? disabled.filter(key => key in weights) : [];
+    if (weights && breakdown && known.length) return computeFinalScore(breakdown, weights, known);
+    if (disabled.indexOf('style') < 0) return null;
+    // Весов с слагаемыми в ответе сервиса нет - пересчитываем по показателям.
+    // Балл блок может нести плоско, а показатели - только во вложенном result:
+    // берём ту половину, где показатели есть, и балл к ней.
+    let metrics = asObject(result) && asObject(result.evaluation) ? result
+        : (asObject(inner.evaluation) ? {...inner, score: firstNumber(asObject(result) && result.score, inner.score)} : result);
+    return scoreWithoutStyle(metrics, schemas, max);
+}
+
+function readEvaluation(block, technical, active, disabledTechnical, schemas) {
     let source = asObject(block.evaluation) || asObject(block.evaluate) || asObject(block.evaluateResult) || {};
     let inner = asObject(source.result) || {};
     let error = asObject(source.error) || asObject(block.error) || {};
@@ -113,7 +159,7 @@ function readEvaluation(block, technical, active, disabledTechnical) {
     // Сырой результат сервиса оценки - по нему попап и страница детализации
     // раскладывают балл на показатели. Результат лежит либо плоско, либо в result.
     let result = state === 'done' ? (typeof source.score === 'number' ? source : inner) : null;
-    let recomputed = state === 'done' ? readFinalScore(source, inner, disabledTechnical) : null;
+    let recomputed = state === 'done' ? readFinalScore(source, inner, disabledTechnical, result, schemas, max) : null;
 
     return {state, score: recomputed !== null ? recomputed : score, max, feedback, message, result,
         originalScore: recomputed !== null ? score : null};
@@ -455,7 +501,7 @@ export function readQaBlocks(result, turns, options) {
     let list = readQaBlockList(result);
     let feed = Array.isArray(turns) ? turns : [];
     let {active = false, timings = [], markers = [], softWeights = getSoftWeights(),
-        disabledTechnical, disabledSoft} = options || {};
+        disabledTechnical, disabledSoft, metricSchemas = []} = options || {};
     let markersById = new Map();
     (Array.isArray(markers) ? markers : []).forEach(marker => marker && marker.id !== undefined && markersById.set(marker.id, marker));
 
@@ -483,7 +529,7 @@ export function readQaBlocks(result, turns, options) {
             items,
             startMs: starts.length ? Math.min(...starts) : null,
             endMs: ends.length ? Math.max(...ends) : null,
-            evaluation: readEvaluation(block, technical, active, disabledTechnical),
+            evaluation: readEvaluation(block, technical, active, disabledTechnical, metricSchemas),
             // Сохранённая расшифровка оценки (кнопка «Расшифровать оценку»).
             explain: asObject(block.explain),
             soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client'),

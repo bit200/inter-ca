@@ -321,6 +321,10 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'soft' && appliedScoreParts.has(t.id)).map(t => t.key)),
         [appliedScoreParts]
     );
+    // Схемы показателей нужны и самому пересчёту балла: без «стиля ответа» балл
+    // считается по показателям оценки (qaBlocks.js), а их шкалы знают только схемы.
+    // Запрос общий на весь кабинет - см. loadEvaluationReference.
+    let metricSchemas = useMetricSchemas(disabledTechnical.size > 0);
     let blocks = useMemo(
         () => readQaBlocks(answers.result, conversation.turns, {
             active: answersActive || sendingAnswers,
@@ -329,8 +333,9 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             softWeights,
             disabledTechnical,
             disabledSoft,
+            metricSchemas,
         }),
-        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers, softWeights, disabledTechnical, disabledSoft]
+        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers, softWeights, disabledTechnical, disabledSoft, metricSchemas]
     );
 
     let weakMocks = useWeakMocks(interviewId);

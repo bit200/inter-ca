@@ -1,4 +1,4 @@
-import {countDisfluencies, isScoredBlock, deliveryBreakdown, questionRemarks, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softHints, softProblemMarks} from './qaBlocks';
+import {countDisfluencies, isScoredBlock, isStyleMetric, deliveryBreakdown, questionRemarks, questionTitle, readQaBlocks, scoreBand, shortQuestionTitle, softBreakdown, softHints, softProblemMarks} from './qaBlocks';
 import {DEFAULT_SOFT_WEIGHTS} from './softScoreWeights';
 import {behaviorCounts, behaviorScore, withoutAnswer} from './dialogLens';
 
@@ -347,10 +347,58 @@ describe('подача нетехнического ответа', () => {
             expect(block.evaluation.originalScore).toBe(5);
         });
 
-        it('нет weights/breakdown у блока - выключение ни на что не влияет', () => {
+        it('нет ни весов, ни схем показателей - выключение ни на что не влияет', () => {
             let plain = {blocks: [{id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {score: 7}}]};
             let [block] = readQaBlocks(plain, turns, {disabledTechnical: new Set(['style'])});
             expect(block.evaluation.score).toBe(7);
+        });
+    });
+
+    // Сервис оценки весов и слагаемых балла не присылает - только сам балл и
+    // показатели evaluation.*, поэтому «не учитывать стиль ответа» считается по
+    // ним: балл двигается на ту же долю, что и средний процент групп без стилевых.
+    describe('пересчёт балла по показателям оценки (без weights/breakdown)', () => {
+        let metricSchemas = [
+            {key: 'score', group: 'Итог', min: 0, max: 10},
+            {key: 'evaluation.relevance.relevance', group: 'Релевантность', min: 0, max: 10},
+            {key: 'evaluation.depth.depth_score', group: 'Глубина', min: 0, max: 10},
+            {key: 'evaluation.speech.clarity', group: 'Речь', min: 0, max: 10},
+        ];
+        let raw = {blocks: [{id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {score: 8, result: {score: 8,
+            evaluation: {relevance: {relevance: 6}, depth: {depth_score: 5}, speech: {clarity: 10}}}}}]};
+
+        it('style выключен - балл падает вслед за показателями без стилевых групп', () => {
+            let [block] = readQaBlocks(raw, turns, {disabledTechnical: new Set(['style']), metricSchemas});
+            // Все группы: (60 + 50 + 100) / 3 = 70%, без «Речи»: (60 + 50) / 2 = 55%.
+            expect(block.evaluation.score).toBeCloseTo(8 * 55 / 70, 1);
+            expect(block.evaluation.originalScore).toBe(8);
+        });
+
+        it('балл плоский, показатели во вложенном result - пересчёт всё равно идёт', () => {
+            let nested = {blocks: [{id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {result: {score: 8,
+                evaluation: {relevance: {relevance: 6}, depth: {depth_score: 5}, speech: {clarity: 10}}}}}]};
+            let [block] = readQaBlocks(nested, turns, {disabledTechnical: new Set(['style']), metricSchemas});
+            expect(block.evaluation.score).toBeCloseTo(8 * 55 / 70, 1);
+        });
+
+        it('style включён - балл сервиса как есть', () => {
+            let [block] = readQaBlocks(raw, turns, {metricSchemas});
+            expect(block.evaluation.score).toBe(8);
+            expect(block.evaluation.originalScore).toBe(null);
+        });
+
+        it('стилевых показателей в схемах нет - пересчитывать нечего', () => {
+            let [block] = readQaBlocks(raw, turns, {disabledTechnical: new Set(['style']),
+                metricSchemas: metricSchemas.filter(schema => schema.group !== 'Речь')});
+            expect(block.evaluation.score).toBe(8);
+            expect(block.evaluation.originalScore).toBe(null);
+        });
+
+        it('стилевые показатели узнаются и по ключу, и по русской группе', () => {
+            expect(isStyleMetric({key: 'evaluation.speech.clarity', group: 'Глубина'})).toBe(true);
+            expect(isStyleMetric({key: 'evaluation.fillers.count', group: ''})).toBe(true);
+            expect(isStyleMetric({key: 'evaluation.custom.value', group: 'Речь'})).toBe(true);
+            expect(isStyleMetric({key: 'evaluation.practice.count', group: 'Практика'})).toBe(false);
         });
     });
 });
