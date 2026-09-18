@@ -40,6 +40,16 @@ describe('поле даты Smart-формы', () => {
     });
 });
 
+describe('модули селектора дня', () => {
+    it('экспортируют функции через export — иначе прод-сборка не находит импорт', () => {
+        for (const name of ['dayPickerValue.js', 'dayPickerPlace.js']) {
+            const src = fs.readFileSync(path.join(__dirname, name), 'utf8');
+            expect(src).not.toMatch(/module\.exports/);
+            expect(src).toMatch(/^export /m);
+        }
+    });
+});
+
 describe('значение выбранного дня', () => {
     it('у голой даты остаётся YYYY-MM-DD, у даты со временем живут часы', () => {
         expect(mergeDayIntoValue('2026-08-01', '2026-08-07')).toBe('2026-08-07');
