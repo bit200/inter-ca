@@ -27,3 +27,13 @@ describe('«К диалогу» в шапке вопроса разбора ди
         expect(jsx).toMatch(/className=\{styles\.qaJumpRow\}>\s*<button[^>]*className=\{styles\.qaJump\}/);
     });
 });
+
+describe('область клика балла в шапке вопроса', () => {
+    test('кнопка балла крупнее цифры: не ниже 40px и с запасом вокруг', () => {
+        const score = block('.score');
+        expect(score).toMatch(/min-height: 40px;/);
+        const [, vertical, horizontal] = score.match(/padding: (\d+)px (\d+)px;/);
+        expect(Number(vertical)).toBeGreaterThanOrEqual(8);
+        expect(Number(horizontal)).toBeGreaterThanOrEqual(10);
+    });
+});
