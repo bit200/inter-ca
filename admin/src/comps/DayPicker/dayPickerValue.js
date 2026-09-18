@@ -6,10 +6,10 @@
 // и запись переедет на полночь. Поэтому: у поля со временем меняем только день,
 // у поля без времени оставляем короткую строку YYYY-MM-DD.
 //
-// CommonJS — модуль гоняется юнит-тестом (src/comps/DayPicker/dayPicker.test.js)
-// в голом node, без трансформа.
+// Экспорт — ESM: модуль импортируют через import {mergeDayIntoValue}, и сборка
+// прод-бандла на CommonJS-экспорте такой импорт не находит.
 
-function mergeDayIntoValue(prev, day) {
+export function mergeDayIntoValue(prev, day) {
     if (!day) return null;
     const parts = String(day).split('-').map(Number);
     const [y, m, d] = parts;
@@ -26,5 +26,3 @@ function mergeDayIntoValue(prev, day) {
     return new Date(y, m - 1, d,
         before.getHours(), before.getMinutes(), before.getSeconds()).toISOString();
 }
-
-module.exports = {mergeDayIntoValue};

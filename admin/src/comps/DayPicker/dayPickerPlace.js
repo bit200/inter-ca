@@ -6,14 +6,14 @@
 // на body в fixed-координатах, и посчитать их нужно здесь: по левому краю
 // поля, с переворотом вверх, когда снизу места нет.
 //
-// CommonJS — функцию гоняет юнит-тест (src/comps/DayPicker/dayPicker.test.js)
-// в голом node, без трансформа.
+// Экспорт — ESM: функцию импортируют через import {placePopup}, и сборка
+// прод-бандла на CommonJS-экспорте такой импорт не находит.
 
-const GAP = 4;      // просвет между полем и окном
-const MARGIN = 8;   // сколько не доводим до края экрана
+export const GAP = 4;      // просвет между полем и окном
+export const MARGIN = 8;   // сколько не доводим до края экрана
 
 // rect — поле (getBoundingClientRect), view — {width, height} окна браузера.
-function placePopup(rect, view, size) {
+export function placePopup(rect, view, size) {
     const {width = 288, height = 300} = size || {};
     const gap = GAP;
     const margin = MARGIN;
@@ -42,5 +42,3 @@ function placePopup(rect, view, size) {
 
     return {left: Math.round(left), top: Math.round(top), flip};
 }
-
-module.exports = {placePopup, GAP, MARGIN};
