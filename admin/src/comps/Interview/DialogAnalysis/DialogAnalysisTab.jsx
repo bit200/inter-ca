@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useDeferredValue, useEffect, useMemo, useRef, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
 import {
     ANSWERS_PIPELINE_STEPS,
@@ -307,13 +307,17 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             return next;
         });
     }
+    // Сам переключатель перерисовывается сразу, а пересчёт баллов по всем вопросам
+    // - следующим, отложенным рендером: иначе галочка ждала тяжёлого readQaBlocks
+    // и казалась залипшей.
+    let appliedScoreParts = useDeferredValue(disabledScoreParts);
     let disabledTechnical = useMemo(
-        () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'technical' && disabledScoreParts.has(t.id)).map(t => t.key)),
-        [disabledScoreParts]
+        () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'technical' && appliedScoreParts.has(t.id)).map(t => t.key)),
+        [appliedScoreParts]
     );
     let disabledSoft = useMemo(
-        () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'soft' && disabledScoreParts.has(t.id)).map(t => t.key)),
-        [disabledScoreParts]
+        () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'soft' && appliedScoreParts.has(t.id)).map(t => t.key)),
+        [appliedScoreParts]
     );
     let blocks = useMemo(
         () => readQaBlocks(answers.result, conversation.turns, {
@@ -509,7 +513,9 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
         setSortOrder(order);
         saveScoreSortOrder(order);
     }
-    let scoredBlocks = useMemo(() => sortScoredBlocks(blocks.filter(isScoredBlock), sortOrder), [blocks, sortOrder]);
+    // Выбранный порядок отмечается в попапе сразу, пересортировка списка - отложенно.
+    let appliedSortOrder = useDeferredValue(sortOrder);
+    let scoredBlocks = useMemo(() => sortScoredBlocks(blocks.filter(isScoredBlock), appliedSortOrder), [blocks, appliedSortOrder]);
     let linkingBlock = linking ? blocks.find(block => block.key === linking) : null;
 
     useEffect(() => {
@@ -1296,7 +1302,11 @@ function ScoreOrderControl({sortOrder, onSortOrderChange, disabledScoreParts, on
             </div>
             {Object.keys(groups).map(kind => <div className={styles.scoreOrderSection} key={kind}>
                 <span className={styles.scoreOrderTitle}>{groups[kind][0].title}</span>
-                {groups[kind].map(toggle => <label key={toggle.id} className={styles.scoreOrderCheck}>
+                {groups[kind].map(toggle => <label
+                    key={toggle.id}
+                    className={styles.scoreOrderCheck}
+                    data-on={disabledScoreParts.has(toggle.id) ? undefined : 'true'}
+                >
                     <input
                         type="checkbox"
                         checked={!disabledScoreParts.has(toggle.id)}
