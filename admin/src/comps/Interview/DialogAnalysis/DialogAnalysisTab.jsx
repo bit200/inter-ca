@@ -1307,18 +1307,23 @@ function ScoreOrderControl({sortOrder, onSortOrderChange, disabledScoreParts, on
             </div>
             {Object.keys(groups).map(kind => <div className={styles.scoreOrderSection} key={kind}>
                 <span className={styles.scoreOrderTitle}>{groups[kind][0].title}</span>
-                {groups[kind].map(toggle => <label
+                {groups[kind].map(toggle => <div
                     key={toggle.id}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-checked={!disabledScoreParts.has(toggle.id)}
                     className={styles.scoreOrderCheck}
                     data-on={disabledScoreParts.has(toggle.id) ? undefined : 'true'}
+                    onClick={() => onToggleScorePart(toggle.id)}
+                    onKeyDown={event => {
+                        if (event.key !== ' ' && event.key !== 'Enter') return;
+                        event.preventDefault();
+                        onToggleScorePart(toggle.id);
+                    }}
                 >
-                    <input
-                        type="checkbox"
-                        checked={!disabledScoreParts.has(toggle.id)}
-                        onChange={() => onToggleScorePart(toggle.id)}
-                    />
-                    {toggle.label}
-                </label>)}
+                    <span className={styles.scoreOrderBox} aria-hidden="true"/>
+                    <span className={styles.scoreOrderCheckLabel}>{toggle.label}</span>
+                </div>)}
             </div>)}
         </div>}
     </div>;
