@@ -53,10 +53,15 @@ class MyModal extends React.Component {
       className={'modal-size-' + (this.props.size || 1) + ' ' + (this.props.defClass || '')}
       contentLabel="Transactions Details"
     >
+      {/* cornerClose - крестик прямым потомком ReactModal__Content, в углу самой
+          модалки, а не внутри карточки с содержимым (полноэкранный разбор ответа). */}
+      {!this.props.woClose && this.props.cornerClose && <i className="iconoir-xmark pointer modal-corner-close" onClick={() => {
+        this.onClose()
+      }}/>}
       <div className={!woCard ? "card" : ''} style={{marginBottom: '0px'}}>
         <div className={!woCard ? "card-body" : ''}>
           <div className=" afade mmodal">
-            {!this.props.woClose && <i className="iconoir-xmark pull-right pointer" onClick={() => {
+            {!this.props.woClose && !this.props.cornerClose && <i className="iconoir-xmark pull-right pointer" onClick={() => {
               this.onClose()
             }}/>}
             {link && <Link to={link.replace(/undefined/gi, global.location.href.split('/')[4])} className="mt--20"

@@ -118,22 +118,20 @@ div.padding-button-modal > button:first-child {
 .answer-modal > .card {
     background: var(--bs-body-bg);
     border: 0;
-    position: relative;
 }
-/* Крестик вынесен к верхней кромке карточки разбора: содержимое разбора начинается
-   сразу под шапкой, и значок внутри карточки наезжал на первую строку.
-   margin обнуляем: общий .mmodal .iconoir-xmark (myStyle.scss) тянет его
-   отрицательными отступами вверх-вправо, и абсолютный крестик уезжал за угол. */
-.answer-modal .mmodal > .iconoir-xmark {
+/* Крестик - прямой потомок ReactModal__Content: он закрывает модалку, а не часть
+   разбора внутри неё, поэтому и отсчитывается от угла самой модалки. */
+.answer-modal > .iconoir-xmark {
     position: absolute;
-    top: -19px;
+    top: 4px;
     right: 5px;
     z-index: 2;
     margin: 0;
     font-size: 22px;
+    line-height: 1;
     padding: 6px;
     border-radius: 6px;
 }
-.answer-modal .mmodal > .iconoir-xmark:hover {
+.answer-modal > .iconoir-xmark:hover {
     background: var(--bs-secondary-bg);
 }

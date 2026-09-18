@@ -96,7 +96,7 @@ describe('InterviewAnswerModal: разбор ответа интервью в м
         expect(onClose).toHaveBeenCalled();
     });
 
-    it('модалка во весь экран без белой полосы над разбором и с крупным крестиком', async () => {
+    it('модалка во весь экран без белой полосы над разбором, крупный крестик - в углу самой модалки', async () => {
         mockHttp();
         render(<InterviewAnswerModal interviewId={1000} number={2} onClose={jest.fn()}/>);
         await screen.findByTestId('interview-answer-view');
@@ -105,12 +105,19 @@ describe('InterviewAnswerModal: разбор ответа интервью в м
         const css = fs.readFileSync(path.join(__dirname, '../../libs/MyModal/myModal.css'), 'utf8');
         const rule = selector => (css.match(new RegExp(selector.replace(/[.>]/g, m => '\\' + m) + '\\s*\\{([^}]*)\\}')) || [])[1] || '';
         expect(rule('.answer-modal > .card')).toMatch(/background:\s*var\(--bs-body-bg\)/);
-        expect(parseInt((rule('.answer-modal .mmodal > .iconoir-xmark').match(/font-size:\s*(\d+)px/) || [])[1], 10)).toBeGreaterThanOrEqual(20);
-        const xmark = rule('.answer-modal .mmodal > .iconoir-xmark');
+        // Крестик закрывает модалку, поэтому висит прямо на ReactModal__Content, а не
+        // внутри карточки с разбором: иначе он отсчитывается от блока разбора и лежит на нём.
+        const close = document.querySelector('.ReactModal__Content.answer-modal > .iconoir-xmark');
+        expect(close).toBeInTheDocument();
+        expect(document.querySelector('.answer-modal .mmodal > .iconoir-xmark')).toBeNull();
+        const xmark = rule('.answer-modal > .iconoir-xmark');
+        expect(parseInt((xmark.match(/font-size:\s*(\d+)px/) || [])[1], 10)).toBeGreaterThanOrEqual(20);
         expect(xmark).toMatch(/position:\s*absolute/);
-        // Крестик вынесен к верхней кромке карточки (top отрицательный) и прижат к правому краю.
-        expect(parseInt((xmark.match(/top:\s*(-?\d+)px/) || [])[1], 10)).toBe(-19);
-        expect(parseInt((xmark.match(/right:\s*(-?\d+)px/) || [])[1], 10)).toBe(5);
+        // Крестик - у верхней кромки самой модалки, без отрицательных отступов:
+        // он больше не внутри карточки разбора, и вытягивать его наружу незачем.
+        expect(parseInt((xmark.match(/top:\s*(-?\d+)px/) || [])[1], 10)).toBeLessThanOrEqual(12);
+        expect(parseInt((xmark.match(/top:\s*(-?\d+)px/) || [])[1], 10)).toBeGreaterThanOrEqual(0);
+        expect(parseInt((xmark.match(/right:\s*(-?\d+)px/) || [])[1], 10)).toBeLessThanOrEqual(12);
         expect(xmark).toMatch(/margin:\s*0;/);
     });
 
