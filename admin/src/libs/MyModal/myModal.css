@@ -120,13 +120,14 @@ div.padding-button-modal > button:first-child {
     border: 0;
     position: relative;
 }
-/* Крестик прижат к верхнему правому углу карточки, над содержимым разбора.
+/* Крестик вынесен к верхней кромке карточки разбора: содержимое разбора начинается
+   сразу под шапкой, и значок внутри карточки наезжал на первую строку.
    margin обнуляем: общий .mmodal .iconoir-xmark (myStyle.scss) тянет его
    отрицательными отступами вверх-вправо, и абсолютный крестик уезжал за угол. */
 .answer-modal .mmodal > .iconoir-xmark {
     position: absolute;
-    top: 8px;
-    right: 10px;
+    top: -19px;
+    right: 5px;
     z-index: 2;
     margin: 0;
     font-size: 22px;

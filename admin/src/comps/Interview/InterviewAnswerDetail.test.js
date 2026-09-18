@@ -108,7 +108,9 @@ describe('InterviewAnswerModal: разбор ответа интервью в м
         expect(parseInt((rule('.answer-modal .mmodal > .iconoir-xmark').match(/font-size:\s*(\d+)px/) || [])[1], 10)).toBeGreaterThanOrEqual(20);
         const xmark = rule('.answer-modal .mmodal > .iconoir-xmark');
         expect(xmark).toMatch(/position:\s*absolute/);
-        expect(parseInt((xmark.match(/top:\s*(\d+)px/) || [])[1], 10)).toBeLessThanOrEqual(12);
+        // Крестик вынесен к верхней кромке карточки (top отрицательный) и прижат к правому краю.
+        expect(parseInt((xmark.match(/top:\s*(-?\d+)px/) || [])[1], 10)).toBe(-19);
+        expect(parseInt((xmark.match(/right:\s*(-?\d+)px/) || [])[1], 10)).toBe(5);
         expect(xmark).toMatch(/margin:\s*0;/);
     });
 
