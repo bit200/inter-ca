@@ -36,3 +36,22 @@ describe('порядок вкладок карточки интервью', () =
         expect(keys).toEqual(['dialog', 'overview', 'admin']);
     });
 });
+
+// Подписи вкладок: первая (разбор диалога) - «Обзор», вторая - «Данные».
+// Читаем исходник: компонент Interview тянет весь редактор и в тесте не рендерится.
+describe('подписи вкладок карточки интервью', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, 'Interview.js'), 'utf8');
+
+    test('вкладка разбора диалога подписана «Обзор», вкладка полей - «Данные»', () => {
+        const names = [...src.matchAll(/name: t\('(\w+)'\), urlKey: '(\w+)'/g)]
+            .map(m => [m[2], m[1]]);
+        expect(names).toEqual([['dialog', 'overview'], ['overview', 'interviewData']]);
+    });
+
+    test('ключ interviewData переведён как «Данные»', () => {
+        const lngs = fs.readFileSync(path.join(__dirname, '../i18/lngs.js'), 'utf8');
+        expect(lngs).toMatch(/"interviewData":\s*\{\s*ru:\s*"Данные"/);
+    });
+});

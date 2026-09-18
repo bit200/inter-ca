@@ -3457,6 +3457,13 @@ export default {
         en: "Overview",
         fr: `Aperçu`
     },
+    "interviewData": {
+        ru: "Данные",
+        es: "Datos",
+        de: "Daten",
+        en: "Details",
+        fr: `Données`
+    },
     "videoNotUploaded": {
         ru: "Видео не загружено",
         es: "Video no cargado",
