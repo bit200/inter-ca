@@ -691,7 +691,41 @@ button.turnSpeaker{
 
 // Кнопка «Порядок и веса» и её попап - сортировка списка вопросов и
 // переключатели, что входит в итоговый балл (см. ScoreOrderControl).
-.scoreOrderAnchor{ position: relative; }
+.scoreOrderAnchor{
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+// Сводка активных настроек списка: что изменено против исходного вида. Метки
+// повторяют выбор из попапа и открывают его же - читать и править в одном месте.
+.scoreViewSummary{
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.scoreViewLabel{
+  color: var(--dlg-muted);
+  font-size: 12px;
+}
+
+.scoreViewMark{
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dlg-accent-soft);
+  color: var(--dlg-accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+
+  &:hover{ background: var(--dlg-accent); color: #fff; }
+}
 
 .scoreOrderButton{
   display: inline-flex;
@@ -707,20 +741,6 @@ button.turnSpeaker{
 
   &:hover{ color: var(--dlg-strong); border-color: var(--dlg-guest-line); }
   &[data-active="true"]{ color: var(--dlg-accent); border-color: var(--dlg-accent); }
-}
-
-.scoreOrderBadge{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--dlg-accent-soft);
-  color: var(--dlg-accent);
-  font-size: 10px;
-  font-weight: 700;
 }
 
 .scoreOrderPopover{

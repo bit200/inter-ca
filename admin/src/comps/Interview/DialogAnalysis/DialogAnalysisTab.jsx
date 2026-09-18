@@ -18,6 +18,8 @@ import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakM
 import {useSoftWeights} from './softScoreWeights';
 import {
     FINAL_SCORE_TOGGLES,
+    SCORE_SORT_OPTIONS,
+    scoreViewSummary,
     readDisabledToggles,
     saveDisabledToggles,
     readScoreSortOrder,
@@ -1247,16 +1249,10 @@ function DialogMetrics({metrics}) {
 // попапе: обе настройки касаются одного и того же числа под вопросом, разводить
 // их по разным кнопкам незачем. Переключатели сгруппированы по виду ответа
 // (technical/soft) - у каждого вида своя формула пересчёта, см. finalScoreWeights.js.
-const SORT_OPTIONS = [
-    {order: 'default', label: 'По порядку разговора'},
-    {order: 'desc', label: 'Сначала высокий балл'},
-    {order: 'asc', label: 'Сначала низкий балл'},
-];
-
 function ScoreOrderControl({sortOrder, onSortOrderChange, disabledScoreParts, onToggleScorePart}) {
     let [open, setOpen] = useState(false);
     let box = useRef(null);
-    let activeCount = disabledScoreParts ? disabledScoreParts.size : 0;
+    let marks = scoreViewSummary(sortOrder, disabledScoreParts);
 
     useEffect(() => {
         if (!open) return undefined;
@@ -1276,21 +1272,31 @@ function ScoreOrderControl({sortOrder, onSortOrderChange, disabledScoreParts, on
     let groups = groupBy(FINAL_SCORE_TOGGLES, toggle => toggle.kind);
 
     return <div className={styles.scoreOrderAnchor} ref={box}>
+        {marks.length > 0 && <span className={styles.scoreViewSummary}>
+            <span className={styles.scoreViewLabel}>Список настроен:</span>
+            {marks.map(mark => <button
+                key={mark.id}
+                type="button"
+                className={styles.scoreViewMark}
+                title="Открыть настройки порядка и весов"
+                onClick={() => setOpen(true)}
+            >{mark.label}</button>)}
+        </span>}
         <button
             type="button"
             className={styles.scoreOrderButton}
             aria-haspopup="dialog"
             aria-expanded={open}
-            data-active={sortOrder !== 'default' || activeCount > 0 ? 'true' : undefined}
+            data-active={marks.length > 0 ? 'true' : undefined}
             onClick={() => setOpen(!open)}
         >
-            Порядок и веса{activeCount > 0 && <span className={styles.scoreOrderBadge}>{activeCount}</span>}
+            Порядок и веса
         </button>
         {open && <div className={styles.scoreOrderPopover} role="dialog" aria-label="Порядок вопросов и веса оценки">
             <div className={styles.scoreOrderSection}>
                 <span className={styles.scoreOrderTitle}>Порядок вопросов</span>
                 <div className={styles.scoreOrderRadios} role="radiogroup" aria-label="Порядок вопросов">
-                    {SORT_OPTIONS.map(option => <button
+                    {SCORE_SORT_OPTIONS.map(option => <button
                         key={option.order}
                         type="button"
                         role="radio"
