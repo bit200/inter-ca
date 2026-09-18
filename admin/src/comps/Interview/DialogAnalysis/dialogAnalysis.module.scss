@@ -790,9 +790,11 @@ button.turnSpeaker{
   &[aria-checked="true"]{ color: var(--dlg-accent); background: var(--dlg-accent-soft); font-weight: 600; }
 }
 
-// Строка переключателя кликается целиком и отвечает на нажатие сразу: фон под
-// курсором, подсветка выбранного и вдавливание на :active. Выключенный пункт
-// гаснет - состояние читается и без взгляда на саму галочку.
+// Строка переключателя кликается целиком - клик ловит сама строка, а не галочка
+// внутри: галочка нарисована своим квадратом (глобальный input[type=checkbox]
+// админки задаёт ему свой zoom и отступы и сбивал и попадание, и выравнивание).
+// Фон под курсором, вдавливание на :active, выключенный пункт гаснет - состояние
+// читается и без взгляда на саму галочку.
 .scoreOrderCheck{
   display: flex;
   align-items: center;
@@ -807,22 +809,49 @@ button.turnSpeaker{
   user-select: none;
   transition: background-color .1s ease, color .1s ease;
 
-  input{
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--dlg-accent);
-    cursor: pointer;
-  }
+  // Клик по любой точке строки - это клик по строке: внутренности её не перехватывают.
+  > *{ pointer-events: none; }
 
   &:hover{ background: var(--dlg-soft); }
   &:active{ background: var(--dlg-accent-soft); }
-  &:focus-within{ background: var(--dlg-soft); outline: 2px solid var(--dlg-accent); outline-offset: -2px; }
+  &:focus-visible{ background: var(--dlg-soft); outline: 2px solid var(--dlg-accent); outline-offset: -2px; }
   &[data-on="true"]{ color: var(--dlg-ink); }
 }
 
+.scoreOrderBox{
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--dlg-line);
+  border-radius: 4px;
+  background: var(--dlg-card);
+  transition: background-color .1s ease, border-color .1s ease;
+
+  [data-on="true"] > &{
+    border-color: var(--dlg-accent);
+    background: var(--dlg-accent);
+  }
+
+  // Сама галочка - две стороны рамки, повёрнутые на 45deg.
+  [data-on="true"] > &::after{
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 4.5px;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+}
+
+.scoreOrderCheckLabel{ min-width: 0; }
+
 @media (prefers-reduced-motion: reduce){
-  .scoreOrderCheck{ transition: none; }
+  .scoreOrderCheck,
+  .scoreOrderBox{ transition: none; }
 }
 
 .panelBody{
