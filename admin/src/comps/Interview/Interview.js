@@ -244,10 +244,12 @@ function Interview({props}) {
                             size: 12,
                             tabs: tabs = withTabSave([
                                 {
-                                    // Порядок: «Разбор диалога» → «Обзор». Вкладку «Вопросы» убрали.
+                                    // Порядок: «Обзор» (разбор диалога) → «Данные».
                                     // Карточка открывается на разборе (первая вкладка =
                                     // вкладка по умолчанию, см. tabIndexFromKey).
-                                    name: t('dialogAnalysis'), urlKey: 'dialog', childs: [
+                                    // urlKey оставлен прежним (dialog/overview): по нему
+                                    // уже ходят ссылки, подпись вкладки от него не зависит.
+                                    name: t('overview'), urlKey: 'dialog', childs: [
                                         {
                                             size: 12,
                                             Component: ({item: parent}) => <DialogAnalysisTab
@@ -263,10 +265,10 @@ function Interview({props}) {
                                 {
                                     // Было две вкладки («Меню»: name/date/type/videoLink,
                                     // «Анализ»: оценка + топ-вопросы) - 7 полей на двух
-                                    // клика вместо одного. Слиты в «Обзор»: сверху
+                                    // клика вместо одного. Слиты в «Данные»: сверху
                                     // основные поля и запись интервью, снизу - разбор
                                     // по вопросам.
-                                    name: t('overview'), urlKey: 'overview', save: true, childs: [
+                                    name: t('interviewData'), urlKey: 'overview', save: true, childs: [
                                         {
                                             name: 'name',
                                             key: 'name', type: 'input', size: 4},
