@@ -1357,13 +1357,18 @@ button.turnSpeaker{
   position: relative;
 }
 
+// Цель клика - вся плашка балла со шкалой, а не одна цифра: в списке вопросов
+// по ней целятся мышью на ходу, поэтому держим не меньше 40px по высоте и
+// запас вокруг цифры. Отрицательные поля оставляем прежними, чтобы подсветка
+// не наезжала на соседние отметки и на строку «К диалогу» под баллом.
 .score{
   --dlg-band: var(--dlg-accent);
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 40px;
   margin: -4px -6px;
-  padding: 4px 6px;
+  padding: 8px 10px;
   border: 0;
   border-radius: 6px;
   color: inherit;
