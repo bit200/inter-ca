@@ -30,4 +30,9 @@ describe('сводка настроек списка вопросов', () => {
         expect(jsx).toMatch(/scoreViewSummary\(sortOrder, disabledScoreParts\)/);
         expect(jsx).toMatch(/className=\{styles\.scoreViewMark\}/);
     });
+
+    test('метки говорят сами за себя - подписи перед ними нет', () => {
+        const jsx = fs.readFileSync(path.join(__dirname, 'DialogAnalysisTab.jsx'), 'utf8');
+        expect(jsx).not.toMatch(/Список настроен/);
+    });
 });

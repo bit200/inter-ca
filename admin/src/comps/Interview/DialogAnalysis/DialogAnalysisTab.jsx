@@ -1273,7 +1273,6 @@ function ScoreOrderControl({sortOrder, onSortOrderChange, disabledScoreParts, on
 
     return <div className={styles.scoreOrderAnchor} ref={box}>
         {marks.length > 0 && <span className={styles.scoreViewSummary}>
-            <span className={styles.scoreViewLabel}>Список настроен:</span>
             {marks.map(mark => <button
                 key={mark.id}
                 type="button"
