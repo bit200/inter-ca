@@ -45,9 +45,11 @@ export function computeFinalScore(breakdown, weights, disabled) {
 // же способом, но через другую формулу (softBreakdown в qaBlocks.js). Список
 // заведён отдельно от самих формул, чтобы попап конфигурации не знал, как
 // устроен пересчёт - только какие переключатели показать и по какому ключу.
+// off - как переключатель называется в сводке над списком: там перечисляют не
+// то, что учитывается, а то, что человек выключил, поэтому формулировка своя.
 export const FINAL_SCORE_TOGGLES = [
-    {id: 'style', title: 'Технические ответы', label: 'Учитывать стиль ответа', kind: 'technical', key: 'style'},
-    {id: 'delivery', title: 'Нетехнические ответы', label: 'Учитывать подачу', kind: 'soft', key: 'delivery'},
+    {id: 'style', title: 'Технические ответы', label: 'Учитывать стиль ответа', off: 'Без стиля ответа', kind: 'technical', key: 'style'},
+    {id: 'delivery', title: 'Нетехнические ответы', label: 'Учитывать подачу', off: 'Без подачи', kind: 'soft', key: 'delivery'},
 ];
 
 export const FINAL_SCORE_DISABLED_KEY = 'dlgFinalScoreDisabled';
@@ -72,7 +74,16 @@ export function saveDisabledToggles(disabled, storage) {
 // по итоговому баллу - тому же, что показывает балл вопроса (учитывает
 // выключенные компоненты, если проверяющий их выключил).
 export const SCORE_SORT_KEY = 'dlgScoreSortOrder';
-export const SCORE_SORT_ORDERS = ['default', 'desc', 'asc'];
+
+// summary - подпись для сводки в шапке; у порядка по разговору её нет: это
+// исходный вид списка, о нём сообщать нечего.
+export const SCORE_SORT_OPTIONS = [
+    {order: 'default', label: 'По порядку разговора', summary: ''},
+    {order: 'desc', label: 'Сначала высокий балл', summary: 'Сначала высокий балл'},
+    {order: 'asc', label: 'Сначала низкий балл', summary: 'Сначала низкий балл'},
+];
+
+export const SCORE_SORT_ORDERS = SCORE_SORT_OPTIONS.map(option => option.order);
 
 export function readScoreSortOrder(storage) {
     try {
@@ -109,4 +120,20 @@ export function sortScoredBlocks(blocks, order) {
     list.forEach(block => (blockScore(block) === null ? withoutScore : withScore).push(block));
     withScore.sort((a, b) => order === 'desc' ? blockScore(b) - blockScore(a) : blockScore(a) - blockScore(b));
     return [...withScore, ...withoutScore];
+}
+
+// Чем вид списка вопросов отличается от исходного: порядок не по разговору и
+// выключенные из балла компоненты. Человек настраивает их в попапе, попап
+// закрывается - и дальше по одному только списку не видно, почему вопросы идут
+// в таком порядке и почему балл ниже сохранённого. Поэтому шапка перечисляет
+// отличия, а совпадение с исходным видом не показывает ничего.
+export function scoreViewSummary(sortOrder, disabled) {
+    let off = disabled instanceof Set ? disabled : new Set(disabled || []);
+    let sort = SCORE_SORT_OPTIONS.find(option => option.order === sortOrder);
+    let marks = [];
+    if (sort && sort.summary) marks.push({id: 'sort', label: sort.summary});
+    FINAL_SCORE_TOGGLES.forEach(toggle => {
+        if (off.has(toggle.id)) marks.push({id: toggle.id, label: toggle.off});
+    });
+    return marks;
 }
