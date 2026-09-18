@@ -483,6 +483,23 @@ describe('таб разбора диалога', () => {
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
         });
 
+        test('подсказка про детализацию всплывает при наведении на балл, а не висит в шапке', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.queryByText(/детализацию ответа/)).toBeNull();
+
+            const block = screen.getByRole('region', {name: 'Вопрос 1'});
+            const score = within(block).getByRole('button', {name: 'Оценка 8 из 10, показать детализацию'});
+            fireEvent.mouseEnter(score);
+            expect(within(block).getByRole('tooltip')).toHaveTextContent('Нажмите, чтобы увидеть детализацию ответа');
+            fireEvent.mouseLeave(score);
+            expect(within(block).queryByRole('tooltip')).toBeNull();
+        });
+
         test('по клику на балл технического вопроса открывается модалка с полным разбором ответа, как на странице детализации', async () => {
             setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
                 {id: 'b1', technical: true, turnIndexes: [0, 1], question: 'Что такое замыкание?', answer: 'Это класс', evaluate: {

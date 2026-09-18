@@ -812,7 +812,6 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                     </h4>
                 </div>
                 <div className={styles.panelHeadActions}>
-                    <span className={styles.panelNote}>Нажмите на балл, чтобы увидеть детализацию ответа</span>
                     {scoredBlocks.length > 0 && <ScoreOrderControl
                         sortOrder={sortOrder}
                         onSortOrderChange={changeSortOrder}
@@ -1076,9 +1075,11 @@ function MarkersMetric({markers}) {
 // Балл за ответ: число и шкала из делений - по шкале уровень виден, не читая цифры.
 // Балл - кнопка: у технического ответа по клику открывается модалка с полным
 // разбором, как на странице /interviews/:id/answers/:number; у нетехнического -
-// такая же модалка: вопрос, ответ и из чего сложилась оценка.
+// такая же модалка: вопрос, ответ и из чего сложилась оценка. Что балл кликабелен,
+// говорит подсказка при наведении на него, а не подпись в шапке списка.
 function QaScore({evaluation, number, interviewId, block}) {
     let [open, setOpen] = useState(false);
+    let [hint, setHint] = useState(false);
     let close = useCallback(() => setOpen(false), []);
     let {state, score, max} = evaluation;
     if (state === 'skipped') return <span className={styles.qaStatus}>Не оцениваем</span>;
@@ -1100,12 +1101,17 @@ function QaScore({evaluation, number, interviewId, block}) {
             aria-expanded={open}
             aria-haspopup="dialog"
             onClick={() => setOpen(!open)}
+            onMouseEnter={() => setHint(true)}
+            onMouseLeave={() => setHint(false)}
+            onFocus={() => setHint(true)}
+            onBlur={() => setHint(false)}
         >
             <span className={styles.scoreValue}>{formatScore(score)}<small>/{formatScore(max)}</small></span>
             <span className={styles.scoreBar} aria-hidden="true">
                 {Array.from({length: cells}, (_, cell) => <i key={cell} data-on={cell < filled ? 'true' : undefined}/>)}
             </span>
         </button>
+        {hint && !open && <span className={styles.scoreHintPop} role="tooltip">Нажмите, чтобы увидеть детализацию ответа</span>}
         {evaluation.relevance !== undefined && block && <SoftAnswerModal block={block} evaluation={evaluation} isOpen={open} onClose={close}/>}
         {evaluation.relevance === undefined && interviewId && <InterviewAnswerModal
             interviewId={interviewId}
