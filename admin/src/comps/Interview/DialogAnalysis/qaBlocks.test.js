@@ -322,4 +322,35 @@ describe('подача нетехнического ответа', () => {
             expect(questionRemarks(block)).toEqual([]);
         });
     });
+
+    describe('пересчёт итогового балла по weights/breakdown (finalScoreWeights.js)', () => {
+        let weights = {relevance: 1, depth: 1, style: 0.5, offtop: -10};
+        let breakdown = {
+            relevance: {value: 1, weighted: 1},
+            depth: {value: 0.9, weighted: 0.9},
+            style: {value: 1, weighted: 0.5},
+            offtop: {value: 0, weighted: 0},
+        };
+        let raw = {blocks: [{id: 'b1', technical: true, turnIndexes: [0, 1],
+            evaluate: {score: 5, result: {score: 5, weights, breakdown}}}]};
+
+        it('без выключенных компонентов балл сервиса не трогаем', () => {
+            let [block] = readQaBlocks(raw, turns);
+            expect(block.evaluation.score).toBe(5);
+            expect(block.evaluation.originalScore).toBe(null);
+        });
+
+        it('style в disabledTechnical пересчитывает балл по оставшимся весам', () => {
+            let [block] = readQaBlocks(raw, turns, {disabledTechnical: new Set(['style'])});
+            // relevance(1*1) + depth(0.9*1), знаменатель без style: (1+0.9)/2*10 = 9.5.
+            expect(block.evaluation.score).toBeCloseTo(9.5, 5);
+            expect(block.evaluation.originalScore).toBe(5);
+        });
+
+        it('нет weights/breakdown у блока - выключение ни на что не влияет', () => {
+            let plain = {blocks: [{id: 'b1', technical: true, turnIndexes: [0, 1], evaluate: {score: 7}}]};
+            let [block] = readQaBlocks(plain, turns, {disabledTechnical: new Set(['style'])});
+            expect(block.evaluation.score).toBe(7);
+        });
+    });
 });

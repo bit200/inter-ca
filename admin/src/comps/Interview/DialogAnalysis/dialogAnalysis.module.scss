@@ -682,6 +682,102 @@ button.turnSpeaker{
   font-size: 12px;
 }
 
+.panelHeadActions{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+// Кнопка «Порядок и веса» и её попап - сортировка списка вопросов и
+// переключатели, что входит в итоговый балл (см. ScoreOrderControl).
+.scoreOrderAnchor{ position: relative; }
+
+.scoreOrderButton{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 6px;
+  background: var(--dlg-card);
+  color: var(--dlg-muted);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover{ color: var(--dlg-strong); border-color: var(--dlg-guest-line); }
+  &[data-active="true"]{ color: var(--dlg-accent); border-color: var(--dlg-accent); }
+}
+
+.scoreOrderBadge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--dlg-accent-soft);
+  color: var(--dlg-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.scoreOrderPopover{
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 14px;
+  width: 240px;
+  padding: 14px;
+  border: 1px solid var(--dlg-line);
+  border-radius: 8px;
+  background: var(--dlg-card);
+  box-shadow: 0 6px 18px rgba(20, 32, 26, .14);
+}
+
+.scoreOrderSection{
+  display: grid;
+  gap: 8px;
+}
+
+.scoreOrderTitle{
+  color: var(--dlg-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.scoreOrderRadios{
+  display: grid;
+  gap: 2px;
+}
+
+.scoreOrderRadio{
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--dlg-muted);
+  background: transparent;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover{ background: var(--dlg-soft); color: var(--dlg-strong); }
+  &[aria-checked="true"]{ color: var(--dlg-accent); background: var(--dlg-accent-soft); font-weight: 600; }
+}
+
+.scoreOrderCheck{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dlg-ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .panelBody{
   display: grid;
   gap: 12px;

@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {generationRows, linkWeakMocks, mocksByBlockNumber, practiceProgress, readMockUiVariant} from './weakMocks';
+import {generationRows, linkWeakMocks, mocksByBlockNumber, practiceProgress, readMockUiVariant} from './weakMocksLogic';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip} from './WeakMocks';
 
 const generation = (over = {}) => ({

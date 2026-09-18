@@ -13,9 +13,17 @@ import {
     stepState,
 } from './dialogAnalysisState';
 import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, questionRemarks, shortQuestionTitle} from './qaBlocks';
-import {mocksByBlockNumber, readMockUiVariant} from './weakMocks';
+import {mocksByBlockNumber, readMockUiVariant} from './weakMocksLogic';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
 import {useSoftWeights} from './softScoreWeights';
+import {
+    FINAL_SCORE_TOGGLES,
+    readDisabledToggles,
+    saveDisabledToggles,
+    readScoreSortOrder,
+    saveScoreSortOrder,
+    sortScoredBlocks,
+} from './finalScoreWeights';
 import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
 import {
     capabilityLabel,
@@ -288,14 +296,35 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     }
     // Веса балла нетехнического ответа из админки: пока грузятся - дефолтные.
     let softWeights = useSoftWeights();
+    // Переключатели «не учитывать стиль/подачу» - локальный выбор смотрящего,
+    // хранится в браузере (см. finalScoreWeights.js), не уходит на сервер.
+    let [disabledScoreParts, setDisabledScoreParts] = useState(() => readDisabledToggles());
+    function toggleScorePart(id) {
+        setDisabledScoreParts(prev => {
+            let next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            saveDisabledToggles(next);
+            return next;
+        });
+    }
+    let disabledTechnical = useMemo(
+        () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'technical' && disabledScoreParts.has(t.id)).map(t => t.key)),
+        [disabledScoreParts]
+    );
+    let disabledSoft = useMemo(
+        () => new Set(FINAL_SCORE_TOGGLES.filter(t => t.kind === 'soft' && disabledScoreParts.has(t.id)).map(t => t.key)),
+        [disabledScoreParts]
+    );
     let blocks = useMemo(
         () => readQaBlocks(answers.result, conversation.turns, {
             active: answersActive || sendingAnswers,
             timings: readBlockTimings(answers.result),
             markers: conversation.markers,
             softWeights,
+            disabledTechnical,
+            disabledSoft,
         }),
-        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers, softWeights]
+        [answers.result, conversation.turns, conversation.markers, answersActive, sendingAnswers, softWeights, disabledTechnical, disabledSoft]
     );
 
     let weakMocks = useWeakMocks(interviewId);
@@ -384,6 +413,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
             media={media}
             interviewId={interviewId}
             mockMarks={mockMarks}
+            disabledScoreParts={disabledScoreParts}
+            onToggleScorePart={toggleScorePart}
         />}
     </div>;
 }
@@ -460,7 +491,7 @@ function PipelineCard({title, hint, button, actionLabel, onRun, steps, labels, s
     </section>;
 }
 
-function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId, mockMarks}) {
+function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLinksChange, answersDone, onAssignRole, markersById, openTurn, onOpenTurn, media, interviewId, mockMarks, disabledScoreParts, onToggleScorePart}) {
     let {turns, summary, capabilities} = conversation;
     let markers = useMemo(() => candidateMarkers(conversation.turns, conversation.markers), [conversation.turns, conversation.markers]);
     // Вопрос без ответа связывается с репликой кандидата руками.
@@ -471,7 +502,14 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let flags = useMemo(() => behaviorFlags(blocks), [blocks]);
     let scores = useMemo(() => answerScores(blocks), [blocks]);
     let seriesStarts = useMemo(() => skipSeriesStarts(blocks), [blocks]);
-    let scoredBlocks = useMemo(() => blocks.filter(isScoredBlock), [blocks]);
+    // Порядок «Обзора»: как пришли блоки, или по итоговому баллу - выбор смотрящего,
+    // хранится в браузере вместе с переключателями (см. finalScoreWeights.js).
+    let [sortOrder, setSortOrder] = useState(() => readScoreSortOrder());
+    function changeSortOrder(order) {
+        setSortOrder(order);
+        saveScoreSortOrder(order);
+    }
+    let scoredBlocks = useMemo(() => sortScoredBlocks(blocks.filter(isScoredBlock), sortOrder), [blocks, sortOrder]);
     let linkingBlock = linking ? blocks.find(block => block.key === linking) : null;
 
     useEffect(() => {
@@ -765,7 +803,15 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                         Вопросы {scoredBlocks.length > 0 && <span className={styles.countChip}>{questionsLabel}</span>}
                     </h4>
                 </div>
-                <span className={styles.panelNote}>Нажмите на балл, чтобы увидеть детализацию ответа</span>
+                <div className={styles.panelHeadActions}>
+                    <span className={styles.panelNote}>Нажмите на балл, чтобы увидеть детализацию ответа</span>
+                    {scoredBlocks.length > 0 && <ScoreOrderControl
+                        sortOrder={sortOrder}
+                        onSortOrderChange={changeSortOrder}
+                        disabledScoreParts={disabledScoreParts}
+                        onToggleScorePart={onToggleScorePart}
+                    />}
+                </div>
             </header>
             {scoredBlocks.length > 0
                 ? <div className={styles.panelBody}>
@@ -1189,6 +1235,87 @@ function DialogMetrics({metrics}) {
             </dd>
         </div>}
     </dl>;
+}
+
+// Порядок списка вопросов и переключатели, что входит в итоговый балл, - в одном
+// попапе: обе настройки касаются одного и того же числа под вопросом, разводить
+// их по разным кнопкам незачем. Переключатели сгруппированы по виду ответа
+// (technical/soft) - у каждого вида своя формула пересчёта, см. finalScoreWeights.js.
+const SORT_OPTIONS = [
+    {order: 'default', label: 'По порядку разговора'},
+    {order: 'desc', label: 'Сначала высокий балл'},
+    {order: 'asc', label: 'Сначала низкий балл'},
+];
+
+function ScoreOrderControl({sortOrder, onSortOrderChange, disabledScoreParts, onToggleScorePart}) {
+    let [open, setOpen] = useState(false);
+    let box = useRef(null);
+    let activeCount = disabledScoreParts ? disabledScoreParts.size : 0;
+
+    useEffect(() => {
+        if (!open) return undefined;
+        function onDown(event) {
+            if (box.current && box.current.contains(event.target)) return;
+            setOpen(false);
+        }
+        function onKey(event) { event.key === 'Escape' && setOpen(false); }
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [open]);
+
+    let groups = groupBy(FINAL_SCORE_TOGGLES, toggle => toggle.kind);
+
+    return <div className={styles.scoreOrderAnchor} ref={box}>
+        <button
+            type="button"
+            className={styles.scoreOrderButton}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            data-active={sortOrder !== 'default' || activeCount > 0 ? 'true' : undefined}
+            onClick={() => setOpen(!open)}
+        >
+            Порядок и веса{activeCount > 0 && <span className={styles.scoreOrderBadge}>{activeCount}</span>}
+        </button>
+        {open && <div className={styles.scoreOrderPopover} role="dialog" aria-label="Порядок вопросов и веса оценки">
+            <div className={styles.scoreOrderSection}>
+                <span className={styles.scoreOrderTitle}>Порядок вопросов</span>
+                <div className={styles.scoreOrderRadios} role="radiogroup" aria-label="Порядок вопросов">
+                    {SORT_OPTIONS.map(option => <button
+                        key={option.order}
+                        type="button"
+                        role="radio"
+                        aria-checked={sortOrder === option.order}
+                        className={styles.scoreOrderRadio}
+                        onClick={() => onSortOrderChange(option.order)}
+                    >{option.label}</button>)}
+                </div>
+            </div>
+            {Object.keys(groups).map(kind => <div className={styles.scoreOrderSection} key={kind}>
+                <span className={styles.scoreOrderTitle}>{groups[kind][0].title}</span>
+                {groups[kind].map(toggle => <label key={toggle.id} className={styles.scoreOrderCheck}>
+                    <input
+                        type="checkbox"
+                        checked={!disabledScoreParts.has(toggle.id)}
+                        onChange={() => onToggleScorePart(toggle.id)}
+                    />
+                    {toggle.label}
+                </label>)}
+            </div>)}
+        </div>}
+    </div>;
+}
+
+function groupBy(list, key) {
+    let groups = {};
+    list.forEach(item => {
+        let k = key(item);
+        (groups[k] = groups[k] || []).push(item);
+    });
+    return groups;
 }
 
 // Кто говорит в реплике. Разбор угадывает роли по дорожкам и ошибается, когда

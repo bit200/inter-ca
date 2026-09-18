@@ -1,5 +1,6 @@
 import {getSoftWeights} from './softScoreWeights';
 import {buildGroupPercents} from '../../EvaluationDetail/components/metricGroups';
+import {computeFinalScore} from './finalScoreWeights';
 
 // Q&A-блоки оценки ответов: корневой вопрос интервьюера, ответ кандидата и
 // уточнения, если были. Бэкенд группирует реплики разбора в блоки, помечает
@@ -77,7 +78,22 @@ function readTurns(block, turns) {
     ].filter(Boolean);
 }
 
-function readEvaluation(block, technical, active) {
+// Компоненты итоговой оценки (evaluate.result.weights/breakdown) и переключатели
+// вида «не учитывать стиль ответа» - см. finalScoreWeights.js. weights/breakdown
+// всегда приходят вложенными (result), а сам score может быть продублирован и
+// плоско - поэтому их ищем в source и inner отдельно от score/result ниже.
+// Есть оба поля и хотя бы один компонент выключен - балл пересчитывается по той
+// же формуле, что использовал сервис оценки, только без выключенных слагаемых.
+function readFinalScore(source, inner, disabledTechnical) {
+    let weights = (asObject(source) && asObject(source.weights)) || (asObject(inner) && asObject(inner.weights));
+    let breakdown = (asObject(source) && asObject(source.breakdown)) || (asObject(inner) && asObject(inner.breakdown));
+    if (!weights || !breakdown) return null;
+    let disabled = disabledTechnical instanceof Set ? Array.from(disabledTechnical).filter(key => key in weights) : [];
+    if (!disabled.length) return null;
+    return computeFinalScore(breakdown, weights, disabled);
+}
+
+function readEvaluation(block, technical, active, disabledTechnical) {
     let source = asObject(block.evaluation) || asObject(block.evaluate) || asObject(block.evaluateResult) || {};
     let inner = asObject(source.result) || {};
     let error = asObject(source.error) || asObject(block.error) || {};
@@ -97,8 +113,10 @@ function readEvaluation(block, technical, active) {
     // Сырой результат сервиса оценки - по нему попап и страница детализации
     // раскладывают балл на показатели. Результат лежит либо плоско, либо в result.
     let result = state === 'done' ? (typeof source.score === 'number' ? source : inner) : null;
+    let recomputed = state === 'done' ? readFinalScore(source, inner, disabledTechnical) : null;
 
-    return {state, score, max, feedback, message, result};
+    return {state, score: recomputed !== null ? recomputed : score, max, feedback, message, result,
+        originalScore: recomputed !== null ? score : null};
 }
 
 // Мягкая оценка нетехнического ответа: по теме ли кандидат ответил, развёрнуто ли
@@ -117,7 +135,7 @@ const RELEVANCE_ALIASES = {
 // candidateLed - блок открыл сам кандидат («Время работы какое?»): разговор ведёт он,
 // и встречные вопросы тут неприменимы, что бы ни ответила модель - её промпт
 // рассчитан на вопрос интервьюера.
-function readSoftEvaluation(block, technical, active, answered, candidateLed, delivery, weights) {
+function readSoftEvaluation(block, technical, active, answered, candidateLed, delivery, weights, disabledSoft) {
     if (technical !== false) return null;
     if (!answered) return {state: 'unanswered'};
     let source = asObject(block.softEvaluate) || asObject(block.softEvaluation);
@@ -145,7 +163,7 @@ function readSoftEvaluation(block, technical, active, answered, candidateLed, de
         : relevance === 'evasive' || complete === false ? 'fair'
         : 'good';
     return {state: 'done', relevance, complete, engaged, note, band, delivery,
-        score: softBreakdown({relevance, complete, engaged, band, delivery}, weights).score, max: SOFT_MAX};
+        score: softBreakdown({relevance, complete, engaged, band, delivery}, weights, disabledSoft).score, max: SOFT_MAX};
 }
 
 // Балл мягкой оценки (числа - дефолтные веса, правятся в админке, см.
@@ -223,7 +241,11 @@ export function questionRemarks(block, schemas = []) {
     return [...flags, ...groups];
 }
 
-export function softBreakdown({relevance, complete, engaged, band, delivery}, weights = getSoftWeights()) {
+// disabledSoft - переключатели вида «не учитывать подачу» (finalScoreWeights.js):
+// содержит 'delivery' - подача не весит ничего в итоге, ответ судится только по
+// содержанию, как если бы штрафов и надбавок за речь не было вовсе.
+export function softBreakdown({relevance, complete, engaged, band, delivery}, weights = getSoftWeights(), disabledSoft) {
+    let off = disabledSoft instanceof Set ? disabledSoft : new Set(disabledSoft || []);
     let counted = typeof engaged === 'boolean';
     let completeMax = counted ? weights.complete : weights.complete + weights.engaged;
     let relevancePoints = {on_topic: weights.on_topic, evasive: Math.min(weights.evasive, weights.on_topic), off_topic: 0};
@@ -240,12 +262,13 @@ export function softBreakdown({relevance, complete, engaged, band, delivery}, we
     let raw = pointsMax ? Math.round(points / pointsMax * SOFT_MAX * 10) / 10 : 0;
     let [low, high] = BAND_RANGES[band];
     let content = Math.min(high, Math.max(low, raw));
+    let deliveryWeight = off.has('delivery') ? 0 : weights.delivery;
     let speech = deliveryBreakdown(delivery, weights);
     // Подача взвешивается от балла содержания, а не от 10: гладкая речь не
     // поднимает ответ мимо вопроса, а только снимает долю подачи с того, что
     // заработано. Доли сводятся к единице, чтобы балл не вышел за 10.
-    let share = weights.content + weights.delivery;
-    let parts = share ? {content: weights.content / share, delivery: weights.delivery / share} : {content: 1, delivery: 0};
+    let share = weights.content + deliveryWeight;
+    let parts = share ? {content: weights.content / share, delivery: deliveryWeight / share} : {content: 1, delivery: 0};
     let score = speech
         ? Math.round(content * (parts.content + parts.delivery * speech.score / speech.max) * 10) / 10
         : content;
@@ -431,7 +454,8 @@ function readTiming(block, metrics) {
 export function readQaBlocks(result, turns, options) {
     let list = readQaBlockList(result);
     let feed = Array.isArray(turns) ? turns : [];
-    let {active = false, timings = [], markers = [], softWeights = getSoftWeights()} = options || {};
+    let {active = false, timings = [], markers = [], softWeights = getSoftWeights(),
+        disabledTechnical, disabledSoft} = options || {};
     let markersById = new Map();
     (Array.isArray(markers) ? markers : []).forEach(marker => marker && marker.id !== undefined && markersById.set(marker.id, marker));
 
@@ -459,11 +483,11 @@ export function readQaBlocks(result, turns, options) {
             items,
             startMs: starts.length ? Math.min(...starts) : null,
             endMs: ends.length ? Math.max(...ends) : null,
-            evaluation: readEvaluation(block, technical, active),
+            evaluation: readEvaluation(block, technical, active, disabledTechnical),
             // Сохранённая расшифровка оценки (кнопка «Расшифровать оценку»).
             explain: asObject(block.explain),
             soft: readSoftEvaluation(block, technical, active, items.some(item => item.turn.role === 'client'),
-                items.length > 0 && items[0].turn.role === 'client', readDelivery(items, markersById, timing), softWeights),
+                items.length > 0 && items[0].turn.role === 'client', readDelivery(items, markersById, timing), softWeights, disabledSoft),
             timing,
         };
     }).filter(block => block.items.length);

@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import styles from './dialogAnalysis.module.scss';
 import {formatScore, shortQuestionTitle} from './qaBlocks';
-import {generationRows, linkWeakMocks, practiceProgress} from './weakMocks';
+import {generationRows, linkWeakMocks, practiceProgress} from './weakMocksLogic';
 
 // Мок-интервью, собранные по слабым ответам этого интервью (см. weakMocks.js).
 // Три варианта подачи - полоса, «было -> стало» и метки на вопросах - делят
