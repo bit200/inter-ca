@@ -47,27 +47,50 @@ export function readOverall(result) {
     return {score, max, summary, strengths, weaknesses, message};
 }
 
+export const SOFT_WEIGHT = 0.6;
+
+// «Не учитывать стиль ответа» пересчитывает баллы технических вопросов на клиенте
+// (finalScoreWeights.js), а балл интервью считает сервис - и стиль в нём уже
+// зашит. Пока техническую часть итога брали у сервиса как есть, выключение
+// стиля меняло цифры под вопросами, а итог над ними оставался прежним: на одном
+// экране два несогласованных числа, из-за чего и кажется, что «не пересчитывается».
+// Формулу итога сервис нам не отдаёт, поэтому сдвигаем его техническую часть на
+// среднюю разницу «пересчитанный балл минус исходный» по тем вопросам, где
+// пересчёт случился, - тот же сдвиг, что видно в списке вопросов.
+export function technicalScoreShift(blocks) {
+    let diffs = (Array.isArray(blocks) ? blocks : [])
+        .map(block => block && block.evaluation)
+        .filter(evaluation => evaluation && evaluation.state === 'done'
+            && typeof evaluation.score === 'number' && typeof evaluation.originalScore === 'number')
+        .map(evaluation => evaluation.score - evaluation.originalScore);
+    if (!diffs.length) return 0;
+    return diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length;
+}
+
 // Итог интервью сводит обе части: балл сервиса - техническая оценка, среднее мягких
 // оценок нетехнических ответов - нетехническая. Нетехническая идёт с весом softWeight
 // (дефолт SOFT_WEIGHT; правится в админке - «Веса оценки», ключ overall),
 // чтобы итог говорил об интервью целиком, а не только о технических ответах.
 // Технических вопросов нет - балл сервиса выходит нулём, итог только по нетехнической
-// части (basis 'soft'). Нечего усреднять - балл сервиса как есть.
-// Итога ещё нет (пишется) - не подставляем: блок итога показывает ожидание.
-export const SOFT_WEIGHT = 0.6;
-
+// части (basis 'soft'). Нечего усреднять - балл сервиса со сдвигом от выключенных
+// компонентов. Итога ещё нет (пишется) - не подставляем: блок итога показывает ожидание.
 export function combineOverall(overall, blocks, softWeight = SOFT_WEIGHT) {
     if (!overall) return overall;
     let list = Array.isArray(blocks) ? blocks : [];
-    let rated = list.map(block => block && block.soft)
-        .filter(soft => soft && soft.state === 'done' && typeof soft.score === 'number');
-    if (!rated.length) return overall;
     let max = overall.max || 10;
     let round = value => Math.round(value * 10) / 10;
+    // Сдвиг считается в десятибалльной шкале баллов вопросов - переводим в шкалу итога.
+    let shift = technicalScoreShift(list) * max / 10;
+    let technical = overall.score === null || !shift
+        ? overall.score
+        : round(Math.max(0, Math.min(max, overall.score + shift)));
+
+    let rated = list.map(block => block && block.soft)
+        .filter(soft => soft && soft.state === 'done' && typeof soft.score === 'number');
+    if (!rated.length) return technical === overall.score ? overall : {...overall, score: technical, max};
     let soft = round(rated.reduce((sum, item) => sum + item.score / (item.max || 10) * max, 0) / rated.length);
     let hasTechnical = list.some(block => block && block.technical === true);
-    if (!hasTechnical || overall.score === null) return {...overall, score: soft, max, basis: 'soft'};
-    let technical = overall.score;
+    if (!hasTechnical || technical === null) return {...overall, score: soft, max, basis: 'soft'};
     let score = round((technical + soft * softWeight) / (1 + softWeight));
     return {...overall, score, max, basis: 'combined', parts: {technical, soft, softWeight}};
 }

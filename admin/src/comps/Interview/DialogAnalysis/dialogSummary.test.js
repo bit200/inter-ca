@@ -1,4 +1,4 @@
-import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall, SOFT_WEIGHT} from './dialogSummary';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall, technicalScoreShift, SOFT_WEIGHT} from './dialogSummary';
 
 // Форма metrics - как её считает services/dialogMetrics.js в itk-platform-api.
 const metrics = {
@@ -72,6 +72,38 @@ describe('итог интервью и метрики разговора', () =>
         // Вес из админки: (4.6 + 7 * 1) / 2 = 5.8.
         expect(combineOverall(overall, blocks, 1)).toEqual({...overall, score: 5.8, basis: 'combined',
             parts: {technical: 4.6, soft: 7, softWeight: 1}});
+    });
+
+    it('выключенный компонент («не учитывать стиль») сдвигает и итог интервью', () => {
+        let overall = {score: 5.1, max: 10, summary: '', strengths: [], weaknesses: [], message: ''};
+        // Стиль выключен: балл вопроса пересчитан с 5 до 6 и с 7 до 7.4, исходный сохранён
+        // в originalScore - средний сдвиг +0.7.
+        let technical = (score, originalScore) => ({technical: true, soft: null,
+            evaluation: {state: 'done', score, originalScore}});
+        expect(technicalScoreShift([technical(6, 5), technical(7.4, 7)])).toBeCloseTo(0.7);
+
+        // Нетехнических ответов нет - двигается сам балл сервиса: 5.1 + 0.7 = 5.8.
+        expect(combineOverall(overall, [technical(6, 5), technical(7.4, 7)]))
+            .toEqual({...overall, score: 5.8});
+        // Стиль учитывается (пересчёта не было) - итог остаётся объектом сервиса как есть.
+        expect(combineOverall(overall, [{technical: true, soft: null, evaluation: {state: 'done', score: 5, originalScore: null}}]))
+            .toBe(overall);
+
+        // Есть и нетехническая часть: техническая идёт в свод уже сдвинутой.
+        let blocks = [technical(6, 5), {technical: false, soft: {state: 'done', score: 7, max: 10}}];
+        // (5.1 + 1 + 7 * 0.6) / 1.6 = 6.4
+        expect(combineOverall(overall, blocks)).toEqual({...overall, score: 6.4, basis: 'combined',
+            parts: {technical: 6.1, soft: 7, softWeight: 0.6}});
+    });
+
+    it('сдвиг итога зажат шкалой и не срывается на неготовых оценках', () => {
+        let overall = {score: 9.8, max: 10, summary: '', strengths: [], weaknesses: [], message: ''};
+        let up = {technical: true, soft: null, evaluation: {state: 'done', score: 10, originalScore: 5}};
+        expect(combineOverall(overall, [up]).score).toBe(10);
+        // Оценка ещё считается - сдвигать нечем.
+        expect(combineOverall(overall, [{technical: true, evaluation: {state: 'pending', score: null, originalScore: null}}]))
+            .toBe(overall);
+        expect(technicalScoreShift(null)).toBe(0);
     });
 
     it('тайминги пишутся секундами, длинные - минутами', () => {
