@@ -26,6 +26,7 @@ import * as PropTypes from "prop-types";
 import Button from "../../libs/Button";
 import DialogAnalysisTab from "./DialogAnalysis/DialogAnalysisTab";
 import InterviewVideoUpload from "./InterviewVideoUpload";
+import InterviewVideoLinkStatus from "./InterviewVideoLinkStatus";
 import DetailsToggle from "./DetailsToggle";
 import {shouldShowVideoLinkInput} from "../videoDropzone";
 import VideoPreview from "./VideoPreview/VideoPreview";
@@ -155,6 +156,13 @@ function InterviewVideoUploadField({item}) {
         }}
     />;
 }
+// Состояние разбора записи, вписанной ссылкой: объявлено рядом с полем загрузки
+// и по той же причине - стрелка внутри Interview пересоздавала бы блок на каждом
+// рендере, теряя опрос статуса.
+function InterviewVideoLinkStatusField({item}) {
+    return <InterviewVideoLinkStatus interviewId={item._id} videoLink={item.video}/>;
+}
+
 let Comp = () => {
     let {props, selId, item, userId, onChangeInfoByUsers} = pp;
     return <div>
@@ -287,6 +295,11 @@ function Interview({props}) {
                                             Component: InterviewVideoUploadField
                                         },
                                         {name: 'videoLink', size: 4, key: 'video', type: 'input', isVisible: (obj) => shouldShowVideoLinkInput(obj)},
+                                        {
+                                            size: 12,
+                                            isVisible: (obj) => Boolean(obj && obj.video),
+                                            Component: InterviewVideoLinkStatusField
+                                        },
                                         {type: 'HR', size: 12},
                                         {
                                             size: 12,

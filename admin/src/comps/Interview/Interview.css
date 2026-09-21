@@ -34,3 +34,42 @@
 .interviewDetailsChevron { display: inline-block; font-size: 18px; line-height: 1; transition: transform .15s ease; }
 .interviewDetailsToggle.open .interviewDetailsChevron { transform: rotate(90deg); }
 @media (prefers-reduced-motion: reduce) { .interviewDetailsChevron { transition: none; } }
+
+/* Разбор записи, вписанной ссылкой: полоса состояния под полем «Видео ссылка»
+   (InterviewVideoLinkStatus.jsx). Цвет и левая кромка - от исхода: работа идёт,
+   готово, споткнулись. Левая полоса без скруглений - как у блока сбоя на «Обзоре». */
+.interviewLinkStatus {
+    --ils-tone: var(--bs-primary);
+    --ils-tone-rgb: var(--bs-primary-rgb);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+    margin-block: 4px 16px; padding: 12px 16px;
+    border: 1px solid var(--bs-border-color); border-left: 3px solid var(--ils-tone);
+    border-radius: 0 6px 6px 0; background: rgba(var(--ils-tone-rgb), .06);
+}
+.interviewLinkStatus[data-tone="done"] { --ils-tone: var(--bs-success); --ils-tone-rgb: var(--bs-success-rgb); }
+.interviewLinkStatus[data-tone="error"] { --ils-tone: var(--bs-danger); --ils-tone-rgb: var(--bs-danger-rgb); }
+.interviewLinkStatusText { display: grid; gap: 2px; flex: 1 1 340px; min-width: 0; }
+.interviewLinkStatusTitle { color: var(--ils-tone); font-weight: 600; }
+.interviewLinkStatusHint { max-width: 66ch; color: var(--bs-secondary-color, #6c757d); font-size: 12px; line-height: 1.5; }
+.interviewLinkSteps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.interviewLinkStep {
+    display: flex; align-items: center; gap: 6px; padding: 3px 9px;
+    border: 1px solid var(--bs-border-color); border-radius: 999px;
+    color: var(--bs-secondary-color, #6c757d); font-size: 12px; white-space: nowrap;
+}
+.interviewLinkStepDot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .4; }
+.interviewLinkStep[data-state="done"] { border-color: var(--ils-tone); color: var(--ils-tone); }
+.interviewLinkStep[data-state="done"] .interviewLinkStepDot { opacity: 1; }
+.interviewLinkStep[data-state="active"] {
+    border-color: var(--ils-tone); color: var(--ils-tone);
+    background: rgba(var(--ils-tone-rgb), .1); font-weight: 600;
+}
+.interviewLinkStep[data-state="active"] .interviewLinkStepDot { opacity: 1; animation: interviewLinkPulse 1.4s ease-in-out infinite; }
+@keyframes interviewLinkPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.55); opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .interviewLinkStep[data-state="active"] .interviewLinkStepDot { animation: none; } }
+.interviewLinkStatusAction {
+    padding: 0; border: 0; background: none; color: var(--ils-tone);
+    font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.interviewLinkStatusAction:hover { text-decoration: none; }
+.interviewLinkStatusAction:focus-visible { outline: 2px solid rgba(var(--ils-tone-rgb), .45); outline-offset: 3px; border-radius: 3px; }

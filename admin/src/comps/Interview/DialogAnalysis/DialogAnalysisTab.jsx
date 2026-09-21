@@ -3,6 +3,7 @@ import styles from './dialogAnalysis.module.scss';
 import {
     ANSWERS_PIPELINE_STEPS,
     PIPELINE_STEPS,
+    STEP_LABELS,
     answersButtonState,
     answersOutdated,
     dialogTabLoading,
@@ -89,13 +90,6 @@ import {
 // сопоставим с видео и считается часами, поэтому статус опрашивается редко и
 // только пока работа идёт.
 const POLL_MS = 60000;
-
-const STEP_LABELS = {
-    queued: 'В очереди',
-    downloading: 'Скачиваем запись',
-    analyzing: 'Разбираем диалог',
-    done: 'Готово',
-};
 
 const STATUS_HINTS = {
     queued: 'Запись ждёт свободного слота. Страницу можно закрыть — разбор не прервётся.',
