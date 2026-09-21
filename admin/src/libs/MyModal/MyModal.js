@@ -58,12 +58,12 @@ class MyModal extends React.Component {
       {!this.props.woClose && this.props.cornerClose && <i className="iconoir-xmark pointer modal-corner-close" onClick={() => {
         this.onClose()
       }}/>}
+                  {!this.props.woClose && !this.props.cornerClose && <i className="iconoir-xmark pull-right pointer" onClick={() => {
+              this.onClose()
+            }}/>}
       <div className={!woCard ? "card" : ''} style={{marginBottom: '0px'}}>
         <div className={!woCard ? "card-body" : ''}>
           <div className=" afade mmodal">
-            {!this.props.woClose && !this.props.cornerClose && <i className="iconoir-xmark pull-right pointer" onClick={() => {
-              this.onClose()
-            }}/>}
             {link && <Link to={link.replace(/undefined/gi, global.location.href.split('/')[4])} className="mt--20"
                            onClick={() => this.hide()}>#{title}</Link>}
             {title && !link && <h3 className="mt-0">{title}</h3>}
