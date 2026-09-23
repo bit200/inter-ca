@@ -2,9 +2,10 @@
   "name": "itk-sso",
   "version": "0.1.0",
   "private": true,
-  "description": "itk-sso: отзыв refresh token на логауте и короткий TTL access token",
+  "description": "itk-sso: реестр OAuth-клиентов с админкой и журналом токенов, отзыв refresh token на логауте и короткий TTL access token",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "node --test test/*.test.js"
   },
   "license": "ISC"
