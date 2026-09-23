@@ -6,6 +6,7 @@ const { createMemoryStore } = require('./db/memory');
 const { createAccountService } = require('./accounts');
 const { createProvider } = require('./provider');
 const { createInteractionRouter } = require('./interactions');
+const { createDemoRouter } = require('./demo');
 
 async function createStore(config) {
     if (config.db.driver === 'mongo') {
@@ -60,6 +61,9 @@ async function createApp(overrides = {}) {
 
     // Реестр OAuth-клиентов с админкой (#1946) монтируется внутрь сервиса, отдельный процесс не нужен.
     if (overrides.adminRouter) app.use('/admin', overrides.adminRouter);
+
+    // Демо-«внешняя система» для локальной проверки входа. В проде выключается флагом SSO_DEMO=0.
+    if (config.demo && config.demo.enabled) app.use(createDemoRouter({ config }));
 
     app.use(createInteractionRouter({ provider, accounts, ttl: config.ttl.session }));
     app.use(provider.callback());

@@ -16,6 +16,7 @@ function list(value, fallback) {
 function loadConfig(env = process.env) {
     const port = int(env.PORT, 7545);
     const issuer = env.SSO_ISSUER || `http://localhost:${port}`;
+    const demo = loadDemo(env, issuer);
 
     return {
         port,
@@ -56,8 +57,46 @@ function loadConfig(env = process.env) {
         },
         cookieKeys: list(env.SSO_COOKIE_KEYS, ['itk-sso-dev-cookie-key']),
         // Клиенты из окружения нужны только на голом стенде; рабочий реестр живёт в БД (см. #1946).
-        seedClients: parseSeedClients(env.SSO_SEED_CLIENTS),
+        seedClients: withDemoClient(parseSeedClients(env.SSO_SEED_CLIENTS), demo),
+        demo,
     };
+}
+
+/**
+ * Демо-«внешняя система» на /demo: локальная проверка Authorization Code + PKCE
+ * без чужого клиента. В проде выключена — SSO_DEMO=0 либо NODE_ENV=production.
+ */
+function loadDemo(env, issuer) {
+    const enabled = env.SSO_DEMO == null
+        ? env.NODE_ENV !== 'production'
+        : /^(1|true|on|yes|да)$/i.test(String(env.SSO_DEMO));
+    const clientId = env.SSO_DEMO_CLIENT_ID || 'itk-demo';
+    return {
+        enabled,
+        clientId,
+        clientName: env.SSO_DEMO_CLIENT_NAME || 'Демо-приложение ITK',
+        redirectUri: env.SSO_DEMO_REDIRECT_URI || `${issuer}/demo/callback`,
+        scope: env.SSO_DEMO_SCOPE || 'openid profile email roles offline_access',
+    };
+}
+
+/** Демо-клиент заводится сам при локальном старте: руками в реестр его добавлять не нужно. */
+function demoClient(demo) {
+    return {
+        client_id: demo.clientId,
+        client_name: demo.clientName,
+        redirect_uris: [demo.redirectUri],
+        grant_types: ['authorization_code', 'refresh_token'],
+        response_types: ['code'],
+        // Публичный клиент: секрета у страницы в браузере быть не может, за неё отвечает PKCE.
+        token_endpoint_auth_method: 'none',
+    };
+}
+
+function withDemoClient(clients, demo) {
+    if (!demo.enabled) return clients;
+    if (clients.some((c) => c && (c.client_id || c.clientId) === demo.clientId)) return clients;
+    return [...clients, demoClient(demo)];
 }
 
 function parseSeedClients(raw) {
@@ -70,4 +109,4 @@ function parseSeedClients(raw) {
     }
 }
 
-module.exports = { loadConfig };
+module.exports = { loadConfig, loadDemo, demoClient };
