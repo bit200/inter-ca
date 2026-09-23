@@ -23,13 +23,16 @@ module.exports = {
 
 if (require.main === module) {
     const dataDir = process.env.SSO_DATA_DIR || path.join(__dirname, 'data');
+    // Один реестр на процесс: и админка, и провайдер смотрят в него же — клиент,
+    // заведённый на /admin, получает токен без перезапуска сервиса.
+    const registry = new ClientRegistry({ file: path.join(dataDir, 'clients.json') });
+    const tokenLog = new TokenLog({ file: path.join(dataDir, 'token-log.json') });
 
     createApp({
+        registry,
+        tokenLog,
         // Админка реестра живёт внутри того же процесса: /admin — страница, /admin/api/* — ручки.
-        adminRouter: createRouter({
-            registry: new ClientRegistry({ file: path.join(dataDir, 'clients.json') }),
-            log: new TokenLog({ file: path.join(dataDir, 'token-log.json') }),
-        }),
+        adminRouter: createRouter({ registry, log: tokenLog }),
     })
         .then(({ app, config, store, keys }) => {
             app.listen(config.port, () => {

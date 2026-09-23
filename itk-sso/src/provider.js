@@ -2,6 +2,8 @@
 
 const { Provider } = require('oidc-provider');
 const { createAdapterClass } = require('./adapter');
+const { createAdapterWithRegistry, attachRegistrySecrets } = require('./clientSource');
+const { attachTokenLog } = require('./tokenEvents');
 const { buildJwks } = require('./keys');
 
 const CLAIMS = {
@@ -18,9 +20,11 @@ const CLAIMS = {
  * Токены — JWT RS256, публичные ключи отдаются на /jwks: проверять подпись
  * можно локально, без обратных вызовов в itk-sso.
  */
-function buildProviderConfig(config, { accounts, store }) {
+function buildProviderConfig(config, { accounts, store, registry = null }) {
     const keys = buildJwks(config.keys);
-    const Adapter = createAdapterClass(store);
+    // Клиенты — из реестра админки; SSO_SEED_CLIENTS остаётся статическим
+    // запасом для голого стенда (статику провайдер ищет первой).
+    const Adapter = createAdapterWithRegistry(createAdapterClass(store), registry, { supportedScopes: config.scopes });
     const audience = config.resource;
 
     return {
@@ -117,6 +121,8 @@ function createProvider(config, deps) {
     const { configuration, keys } = buildProviderConfig(config, deps);
     const provider = new Provider(config.issuer, configuration);
     provider.proxy = true;
+    attachRegistrySecrets(provider, deps.registry);
+    attachTokenLog(provider, deps.tokenLog, { registry: deps.registry });
     return { provider, keys, configuration };
 }
 

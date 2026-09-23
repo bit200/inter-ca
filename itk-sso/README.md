@@ -91,7 +91,14 @@ cp .env.example .env    # SSO_ISSUER, SSO_COOKIE_KEYS, ITK_PORTAL_URL — обя
 - **Наружу — только loopback** (`SSO_BIND_ADDR`): issuer в OIDC обязан быть https,
   значит перед сервисом стоит nginx с сертификатом.
 
-Клиенты для голого стенда (рабочий реестр — в админке):
+Клиенты провайдер берёт из реестра админки: заведённый на `/admin` клиент
+работает в `/auth` и `/token` сразу, выключенный и удалённый перестают работать
+без перезапуска, ротация секрета действует с первого же запроса. Секрет в
+реестре лежит scrypt-хешем — проверку пары `client_id`/`client_secret` делает
+сам реестр, провайдер её не дублирует.
+
+`SSO_SEED_CLIENTS` остаётся запасным вариантом для голого стенда, где админку
+ещё не наполняли (статических клиентов провайдер ищет первыми):
 
 ```bash
 SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_types":["client_credentials"],"redirect_uris":[]}]' npm start
@@ -103,6 +110,8 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | --- | --- |
 | `src/provider.js` | конфигурация node-oidc-provider: grant types, PKCE, TTL, JWT-ресурсы |
 | `src/adapter.js` | адаптер хранилища провайдера (find/consume/revokeByGrantId) |
+| `src/clientSource.js` | клиенты провайдера из реестра админки: метаданные, проверка секрета (#1968) |
+| `src/tokenEvents.js` | выдача/отказ/отзыв токенов пишутся в журнал сами (#1968) |
 | `src/db/` | хранилища: память и Mongo, один интерфейс |
 | `src/accounts.js` | обращение к `/internal/verify-credentials` и claims для токенов |
 | `src/interactions.js`, `src/views.js` | экраны входа и согласия |
@@ -118,7 +127,9 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 публичным ключом, поведение при неверном пароле и при недоступном портале,
 адаптер хранилища (сроки жизни, `consume`, `revokeByGrantId`), клиент портала,
 согласованность деплоя (порт, пути health-check, откат) с самим сервисом,
-а также реестр клиентов, журнал токенов и отзыв refresh на логауте.
+а также реестр клиентов как источник клиентов провайдера (выдача, выключение,
+ротация секрета, удаление, записи в журнале), журнал токенов и отзыв refresh на
+логауте.
 
 ---
 

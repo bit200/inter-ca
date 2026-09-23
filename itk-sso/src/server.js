@@ -37,7 +37,12 @@ async function createApp(overrides = {}) {
         profiles: createProfileStore(store, config.ttl.session),
     });
 
-    const { provider, keys } = createProvider(config, { accounts, store });
+    // Реестр клиентов и журнал токенов — те же экземпляры, что у админки:
+    // клиент, заведённый через /admin, виден провайдеру сразу.
+    const registry = overrides.registry || null;
+    const tokenLog = overrides.tokenLog || null;
+
+    const { provider, keys } = createProvider(config, { accounts, store, registry, tokenLog });
 
     const app = express();
     app.disable('x-powered-by');
@@ -59,7 +64,7 @@ async function createApp(overrides = {}) {
     app.use(createInteractionRouter({ provider, accounts, ttl: config.ttl.session }));
     app.use(provider.callback());
 
-    return { app, provider, config, store, accounts, keys };
+    return { app, provider, config, store, accounts, keys, registry, tokenLog };
 }
 
 module.exports = { createApp, createProfileStore };
