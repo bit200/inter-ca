@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Реестр OAuth-клиентов · ITK SSO</title>
-    <link rel="stylesheet" href="/admin.css">
+    <base href="__BASE__">
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 <header class="topbar">
@@ -12,7 +13,10 @@
         <span class="topbar__service">ITK SSO</span>
         <h1>Реестр OAuth-клиентов</h1>
     </div>
-    <button type="button" class="btn btn--primary" id="addClient">Новый клиент</button>
+    <div class="topbar__actions">
+        <button type="button" class="btn btn--primary" id="addClient">Новый клиент</button>
+        <button type="button" class="btn btn--ghost" id="logout">Выйти</button>
+    </div>
 </header>
 
 <main class="layout">
@@ -49,6 +53,6 @@
     </div>
 </section>
 
-<script src="/admin.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>

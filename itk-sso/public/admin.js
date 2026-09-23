@@ -179,13 +179,13 @@ async function save() {
     state.errors = []
     try {
         if (!d._id) {
-            let res = await api('POST', '/api/clients', d)
+            let res = await api('POST', 'api/clients', d)
             state.secretOnce = res.secret
             state.selectedId = res.item._id
             state.draft = {...res.item}
             toast('Приложение заведено')
         } else {
-            let res = await api('PUT', '/api/clients/' + encodeURIComponent(d._id), d)
+            let res = await api('PUT', 'api/clients/' + encodeURIComponent(d._id), d)
             state.draft = {...res.item}
             toast('Изменения сохранены')
         }
@@ -198,7 +198,7 @@ async function save() {
 
 async function rotate() {
     if (!confirm('Старый секрет сразу перестанет работать. Перевыпустить?')) return
-    let res = await api('POST', '/api/clients/' + encodeURIComponent(state.draft._id) + '/secret')
+    let res = await api('POST', 'api/clients/' + encodeURIComponent(state.draft._id) + '/secret')
     state.secretOnce = res.secret
     state.draft = {...res.item}
     toast('Секрет перевыпущен')
@@ -207,7 +207,7 @@ async function rotate() {
 
 async function remove() {
     if (!confirm('Удалить «' + (state.draft.name || state.draft._id) + '»? Его токены перестанут приниматься.')) return
-    await api('DELETE', '/api/clients/' + encodeURIComponent(state.draft._id))
+    await api('DELETE', 'api/clients/' + encodeURIComponent(state.draft._id))
     state.draft = null
     state.selectedId = null
     state.secretOnce = ''
@@ -250,7 +250,7 @@ async function loadClients() {
     let qs = new URLSearchParams()
     if (state.filter.enabled !== '') qs.set('enabled', state.filter.enabled)
     if (state.filter.q) qs.set('q', state.filter.q)
-    state.clients = (await api('GET', '/api/clients?' + qs)).items
+    state.clients = (await api('GET', 'api/clients?' + qs)).items
     renderList()
 }
 
@@ -258,7 +258,7 @@ async function loadJournal() {
     let qs = new URLSearchParams({limit: '200'})
     if (state.selectedId) qs.set('clientId', state.selectedId)
     if (state.journal.event) qs.set('event', state.journal.event)
-    state.journal.items = (await api('GET', '/api/token-log?' + qs)).items
+    state.journal.items = (await api('GET', 'api/token-log?' + qs)).items
     renderJournal()
 }
 
@@ -271,7 +271,12 @@ function segment(container, key, onPick) {
 }
 
 async function start() {
-    state.meta = await api('GET', '/api/meta')
+    state.meta = await api('GET', 'api/meta')
+
+    $('#logout').addEventListener('click', async () => {
+        await api('POST', 'logout')
+        location.reload()
+    })
 
     $('#addClient').addEventListener('click', () => {
         state.selectedId = null

@@ -8,6 +8,7 @@ const {tmpFile} = require('./helpers')
 
 async function withServer(fn) {
     let server = http.createServer(createRouter({
+        auth: false, // замок админки проверяет adminAuth.test.js, здесь мешает
         registry: new ClientRegistry({file: tmpFile('clients.json')}),
         log: new TokenLog({file: tmpFile('token-log.json')}),
     }))

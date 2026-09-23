@@ -1,32 +1,38 @@
-/* Реестр OAuth-клиентов. Палитра и радиусы взяты из «Портала развития»
-   (admin/src/scss/colors.scss): серо-синие нейтрали #061237 / #656d9a / #dee2e6,
-   вкл-выкл - те же смысловые зелёный и кирпичный, что у шкалы оценок, чтобы
-   инженер не переучивался, переходя между двумя админками ITK.
-   Экран служебный: плотная таблица-реестр, никаких карточек-плиток и заливок. */
+/* Реестр OAuth-клиентов. Палитра и мерки взяты один в один из админки aquagor
+   (admin/src/scss/colors.scss + bootstrap.min.scss): фон #f7f9fb, белые карточки
+   с мягкой тенью 0 3px 16px rgba(142,134,171,.05), радиус .4rem, зелёный акцент
+   #22c55e, нейтрали #061237 / #656d9a / #dee2e6 и белая шапка высотой 70px.
+   Инженер ходит между двумя админками ITK и не должен переучиваться.
+   Экран служебный: плотный реестр и таблица журнала, без плиток и заливок. */
 :root {
     --ink: #061237;
     --ink-soft: #3d4a70;
     --label: #656d9a;
     --line: #dee2e6;
-    --line-soft: #eceff5;
+    --line-soft: #eef1f5;
     --paper: #ffffff;
-    --ground: #f2f4f9;
-    --accent: #38509b;
-    --accent-soft: #eaeefa;
-    --on: rgb(58, 145, 90);
-    --on-soft: rgba(58, 145, 90, .1);
-    --off: rgb(193, 78, 71);
-    --off-soft: rgba(193, 78, 71, .1);
+    --ground: #f7f9fb;
+    --accent: #22c55e;
+    --accent-deep: #1fb155;
+    --accent-soft: rgba(34, 197, 94, .1);
+    --accent-line: #a7e8bf;
+    --on: #1fb155;
+    --on-soft: rgba(34, 197, 94, .12);
+    --off: #ef4d56;
+    --off-soft: rgba(239, 77, 86, .1);
+    --warn: #8a6216;
     --radius: .4rem;
+    --shadow: 0 3px 16px rgba(142, 134, 171, .05);
+    --topbar: 70px;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
 body {
     margin: 0;
-    padding: 0 20px 40px;
+    padding: 0 0 40px;
     background: var(--ground);
     color: var(--ink);
     font: 400 14px/1.5 var(--sans);
@@ -34,34 +40,39 @@ body {
 }
 
 h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
-h1 { font-size: 21px; }
+h1 { font-size: 20px; }
 h2 { font-size: 15px; }
 h3 { font-size: 15px; }
 
-/* ── шапка ─────────────────────────────────────────────────────────── */
+/* ── шапка: белая полоса во всю ширину, как топбар aquagor ─────────── */
 .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 26px 0 18px;
+    min-height: var(--topbar);
+    padding: 12px 24px;
+    background: var(--paper);
     border-bottom: 1px solid var(--line);
 }
 .topbar__service {
     display: block;
-    font-family: var(--mono);
     font-size: 11px;
+    font-weight: 600;
     color: var(--label);
-    letter-spacing: .04em;
+    letter-spacing: .02em;
 }
+.topbar__actions { display: flex; align-items: center; gap: 8px; }
 
 /* ── раскладка: слева реестр, справа карточка ──────────────────────── */
 .layout {
     display: grid;
     grid-template-columns: minmax(260px, 340px) 1fr;
     gap: 20px;
+    width: calc(100% - 48px);
     max-width: 1280px;
     margin: 20px auto 0;
     align-items: start;
@@ -71,12 +82,13 @@ h3 { font-size: 15px; }
     background: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
 .registry__filters {
     display: grid;
     gap: 8px;
-    padding: 12px;
+    padding: 14px;
     border-bottom: 1px solid var(--line-soft);
 }
 
@@ -125,13 +137,15 @@ label { font-size: 13px; color: var(--ink-soft); font-weight: 500; }
 
 .field {
     width: 100%;
-    padding: 8px 10px;
+    padding: 9px 11px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--paper);
     color: var(--ink);
     font: inherit;
 }
+.field::placeholder { color: var(--label); }
+.field:focus { border-color: var(--accent); }
 textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; min-height: 68px; }
 .field:focus-visible, .btn:focus-visible, .row:focus-visible, .seg__btn:focus-visible, .chip:focus-visible {
     outline: 2px solid var(--accent);
@@ -152,7 +166,7 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
     font-size: 13px;
     cursor: pointer;
 }
-.chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.chip.is-on { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-deep); }
 .chip code { font-family: var(--mono); font-size: 12px; }
 
 .btn {
@@ -162,15 +176,17 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
     background: var(--paper);
     color: var(--ink);
     font: inherit;
-    font-weight: 500;
+    font-weight: 550;
     cursor: pointer;
 }
 .btn:hover { background: var(--line-soft); }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn--primary:hover { background: #2c4187; }
-.btn--danger { color: var(--off); border-color: rgba(193, 78, 71, .35); }
+.btn--primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+.btn--danger { color: var(--off); border-color: rgba(239, 77, 86, .35); }
 .btn--danger:hover { background: var(--off-soft); }
-.btn--ghost { border-color: transparent; color: var(--accent); }
+.btn--ghost { border-color: transparent; background: none; color: var(--label); }
+.btn--ghost:hover { background: var(--line-soft); color: var(--ink); }
+.btn--wide { width: 100%; padding: 10px 14px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line-soft); margin-top: 2px; }
 .actions__spacer { flex: 1; }
 
@@ -188,9 +204,9 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
 .state__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
 /* Секрет показывается один раз - плашка должна быть заметной и объяснять,
-   почему второй раз его не будет. */
+   почему второй раз его не будет. Полоса слева идёт от края до края. */
 .secret {
-    border: 1px solid var(--accent);
+    border: 1px solid var(--accent-line);
     border-left: 3px solid var(--accent);
     border-radius: var(--radius);
     border-top-left-radius: 0;
@@ -208,7 +224,7 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
 .empty strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 6px; }
 
 /* ── журнал ────────────────────────────────────────────────────────── */
-.journal { max-width: 1280px; margin: 20px auto 0; }
+.journal { width: calc(100% - 48px); max-width: 1280px; margin: 20px auto 0; }
 .journal__head {
     display: flex;
     align-items: center;
@@ -237,7 +253,7 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
 .ev { font-weight: 500; white-space: nowrap; }
 .ev--issued { color: var(--on); }
 .ev--revoked { color: var(--off); }
-.ev--denied { color: #8a6216; }
+.ev--denied { color: var(--warn); }
 
 /* ── сегментный переключатель ──────────────────────────────────────── */
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
@@ -253,7 +269,7 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
 }
 .seg__btn:last-child { border-right: 0; }
 .seg__btn:hover { background: var(--line-soft); }
-.seg__btn.is-on { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.seg__btn.is-on { background: var(--accent-soft); color: var(--accent-deep); font-weight: 550; }
 
 .toast {
     position: fixed;
@@ -268,9 +284,31 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
     box-shadow: 0 6px 20px rgba(6, 18, 55, .25);
 }
 
+/* ── экран входа ───────────────────────────────────────────────────── */
+.body--gate { display: grid; min-height: 100vh; padding: 20px; }
+.gate { display: grid; place-items: center; width: 100%; }
+.gate__card {
+    display: grid;
+    gap: 14px;
+    width: 100%;
+    max-width: 360px;
+    padding: 26px 24px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+.gate__service { font-size: 11px; font-weight: 600; color: var(--label); letter-spacing: .02em; }
+.gate__card h1 { font-size: 18px; margin-top: -8px; }
+.gate__hint { margin: 0; font-size: 13px; color: var(--label); }
+.gate__hint code { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+.gate__error { margin: 0; font-size: 13px; color: var(--off); }
+
 @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }
     .registry__list { max-height: 40vh; }
+    .topbar { padding: 12px 16px; }
+    .layout, .journal { width: calc(100% - 32px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

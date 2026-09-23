@@ -19,7 +19,7 @@ npm start --prefix itk-sso     # сервис + админка реестра н
 | Refresh token | продление доступа; отзыв = логаут | `POST /token`, `POST /token/revocation` |
 | JWKS | проверка подписи на стороне потребителя, без обратных вызовов | `GET /jwks`, `GET /.well-known/jwks.json` |
 | Экраны входа и согласия | форма логина и список запрошенных прав | `GET /interaction/:uid` |
-| Админка реестра клиентов | CRUD клиентов и журнал токенов | `GET /admin`, `/admin/api/*` |
+| Админка реестра клиентов | CRUD клиентов и журнал токенов, вход по паролю | `GET /admin`, `/admin/api/*` |
 
 Дискавери: `GET /.well-known/openid-configuration`. Здоровье: `GET /healthz`.
 
@@ -133,7 +133,8 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | `lib/tokenLog.js` | журнал событий токена: `issued` / `revoked` / `denied` |
 | `lib/adminApi.js` | HTTP-ручки админки и раздача страницы |
 | `lib/jsonStore.js` | хранилище: JSON-файл с атомарной записью |
-| `public/` | страница админки (ванильный JS) |
+| `lib/adminAuth.js` | замок админки: пароль, подписанная кука, вход и выход |
+| `public/` | страницы админки и входа (ванильный JS) |
 
 ## Ручки
 
@@ -148,9 +149,15 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | GET | `/admin/api/token-log?clientId=&event=&subject=&limit=` | журнал, новые сверху |
 | POST | `/admin/api/token-log` | записать событие (зовёт сервис выдачи токенов) |
 | GET | `/admin/api/meta` | справочник grant types и известных scopes |
+| POST | `/admin/login` | вход по паролю, в ответ — кука сессии |
+| POST | `/admin/logout` | выйти: кука гасится |
 
 ## Решения, о которых стоит знать
 
+- **Админка закрыта паролем.** `SSO_ADMIN_PASSWORD` из окружения; не задан —
+  сервис придумывает случайный и печатает его в консоль при старте, публичной
+  админка не бывает. После входа браузер носит подписанную HMAC куку на 12 часов,
+  сессий на сервере нет. Без куки страница отдаёт экран входа, `/admin/api/*` — 401.
 - **Секрет не хранится.** В реестре лежит scrypt-хеш с солью; строку видно только
   в ответе на создание и на ротацию. Забыли — перевыпускайте.
 - **Выключенный клиент не пускают сразу.** `verifySecret` и `checkGrant` на
