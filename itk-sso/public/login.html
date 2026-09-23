@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вход · ITK SSO</title>
+    <base href="__BASE__">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body class="body--gate">
+<main class="gate">
+    <form class="gate__card" id="loginForm" autocomplete="on">
+        <span class="gate__service">ITK SSO</span>
+        <h1>Реестр OAuth-клиентов</h1>
+        <p class="gate__hint">Служебный экран. Введите пароль администратора — он задан в <code>SSO_ADMIN_PASSWORD</code>.</p>
+        <div class="form__row">
+            <label for="password">Пароль</label>
+            <input type="password" class="field" id="password" name="password" autocomplete="current-password" required autofocus>
+        </div>
+        <p class="gate__error" id="loginError" hidden></p>
+        <button type="submit" class="btn btn--primary btn--wide">Войти</button>
+    </form>
+</main>
+<script>
+    var form = document.getElementById('loginForm')
+    var error = document.getElementById('loginError')
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault()
+        error.hidden = true
+        var res = await fetch('login', {
+            method: 'POST',
+            headers: {'content-type': 'application/json'},
+            body: JSON.stringify({password: document.getElementById('password').value}),
+        })
+        if (res.ok) return location.reload()
+        var data = await res.json().catch(function () { return {} })
+        error.textContent = data.error || 'Войти не удалось'
+        error.hidden = false
+        document.getElementById('password').select()
+    })
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const {ClientRegistry, GRANT_TYPES, KNOWN_SCOPES} = require('./clients')
 const {TokenLog, EVENTS} = require('./tokenLog')
+const {createAuth} = require('./adminAuth')
 
 // HTTP-слой админки реестра. Намеренно без express: itk-sso ещё не собран
 // (каркас - задача #1945), а реестру нужно ровно семь ручек, которые умеет
@@ -20,6 +21,26 @@ function send(res, status, body) {
     let json = JSON.stringify(body)
     res.writeHead(status, {'content-type': 'application/json; charset=utf-8'})
     res.end(json)
+}
+
+// Страница живёт не в корне (по умолчанию /admin), а ссылки на admin.css,
+// admin.js и ручки в ней относительные - адрес монтирования подставляем в <base>
+// при отдаче. Иначе браузер ищет /admin.css в корне и получает голый HTML.
+function servePage(res, file, base, status) {
+    let full = path.join(PUBLIC_DIR, file)
+    if (!full.startsWith(PUBLIC_DIR) || !fs.existsSync(full) || !fs.statSync(full).isFile()) return false
+    let body = fs.readFileSync(full)
+    let type = MIME[path.extname(full)] || 'application/octet-stream'
+    if (path.extname(full) === '.html') {
+        body = body.toString('utf-8').replace('__BASE__', (base || '') + '/')
+    }
+    res.writeHead(status || 200, {'content-type': type})
+    res.end(body)
+    return true
+}
+
+function sendPage(res, file, base, status) {
+    if (!servePage(res, file, base, status)) send(res, 404, {error: 'Страница не найдена: ' + file})
 }
 
 function readBody(req) {
@@ -43,12 +64,40 @@ function createRouter(opts) {
     opts = opts || {}
     let registry = opts.registry || new ClientRegistry(opts)
     let log = opts.log || new TokenLog(opts)
+    // Админка закрыта паролем (см. lib/adminAuth.js). auth: false - осознанно
+    // открытый роутер: так его поднимают тесты, в рабочем запуске так не делают.
+    let auth = opts.auth === false ? null : createAuth(opts.auth || {password: process.env.SSO_ADMIN_PASSWORD})
 
     async function route(req, res) {
         let url = new URL(req.url, 'http://itk-sso')
         let p = url.pathname.replace(/\/+$/, '') || '/'
         let q = Object.fromEntries(url.searchParams)
+        let base = req.baseUrl || ''
         let m
+
+        if (auth && p === '/login' && req.method === 'POST') {
+            let body = await readBody(req)
+            if (!auth.matches(body.password)) return send(res, 401, {error: 'Пароль не подошёл'})
+            auth.issue(req, res, base)
+            return send(res, 200, {ok: true})
+        }
+
+        if (auth && p === '/logout' && req.method === 'POST') {
+            auth.clear(req, res, base)
+            return send(res, 200, {ok: true})
+        }
+
+        if (auth && !auth.ok(req)) {
+            // Человеку - экран входа, машине - честный 401: админка не публична.
+            // Стили пускаем до входа: ими же нарисован экран входа.
+            if (req.method === 'GET' && p === '/admin.css') {
+                if (servePage(res, 'admin.css', base)) return
+            }
+            if (req.method === 'GET' && !p.startsWith('/api/') && !path.extname(p)) {
+                return sendPage(res, 'login.html', base, 401)
+            }
+            return send(res, 401, {error: 'Нужен вход в админку'})
+        }
 
         if (p === '/api/meta' && req.method === 'GET') {
             return send(res, 200, {grantTypes: GRANT_TYPES, knownScopes: KNOWN_SCOPES, events: EVENTS})
@@ -90,11 +139,7 @@ function createRouter(opts) {
 
         if (req.method === 'GET') {
             let file = p === '/' ? 'index.html' : p.slice(1)
-            let full = path.join(PUBLIC_DIR, file)
-            if (full.startsWith(PUBLIC_DIR) && fs.existsSync(full) && fs.statSync(full).isFile()) {
-                res.writeHead(200, {'content-type': MIME[path.extname(full)] || 'application/octet-stream'})
-                return res.end(fs.readFileSync(full))
-            }
+            if (servePage(res, file, base)) return
         }
 
         return send(res, 404, {error: 'Такой ручки нет: ' + req.method + ' ' + p})

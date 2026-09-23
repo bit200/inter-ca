@@ -5,6 +5,7 @@ const accessTokenTtl = require('./lib/accessTokenTtl');
 const refreshTokenStore = require('./lib/refreshTokenStore');
 const logout = require('./lib/logout');
 const { createRouter } = require('./lib/adminApi');
+const { randomPassword } = require('./lib/adminAuth');
 const { ClientRegistry } = require('./lib/clients');
 const { TokenLog } = require('./lib/tokenLog');
 const { createApp } = require('./src/server');
@@ -23,10 +24,14 @@ module.exports = {
 
 if (require.main === module) {
     const dataDir = process.env.SSO_DATA_DIR || path.join(__dirname, 'data');
+    // Админка не бывает открытой: пароля в окружении нет - придумываем случайный
+    // и печатаем его в консоль, чтобы на стенде было чем войти.
+    const adminPassword = process.env.SSO_ADMIN_PASSWORD || randomPassword();
 
     createApp({
         // Админка реестра живёт внутри того же процесса: /admin — страница, /admin/api/* — ручки.
         adminRouter: createRouter({
+            auth: { password: adminPassword, secret: process.env.SSO_ADMIN_SECRET },
             registry: new ClientRegistry({ file: path.join(dataDir, 'clients.json') }),
             log: new TokenLog({ file: path.join(dataDir, 'token-log.json') }),
         }),
@@ -35,6 +40,9 @@ if (require.main === module) {
             app.listen(config.port, () => {
                 console.log(`itk-sso слушает ${config.issuer} (порт ${config.port}, хранилище ${store.driver})`);
                 console.log(`админка реестра: ${config.issuer}/admin (данные: ${dataDir})`);
+                if (!process.env.SSO_ADMIN_PASSWORD) {
+                    console.warn(`пароль админки на этот запуск: ${adminPassword} (задайте SSO_ADMIN_PASSWORD, иначе он меняется при каждом старте)`);
+                }
                 if (keys.generated) {
                     console.warn('Ключ RS256 сгенерирован на старте: задайте SSO_JWT_PRIVATE_KEY, иначе токены умрут вместе с процессом');
                 }
