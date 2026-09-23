@@ -27,13 +27,19 @@ if (require.main === module) {
     // Админка не бывает открытой: пароля в окружении нет - придумываем случайный
     // и печатаем его в консоль, чтобы на стенде было чем войти.
     const adminPassword = process.env.SSO_ADMIN_PASSWORD || randomPassword();
+    // Один реестр на процесс: и админка, и провайдер смотрят в него же — клиент,
+    // заведённый на /admin, получает токен без перезапуска сервиса.
+    const registry = new ClientRegistry({ file: path.join(dataDir, 'clients.json') });
+    const tokenLog = new TokenLog({ file: path.join(dataDir, 'token-log.json') });
 
     createApp({
+        registry,
+        tokenLog,
         // Админка реестра живёт внутри того же процесса: /admin — страница, /admin/api/* — ручки.
         adminRouter: createRouter({
             auth: { password: adminPassword, secret: process.env.SSO_ADMIN_SECRET },
-            registry: new ClientRegistry({ file: path.join(dataDir, 'clients.json') }),
-            log: new TokenLog({ file: path.join(dataDir, 'token-log.json') }),
+            registry,
+            log: tokenLog,
         }),
     })
         .then(({ app, config, store, keys }) => {

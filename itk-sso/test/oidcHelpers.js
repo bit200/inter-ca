@@ -52,7 +52,7 @@ const SERVICE_CLIENT = {
 };
 
 /** Поднимает сервис на случайном порту с подменённым itk-portal. */
-async function startService({ portalHandler, clients = [SEED_CLIENT, SERVICE_CLIENT], env = {} } = {}) {
+async function startService({ portalHandler, clients = [SEED_CLIENT, SERVICE_CLIENT], env = {}, registry = null, tokenLog = null } = {}) {
     const config = loadConfig({ PORT: '0', SSO_COOKIE_KEYS: 'test-key', ...env });
     config.seedClients = clients;
 
@@ -62,7 +62,7 @@ async function startService({ portalHandler, clients = [SEED_CLIENT, SERVICE_CLI
         return portalHandler ? portalHandler(url, options) : new Response('', { status: 401 });
     };
 
-    const { app, provider, store, keys } = await createApp({ config, fetchImpl });
+    const { app, provider, store, keys } = await createApp({ config, fetchImpl, registry, tokenLog });
     const server = app.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));
     const base = `http://127.0.0.1:${server.address().port}`;
