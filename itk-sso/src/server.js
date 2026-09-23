@@ -34,6 +34,7 @@ async function createApp(overrides = {}) {
 
     const accounts = overrides.accounts || createAccountService({
         portal: config.portal,
+        devUsers: config.devAccounts ? config.devAccounts.users : [],
         fetchImpl: overrides.fetchImpl,
         profiles: createProfileStore(store, config.ttl.session),
     });

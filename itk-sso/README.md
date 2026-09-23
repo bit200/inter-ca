@@ -71,8 +71,20 @@ refresh-grant и отзыв refresh (#1947).
 при `NODE_ENV=production` роутер не монтируется и клиент не создаётся, `SSO_DEMO=1`/`0`
 включает и выключает его принудительно.
 
-До #1944 (`POST /internal/verify-credentials` в itk-portal) логин проверять нечем —
-поднимите заглушку на `ITK_PORTAL_URL`, отвечающую `{userId, roles}`.
+### Вход, пока itk-portal не поднят (#1971)
+
+`POST /internal/verify-credentials` живёт в itk-portal (#1944). Пока его нет, запрос
+к порталу обрывается, и экран входа отдаёт 502 — проверить вход было нечем. Поэтому
+у сервиса есть локальные учётки: **`demo` / `demo`**.
+
+Они включены везде, кроме production (как и демо-страница), и работают только как
+резерв: сначала спрашиваем портал, и лишь когда он не ответил, проверяем пару сами —
+настоящую учётную запись локальная подменить не может. Свой список задаётся
+`SSO_DEV_USERS` (`логин:пароль` через запятую либо JSON-массив с `login`, `password`,
+`accountId`, `roles`, `name`, `email`), `SSO_DEV_ACCOUNTS=0` выключает их совсем.
+
+Экран входа при сбое портала называет причину («порт закрыт, служба не запущена»,
+`ответил 500`, таймаут) и подсказывает, какой локальной учётной записью войти.
 
 `/me` на демо-странице отвечает 401: access token выписан на ресурс из
 `SSO_DEFAULT_RESOURCE` (claim `aud`), а userinfo такие токены по спецификации не
@@ -139,6 +151,7 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | `lib/clients.js`, `lib/tokenLog.js`, `lib/adminApi.js`, `public/` | реестр клиентов и админка (#1946) |
 | `lib/refreshTokenStore.js`, `lib/logout.js`, `lib/accessTokenTtl.js` | логаут через отзыв refresh token (#1947) |
 | `src/demo.js`, `public/demo.css`, `public/demo-client.js` | демо-«внешняя система» на `/demo` для локальной проверки входа (#1969) |
+| `SSO_DEV_USERS` в `src/config.js`, резерв в `src/accounts.js` | локальные учётки: вход на стенде без itk-portal вместо 502 (#1971) |
 | `deploy.sh`, `docker-compose.yml`, `Dockerfile` | самостоятельный деплой на отдельный VPS (#1954) |
 
 ## Тесты
