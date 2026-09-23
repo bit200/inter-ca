@@ -1,15 +1,89 @@
 # itk-sso
 
-Часть плана #17 (OAuth2/SSO-сервис «Войти через ITK»). Каркас сервиса на
-`node-oidc-provider` (задача #1945) подключает отсюда два куска: реестр
-OAuth-клиентов с админкой и завершение сессии через отзыв refresh token.
-Зависимостей нет, раннер — встроенный `node --test` (Node 18+).
+OAuth2/OIDC-сервис ITK на [node-oidc-provider](https://github.com/panva/node-oidc-provider).
+Часть плана #17 «OAuth2/SSO-сервис для входа через ITK»: каркас сервиса (#1945),
+реестр клиентов с админкой (#1946) и логаут через отзыв refresh token (#1947).
 
 ```
-npm test --prefix itk-sso           # node --test test/*.test.js
-node itk-sso/index.js               # админка реестра на http://localhost:6070
-PORT=7546 SSO_DATA_DIR=./data node itk-sso/index.js
+npm install --prefix itk-sso
+npm test  --prefix itk-sso     # node --test test/*.test.js
+npm start --prefix itk-sso     # сервис + админка реестра на /admin
 ```
+
+## Что умеет каркас
+
+| Сценарий | Зачем | Эндпоинты |
+| --- | --- | --- |
+| Authorization Code + PKCE (S256, обязателен) | «Войти через ITK» во внешней системе | `GET /auth`, `POST /token` |
+| Client Credentials | server-to-server: mesh, evaluate | `POST /token` |
+| Refresh token | продление доступа; отзыв = логаут | `POST /token`, `POST /token/revocation` |
+| JWKS | проверка подписи на стороне потребителя, без обратных вызовов | `GET /jwks`, `GET /.well-known/jwks.json` |
+| Экраны входа и согласия | форма логина и список запрошенных прав | `GET /interaction/:uid` |
+| Админка реестра клиентов | CRUD клиентов и журнал токенов | `GET /admin`, `/admin/api/*` |
+
+Дискавери: `GET /.well-known/openid-configuration`. Здоровье: `GET /healthz`.
+
+Access token и id_token — JWT RS256 с `aud` = `SSO_DEFAULT_RESOURCE`. Ресурс-сервер
+скачивает JWKS один раз и дальше проверяет токены локально.
+
+## Аккаунты
+
+Своей таблицы пользователей нет. Пароль с экрана входа уходит одним запросом
+`POST /internal/verify-credentials` на itk-portal (задача #1944), ответ — `{userId, roles}`
+либо 401. В Mongo портала itk-sso не ходит. Роли из ответа едут в access token,
+чтобы ресурс-сервер решал по JWT.
+
+## База
+
+Своя база под `clients` / токены / сессии: коллекции названы по моделям провайдера
+(`Client`, `AccessToken`, `RefreshToken`, `Session`, `Grant`, `Interaction`, `AccountProfile`),
+протухшее убирает TTL-индекс по `expiresAt`. Без `SSO_MONGO_URL` сервис поднимается
+на хранилище в памяти (стенд, тесты). Реестр клиентов (#1946) пока держит свои
+данные в JSON-файле — `ClientRegistry`/`TokenLog` принимают `store` в конструкторе,
+так что переезд в ту же базу — это один класс с `read`/`write`/`update`.
+
+## Запуск
+
+```bash
+npm install
+cp .env.example .env     # как минимум задайте SSO_JWT_PRIVATE_KEY_FILE и SSO_COOKIE_KEYS
+npm start
+```
+
+Ключ подписи:
+
+```bash
+mkdir -p keys && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out keys/sso-private.pem
+```
+
+Без ключа в окружении он генерируется на старте — выданные токены умрут вместе с процессом.
+
+Клиенты для голого стенда (рабочий реестр — в админке):
+
+```bash
+SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_types":["client_credentials"],"redirect_uris":[]}]' npm start
+```
+
+## Файлы
+
+| файл | зачем |
+| --- | --- |
+| `src/provider.js` | конфигурация node-oidc-provider: grant types, PKCE, TTL, JWT-ресурсы |
+| `src/adapter.js` | адаптер хранилища провайдера (find/consume/revokeByGrantId) |
+| `src/db/` | хранилища: память и Mongo, один интерфейс |
+| `src/accounts.js` | обращение к `/internal/verify-credentials` и claims для токенов |
+| `src/interactions.js`, `src/views.js` | экраны входа и согласия |
+| `src/keys.js` | ключ RS256 и публичный JWKS |
+| `lib/clients.js`, `lib/tokenLog.js`, `lib/adminApi.js`, `public/` | реестр клиентов и админка (#1946) |
+| `lib/refreshTokenStore.js`, `lib/logout.js`, `lib/accessTokenTtl.js` | логаут через отзыв refresh token (#1947) |
+
+## Тесты
+
+Покрыты: дискавери и JWKS, client credentials (в том числе чужой секрет), отказ
+авторизации без PKCE, полный проход «Войти через ITK» с проверкой подписи токенов
+публичным ключом, поведение при неверном пароле и при недоступном портале,
+адаптер хранилища (сроки жизни, `consume`, `revokeByGrantId`), клиент портала,
+а также реестр клиентов, журнал токенов и отзыв refresh на логауте.
 
 ---
 
@@ -28,15 +102,17 @@ PORT=7546 SSO_DATA_DIR=./data node itk-sso/index.js
 
 ## Ручки
 
+Смонтированы под `/admin`.
+
 | метод | путь | что делает |
 | --- | --- | --- |
-| GET | `/api/clients?enabled=&q=` | список со сводкой по токенам |
-| POST | `/api/clients` | завести клиента, секрет возвращается **один раз** |
-| GET·PUT·DELETE | `/api/clients/:id` | карточка, правка, удаление |
-| POST | `/api/clients/:id/secret` | перевыпустить секрет |
-| GET | `/api/token-log?clientId=&event=&subject=&limit=` | журнал, новые сверху |
-| POST | `/api/token-log` | записать событие (зовёт сервис выдачи токенов) |
-| GET | `/api/meta` | справочник grant types и известных scopes |
+| GET | `/admin/api/clients?enabled=&q=` | список со сводкой по токенам |
+| POST | `/admin/api/clients` | завести клиента, секрет возвращается **один раз** |
+| GET·PUT·DELETE | `/admin/api/clients/:id` | карточка, правка, удаление |
+| POST | `/admin/api/clients/:id/secret` | перевыпустить секрет |
+| GET | `/admin/api/token-log?clientId=&event=&subject=&limit=` | журнал, новые сверху |
+| POST | `/admin/api/token-log` | записать событие (зовёт сервис выдачи токенов) |
+| GET | `/admin/api/meta` | справочник grant types и известных scopes |
 
 ## Решения, о которых стоит знать
 
@@ -53,20 +129,13 @@ PORT=7546 SSO_DATA_DIR=./data node itk-sso/index.js
   `createRevokeHandler()` принимают хук `log` — если передать в него
   `e => tokenLog.revoked({clientId: e.clientId, subject: e.userId, ...})`,
   выход пользователя встанет в журнал рядом с выдачами.
-- **Хранилище — файл.** Своей базы у itk-sso пока нет, а реестр — десятки строк.
-  `ClientRegistry`/`TokenLog` принимают `store` в конструкторе, так что подменить
-  файл на БД — это один класс с `read`/`write`/`update`.
-- **Без express.** Реестру нужно семь ручек, их отдаёт штатный `http`.
-  `createRouter()` возвращает обычный `(req, res, next)` — когда появится каркас,
-  он монтируется внутрь него, и отдельный процесс не нужен.
 
 ---
 
 # Логаут без back-channel push
 
 Та часть, которая отвечает за завершение сессии: отзыв refresh token'ов и
-короткий TTL access token. Каркас подключает эти модули: хранилище подменяется
-адаптером БД, claims подписываются RS256.
+короткий TTL access token.
 
 ## Как это работает
 
@@ -89,6 +158,7 @@ PORT=7546 SSO_DATA_DIR=./data node itk-sso/index.js
 всё, что меньше, поднимается до 300 секунд, всё, что больше (и любой мусор) —
 до 900 или до дефолтных 600. Вечных access token'ов при такой схеме логаута
 быть не может, поэтому коридор зашит в код, а не только в конфиг.
+`SSO_TTL_ACCESS` каркаса по умолчанию стоит в те же 900 секунд.
 
 ## Отзыв и ротация
 
@@ -98,4 +168,5 @@ PORT=7546 SSO_DATA_DIR=./data node itk-sso/index.js
 логауте токен можно было бы пережить его потомком.
 
 `POST /revoke` — RFC 7009: на неизвестный токен тоже отвечает 200, чтобы не
-превращать эндпоинт в оракул существования токенов.
+превращать эндпоинт в оракул существования токенов. У провайдера та же ручка
+есть штатно на `POST /token/revocation`.
