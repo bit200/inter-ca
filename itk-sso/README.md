@@ -58,6 +58,39 @@ mkdir -p keys && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -o
 
 Без ключа в окружении он генерируется на старте — выданные токены умрут вместе с процессом.
 
+## Деплой на отдельный VPS
+
+Свой стек: `deploy.sh`, `docker-compose.yml`, `Dockerfile` и `.env` лежат здесь же.
+От itk-platform-en/itk-portal деплой не зависит — сервис разворачивается на своей
+машине, в compose поднимается и его собственная mongo.
+
+```bash
+cp .env.example .env    # SSO_ISSUER, SSO_COOKIE_KEYS, ITK_PORTAL_URL — обязательно
+./deploy.sh
+```
+
+`deploy.sh` делает то же, что деплой соседних сервисов: `git pull` →
+`docker compose up -d --build` → health-check → **откат на предыдущий коммит и
+пересборка на нём**, если стек не ответил. Сам деплой при этом возвращает ненулевой
+код, так что неудача не выглядит как успех.
+
+Что стоит знать:
+
+- **Health-check из трёх проверок**: `/healthz` (процесс и база), дискавери
+  `/.well-known/openid-configuration` и `/.well-known/jwks.json`. Живой процесс без
+  работающего OIDC — не деплой, а тишина, в которую внешние системы упрутся первым
+  же запросом. Настраивается `HEALTHCHECK_RETRIES` / `HEALTHCHECK_DELAY`.
+- **Ключ подписи заводится до первого запуска.** Если `SSO_JWT_PRIVATE_KEY_FILE`
+  указывает в `./keys` и файла нет, скрипт сгенерирует RSA-2048 — иначе сервис
+  сделает ключ сам в памяти и все выданные токены умрут при ближайшем рестарте.
+  `./keys` и `./data` (реестр клиентов, журнал токенов) монтируются с хоста, поэтому
+  переживают `--build`.
+- **PORT один на всех**: и снаружи, и внутри контейнера, и в health-check. Скрипт
+  экспортирует значение из `.env`, чтобы переменная шелла не увела контейнер на
+  чужой порт.
+- **Наружу — только loopback** (`SSO_BIND_ADDR`): issuer в OIDC обязан быть https,
+  значит перед сервисом стоит nginx с сертификатом.
+
 Клиенты для голого стенда (рабочий реестр — в админке):
 
 ```bash
@@ -76,6 +109,7 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | `src/keys.js` | ключ RS256 и публичный JWKS |
 | `lib/clients.js`, `lib/tokenLog.js`, `lib/adminApi.js`, `public/` | реестр клиентов и админка (#1946) |
 | `lib/refreshTokenStore.js`, `lib/logout.js`, `lib/accessTokenTtl.js` | логаут через отзыв refresh token (#1947) |
+| `deploy.sh`, `docker-compose.yml`, `Dockerfile` | самостоятельный деплой на отдельный VPS (#1954) |
 
 ## Тесты
 
@@ -83,6 +117,7 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 авторизации без PKCE, полный проход «Войти через ITK» с проверкой подписи токенов
 публичным ключом, поведение при неверном пароле и при недоступном портале,
 адаптер хранилища (сроки жизни, `consume`, `revokeByGrantId`), клиент портала,
+согласованность деплоя (порт, пути health-check, откат) с самим сервисом,
 а также реестр клиентов, журнал токенов и отзыв refresh на логауте.
 
 ---
