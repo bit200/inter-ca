@@ -1,6 +1,7 @@
 import http from './../http/http'
 import notify from '../Notify/Notify';
 import websocket from './../websocket/websocket';
+import {revokeSessionOnLogout} from './logoutRevoke';
 
 let refresh_cbs = [];
 
@@ -170,7 +171,9 @@ const user = {
 
             let token = user.get_token();
             if (token) {
-                // http.post('/sign_out');
+                // Просим itk-sso отозвать refresh token до того, как забудем его
+                // сами: без этого внешние системы продолжали бы обновлять сессию.
+                revokeSessionOnLogout(http, user.get_refresh_token());
                 localStorage.removeItem('refresh_token');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');

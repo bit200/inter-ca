@@ -1,0 +1,11 @@
+{
+  "name": "itk-sso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "itk-sso: отзыв refresh token на логауте и короткий TTL access token",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "license": "ISC"
+}
