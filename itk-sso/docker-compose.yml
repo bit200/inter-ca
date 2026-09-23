@@ -1,0 +1,55 @@
+# Стек itk-sso: сам сервис и его база. Ничего из itk-platform-en/itk-portal здесь
+# нет намеренно — стек должен подниматься на отдельном VPS одной командой
+# (см. ./deploy.sh). Все настройки — в .env рядом (шаблон: .env.example).
+services:
+  sso:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      # Порт внутри контейнера тот же, что снаружи, — так health-check в deploy.sh
+      # и SSO_ISSUER в .env говорят об одном и том же числе.
+      PORT: "${PORT:-7545}"
+      SSO_DATA_DIR: /app/data
+    # По умолчанию слушаем только loopback: наружу сервис смотрит через nginx с TLS,
+    # а issuer в OIDC обязан быть https. SSO_BIND_ADDR=0.0.0.0 — если фронта нет.
+    ports:
+      - "${SSO_BIND_ADDR:-127.0.0.1}:${PORT:-7545}:${PORT:-7545}"
+    volumes:
+      # Реестр клиентов и журнал токенов (JSON-хранилище, lib/jsonStore.js): без тома
+      # пересборка при деплое стирала бы клиентов.
+      - ./data:/app/data
+      # Ключ подписи RS256: сменился ключ — разом протухли все выданные токены,
+      # поэтому он лежит на хосте, а не внутри образа.
+      - ./keys:/app/keys:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    # В образе нет curl (node:20-slim), поэтому проверяем через сам node.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:'+(process.env.PORT||7545)+'/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Своя база (clients/tokens/sessions), а не база itk-portal — в этом весь смысл
+  # отдельного деплоя. Наружу порт не пробрасываем: к ней ходит только sso.
+  mongo:
+    image: mongo:7
+    command: ["--bind_ip_all"]
+    volumes:
+      - sso-mongo:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  sso-mongo:
