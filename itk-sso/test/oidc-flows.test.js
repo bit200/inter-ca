@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { startService, portalOk, createJar, pkce, verifyJwtWithJwks, SEED_CLIENT, SERVICE_CLIENT } = require('./helpers');
+const { startService, portalOk, createJar, pkce, verifyJwtWithJwks, SEED_CLIENT, SERVICE_CLIENT } = require('./oidcHelpers');
 
 test('дискавери объявляет оба сценария и JWKS для локальной проверки токенов', async () => {
     const svc = await startService();
