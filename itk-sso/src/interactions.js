@@ -49,7 +49,7 @@ function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
             try {
                 account = await accounts.verifyCredentials(login, password);
             } catch (err) {
-                failure = 'Портал ITK сейчас не отвечает. Попробуйте войти через минуту.';
+                failure = `Портал ITK сейчас не отвечает: ${portalReason(err)}. Попробуйте войти через минуту.`;
                 req.log && req.log(err);
             }
 
@@ -61,6 +61,7 @@ function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
                     client,
                     login,
                     error: failure || 'Не подошли логин или пароль. Проверьте раскладку и попробуйте ещё раз.',
+                    hint: failure ? localLoginHint(accounts) : '',
                 }));
             }
 
@@ -121,4 +122,21 @@ function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
     return router;
 }
 
-module.exports = { createInteractionRouter };
+/** Причина словами, а не кодом: человек на стенде должен понимать, куда не дошли. */
+function portalReason(err) {
+    const code = err && (err.cause ? err.cause.code : err.code);
+    if (code === 'ECONNREFUSED') return 'порт закрыт, служба не запущена';
+    if (err && err.name === 'TimeoutError') return 'ответ не пришёл за отведённое время';
+    const http = err && /HTTP (\d{3})/.exec(String(err.message));
+    if (http) return `ответил ${http[1]}`;
+    return String((err && err.message) || 'связи нет');
+}
+
+/** Пока портала нет, войти всё же можно — локальными учётками из SSO_DEV_USERS. */
+function localLoginHint(accounts) {
+    const logins = (accounts && accounts.devLogins) || [];
+    if (!logins.length) return '';
+    return `Для проверки стенда войдите локальной учётной записью ${logins.join(' или ')} — она задана в SSO_DEV_USERS и портала не требует.`;
+}
+
+module.exports = { createInteractionRouter, portalReason };

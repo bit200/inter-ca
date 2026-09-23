@@ -59,7 +59,46 @@ function loadConfig(env = process.env) {
         // Клиенты из окружения нужны только на голом стенде; рабочий реестр живёт в БД (см. #1946).
         seedClients: withDemoClient(parseSeedClients(env.SSO_SEED_CLIENTS), demo),
         demo,
+        // Учётки внутри самого itk-sso: itk-portal (#1944) ещё не поднят, и без них
+        // любой вход на локальном стенде упирается в 502 от verify-credentials (#1971).
+        devAccounts: loadDevAccounts(env),
     };
+}
+
+const DEV_ACCOUNT_DEFAULT = 'demo:demo';
+
+/**
+ * Локальные аккаунты для проверки входа без itk-portal. Включены там же, где демо-клиент:
+ * вне production. Формат SSO_DEV_USERS — «логин:пароль» через запятую либо JSON-массив.
+ */
+function loadDevAccounts(env) {
+    const enabled = env.SSO_DEV_ACCOUNTS == null
+        ? env.NODE_ENV !== 'production'
+        : /^(1|true|on|yes|да)$/i.test(String(env.SSO_DEV_ACCOUNTS));
+    if (!enabled) return { enabled: false, users: [] };
+    return { enabled: true, users: parseDevUsers(env.SSO_DEV_USERS || DEV_ACCOUNT_DEFAULT) };
+}
+
+function parseDevUsers(raw) {
+    const text = String(raw).trim();
+    const list = text.startsWith('[') || text.startsWith('{')
+        ? [].concat(JSON.parse(text))
+        : text.split(',').map((pair) => {
+            const [login, password] = pair.split(':');
+            return { login, password };
+        });
+
+    return list
+        .map((user) => ({
+            login: String((user && (user.login || user.username)) || '').trim(),
+            password: String((user && user.password) || ''),
+            accountId: String((user && (user.accountId || user.userId)) || '').trim(),
+            roles: Array.isArray(user && user.roles) ? user.roles : [],
+            name: (user && user.name) || '',
+            email: (user && user.email) || '',
+        }))
+        .filter((user) => user.login && user.password)
+        .map((user) => ({ ...user, accountId: user.accountId || `dev-${user.login}` }));
 }
 
 /**
@@ -109,4 +148,4 @@ function parseSeedClients(raw) {
     }
 }
 
-module.exports = { loadConfig, loadDemo, demoClient };
+module.exports = { loadConfig, loadDemo, loadDevAccounts, demoClient };

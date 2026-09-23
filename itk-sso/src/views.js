@@ -48,9 +48,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent); outline-of
 button.ghost{background:transparent; color:var(--ink); border-color:var(--hairline)}
 .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:26px}
 .alert{
-  background:var(--alert-bg); color:var(--alert); border:0; border-radius:0;
-  padding:10px 12px; font-size:13px; margin:0 0 20px;
+  background:var(--alert-bg); color:var(--alert); border:0; border-left:2px solid var(--alert);
+  border-radius:0; padding:10px 12px; font-size:13px; margin:0 0 6px;
 }
+.hint{color:var(--muted); font-size:12px; margin:0 0 20px; padding-left:14px}
 ul.scopes{list-style:none; margin:0 0 4px; padding:0}
 ul.scopes li{padding:9px 0; border-top:1px solid var(--hairline); font-size:14px}
 ul.scopes li small{display:block; color:var(--muted); font-size:12px; margin-top:2px}
@@ -75,18 +76,20 @@ function clientLabel(client) {
     return client.clientName || client.client_name || client.clientId || client.client_id;
 }
 
-function renderLogin({ uid, client, error, login = '' }) {
+function renderLogin({ uid, client, error, hint = '', login = '' }) {
     const name = esc(clientLabel(client));
     const alert = error
         ? `<p class="alert">${esc(error)}</p>`
         : '';
+    // Подсказка идёт сразу под ошибкой: она объясняет не сбой, а что делать дальше.
+    const note = error && hint ? `<p class="hint">${esc(hint)}</p>` : '';
 
     return page('Вход через ITK', `
 <p class="mark">ITK</p>
 <div class="rule"></div>
 <h1>Вход через ITK</h1>
 <p class="lede">После входа вы вернётесь в <b>${name}</b>. Логин и пароль — те же, что на портале ITK.</p>
-${alert}
+${alert}${note}
 <form method="post" action="/interaction/${esc(uid)}/login" autocomplete="on">
   <label><span>Логин или почта</span><input name="login" value="${esc(login)}" autocomplete="username" autofocus required></label>
   <label><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required></label>
