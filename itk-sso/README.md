@@ -58,6 +58,26 @@ mkdir -p keys && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -o
 
 Без ключа в окружении он генерируется на старте — выданные токены умрут вместе с процессом.
 
+### Демо-вход на /demo
+
+`http://localhost:7545/demo` — страница-«внешняя система» с кнопкой «Войти через ITK».
+Она проходит настоящий Authorization Code + PKCE (state, `code_verifier`/S256, обмен
+кода на `/token`) и показывает id_token и access_token расшифрованными, ответ `/me`,
+срок жизни access token и refresh token. Кнопки «Обновить токен» и «Выйти» проверяют
+refresh-grant и отзыв refresh (#1947).
+
+Демо-клиент `itk-demo` (публичный, `redirect_uri = <issuer>/demo/callback`) заводится
+сам при старте — заносить его в реестр руками не нужно. В проде демо выключено:
+при `NODE_ENV=production` роутер не монтируется и клиент не создаётся, `SSO_DEMO=1`/`0`
+включает и выключает его принудительно.
+
+До #1944 (`POST /internal/verify-credentials` в itk-portal) логин проверять нечем —
+поднимите заглушку на `ITK_PORTAL_URL`, отвечающую `{userId, roles}`.
+
+`/me` на демо-странице отвечает 401: access token выписан на ресурс из
+`SSO_DEFAULT_RESOURCE` (claim `aud`), а userinfo такие токены по спецификации не
+принимает. Демо показывает этот ответ как есть с пояснением — профиль берётся из id_token.
+
 ## Деплой на отдельный VPS
 
 Свой стек: `deploy.sh`, `docker-compose.yml`, `Dockerfile` и `.env` лежат здесь же.
@@ -109,6 +129,7 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | `src/keys.js` | ключ RS256 и публичный JWKS |
 | `lib/clients.js`, `lib/tokenLog.js`, `lib/adminApi.js`, `public/` | реестр клиентов и админка (#1946) |
 | `lib/refreshTokenStore.js`, `lib/logout.js`, `lib/accessTokenTtl.js` | логаут через отзыв refresh token (#1947) |
+| `src/demo.js`, `public/demo.css`, `public/demo-client.js` | демо-«внешняя система» на `/demo` для локальной проверки входа (#1969) |
 | `deploy.sh`, `docker-compose.yml`, `Dockerfile` | самостоятельный деплой на отдельный VPS (#1954) |
 
 ## Тесты
@@ -118,7 +139,9 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 публичным ключом, поведение при неверном пароле и при недоступном портале,
 адаптер хранилища (сроки жизни, `consume`, `revokeByGrantId`), клиент портала,
 согласованность деплоя (порт, пути health-check, откат) с самим сервисом,
-а также реестр клиентов, журнал токенов и отзыв refresh на логауте.
+а также реестр клиентов, журнал токенов и отзыв refresh на логауте, демо-страница
+`/demo` (автозаведение клиента, выключение в проде, полный проход кода с PKCE,
+refresh и отзыв без секрета).
 
 ---
 
