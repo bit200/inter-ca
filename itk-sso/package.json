@@ -1,0 +1,11 @@
+{
+  "name": "itk-sso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Реестр OAuth-клиентов ITK SSO: CRUD-админка и журнал выдачи/отзыва токенов",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/*.test.js"
+  }
+}
