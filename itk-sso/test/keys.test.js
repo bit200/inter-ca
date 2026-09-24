@@ -33,3 +33,20 @@ test('ключи: не-RSA ключ отбивается', () => {
     const pem = pair.privateKey.export({ type: 'pkcs8', format: 'pem' });
     assert.throws(() => buildJwks({ privateKeyPem: pem }), /RS256/);
 });
+
+test('ключи: файла ключа нет — на стенде генерируем временный, а не падаем', () => {
+    const warnings = [];
+    const built = buildJwks(
+        { privateKeyFile: './keys/нет-такого.pem', kid: 'itk-sso-1' },
+        { env: {}, log: { warn: (m) => warnings.push(String(m)) } },
+    );
+    assert.equal(built.generated, true);
+    assert.match(warnings.join('\n'), /временный/);
+});
+
+test('ключи: в production отсутствие файла ключа по-прежнему валит старт', () => {
+    assert.throws(
+        () => buildJwks({ privateKeyFile: './keys/нет-такого.pem' }, { env: { NODE_ENV: 'production' } }),
+        /не найден/,
+    );
+});

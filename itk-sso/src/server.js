@@ -2,19 +2,11 @@
 
 const express = require('express');
 const { loadConfig } = require('./config');
-const { createMemoryStore } = require('./db/memory');
+const { openStore } = require('./db/open');
 const { createAccountService } = require('./accounts');
 const { createProvider } = require('./provider');
 const { createInteractionRouter } = require('./interactions');
 const { createDemoRouter } = require('./demo');
-
-async function createStore(config) {
-    if (config.db.driver === 'mongo') {
-        const { createMongoStore } = require('./db/mongo');
-        return createMongoStore({ url: config.db.url, name: config.db.name });
-    }
-    return createMemoryStore();
-}
 
 /** Профили пользователей с портала кладём в ту же базу, что и токены. */
 function createProfileStore(store, ttlSeconds) {
@@ -30,7 +22,7 @@ function createProfileStore(store, ttlSeconds) {
 
 async function createApp(overrides = {}) {
     const config = overrides.config || loadConfig();
-    const store = overrides.store || (await createStore(config));
+    const store = overrides.store || (await openStore(config));
 
     const accounts = overrides.accounts || createAccountService({
         portal: config.portal,

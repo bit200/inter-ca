@@ -7,12 +7,27 @@ const fs = require('fs');
  * Ключи RS256. Приватный ключ берём из окружения/файла, а если его нет —
  * генерируем на старте (годится только для локального стенда, на проде ключ задаётся явно).
  */
-function loadPrivateKey(keysConfig = {}) {
+function loadPrivateKey(keysConfig = {}, deps = {}) {
+    const env = deps.env || process.env;
+    const log = deps.log || console;
     let pem = keysConfig.privateKeyPem || null;
     let generated = false;
 
     if (!pem && keysConfig.privateKeyFile) {
-        pem = fs.readFileSync(keysConfig.privateKeyFile, 'utf8');
+        // Путь к ключу стоит в .env по умолчанию, а сам файл заводит deploy.sh на хосте.
+        // Локально файла нет — раньше старт падал с ENOENT ещё до порта (#2006);
+        // теперь на стенде просто генерируем временный ключ, как и без пути вовсе.
+        try {
+            pem = fs.readFileSync(keysConfig.privateKeyFile, 'utf8');
+        } catch (err) {
+            if (err.code !== 'ENOENT') throw err;
+            if (env.NODE_ENV === 'production') {
+                throw new Error(`Ключ подписи ${keysConfig.privateKeyFile} не найден: `
+                    + 'в production он обязан быть задан явно (его заводит deploy.sh).');
+            }
+            log.warn(`itk-sso: ключа подписи ${keysConfig.privateKeyFile} нет — генерирую временный. `
+                + 'После перезапуска все выданные токены перестанут проверяться.');
+        }
     }
 
     if (!pem) {
@@ -43,8 +58,8 @@ function toPublicJwks(keyObject, kid = 'itk-sso-1') {
     return { keys: [{ kty: priv.kty, n: priv.n, e: priv.e, kid, use: 'sig', alg: 'RS256' }] };
 }
 
-function buildJwks(keysConfig = {}) {
-    const { keyObject, generated, pem } = loadPrivateKey(keysConfig);
+function buildJwks(keysConfig = {}, deps = {}) {
+    const { keyObject, generated, pem } = loadPrivateKey(keysConfig, deps);
     const kid = keysConfig.kid || 'itk-sso-1';
     return {
         kid,

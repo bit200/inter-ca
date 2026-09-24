@@ -5,9 +5,10 @@
  * (Client, AccessToken, RefreshToken, Session, Grant, Interaction, ...),
  * протухшие записи убирает TTL-индекс по expiresAt.
  */
-async function createMongoStore({ url, name, client: injected } = {}) {
+async function createMongoStore({ url, name, client: injected, options } = {}) {
     const { MongoClient } = require('mongodb');
-    const client = injected || new MongoClient(url);
+    // Без таймаута выбора сервера недоступная база держит старт полминуты (#2006).
+    const client = injected || new MongoClient(url, options);
     if (!injected) await client.connect();
     const db = client.db(name);
     const prepared = new Set();
