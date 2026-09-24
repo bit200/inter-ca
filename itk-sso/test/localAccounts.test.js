@@ -159,7 +159,7 @@ test('вход: адреса портала в окружении нет — э�
     }
 });
 
-test('вход: 404 от адреса портала — чинить адрес, а не ждать минуту', () => {
+test('вход: отказ портала объяснён — чинить адрес или поднимать портал, а не ждать минуту', () => {
     const misconfig = portalFailure(new Error('itk-portal verify-credentials: HTTP 404'));
     assert.match(misconfig, /не настроен/);
     assert.match(misconfig, /ITK_PORTAL_URL/);
@@ -168,4 +168,13 @@ test('вход: 404 от адреса портала — чинить адрес
     const down = portalFailure(Object.assign(new Error('fetch failed'), { code: 'ECONNREFUSED' }));
     assert.match(down, /Портал ITK сейчас не отвечает/);
     assert.match(down, /через минуту/);
+
+    // 502/503/504 отдаёт прокси перед порталом: ждать минуту нечего, портал не поднят.
+    for (const status of [502, 503, 504]) {
+        const gateway = portalFailure(new Error(`itk-portal verify-credentials: HTTP ${status}`));
+        assert.match(gateway, new RegExp(`ответ ${status}`), 'в тексте виден код ответа');
+        assert.match(gateway, /прокси/, 'сказано, кто ответил вместо портала');
+        assert.match(gateway, /ITK_PORTAL_URL/, 'сказано, какой адрес смотреть');
+        assert.doesNotMatch(gateway, /через минуту/, 'не зовём ждать минуту, пока портал не поднят');
+    }
 });
