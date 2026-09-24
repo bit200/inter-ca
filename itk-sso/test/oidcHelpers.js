@@ -53,7 +53,9 @@ const SERVICE_CLIENT = {
 
 /** Поднимает сервис на случайном порту с подменённым itk-portal. */
 async function startService({ portalHandler, clients = [SEED_CLIENT, SERVICE_CLIENT], env = {}, registry = null, tokenLog = null } = {}) {
-    const config = loadConfig({ PORT: '0', SSO_COOKIE_KEYS: 'test-key', ...env });
+    // Адрес портала задаём явно: дефолта у ITK_PORTAL_URL больше нет, а ходы туда
+    // всё равно перехватывает fetchImpl. Тест про стенд без портала шлёт ITK_PORTAL_URL: ''.
+    const config = loadConfig({ PORT: '0', SSO_COOKIE_KEYS: 'test-key', ITK_PORTAL_URL: 'http://localhost:5553', ...env });
     config.seedClients = clients;
 
     const calls = [];

@@ -33,9 +33,13 @@ function loadConfig(env = process.env) {
             privateKeyFile: env.SSO_JWT_PRIVATE_KEY_FILE || null,
             kid: env.SSO_JWT_KID || 'itk-sso-1',
         },
-        // Единственная точка сопряжения с itk-portal.
+        // Единственная точка сопряжения с itk-portal. Адрес не угадываем: раньше здесь
+        // дефолтом стоял http://localhost:5553, но на этом порту живёт api aquagor, а не
+        // портал — он отвечал 404 на /internal/verify-credentials, и любой вход падал с
+        // «Портал ITK сейчас не отвечает: ответил 404». Адреса в окружении нет — портала
+        // нет вовсе, и вход идёт локальными учётками (SSO_DEV_USERS).
         portal: {
-            baseUrl: env.ITK_PORTAL_URL || 'http://localhost:5553',
+            baseUrl: env.ITK_PORTAL_URL || '',
             verifyPath: env.ITK_PORTAL_VERIFY_PATH || '/internal/verify-credentials',
             token: env.ITK_PORTAL_INTERNAL_TOKEN || '',
             timeoutMs: int(env.ITK_PORTAL_TIMEOUT_MS, 5000),

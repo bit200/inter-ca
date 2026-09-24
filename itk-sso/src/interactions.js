@@ -49,19 +49,23 @@ function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
             try {
                 account = await accounts.verifyCredentials(login, password);
             } catch (err) {
-                failure = `Портал ITK сейчас не отвечает: ${portalReason(err)}. Попробуйте войти через минуту.`;
+                failure = portalFailure(err);
                 req.log && req.log(err);
             }
 
             if (!account) {
                 const client = await provider.Client.find(details.params.client_id);
                 res.status(failure ? 502 : 401);
+                // Подсказка про локальные учётки нужна не только при сбое портала: когда
+                // портал в окружении не задан, пароль проверять негде и человеку надо
+                // сказать, чем входить, а не оставлять его с «не подошли логин или пароль».
+                const offerLocal = Boolean(failure) || !accounts.verifyUrl;
                 return res.send(renderLogin({
                     uid: details.uid,
                     client,
                     login,
                     error: failure || 'Не подошли логин или пароль. Проверьте раскладку и попробуйте ещё раз.',
-                    hint: failure ? localLoginHint(accounts) : '',
+                    hint: offerLocal ? localLoginHint(accounts) : '',
                 }));
             }
 
@@ -122,13 +126,31 @@ function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
     return router;
 }
 
+/**
+ * Сообщение об отказе портала целиком. 404/405/501 — это не «подождите минуту»:
+ * по такому адресу отвечает не портал, и через минуту ответит то же самое.
+ */
+function portalFailure(err) {
+    const status = portalStatus(err);
+    if (status === 404 || status === 405 || status === 501) {
+        return `Вход через портал ITK не настроен: по адресу проверки пароля ответ ${status}, так отвечает не портал. Поправьте ITK_PORTAL_URL.`;
+    }
+    return `Портал ITK сейчас не отвечает: ${portalReason(err)}. Попробуйте войти через минуту.`;
+}
+
+/** HTTP-код из ошибки verify-credentials, если он там был. */
+function portalStatus(err) {
+    const http = err && /HTTP (\d{3})/.exec(String(err.message));
+    return http ? Number(http[1]) : null;
+}
+
 /** Причина словами, а не кодом: человек на стенде должен понимать, куда не дошли. */
 function portalReason(err) {
     const code = err && (err.cause ? err.cause.code : err.code);
     if (code === 'ECONNREFUSED') return 'порт закрыт, служба не запущена';
     if (err && err.name === 'TimeoutError') return 'ответ не пришёл за отведённое время';
-    const http = err && /HTTP (\d{3})/.exec(String(err.message));
-    if (http) return `ответил ${http[1]}`;
+    const status = portalStatus(err);
+    if (status) return `ответил ${status}`;
     return String((err && err.message) || 'связи нет');
 }
 
@@ -139,4 +161,4 @@ function localLoginHint(accounts) {
     return `Для проверки стенда войдите локальной учётной записью ${logins.join(' или ')} — она задана в SSO_DEV_USERS и портала не требует.`;
 }
 
-module.exports = { createInteractionRouter, portalReason };
+module.exports = { createInteractionRouter, portalReason, portalFailure };
