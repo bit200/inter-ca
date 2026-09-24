@@ -65,6 +65,30 @@ test('страница /demo отдаёт кнопку «Войти через I
     }
 });
 
+test('страница /demo показывает применённое окружение и не выдаёт секретов', async () => {
+    const svc = await startDemo({
+        SSO_TTL_ACCESS: '120',
+        SSO_DEMO_CLIENT_NAME: 'Стенд №7',
+        ITK_PORTAL_INTERNAL_TOKEN: 'портальный-секрет',
+        SSO_COOKIE_KEYS: 'куки-ключ',
+    });
+    try {
+        const html = await (await fetch(`${svc.base}/demo`)).text();
+
+        assert.match(html, /SSO_TTL_ACCESS/, 'переменные окружения должны быть на странице');
+        assert.match(html, /120 с/, 'показываем применённое значение, а не только имя переменной');
+        assert.match(html, /Стенд №7|Стенд &#8470;7/, 'правка в .env видна на странице');
+        assert.match(html, /из окружения/);
+        assert.match(html, /по умолчанию/, 'видно и то, что осталось дефолтом');
+
+        assert.ok(!html.includes('портальный-секрет'), 'секрет портала на странице не печатаем');
+        assert.ok(!html.includes('куки-ключ'), 'ключ кук на странице не печатаем');
+        assert.match(html, /ITK_PORTAL_INTERNAL_TOKEN<\/dt>\s*<dd[^>]*>задан/, 'у секрета видно только, задан ли он');
+    } finally {
+        await svc.stop();
+    }
+});
+
 test('при выключенном демо страницы нет и клиент не заведён', async () => {
     const svc = await startDemo({ SSO_DEMO: '0' });
     try {

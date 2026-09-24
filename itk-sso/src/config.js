@@ -1,5 +1,7 @@
 'use strict';
 
+const { buildEnvReport } = require('./envReport');
+
 /**
  * Конфигурация itk-sso. Всё читается из окружения, дефолты рассчитаны на локальную разработку.
  */
@@ -18,7 +20,7 @@ function loadConfig(env = process.env) {
     const issuer = env.SSO_ISSUER || `http://localhost:${port}`;
     const demo = loadDemo(env, issuer);
 
-    return {
+    const config = {
         port,
         issuer,
         // Хранилище clients/tokens/sessions: своя база sso, а не база itk-portal.
@@ -67,6 +69,11 @@ function loadConfig(env = process.env) {
         // любой вход на локальном стенде упирается в 502 от verify-credentials (#1971).
         devAccounts: loadDevAccounts(env),
     };
+
+    // Демо-страница показывает применённое окружение (#1998): считаем его здесь,
+    // где env и читается, — и сразу без секретов, наружу уходит только «задан/не задан».
+    config.envReport = buildEnvReport(env, config);
+    return config;
 }
 
 const DEV_ACCOUNT_DEFAULT = 'demo:demo';
