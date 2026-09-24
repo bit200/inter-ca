@@ -102,7 +102,7 @@ function renderPage(demo) {
   </section>
 
   <section class="row" id="userinfoRow" hidden>
-    <h2>/me</h2>
+    <h2>Профиль</h2>
     <div><pre id="userinfo"></pre><p class="note" id="userinfoNote" hidden></p></div>
   </section>
 

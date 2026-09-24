@@ -159,30 +159,54 @@
         };
         patchSession({ tokens: tokens });
         renderTokens();
-        loadUserinfo();
+        loadProfile();
     }
 
-    function loadUserinfo() {
+    var PROFILE_CLAIMS = ['sub', 'name', 'preferred_username', 'email', 'email_verified', 'roles'];
+
+    function profileFromIdToken() {
+        var claims = decodeJwt(tokens && tokens.id_token);
+        var payload = (claims && claims.payload) || null;
+        if (!payload) return null;
+        var profile = {};
+        PROFILE_CLAIMS.forEach(function (name) {
+            if (payload[name] !== undefined) profile[name] = payload[name];
+        });
+        return profile;
+    }
+
+    function showProfile(body, noteText, bad) {
+        el('userinfoRow').hidden = false;
+        el('userinfo').textContent = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+        var note = el('userinfoNote');
+        note.hidden = !noteText;
+        note.className = 'note' + (bad ? ' is-bad' : '');
+        note.textContent = noteText || '';
+    }
+
+    function loadProfile() {
         if (!tokens || !tokens.access_token) return;
+        var access = decodeJwt(tokens.access_token);
+        var audience = access && access.payload && access.payload.aud;
+        // Токен выписан на ресурс-сервер — userinfo такой не принимает и ответил бы 401,
+        // поэтому в /me с ним не ходим: профиль берём из id_token, как и внешние системы.
+        if (audience) {
+            showProfile(profileFromIdToken() || {}, 'Профиль из id_token: access token выписан на ресурс '
+                + audience + ' (SSO_DEFAULT_RESOURCE), а /me по спецификации принимает только токены без aud.');
+            return;
+        }
         fetch('/me', { headers: { authorization: 'Bearer ' + tokens.access_token } })
             .then(function (res) {
                 return res.text().then(function (text) {
                     var body;
                     try { body = JSON.parse(text); } catch (e) { body = text; }
-                    el('userinfoRow').hidden = false;
-                    el('userinfo').textContent = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
-                    var note = el('userinfoNote');
                     if (res.ok) {
-                        note.hidden = true;
+                        showProfile(body, '');
                         return;
                     }
-                    note.hidden = false;
-                    note.className = 'note is-bad';
-                    // Ожидаемый отказ, а не поломка демо: access token выписан на ресурс-сервер
-                    // (aud = SSO_DEFAULT_RESOURCE), а userinfo такие токены не принимает.
-                    note.textContent = 'userinfo ответил ' + res.status + '. Access token выдан для ресурса из'
-                        + ' SSO_DEFAULT_RESOURCE (claim aud), а /me по спецификации принимает только токены без aud.'
-                        + ' Профиль в этом случае берут из id_token выше.';
+                    var fallback = profileFromIdToken();
+                    showProfile(fallback || body, '/me ответил ' + res.status
+                        + (fallback ? ': профиль выше взят из id_token.' : '.'), true);
                 });
             });
     }
@@ -307,7 +331,7 @@
             tokens = saved.tokens;
             step('Токены взяты из сессии вкладки — можно обновить или выйти');
             renderTokens();
-            loadUserinfo();
+            loadProfile();
         } else {
             renderTokens();
         }

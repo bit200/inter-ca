@@ -2,8 +2,10 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const fs = require('fs');
+const path = require('path');
 const { loadConfig } = require('../src/config');
-const { startService, portalOk, createJar, pkce } = require('./oidcHelpers');
+const { startService, portalOk, createJar, pkce, SERVICE_CLIENT } = require('./oidcHelpers');
 
 /** Демо поднимается тем же способом, что и в жизни: клиент приходит из конфигурации. */
 async function startDemo(env = {}) {
@@ -210,6 +212,46 @@ test('демо-клиент проходит Authorization Code + PKCE до refr
             }),
         });
         assert.equal(afterLogout.status, 400, 'после выхода обновить сессию нечем');
+    } finally {
+        await svc.stop();
+    }
+});
+
+test('демо показывает профиль из id_token и не ходит в /me с ресурсным токеном', async () => {
+    const config = loadConfig({ PORT: '7545', SSO_COOKIE_KEYS: 'test-key' });
+    const svc = await startService({
+        env: { PORT: '7545', SSO_COOKIE_KEYS: 'test-key' },
+        clients: [...config.seedClients, SERVICE_CLIENT],
+        portalHandler: portalOk({ userId: 'u-7', roles: ['hr'] }),
+    });
+    try {
+        // Серверная правда, из которой растёт поведение страницы: токен демо выписан на
+        // ресурс (aud), и userinfo такой токен не принимает — профиль есть в id_token.
+        const token = await (await fetch(`${svc.base}/token`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: SERVICE_CLIENT.client_id,
+                client_secret: SERVICE_CLIENT.client_secret,
+                scope: 'mesh:read',
+            }),
+        })).json();
+        const aud = JSON.parse(Buffer.from(token.access_token.split('.')[1], 'base64url')).aud;
+        assert.equal(aud, 'https://api.itk.academy', 'access token выписан на ресурс');
+        const me = await fetch(`${svc.base}/me`, { headers: { authorization: `Bearer ${token.access_token}` } });
+        assert.equal(me.status, 401, 'userinfo ресурсный токен не принимает');
+
+        const html = await (await fetch(`${svc.base}/demo`)).text();
+        assert.match(html, /<h2>Профиль<\/h2>/, 'блок называется профилем, а не ответом /me');
+
+        const client = fs.readFileSync(path.join(__dirname, '..', 'public', 'demo-client.js'), 'utf8');
+        const loadProfile = client.slice(client.indexOf('function loadProfile()'), client.indexOf('function login()'));
+        assert.match(loadProfile, /payload\.aud/, 'страница смотрит на aud access token');
+        const beforeFetch = loadProfile.slice(0, loadProfile.indexOf("fetch('/me'"));
+        assert.match(beforeFetch, /if \(audience\)[\s\S]*return;/, 'с ресурсным токеном в /me не ходим');
+        assert.match(loadProfile, /profileFromIdToken\(\)/, 'профиль собирается из claims id_token');
+        assert.ok(!client.includes('userinfo ответил'), 'красной ошибки 401 на странице больше нет');
     } finally {
         await svc.stop();
     }
