@@ -11,6 +11,7 @@ const root = path.join(__dirname, '..');
 const deploySh = fs.readFileSync(path.join(root, 'deploy.sh'), 'utf8');
 const compose = fs.readFileSync(path.join(root, 'docker-compose.yml'), 'utf8');
 const envExample = fs.readFileSync(path.join(root, '.env.example'), 'utf8');
+const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
 
 /** Комментарии рассказывают про соседние сервисы, а связывает с ними только код. */
 function code(text) {
@@ -60,6 +61,16 @@ test('deploy.sh: порт по умолчанию совпадает с дефо
     assert.match(deploySh, /env_value \.env PORT/, 'порт читается из того же .env, что и docker compose');
     assert.match(deploySh, /export PORT="\$\{SSO_PORT\}"/, 'PORT из .env навязывается compose: переменная шелла иначе победит');
     assert.match(envExample, /^PORT=\d+$/m);
+});
+
+test('.env.example: парный секрет портала назван обоими именами — своим и портальным', () => {
+    // Пустой ITK_SSO_INTERNAL_TOKEN на портале закрывает verify-credentials (503), и
+    // пароль вообще не проверяется. Кто этого не знает, ищет поломку у себя: из одного
+    // ITK_PORTAL_INTERNAL_TOKEN= не видно, что то же значение надо положить на портал.
+    const block = envExample.match(/(?:^#.*\n)*^ITK_PORTAL_INTERNAL_TOKEN=.*$/m);
+    assert.ok(block, 'ITK_PORTAL_INTERNAL_TOKEN должен быть в .env.example');
+    assert.match(block[0], /ITK_SSO_INTERNAL_TOKEN/, 'рядом названо имя той же переменной на портале');
+    assert.match(readme, /ITK_SSO_INTERNAL_TOKEN/, 'README объясняет, где на портале задаётся парный секрет');
 });
 
 test('docker-compose.yml: сервис sso собирается из своего Dockerfile и пробрасывает PORT', () => {
