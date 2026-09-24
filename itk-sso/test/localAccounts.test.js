@@ -177,4 +177,39 @@ test('вход: отказ портала объяснён — чинить ад
         assert.match(gateway, /ITK_PORTAL_URL/, 'сказано, какой адрес смотреть');
         assert.doesNotMatch(gateway, /через минуту/, 'не зовём ждать минуту, пока портал не поднят');
     }
+
+    // Поднятый портал тоже отвечает 503, когда ему самому чего-то не хватает, и говорит чего:
+    // его слова важнее наших догадок, «портал не поднят» тут было бы неправдой.
+    const explained = portalFailure(Object.assign(new Error('itk-portal verify-credentials: HTTP 503'), {
+        portalMessage: 'ITK_SSO_INTERNAL_TOKEN не настроен',
+        portalUrl: 'http://localhost:6057/internal/verify-credentials',
+    }));
+    assert.match(explained, /ITK_SSO_INTERNAL_TOKEN не настроен/, 'на экране видно, что сказал портал');
+    assert.match(explained, /http:\/\/localhost:6057\/internal\/verify-credentials/, 'виден адрес, куда ходили');
+    assert.doesNotMatch(explained, /не поднят|Запустите портал/, 'не обвиняем поднятый портал в том, что он не поднят');
+    assert.doesNotMatch(explained, /через минуту/);
+});
+
+test('аккаунты: объяснение портала из тела ответа доходит до экрана входа, а не теряется', async () => {
+    const svc = createAccountService({
+        portal,
+        fetchImpl: async () => new Response(JSON.stringify({ error: 'ITK_SSO_INTERNAL_TOKEN не настроен' }), {
+            status: 503, headers: { 'content-type': 'application/json' },
+        }),
+    });
+
+    const err = await svc.verifyCredentials('ivan', 'secret').then(() => null, (e) => e);
+    assert.match(String(err.message), /HTTP 503/);
+    assert.equal(err.portalMessage, 'ITK_SSO_INTERNAL_TOKEN не настроен');
+    assert.equal(err.portalUrl, 'http://portal.local/internal/verify-credentials');
+
+    // HTML-страница ошибки — это не слова портала, гадать по ней нечего.
+    const proxy = createAccountService({
+        portal,
+        fetchImpl: async () => new Response('<html><body>503 Service Unavailable</body></html>', {
+            status: 503, headers: { 'content-type': 'text/html' },
+        }),
+    });
+    const bare = await proxy.verifyCredentials('ivan', 'secret').then(() => null, (e) => e);
+    assert.equal(bare.portalMessage, '');
 });

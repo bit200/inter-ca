@@ -49,7 +49,14 @@ function createAccountService({ portal, devUsers = [], fetchImpl = globalThis.fe
         });
 
         if (res.status === 401 || res.status === 403) return null;
-        if (!res.ok) throw new Error(`itk-portal verify-credentials: HTTP ${res.status}`);
+        if (!res.ok) {
+            // Портал часто объясняет отказ прямо в теле («ITK_SSO_INTERNAL_TOKEN не настроен»).
+            // Если выбросить только код, экран входа начнёт гадать — и соврёт, что портал не поднят.
+            const err = new Error(`itk-portal verify-credentials: HTTP ${res.status}`);
+            err.portalUrl = verifyUrl;
+            err.portalMessage = await portalErrorText(res);
+            throw err;
+        }
 
         const body = await res.json();
         const userId = body && (body.userId || body.id || body._id);
@@ -89,6 +96,35 @@ function createAccountService({ portal, devUsers = [], fetchImpl = globalThis.fe
     }
 
     return { verifyUrl, verifyCredentials, findAccount, profiles, devLogins: [...local.values()].map((u) => u.login) };
+}
+
+/**
+ * Объяснение отказа из тела ответа портала — одной строкой и без разметки.
+ * HTML-страницу ошибки (её отдаёт прокси, а не портал) за объяснение не считаем.
+ */
+async function portalErrorText(res) {
+    let text = '';
+    try {
+        text = await res.text();
+    } catch {
+        return '';
+    }
+    if (!text) return '';
+
+    try {
+        const body = JSON.parse(text);
+        const said = body && (body.error_description || body.error || body.message);
+        if (said && typeof said === 'string') return short(said);
+        return '';
+    } catch {
+        if (/^\s*</.test(text)) return '';
+        return short(text.replace(/\s+/g, ' '));
+    }
+}
+
+function short(text) {
+    const line = String(text).trim();
+    return line.length > 200 ? `${line.slice(0, 200)}…` : line;
 }
 
 /** Учётка из SSO_DEV_USERS выглядит для провайдера так же, как ответ портала. */
