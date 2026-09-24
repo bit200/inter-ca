@@ -74,12 +74,39 @@ ol.flow li.muted::before{content:"·"}
 ol.flow li.bad{color:var(--alert)}
 ol.flow code{font:12px/1.5 "JetBrains Mono",ui-monospace,monospace; color:var(--muted); word-break:break-all}
 
+/* Применённое окружение. Ничего нового в палитре: те же hairline-строки, что и выше,
+   плюс одна колонка смысла — пришло значение из окружения или осталось дефолтом. */
+.env__lede{margin:0 0 20px}
+.env__group + .env__group{margin-top:26px}
+.env__group h3{margin:0; font-size:14px; font-weight:600; letter-spacing:-.01em}
+.env__group .note{margin:4px 0 0}
+.env dl{margin:8px 0 0}
+.env__var{
+  display:grid; grid-template-columns:232px minmax(0,1fr) 116px; gap:6px 18px;
+  align-items:baseline; padding:7px 0; border-top:1px solid var(--hairline);
+}
+.env__var dt{
+  margin:0; font:500 12px/1.7 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--muted); word-break:break-all;
+}
+.env__var.is-set dt{color:var(--ink)}
+.env__value{
+  margin:0; font:13px/1.7 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--ink); word-break:break-word;
+}
+.env__var:not(.is-set) .env__value{color:var(--muted)}
+.env__value.is-hidden{color:var(--muted)}
+.env__origin{margin:0; font-size:11px; line-height:1.9; color:var(--muted); text-align:right; white-space:nowrap}
+.env__var.is-set .env__origin{color:var(--accent)}
+
 @media (max-width:640px){
   body{padding:28px 16px 48px}
   .row{grid-template-columns:1fr; gap:10px; padding:18px 0}
   .clock{text-align:left}
   .clock__value{font-size:34px}
   .state{margin-left:0; width:100%}
+  .env__var{grid-template-columns:1fr; gap:2px; padding:10px 0}
+  .env__origin{text-align:left}
 }
 @media (prefers-reduced-motion:no-preference){
   .clock__value{transition:color .2s}

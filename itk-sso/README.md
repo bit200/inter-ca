@@ -66,6 +66,12 @@ mkdir -p keys && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -o
 срок жизни access token и refresh token. Кнопки «Обновить токен» и «Выйти» проверяют
 refresh-grant и отзыв refresh (#1947).
 
+Внизу страницы — блок «окружение»: с какими значениями поднялся сервис и что из этого
+пришло из окружения, а что осталось дефолтом (#1998). Правку в `.env` после перезапуска
+видно прямо там. Секреты (`ITK_PORTAL_INTERNAL_TOKEN`, `SSO_COOKIE_KEYS`, ключ RS256,
+пароли учёток и админки) показаны только как «задан»/«не задан», адрес mongo — без
+логина и пароля.
+
 Демо-клиент `itk-demo` (публичный, `redirect_uri = <issuer>/demo/callback`) заводится
 сам при старте — заносить его в реестр руками не нужно. В проде демо выключено:
 при `NODE_ENV=production` роутер не монтируется и клиент не создаётся, `SSO_DEMO=1`/`0`
@@ -151,6 +157,7 @@ SSO_SEED_CLIENTS='[{"client_id":"mesh-service","client_secret":"...","grant_type
 | `lib/clients.js`, `lib/tokenLog.js`, `lib/adminApi.js`, `public/` | реестр клиентов и админка (#1946) |
 | `lib/refreshTokenStore.js`, `lib/logout.js`, `lib/accessTokenTtl.js` | логаут через отзыв refresh token (#1947) |
 | `src/demo.js`, `public/demo.css`, `public/demo-client.js` | демо-«внешняя система» на `/demo` для локальной проверки входа (#1969) |
+| `src/envReport.js` | применённое окружение для демо-страницы, без секретов (#1998) |
 | `SSO_DEV_USERS` в `src/config.js`, резерв в `src/accounts.js` | локальные учётки: вход на стенде без itk-portal вместо 502 (#1971) |
 | `deploy.sh`, `docker-compose.yml`, `Dockerfile` | самостоятельный деплой на отдельный VPS (#1954) |
 

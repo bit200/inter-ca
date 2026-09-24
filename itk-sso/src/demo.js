@@ -15,6 +15,39 @@ const { esc } = require('./views');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
+/**
+ * Применённое окружение прямо на странице: правку в .env видно без захода на сервер.
+ * Показываем не сырые строки, а то, с чем сервис поднялся, и отдельной колонкой —
+ * пришло значение из окружения или осталось дефолтом (ради этого блок и заводился).
+ */
+function renderEnv(groups) {
+    if (!groups || !groups.length) return '';
+
+    const rows = (vars) => vars.map((v) => `
+      <div class="env__var${v.fromEnv ? ' is-set' : ''}">
+        <dt>${esc(v.name)}</dt>
+        <dd class="env__value${v.secret ? ' is-hidden' : ''}">${esc(v.value)}</dd>
+        <dd class="env__origin">${v.fromEnv ? 'из окружения' : 'по умолчанию'}</dd>
+      </div>`).join('');
+
+    const blocks = groups.map((g) => `
+    <div class="env__group">
+      <h3>${esc(g.title)}</h3>
+      ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
+      <dl>${rows(g.vars)}</dl>
+    </div>`).join('');
+
+    return `
+  <section class="row" id="envRow">
+    <h2>окружение</h2>
+    <div>
+      <p class="note env__lede">С чем поднялся сервис. Значений секретов здесь нет — у них видно только, заданы они или нет.</p>
+      <div class="env">${blocks}
+      </div>
+    </div>
+  </section>`;
+}
+
 function renderPage(demo) {
     const settings = JSON.stringify({
         clientId: demo.clientId,
@@ -77,6 +110,7 @@ function renderPage(demo) {
     <h2>refresh_token</h2>
     <div><pre id="refreshToken"></pre><p class="note">«Выйти» отзывает именно его: access token после этого догорает сам (см. #1947).</p></div>
   </section>
+${renderEnv(demo.envReport)}
 </main>
 
 <script>window.DEMO = ${settings};</script>
@@ -85,7 +119,8 @@ function renderPage(demo) {
 }
 
 function createDemoRouter({ config }) {
-    const demo = config.demo;
+    // Страница показывает и своё окружение: конфигурация уже посчитала его без секретов.
+    const demo = { ...config.demo, envReport: config.envReport };
     const router = express.Router();
 
     const sendPage = (req, res) => {
