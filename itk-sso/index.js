@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const { loadEnv } = require('./src/loadEnv');
 const accessTokenTtl = require('./lib/accessTokenTtl');
 const refreshTokenStore = require('./lib/refreshTokenStore');
 const logout = require('./lib/logout');
@@ -23,6 +24,11 @@ module.exports = {
 };
 
 if (require.main === module) {
+    // .env рядом с сервисом читаем первым делом — до любого чтения окружения ниже:
+    // заполненный файл лежал рядом, но вне docker его не читал никто (#2000).
+    // Переменные, заданные снаружи (PORT=7600 node index.js), файл не перебивает.
+    const envFile = loadEnv();
+
     const dataDir = process.env.SSO_DATA_DIR || path.join(__dirname, 'data');
     // Админка не бывает открытой: пароля в окружении нет - придумываем случайный
     // и печатаем его в консоль, чтобы на стенде было чем войти.
@@ -44,6 +50,9 @@ if (require.main === module) {
     })
         .then(({ app, config, store, keys }) => {
             app.listen(config.port, () => {
+                if (envFile.file) {
+                    console.log(`.env прочитан: ${envFile.file} (применено ${envFile.applied.length}, перекрыто окружением ${envFile.skipped.length})`);
+                }
                 console.log(`itk-sso слушает ${config.issuer} (порт ${config.port}, хранилище ${store.driver})`);
                 console.log(`админка реестра: ${config.issuer}/admin (данные: ${dataDir})`);
                 if (!process.env.SSO_ADMIN_PASSWORD) {
