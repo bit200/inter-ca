@@ -98,3 +98,22 @@ test('health-check deploy.sh: все проверяемые пути реаль�
         await svc.stop();
     }
 });
+
+test('deploy.sh: работает только из корня собственного репозитория SSO', () => {
+    // git pull и откат git reset --hard действуют на весь чекаут. Лежи сервис папкой
+    // в чужом монорепозитории, деплой тянул бы и откатывал его нестабильную ветку.
+    assert.match(deploySh, /git rev-parse --show-toplevel/, 'deploy.sh проверяет корень git-чекаута');
+    assert.ok(
+        code(deploySh).indexOf('--show-toplevel') < code(deploySh).search(/^git pull$/m),
+        'проверка корня — до git pull',
+    );
+    assert.match(readme, /git clone (-b \S+ )?\S+ itk-sso/, 'README: на VPS клонируется сам репозиторий SSO');
+    assert.doesNotMatch(readme, /--prefix itk-sso|inter-ca/, 'README не отсылает к каталогу внутри inter-ca');
+});
+
+test('.gitignore: секреты, ключ подписи, данные и зависимости не попадают в историю', () => {
+    const ignored = fs.readFileSync(path.join(root, '.gitignore'), 'utf8').split(/\r?\n/).map((l) => l.trim());
+    for (const entry of ['.env', 'data/', 'keys/', 'node_modules/']) {
+        assert.ok(ignored.includes(entry), `${entry} должен быть в .gitignore репозитория`);
+    }
+});
