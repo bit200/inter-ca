@@ -49,6 +49,7 @@ const SERVICE_CLIENT = {
     grant_types: ['client_credentials'],
     response_types: [],
     token_endpoint_auth_method: 'client_secret_post',
+    itk_resources: [{ resource: 'mesh', scopes: ['mesh:read', 'mesh:write'] }],
 };
 
 /** Поднимает сервис на случайном порту с подменённым itk-portal. */

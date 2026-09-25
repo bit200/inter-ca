@@ -32,7 +32,8 @@ test('client credentials выдаёт JWT RS256, проверяемый по JWK
                 grant_type: 'client_credentials',
                 client_id: SERVICE_CLIENT.client_id,
                 client_secret: SERVICE_CLIENT.client_secret,
-                scope: 'mesh:read evaluate:run',
+                scope: 'mesh:read',
+                resource: 'https://mesh.itk.academy',
             }),
         });
         assert.equal(res.status, 200);
@@ -45,7 +46,8 @@ test('client credentials выдаёт JWT RS256, проверяемый по JWK
         assert.equal(header.alg, 'RS256');
         assert.equal(ok, true, 'подпись сходится с публичным ключом из JWKS');
         assert.equal(payload.client_id, SERVICE_CLIENT.client_id);
-        assert.equal(payload.aud, 'https://api.itk.academy');
+        assert.equal(payload.aud, 'https://mesh.itk.academy', 'aud — запрошенный ресурс');
+        assert.equal(payload.scope, 'mesh:read');
         assert.equal(payload.iss, svc.base);
         assert.equal(payload.sub, SERVICE_CLIENT.client_id, 'server-to-server токен без пользователя');
     } finally {

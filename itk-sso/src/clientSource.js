@@ -1,5 +1,7 @@
 'use strict';
 
+const { effectiveResources, DEFAULT_RESOURCES } = require('../lib/resources');
+
 /**
  * Клиенты провайдера берутся из реестра админки (lib/clients.js), а не только из
  * SSO_SEED_CLIENTS. Реестр — живой источник: заведённый в админке клиент работает
@@ -24,9 +26,10 @@ function secretFingerprint(client) {
  * Запись реестра -> метаданные клиента в терминах OIDC.
  * В metadata.scope провайдер пускает только свои статические scope'ы, поэтому
  * ресурсные (mesh:read, evaluate:run) из списка выкидываем — ими распоряжается
- * resourceIndicators, а не карточка клиента.
+ * resourceIndicators, а не карточка клиента. Разрешённые клиенту ресурсы и
+ * scope'ы на каждом едут в itk_resources — их читает getResourceServerInfo.
  */
-function toClientMetadata(client, { supportedScopes = null } = {}) {
+function toClientMetadata(client, { supportedScopes = null, resources = DEFAULT_RESOURCES } = {}) {
     const grantTypes = (client.grantTypes && client.grantTypes.length) ? client.grantTypes.slice() : ['authorization_code'];
     const code = grantTypes.indexOf('authorization_code') > -1;
     const known = supportedScopes ? [...supportedScopes] : null;
@@ -43,6 +46,7 @@ function toClientMetadata(client, { supportedScopes = null } = {}) {
         // Реестр не хранит способ аутентификации: все клиенты itk-sso шлют секрет
         // в теле запроса (client_secret_post), как и сид-клиенты стенда.
         token_endpoint_auth_method: client.tokenEndpointAuthMethod || 'client_secret_post',
+        itk_resources: effectiveResources(client, resources),
     };
 }
 

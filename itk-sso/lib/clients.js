@@ -1,12 +1,14 @@
 const crypto = require('crypto')
 const path = require('path')
 const JsonStore = require('./jsonStore')
+const {DEFAULT_RESOURCES, byKey, normalizeResources} = require('./resources')
 
 // Реестр OAuth-клиентов itk-sso. Клиент - это стороннее приложение, которому
 // разрешено пускать людей через ITK: портал, CRM, мобильный кабинет.
 // Что храним: идентификатор и секрет, куда разрешено возвращать пользователя
 // (redirect_uri), какие данные клиент вправе запрашивать (scopes), какими
-// способами он берёт токены (grant types) и включён ли он вообще.
+// способами он берёт токены (grant types), на какие ресурсы (aud) и с какими
+// scope'ами на каждом ему можно выписывать токены, и включён ли он вообще.
 
 const GRANT_TYPES = ['authorization_code', 'refresh_token', 'client_credentials']
 const KNOWN_SCOPES = ['openid', 'profile', 'email', 'offline_access']
@@ -69,7 +71,7 @@ function normalizeList(value) {
     return uniq(arr.map(v => String(v).trim()).filter(Boolean))
 }
 
-function validate(client) {
+function validate(client, catalog) {
     let errors = []
     if (!String(client.name || '').trim()) {
         errors.push({field: 'name', message: 'Укажите название приложения'})
@@ -104,6 +106,21 @@ function validate(client) {
             errors.push({field: 'scopes', message: 'Недопустимый scope: ' + s})
         }
     }
+    for (let r of client.resources || []) {
+        let known = byKey(catalog, r.resource)
+        if (!known) {
+            errors.push({field: 'resources', message: 'Неизвестный ресурс: ' + (r.resource || '(пусто)')})
+            continue
+        }
+        if (!r.scopes.length) {
+            errors.push({field: 'resources', message: 'Для ресурса ' + r.resource + ' выберите хотя бы один scope'})
+        }
+        for (let s of r.scopes) {
+            if (known.scopes.indexOf(s) === -1) {
+                errors.push({field: 'resources', message: 'У ресурса ' + r.resource + ' нет scope ' + s})
+            }
+        }
+    }
     if (errors.length) throw new ValidationError(errors)
 }
 
@@ -122,6 +139,7 @@ class ClientRegistry {
             {clients: []}
         )
         this.now = opts.now || (() => new Date().toISOString())
+        this.resources = opts.resources || DEFAULT_RESOURCES
     }
 
     list(filter) {
@@ -161,7 +179,10 @@ class ClientRegistry {
             cd: this.now(),
             ud: this.now(),
         }
-        validate(client)
+        // Без поля resources (админка пока шлёт только scopes) ресурсы выводятся
+        // из ресурсных scope'ов клиента - см. effectiveResources.
+        if (body.resources !== undefined) client.resources = normalizeResources(body.resources) || []
+        validate(client, this.resources)
         let secret = newSecret()
         let {salt, hash} = hashSecret(secret)
         client.secretSalt = salt
@@ -180,8 +201,9 @@ class ClientRegistry {
         if (body.redirectUris !== undefined) next.redirectUris = normalizeList(body.redirectUris) || []
         if (body.scopes !== undefined) next.scopes = normalizeList(body.scopes) || []
         if (body.grantTypes !== undefined) next.grantTypes = normalizeList(body.grantTypes) || []
+        if (body.resources !== undefined) next.resources = normalizeResources(body.resources) || []
         if (body.enabled !== undefined) next.enabled = !!body.enabled
-        validate(next)
+        validate(next, this.resources)
         next.ud = this.now()
         this.store.update(data => {
             let ind = data.clients.findIndex(c => c._id === id)

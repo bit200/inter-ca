@@ -8,6 +8,8 @@
  * секреты сюда попадают только словами «задан»/«не задан», значений у них нет.
  */
 
+const { envName } = require('../lib/resources');
+
 function secs(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return String(value);
@@ -103,6 +105,7 @@ function buildEnvReport(env, config) {
                 row('SSO_DEFAULT_RESOURCE', config.resource),
                 row('SSO_SCOPES', config.scopes.join(' ')),
                 row('SSO_RESOURCE_SCOPES', config.resourceScopes.join(' ')),
+                ...(config.resources || []).map((r) => row(envName(r.key), `${r.audience} (${r.scopes.join(' ')})`)),
             ],
         },
         {

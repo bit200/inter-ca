@@ -127,3 +127,24 @@ test('реестр переживает перезапуск процесса', 
     let again = new ClientRegistry({file})
     assert.equal(again.get(client._id).name, 'Портал развития')
 })
+
+test('разрешённые ресурсы: только из каталога и только со scope этого ресурса', () => {
+    let r = registry()
+    let {client} = r.create({
+        ...valid,
+        grantTypes: ['client_credentials'],
+        redirectUris: [],
+        resources: {evaluate: ['evaluate:run', 'evaluate:docs'], 'external-api': 'mock:read score:read'},
+    })
+    assert.deepEqual(r.get(client._id).resources, [
+        {resource: 'evaluate', scopes: ['evaluate:run', 'evaluate:docs']},
+        {resource: 'external-api', scopes: ['mock:read', 'score:read']},
+    ])
+
+    let err = t => assert.throws(t, e => e instanceof ValidationError && e.errors.some(x => x.field === 'resources'))
+    err(() => r.update(client._id, {resources: [{resource: 'billing', scopes: ['pay']}]}))
+    err(() => r.update(client._id, {resources: [{resource: 'mesh', scopes: ['evaluate:run']}]}))
+    err(() => r.update(client._id, {resources: [{resource: 'mesh', scopes: []}]}))
+
+    assert.deepEqual(r.update(client._id, {resources: []}).resources, [], 'все ресурсы можно снять')
+})
