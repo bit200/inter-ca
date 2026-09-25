@@ -1,6 +1,7 @@
 'use strict';
 
 const { buildEnvReport } = require('./envReport');
+const { loadResources } = require('../lib/resources');
 
 /**
  * Конфигурация itk-sso. Всё читается из окружения, дефолты рассчитаны на локальную разработку.
@@ -46,10 +47,14 @@ function loadConfig(env = process.env) {
             token: env.ITK_PORTAL_INTERNAL_TOKEN || '',
             timeoutMs: int(env.ITK_PORTAL_TIMEOUT_MS, 5000),
         },
-        // Ресурс по умолчанию для access token'ов (audience в JWT).
+        // Ресурс по умолчанию для access token'ов (audience в JWT), когда клиент не
+        // передал resource=. Сервисных scope'ов у него нет: evaluate, mesh и
+        // external-api — отдельные ресурсы со своим aud (см. resources ниже).
         resource: env.SSO_DEFAULT_RESOURCE || 'https://api.itk.academy',
         scopes: list(env.SSO_SCOPES, ['openid', 'profile', 'email', 'roles', 'offline_access']),
-        resourceScopes: list(env.SSO_RESOURCE_SCOPES, ['mesh:read', 'mesh:write', 'evaluate:run', 'profile:read']),
+        resourceScopes: list(env.SSO_RESOURCE_SCOPES, ['profile:read']),
+        // Ресурсы сервисов: evaluate, mesh, external-api (lib/resources.js).
+        resources: loadResources(env),
         ttl: {
             // Короткий access token: логаут = отзыв refresh, доступ протухает сам (см. #1947).
             accessToken: int(env.SSO_TTL_ACCESS, 15 * 60),

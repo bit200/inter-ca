@@ -23,8 +23,26 @@ npm start --prefix itk-sso     # сервис + админка реестра н
 
 Дискавери: `GET /.well-known/openid-configuration`. Здоровье: `GET /healthz`.
 
-Access token и id_token — JWT RS256 с `aud` = `SSO_DEFAULT_RESOURCE`. Ресурс-сервер
-скачивает JWKS один раз и дальше проверяет токены локально.
+Access token — JWT RS256, `aud` — ресурс, который клиент попросил параметром
+`resource=` (RFC 8707). Ресурс-сервер скачивает JWKS один раз и дальше проверяет
+токены локально — подпись и свой `aud`.
+
+## Ресурсы (aud)
+
+| Ресурс | `aud` по умолчанию (переменная) | scope |
+|---|---|---|
+| evaluate | `https://evaluate.itk.academy` (`SSO_RESOURCE_EVALUATE`) | `evaluate:run`, `evaluate:docs`, `evaluate:admin` |
+| mesh | `https://mesh.itk.academy` (`SSO_RESOURCE_MESH`) | `mesh:read`, `mesh:write` |
+| external-api | `https://external-api.itk.academy` (`SSO_RESOURCE_EXTERNAL_API`) | `mock:read`, `mock:write`, `video:upload`, `score:read` |
+
+У клиента в реестре поле `resources`: `[{"resource": "evaluate", "scopes": ["evaluate:run"]}]`.
+Ресурс вне этого списка или незнакомый — `invalid_target`; scope сверх разрешённых
+в токен не попадают. Запись без поля `resources` получает ресурсы из своих
+ресурсных scope'ов (`mesh:read` в `scopes` — значит, mesh с `mesh:read`).
+Сид-клиенту то же задаётся полем `itk_resources` в `SSO_SEED_CLIENTS`.
+
+Без `resource=` токен уходит на общий `SSO_DEFAULT_RESOURCE` со scope'ами из
+`SSO_RESOURCE_SCOPES` (по умолчанию `profile:read`) — сервисам он не подходит.
 
 ## Аккаунты
 

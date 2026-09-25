@@ -140,7 +140,7 @@ test('выдача и отказ пишутся в журнал токенов �
     const { client, secret } = createService(reg);
     const svc = await startService({ clients: [], registry: reg, tokenLog: log });
     try {
-        await requestToken(svc.base, client._id, secret, { scope: 'mesh:read' });
+        await requestToken(svc.base, client._id, secret, { scope: 'mesh:read', resource: 'https://mesh.itk.academy' });
         const issued = log.list({ event: 'issued' });
         assert.equal(issued.length, 1);
         assert.equal(issued[0].clientId, client._id);
