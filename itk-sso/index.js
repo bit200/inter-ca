@@ -10,6 +10,7 @@ const { randomPassword } = require('./lib/adminAuth');
 const { ClientRegistry } = require('./lib/clients');
 const { TokenLog } = require('./lib/tokenLog');
 const { createApp } = require('./src/server');
+const { loadConfig } = require('./src/config');
 
 // Наружу — и каркас провайдера, и то, что к нему подключается:
 // реестр OAuth-клиентов, журнал токенов, логаут через отзыв refresh token.
@@ -38,7 +39,10 @@ if (require.main === module) {
     const registry = new ClientRegistry({ file: path.join(dataDir, 'clients.json') });
     const tokenLog = new TokenLog({ file: path.join(dataDir, 'token-log.json') });
 
+    const config = loadConfig();
+
     createApp({
+        config,
         registry,
         tokenLog,
         // Админка реестра живёт внутри того же процесса: /admin — страница, /admin/api/* — ручки.
@@ -46,6 +50,8 @@ if (require.main === module) {
             auth: { password: adminPassword, secret: process.env.SSO_ADMIN_SECRET },
             registry,
             log: tokenLog,
+            knownResources: config.resources,
+            resourceScopes: config.resourceScopes,
         }),
     })
         .then(({ app, config, store, keys }) => {

@@ -48,6 +48,8 @@ function loadConfig(env = process.env) {
         },
         // Ресурс по умолчанию для access token'ов (audience в JWT).
         resource: env.SSO_DEFAULT_RESOURCE || 'https://api.itk.academy',
+        // Все ресурсы (API), на которые itk-sso выписывает токены; карточка клиента выбирает из них.
+        resources: withDefault(list(env.SSO_RESOURCES, []), env.SSO_DEFAULT_RESOURCE || 'https://api.itk.academy'),
         scopes: list(env.SSO_SCOPES, ['openid', 'profile', 'email', 'roles', 'offline_access']),
         resourceScopes: list(env.SSO_RESOURCE_SCOPES, ['mesh:read', 'mesh:write', 'evaluate:run', 'profile:read']),
         ttl: {
@@ -74,6 +76,10 @@ function loadConfig(env = process.env) {
     // где env и читается, — и сразу без секретов, наружу уходит только «задан/не задан».
     config.envReport = buildEnvReport(env, config);
     return config;
+}
+
+function withDefault(resources, resource) {
+    return resources.indexOf(resource) > -1 ? resources : [resource, ...resources];
 }
 
 const DEV_ACCOUNT_DEFAULT = 'demo:demo';

@@ -1,8 +1,10 @@
 'use strict';
 
-const { Provider } = require('oidc-provider');
+const { Provider, errors } = require('oidc-provider');
 const { createAdapterClass } = require('./adapter');
-const { createAdapterWithRegistry, attachRegistrySecrets } = require('./clientSource');
+const {
+    createAdapterWithRegistry, attachRegistrySecrets, createClientPolicy, createLoadExistingGrant, createInteractionPolicy,
+} = require('./clientSource');
 const { attachTokenLog } = require('./tokenEvents');
 const { buildJwks } = require('./keys');
 
@@ -26,6 +28,12 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
     // запасом для голого стенда (статику провайдер ищет первой).
     const Adapter = createAdapterWithRegistry(createAdapterClass(store), registry, { supportedScopes: config.scopes });
     const audience = config.resource;
+    // Какие ресурсы и scope'ы клиенту можно и нужен ли ему экран согласия — из карточки реестра.
+    const policy = createClientPolicy(registry, {
+        knownResources: config.resources || [audience],
+        resourceScopes: config.resourceScopes,
+        defaultResource: audience,
+    });
 
     return {
         keys,
@@ -53,15 +61,22 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
                 userinfo: { enabled: true },
                 resourceIndicators: {
                     enabled: true,
-                    defaultResource: () => audience,
+                    defaultResource: (ctx, client, oneOf) => oneOf || policy.defaultResourceFor(client && client.clientId),
                     useGrantedResource: () => true,
-                    getResourceServerInfo: (ctx, resourceIndicator) => ({
-                        audience: resourceIndicator,
-                        scope: config.resourceScopes.join(' '),
-                        accessTokenTTL: config.ttl.accessToken,
-                        accessTokenFormat: 'jwt',
-                        jwt: { sign: { alg: 'RS256' } },
-                    }),
+                    // Чужой ресурс — invalid_target: токен на API, которого клиенту не давали, не выписываем.
+                    getResourceServerInfo: (ctx, resourceIndicator, client) => {
+                        const clientId = client && client.clientId;
+                        if (!policy.resourceAllowed(clientId, resourceIndicator)) {
+                            throw new errors.InvalidTarget(`ресурс ${resourceIndicator} этому клиенту не разрешён`);
+                        }
+                        return {
+                            audience: resourceIndicator,
+                            scope: policy.resourceScopesFor(clientId).join(' '),
+                            accessTokenTTL: config.ttl.accessToken,
+                            accessTokenFormat: 'jwt',
+                            jwt: { sign: { alg: 'RS256' } },
+                        };
+                    },
                 },
             },
 
@@ -95,7 +110,11 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
                 short: { signed: true, sameSite: 'lax' },
             },
 
+            // Наши внутренние системы (first-party в реестре) проходят без экрана согласия.
+            loadExistingGrant: createLoadExistingGrant(policy),
+
             interactions: {
+                policy: createInteractionPolicy(policy),
                 url: (ctx, interaction) => `/interaction/${interaction.uid}`,
             },
 

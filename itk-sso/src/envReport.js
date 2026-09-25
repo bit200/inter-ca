@@ -101,6 +101,7 @@ function buildEnvReport(env, config) {
             title: 'Ресурс и scope',
             vars: [
                 row('SSO_DEFAULT_RESOURCE', config.resource),
+                row('SSO_RESOURCES', (config.resources || []).join(' ')),
                 row('SSO_SCOPES', config.scopes.join(' ')),
                 row('SSO_RESOURCE_SCOPES', config.resourceScopes.join(' ')),
             ],

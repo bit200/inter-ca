@@ -7,6 +7,7 @@ const { createAccountService } = require('./accounts');
 const { createProvider } = require('./provider');
 const { createInteractionRouter } = require('./interactions');
 const { createDemoRouter } = require('./demo');
+const { attachClientRevocation } = require('./clientRevocation');
 
 /** Профили пользователей с портала кладём в ту же базу, что и токены. */
 function createProfileStore(store, ttlSeconds) {
@@ -37,6 +38,8 @@ async function createApp(overrides = {}) {
     const tokenLog = overrides.tokenLog || null;
 
     const { provider, keys } = createProvider(config, { accounts, store, registry, tokenLog });
+    // Выключили или удалили клиента в админке — его refresh token'ы и гранты гаснут сразу.
+    const revocation = attachClientRevocation(registry, store, { tokenLog });
 
     const app = express();
     app.disable('x-powered-by');
@@ -58,10 +61,10 @@ async function createApp(overrides = {}) {
     // Демо-«внешняя система» для локальной проверки входа. В проде выключается флагом SSO_DEMO=0.
     if (config.demo && config.demo.enabled) app.use(createDemoRouter({ config }));
 
-    app.use(createInteractionRouter({ provider, accounts, ttl: config.ttl.session }));
+    app.use(createInteractionRouter({ provider, accounts, registry, ttl: config.ttl.session }));
     app.use(provider.callback());
 
-    return { app, provider, config, store, accounts, keys, registry, tokenLog };
+    return { app, provider, config, store, accounts, keys, registry, tokenLog, revocation };
 }
 
 module.exports = { createApp, createProfileStore };

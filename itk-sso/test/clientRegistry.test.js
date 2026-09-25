@@ -127,3 +127,48 @@ test('реестр переживает перезапуск процесса', 
     let again = new ClientRegistry({file})
     assert.equal(again.get(client._id).name, 'Портал развития')
 })
+
+test('тип подключения задаёт grant types: server-to-server, вход пользователей или оба', () => {
+    let r = registry()
+    let service = r.create({name: 'Mesh', kind: 'service', scopes: ['mesh:read']}).client
+    assert.deepEqual(service.grantTypes, ['client_credentials'])
+    assert.equal(service.kind, 'service')
+    let login = r.create({...valid, grantTypes: undefined, kind: 'login'}).client
+    assert.deepEqual(login.grantTypes, ['authorization_code', 'refresh_token'])
+    assert.equal(r.update(login._id, {kind: 'both'}).kind, 'both')
+    assert.throws(() => r.create({...valid, grantTypes: undefined, kind: 'телепорт'}), ValidationError)
+})
+
+test('post_logout_redirect_uri и ресурсы проверяются, как адреса возврата', () => {
+    let r = registry()
+    let {client} = r.create({
+        ...valid,
+        postLogoutRedirectUris: ['https://portal.itk.academy/bye'],
+        resources: ['https://api.itk.academy'],
+        owner: 'Команда портала',
+        contact: 'portal@itk.academy',
+        firstParty: true,
+    })
+    assert.deepEqual(client.postLogoutRedirectUris, ['https://portal.itk.academy/bye'])
+    assert.deepEqual(client.resources, ['https://api.itk.academy'])
+    assert.equal(client.firstParty, true)
+    assert.equal(client.contact, 'portal@itk.academy')
+    assert.throws(() => r.update(client._id, {postLogoutRedirectUris: ['http://evil.example/bye']}), /после выхода/)
+    assert.throws(() => r.update(client._id, {resources: ['не адрес']}), /Ресурс не подходит/)
+    assert.throws(() => r.create({name: 'Mesh', kind: 'service', scopes: ['mesh:read'], postLogoutRedirectUris: ['https://x.example/']}),
+        /только системе со входом/)
+})
+
+test('выключение и удаление клиента объявляют отзыв его токенов, повторное выключение — нет', () => {
+    let r = registry()
+    let events = []
+    r.on('revoke', e => events.push(e))
+    let {client} = r.create(valid)
+    r.update(client._id, {name: 'Портал'})
+    assert.equal(events.length, 0, 'правка без выключения токены не трогает')
+    r.setEnabled(client._id, false)
+    r.setEnabled(client._id, false)
+    assert.deepEqual(events.map(e => e.reason), ['disabled'])
+    r.remove(client._id)
+    assert.deepEqual(events.map(e => [e.clientId, e.reason]), [[client._id, 'disabled'], [client._id, 'removed']])
+})

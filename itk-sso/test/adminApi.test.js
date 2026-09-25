@@ -6,8 +6,9 @@ const {ClientRegistry} = require('../lib/clients')
 const {TokenLog} = require('../lib/tokenLog')
 const {tmpFile} = require('./helpers')
 
-async function withServer(fn) {
+async function withServer(fn, opts) {
     let server = http.createServer(createRouter({
+        ...(opts || {}),
         auth: false, // замок админки проверяет adminAuth.test.js, здесь мешает
         registry: new ClientRegistry({file: tmpFile('clients.json')}),
         log: new TokenLog({file: tmpFile('token-log.json')}),
@@ -109,6 +110,38 @@ test('справочник значений отдаётся фронту одн
         assert.deepEqual(meta.body.grantTypes, ['authorization_code', 'refresh_token', 'client_credentials'])
         assert.ok(meta.body.knownScopes.includes('openid'))
     })
+})
+
+test('форма «новая система» получает ресурсы и типы подключения из справочника и заводит систему одним POST', async () => {
+    await withServer(async call => {
+        let meta = await call('GET', '/api/meta')
+        assert.deepEqual(meta.body.knownResources, ['https://api.itk.academy', 'https://mesh.itk.academy'])
+        assert.deepEqual(meta.body.kinds.service, ['client_credentials'])
+        assert.ok(meta.body.knownScopes.includes('mesh:read'), 'scope ресурса можно выбрать в карточке')
+
+        let created = await call('POST', '/api/clients', {
+            name: 'Партнёрская HR-система',
+            kind: 'both',
+            redirectUris: ['https://hr.partner.example/callback'],
+            postLogoutRedirectUris: ['https://hr.partner.example/bye'],
+            resources: ['https://mesh.itk.academy'],
+            scopes: ['openid', 'profile', 'mesh:read'],
+            owner: 'ООО Партнёр',
+            contact: 'it@partner.example',
+        })
+        assert.equal(created.status, 201)
+        assert.ok(created.body.secret, 'секрет показан один раз — в ответе на создание')
+        let item = created.body.item
+        assert.equal(item.kind, 'both')
+        assert.deepEqual(item.grantTypes, ['authorization_code', 'refresh_token', 'client_credentials'])
+        assert.equal(item.firstParty, false, 'новая система по умолчанию сторонняя — с экраном согласия')
+        assert.equal(item.owner, 'ООО Партнёр')
+
+        let again = await call('GET', '/api/clients/' + item._id)
+        assert.equal(again.body.item.secretHash, undefined)
+        assert.equal(again.body.item.secret, undefined)
+        assert.deepEqual(again.body.item.postLogoutRedirectUris, ['https://hr.partner.example/bye'])
+    }, {knownResources: ['https://api.itk.academy', 'https://mesh.itk.academy'], resourceScopes: ['mesh:read', 'evaluate:run']})
 })
 
 test('страница админки отдаётся с корня', async () => {
