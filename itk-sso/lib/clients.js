@@ -2,12 +2,14 @@ const crypto = require('crypto')
 const {EventEmitter} = require('events')
 const path = require('path')
 const JsonStore = require('./jsonStore')
+const {DEFAULT_RESOURCES, byKey, normalizeResources} = require('./resources')
 
 // Реестр OAuth-клиентов itk-sso. Клиент - это стороннее приложение, которому
 // разрешено пускать людей через ITK: портал, CRM, мобильный кабинет.
 // Что храним: идентификатор и секрет, куда разрешено возвращать пользователя
 // (redirect_uri), какие данные клиент вправе запрашивать (scopes), какими
-// способами он берёт токены (grant types) и включён ли он вообще.
+// способами он берёт токены (grant types), на какие ресурсы (aud) и с какими
+// scope'ами на каждом ему можно выписывать токены, и включён ли он вообще.
 
 const GRANT_TYPES = ['authorization_code', 'refresh_token', 'client_credentials']
 const KNOWN_SCOPES = ['openid', 'profile', 'email', 'roles', 'offline_access']
@@ -76,17 +78,6 @@ function isValidRedirectUri(value) {
     return url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')
 }
 
-// Ресурс (RFC 8707) - абсолютный адрес API без фрагмента: он же станет aud в токене.
-function isValidResource(value) {
-    let url
-    try {
-        url = new URL(value)
-    } catch (e) {
-        return false
-    }
-    return !url.hash && (url.protocol === 'https:' || url.protocol === 'http:' || url.protocol === 'urn:')
-}
-
 function uniq(arr) {
     return arr.filter((v, i) => arr.indexOf(v) === i)
 }
@@ -97,7 +88,7 @@ function normalizeList(value) {
     return uniq(arr.map(v => String(v).trim()).filter(Boolean))
 }
 
-function validate(client) {
+function validate(client, catalog) {
     let errors = []
     if (!String(client.name || '').trim()) {
         errors.push({field: 'name', message: 'Укажите название приложения'})
@@ -132,11 +123,6 @@ function validate(client) {
             errors.push({field: 'postLogoutRedirectUris', message: 'Адрес после выхода не подходит: ' + uri + ' — нужен полный https-адрес без #'})
         }
     }
-    for (let r of client.resources || []) {
-        if (!isValidResource(r)) {
-            errors.push({field: 'resources', message: 'Ресурс не подходит: ' + r + ' — нужен полный адрес API без #'})
-        }
-    }
     let scopes = client.scopes || []
     if (!scopes.length) {
         errors.push({field: 'scopes', message: 'Укажите хотя бы один scope'})
@@ -144,6 +130,21 @@ function validate(client) {
     for (let s of scopes) {
         if (!SCOPE_RE.test(s)) {
             errors.push({field: 'scopes', message: 'Недопустимый scope: ' + s})
+        }
+    }
+    for (let r of client.resources || []) {
+        let known = byKey(catalog, r.resource)
+        if (!known) {
+            errors.push({field: 'resources', message: 'Неизвестный ресурс: ' + (r.resource || '(пусто)')})
+            continue
+        }
+        if (!r.scopes.length) {
+            errors.push({field: 'resources', message: 'Для ресурса ' + r.resource + ' выберите хотя бы один scope'})
+        }
+        for (let s of r.scopes) {
+            if (known.scopes.indexOf(s) === -1) {
+                errors.push({field: 'resources', message: 'У ресурса ' + r.resource + ' нет scope ' + s})
+            }
         }
     }
     if (errors.length) throw new ValidationError(errors)
@@ -157,7 +158,6 @@ function publicView(client) {
         ...rest,
         kind: kindOf(rest.grantTypes),
         postLogoutRedirectUris: rest.postLogoutRedirectUris || [],
-        resources: rest.resources || [],
         owner: rest.owner || '',
         contact: rest.contact || '',
         firstParty: !!rest.firstParty,
@@ -186,6 +186,7 @@ class ClientRegistry extends EventEmitter {
             {clients: []}
         )
         this.now = opts.now || (() => new Date().toISOString())
+        this.resources = opts.resources || DEFAULT_RESOURCES
     }
 
     list(filter) {
@@ -220,7 +221,6 @@ class ClientRegistry extends EventEmitter {
             desc: String(body.desc || '').trim(),
             redirectUris: normalizeList(body.redirectUris) || [],
             postLogoutRedirectUris: normalizeList(body.postLogoutRedirectUris) || [],
-            resources: normalizeList(body.resources) || [],
             scopes: normalizeList(body.scopes) || ['openid'],
             grantTypes: grantTypesFrom(body) || ['authorization_code'],
             owner: String(body.owner || '').trim(),
@@ -231,7 +231,10 @@ class ClientRegistry extends EventEmitter {
             cd: this.now(),
             ud: this.now(),
         }
-        validate(client)
+        // Без поля resources (админка пока шлёт только scopes) ресурсы выводятся
+        // из ресурсных scope'ов клиента - см. effectiveResources.
+        if (body.resources !== undefined) client.resources = normalizeResources(body.resources) || []
+        validate(client, this.resources)
         let secret = newSecret()
         let {salt, hash} = hashSecret(secret)
         client.secretSalt = salt
@@ -251,12 +254,12 @@ class ClientRegistry extends EventEmitter {
         if (body.scopes !== undefined) next.scopes = normalizeList(body.scopes) || []
         if (body.grantTypes !== undefined || body.kind !== undefined) next.grantTypes = grantTypesFrom(body) || []
         if (body.postLogoutRedirectUris !== undefined) next.postLogoutRedirectUris = normalizeList(body.postLogoutRedirectUris) || []
-        if (body.resources !== undefined) next.resources = normalizeList(body.resources) || []
+        if (body.resources !== undefined) next.resources = normalizeResources(body.resources) || []
         if (body.owner !== undefined) next.owner = String(body.owner).trim()
         if (body.contact !== undefined) next.contact = String(body.contact).trim()
         if (body.firstParty !== undefined) next.firstParty = !!body.firstParty
         if (body.enabled !== undefined) next.enabled = !!body.enabled
-        validate(next)
+        validate(next, this.resources)
         next.ud = this.now()
         this.store.update(data => {
             let ind = data.clients.findIndex(c => c._id === id)
@@ -333,6 +336,5 @@ module.exports = {
     KINDS,
     kindOf,
     isValidRedirectUri,
-    isValidResource,
     publicView,
 }

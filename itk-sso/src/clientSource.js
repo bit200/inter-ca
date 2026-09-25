@@ -1,6 +1,7 @@
 'use strict';
 
 const { interactionPolicy } = require('oidc-provider');
+const { effectiveResources, DEFAULT_RESOURCES } = require('../lib/resources');
 
 /**
  * Клиенты провайдера берутся из реестра админки (lib/clients.js), а не только из
@@ -26,9 +27,10 @@ function secretFingerprint(client) {
  * Запись реестра -> метаданные клиента в терминах OIDC.
  * В metadata.scope провайдер пускает только свои статические scope'ы, поэтому
  * ресурсные (mesh:read, evaluate:run) из списка выкидываем — ими распоряжается
- * resourceIndicators, а не карточка клиента.
+ * resourceIndicators, а не карточка клиента. Разрешённые клиенту ресурсы и
+ * scope'ы на каждом едут в itk_resources — их читает getResourceServerInfo.
  */
-function toClientMetadata(client, { supportedScopes = null } = {}) {
+function toClientMetadata(client, { supportedScopes = null, resources = DEFAULT_RESOURCES } = {}) {
     const grantTypes = (client.grantTypes && client.grantTypes.length) ? client.grantTypes.slice() : ['authorization_code'];
     const code = grantTypes.indexOf('authorization_code') > -1;
     const known = supportedScopes ? [...supportedScopes] : null;
@@ -47,6 +49,7 @@ function toClientMetadata(client, { supportedScopes = null } = {}) {
         // Реестр не хранит способ аутентификации: все клиенты itk-sso шлют секрет
         // в теле запроса (client_secret_post), как и сид-клиенты стенда.
         token_endpoint_auth_method: client.tokenEndpointAuthMethod || 'client_secret_post',
+        itk_resources: effectiveResources(client, resources),
     };
 }
 
@@ -112,49 +115,15 @@ function attachRegistrySecrets(provider, registry) {
 }
 
 /**
- * Что клиенту из реестра разрешено сверх метаданных OIDC: ресурсы (aud), scope'ы
- * на ресурсе и пропуск экрана согласия. Клиенты из SSO_SEED_CLIENTS в реестре не
- * лежат — для них ограничения прежние: любой известный ресурс, все его scope'ы, согласие.
- *
- * knownResources — ресурсы сервиса (SSO_RESOURCES), resourceScopes — scope'ы ресурсов
- * (SSO_RESOURCE_SCOPES). Пустой список ресурсов у клиента = только ресурс по умолчанию.
+ * Что клиенту из реестра разрешено сверх метаданных OIDC — пока одно: пропуск
+ * экрана согласия. Ресурсы и scope'ы на них решает itk_resources (#2111).
+ * Клиенты из SSO_SEED_CLIENTS в реестре не лежат — им согласие показываем всегда.
  */
-function createClientPolicy(registry, { knownResources = [], resourceScopes = [], defaultResource = null } = {}) {
-    const entry = (clientId) => (registry && clientId ? registry.getRaw(clientId) : null);
-
+function createClientPolicy(registry) {
     return {
-        fromRegistry(clientId) {
-            return Boolean(entry(clientId));
-        },
-
-        allowedResources(clientId) {
-            const client = entry(clientId);
-            if (!client) return knownResources.slice();
-            const own = (client.resources || []).filter((r) => knownResources.indexOf(r) > -1);
-            if (own.length) return own;
-            return defaultResource ? [defaultResource] : [];
-        },
-
-        defaultResourceFor(clientId) {
-            const allowed = this.allowedResources(clientId);
-            if (defaultResource && allowed.indexOf(defaultResource) > -1) return defaultResource;
-            return allowed[0] || defaultResource;
-        },
-
-        resourceAllowed(clientId, indicator) {
-            return this.allowedResources(clientId).indexOf(indicator) > -1;
-        },
-
-        /** Scope'ы ресурса, которые клиенту вообще можно выдать: пересечение с его карточкой. */
-        resourceScopesFor(clientId) {
-            const client = entry(clientId);
-            if (!client) return resourceScopes.slice();
-            return resourceScopes.filter((s) => (client.scopes || []).indexOf(s) > -1);
-        },
-
         /** Наша внутренняя система: согласие у человека не спрашиваем. */
         isFirstParty(clientId) {
-            const client = entry(clientId);
+            const client = registry && clientId ? registry.getRaw(clientId) : null;
             return Boolean(client && client.firstParty);
         },
     };

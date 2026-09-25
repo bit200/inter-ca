@@ -66,8 +66,9 @@ function createRouter(opts) {
     let log = opts.log || new TokenLog(opts)
     // Админка закрыта паролем (см. lib/adminAuth.js). auth: false - осознанно
     // открытый роутер: так его поднимают тесты, в рабочем запуске так не делают.
-    // Справочник для формы «новая система»: ресурсы (aud) и их scope'ы - из конфига сервиса.
-    let knownResources = opts.knownResources || []
+    // Справочник для формы «новая система»: каталог ресурсов (aud и scope'ы каждого,
+    // lib/resources.js) и scope'ы ресурса по умолчанию - из конфига сервиса.
+    let catalog = opts.resources || registry.resources || []
     let resourceScopes = opts.resourceScopes || []
     let auth = opts.auth === false ? null : createAuth(opts.auth || {password: process.env.SSO_ADMIN_PASSWORD})
 
@@ -107,8 +108,7 @@ function createRouter(opts) {
                 grantTypes: GRANT_TYPES,
                 kinds: KINDS,
                 knownScopes: [...KNOWN_SCOPES, ...resourceScopes.filter(s => KNOWN_SCOPES.indexOf(s) === -1)],
-                resourceScopes,
-                knownResources,
+                resources: catalog,
                 events: EVENTS,
             })
         }

@@ -36,10 +36,9 @@ if (require.main === module) {
     const adminPassword = process.env.SSO_ADMIN_PASSWORD || randomPassword();
     // Один реестр на процесс: и админка, и провайдер смотрят в него же — клиент,
     // заведённый на /admin, получает токен без перезапуска сервиса.
-    const registry = new ClientRegistry({ file: path.join(dataDir, 'clients.json') });
-    const tokenLog = new TokenLog({ file: path.join(dataDir, 'token-log.json') });
-
     const config = loadConfig();
+    const registry = new ClientRegistry({ file: path.join(dataDir, 'clients.json'), resources: config.resources });
+    const tokenLog = new TokenLog({ file: path.join(dataDir, 'token-log.json') });
 
     createApp({
         config,
@@ -50,7 +49,6 @@ if (require.main === module) {
             auth: { password: adminPassword, secret: process.env.SSO_ADMIN_SECRET },
             registry,
             log: tokenLog,
-            knownResources: config.resources,
             resourceScopes: config.resourceScopes,
         }),
     })

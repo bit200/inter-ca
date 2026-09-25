@@ -115,17 +115,18 @@ test('справочник значений отдаётся фронту одн
 test('форма «новая система» получает ресурсы и типы подключения из справочника и заводит систему одним POST', async () => {
     await withServer(async call => {
         let meta = await call('GET', '/api/meta')
-        assert.deepEqual(meta.body.knownResources, ['https://api.itk.academy', 'https://mesh.itk.academy'])
+        assert.deepEqual(meta.body.resources.map(r => r.key), ['evaluate', 'mesh', 'external-api'], 'каталог ресурсов для формы')
+        assert.ok(meta.body.resources.every(r => r.audience && r.scopes.length), 'у каждого ресурса aud и scope\'ы')
         assert.deepEqual(meta.body.kinds.service, ['client_credentials'])
-        assert.ok(meta.body.knownScopes.includes('mesh:read'), 'scope ресурса можно выбрать в карточке')
+        assert.ok(meta.body.knownScopes.includes('profile:read'), 'scope ресурса по умолчанию можно выбрать в карточке')
 
         let created = await call('POST', '/api/clients', {
             name: 'Партнёрская HR-система',
             kind: 'both',
             redirectUris: ['https://hr.partner.example/callback'],
             postLogoutRedirectUris: ['https://hr.partner.example/bye'],
-            resources: ['https://mesh.itk.academy'],
-            scopes: ['openid', 'profile', 'mesh:read'],
+            resources: [{resource: 'external-api', scopes: ['mock:read', 'score:read']}],
+            scopes: ['openid', 'profile'],
             owner: 'ООО Партнёр',
             contact: 'it@partner.example',
         })
@@ -141,7 +142,8 @@ test('форма «новая система» получает ресурсы �
         assert.equal(again.body.item.secretHash, undefined)
         assert.equal(again.body.item.secret, undefined)
         assert.deepEqual(again.body.item.postLogoutRedirectUris, ['https://hr.partner.example/bye'])
-    }, {knownResources: ['https://api.itk.academy', 'https://mesh.itk.academy'], resourceScopes: ['mesh:read', 'evaluate:run']})
+        assert.deepEqual(again.body.item.resources, [{resource: 'external-api', scopes: ['mock:read', 'score:read']}])
+    }, {resourceScopes: ['profile:read']})
 })
 
 test('страница админки отдаётся с корня', async () => {

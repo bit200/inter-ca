@@ -66,3 +66,12 @@ test('отчёт об окружении: секунды подписаны по
     assert.equal(secs(45), '45 с');
     assert.equal(maskUrl('mongodb://127.0.0.1:27017'), 'mongodb://127.0.0.1:27017');
 });
+
+test('отчёт об окружении: у каждого ресурса видны aud и scope', () => {
+    const report = loadConfig({ SSO_RESOURCE_MESH: 'https://mesh.local' }).envReport;
+    assert.equal(find(report, 'SSO_RESOURCE_EVALUATE').value, 'https://evaluate.itk.academy (evaluate:run evaluate:docs evaluate:admin)');
+    assert.equal(find(report, 'SSO_RESOURCE_EVALUATE').fromEnv, false);
+    assert.equal(find(report, 'SSO_RESOURCE_MESH').value, 'https://mesh.local (mesh:read mesh:write)');
+    assert.equal(find(report, 'SSO_RESOURCE_MESH').fromEnv, true);
+    assert.ok(find(report, 'SSO_RESOURCE_EXTERNAL_API'));
+});

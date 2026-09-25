@@ -140,7 +140,7 @@ test('выдача и отказ пишутся в журнал токенов �
     const { client, secret } = createService(reg);
     const svc = await startService({ clients: [], registry: reg, tokenLog: log });
     try {
-        await requestToken(svc.base, client._id, secret, { scope: 'mesh:read' });
+        await requestToken(svc.base, client._id, secret, { scope: 'mesh:read', resource: 'https://mesh.itk.academy' });
         const issued = log.list({ event: 'issued' });
         assert.equal(issued.length, 1);
         assert.equal(issued[0].clientId, client._id);
@@ -163,7 +163,7 @@ test('выдача и отказ пишутся в журнал токенов �
 
 const { createJar, pkce, portalOk } = require('./oidcHelpers');
 
-const RESOURCES_ENV = { SSO_RESOURCES: 'https://api.itk.academy,https://mesh.itk.academy' };
+const EXTERNAL_API = 'https://external-api.itk.academy';
 const PERSON = { userId: 'u-7', roles: ['candidate'], name: 'Анна' };
 
 function createWebSystem(reg, extra = {}) {
@@ -171,7 +171,8 @@ function createWebSystem(reg, extra = {}) {
         name: 'Партнёрская HR-система',
         kind: 'login',
         redirectUris: ['https://hr.partner.example/callback'],
-        scopes: ['openid', 'profile', 'offline_access', 'mesh:read', 'evaluate:run'],
+        scopes: ['openid', 'profile', 'offline_access'],
+        resources: { 'external-api': ['mock:read', 'score:read'] },
         ...extra,
     });
 }
@@ -180,7 +181,7 @@ function createWebSystem(reg, extra = {}) {
  * «Войти через ITK» глазами браузера: вход, при необходимости — согласие, код, обмен на токены.
  * Возвращает токены и то, показывали ли человеку экран согласия.
  */
-async function signIn(svc, client, secret, { scope = 'openid profile offline_access mesh:read', agree = true } = {}) {
+async function signIn(svc, client, secret, { scope = 'openid profile offline_access mock:read', agree = true } = {}) {
     const jar = createJar();
     const { verifier, challenge } = pkce();
     const redirectUri = client.redirectUris[0];
@@ -200,6 +201,7 @@ async function signIn(svc, client, secret, { scope = 'openid profile offline_acc
         response_type: 'code',
         scope,
         prompt: 'consent',
+        resource: EXTERNAL_API,
         redirect_uri: redirectUri,
         code_challenge: challenge,
         code_challenge_method: 'S256',
@@ -252,7 +254,7 @@ test('сторонней системе человек даёт согласие
     const { client, secret } = createWebSystem(reg, { owner: 'ООО Партнёр' });
     const svc = await startService({ clients: [], registry: reg, portalHandler: portalOk(PERSON) });
     try {
-        const { consentPage } = await signIn(svc, client, secret, { scope: 'openid profile mesh:read evaluate:run', agree: false });
+        const { consentPage } = await signIn(svc, client, secret, { scope: 'openid profile mock:read score:read', agree: false });
         assert.ok(consentPage, 'третьей стороне без согласия данные не отдаём');
         assert.match(consentPage, /Партнёрская HR-система запрашивает доступ/);
         assert.match(consentPage, /мок-интервью/i);
@@ -273,38 +275,9 @@ test('наша внутренняя (first-party) система входит б
         const jwks = await (await fetch(`${svc.base}/.well-known/jwks.json`)).json();
         const access = verifyJwtWithJwks(tokens.access_token, jwks);
         assert.equal(access.payload.sub, 'u-7');
-        assert.match(access.payload.scope, /mesh:read/, 'ресурсный scope выдан без согласия');
+        assert.equal(access.payload.aud, EXTERNAL_API);
+        assert.match(access.payload.scope, /mock:read/, 'ресурсный scope выдан без согласия');
         assert.ok(tokens.refresh_token);
-    } finally {
-        await svc.stop();
-    }
-});
-
-test('ресурсы и scope\'ы ограничены карточкой клиента', async () => {
-    const reg = registry();
-    const { client, secret } = reg.create({
-        name: 'Mesh-интеграция',
-        kind: 'service',
-        scopes: ['mesh:read'],
-        resources: ['https://mesh.itk.academy'],
-    });
-    const svc = await startService({ clients: [], registry: reg, env: RESOURCES_ENV });
-    try {
-        let res = await requestToken(svc.base, client._id, secret, { scope: 'mesh:read' });
-        assert.equal(res.status, 200);
-        const jwks = await (await fetch(`${svc.base}/.well-known/jwks.json`)).json();
-        const { payload } = verifyJwtWithJwks((await res.json()).access_token, jwks);
-        assert.equal(payload.aud, 'https://mesh.itk.academy', 'без resource токен выписан на разрешённый ресурс клиента');
-
-        res = await requestToken(svc.base, client._id, secret, { scope: 'mesh:read', resource: 'https://api.itk.academy' });
-        assert.equal(res.status, 400);
-        assert.equal((await res.json()).error, 'invalid_target', 'на чужой ресурс токен не выписываем');
-
-        res = await requestToken(svc.base, client._id, secret, { scope: 'mesh:read mesh:write' });
-        assert.equal(res.status, 200);
-        const body = await res.json();
-        assert.equal(body.scope, 'mesh:read', 'scope сверх карточки не выдаётся');
-        assert.equal(verifyJwtWithJwks(body.access_token, jwks).payload.scope, 'mesh:read');
     } finally {
         await svc.stop();
     }

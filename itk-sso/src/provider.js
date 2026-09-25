@@ -7,6 +7,7 @@ const {
 } = require('./clientSource');
 const { attachTokenLog } = require('./tokenEvents');
 const { buildJwks } = require('./keys');
+const { byAudience } = require('../lib/resources');
 
 const CLAIMS = {
     openid: ['sub'],
@@ -26,14 +27,36 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
     const keys = buildJwks(config.keys);
     // Клиенты — из реестра админки; SSO_SEED_CLIENTS остаётся статическим
     // запасом для голого стенда (статику провайдер ищет первой).
-    const Adapter = createAdapterWithRegistry(createAdapterClass(store), registry, { supportedScopes: config.scopes });
-    const audience = config.resource;
-    // Какие ресурсы и scope'ы клиенту можно и нужен ли ему экран согласия — из карточки реестра.
-    const policy = createClientPolicy(registry, {
-        knownResources: config.resources || [audience],
-        resourceScopes: config.resourceScopes,
-        defaultResource: audience,
+    const Adapter = createAdapterWithRegistry(createAdapterClass(store), registry, {
+        supportedScopes: config.scopes,
+        resources: config.resources,
     });
+    const audience = config.resource;
+    // Нужен ли клиенту экран согласия — из карточки реестра (first-party / сторонний).
+    const policy = createClientPolicy(registry);
+
+    // У каждого сервиса свой aud (#2111). Ресурс сервиса выдаём только клиенту,
+    // которому он разрешён, и только с разрешёнными ему scope'ами; незнакомый
+    // или чужой ресурс — invalid_target. Общий ресурс по умолчанию (SSO_DEFAULT_RESOURCE)
+    // сервисных scope'ов не несёт: такой токен ни evaluate, ни mesh не примет.
+    const resourceServerInfo = (resourceIndicator, client) => {
+        const base = {
+            audience: resourceIndicator,
+            accessTokenTTL: config.ttl.accessToken,
+            accessTokenFormat: 'jwt',
+            jwt: { sign: { alg: 'RS256' } },
+        };
+        if (resourceIndicator === audience) {
+            return { ...base, scope: config.resourceScopes.join(' ') };
+        }
+        const resource = byAudience(config.resources, resourceIndicator);
+        if (!resource) throw new errors.InvalidTarget(`неизвестный ресурс ${resourceIndicator}`);
+        const allowed = ((client && client.itk_resources) || []).find((r) => r.resource === resource.key);
+        if (!allowed) throw new errors.InvalidTarget(`ресурс ${resource.key} клиенту не разрешён`);
+        const scopes = resource.scopes.filter((s) => allowed.scopes.indexOf(s) > -1);
+        if (!scopes.length) throw new errors.InvalidTarget(`на ресурсе ${resource.key} клиенту не разрешён ни один scope`);
+        return { ...base, scope: scopes.join(' ') };
+    };
 
     return {
         keys,
@@ -43,6 +66,15 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
             jwks: keys.jwks,
             findAccount: accounts.findAccount,
             claims: CLAIMS,
+            // Разрешённые ресурсы клиента: [{resource: 'mesh', scopes: ['mesh:read']}].
+            extraClientMetadata: {
+                properties: ['itk_resources'],
+                validator(ctx, key, value) {
+                    if (key !== 'itk_resources' || value === undefined) return;
+                    const ok = Array.isArray(value) && value.every((r) => r && typeof r.resource === 'string' && Array.isArray(r.scopes));
+                    if (!ok) throw new errors.InvalidClientMetadata('itk_resources: ожидается [{resource, scopes: []}]');
+                },
+            },
             scopes: config.scopes,
             responseTypes: ['code'],
             subjectTypes: ['public'],
@@ -61,22 +93,9 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
                 userinfo: { enabled: true },
                 resourceIndicators: {
                     enabled: true,
-                    defaultResource: (ctx, client, oneOf) => oneOf || policy.defaultResourceFor(client && client.clientId),
+                    defaultResource: () => audience,
                     useGrantedResource: () => true,
-                    // Чужой ресурс — invalid_target: токен на API, которого клиенту не давали, не выписываем.
-                    getResourceServerInfo: (ctx, resourceIndicator, client) => {
-                        const clientId = client && client.clientId;
-                        if (!policy.resourceAllowed(clientId, resourceIndicator)) {
-                            throw new errors.InvalidTarget(`ресурс ${resourceIndicator} этому клиенту не разрешён`);
-                        }
-                        return {
-                            audience: resourceIndicator,
-                            scope: policy.resourceScopesFor(clientId).join(' '),
-                            accessTokenTTL: config.ttl.accessToken,
-                            accessTokenFormat: 'jwt',
-                            jwt: { sign: { alg: 'RS256' } },
-                        };
-                    },
+                    getResourceServerInfo: (ctx, resourceIndicator, client) => resourceServerInfo(resourceIndicator, client),
                 },
             },
 

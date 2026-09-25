@@ -81,7 +81,7 @@ function renderDetail() {
     let kind = d.kind || 'login'
     let people = kind !== 'service'
     let scopePool = [...new Set([...(state.meta.knownScopes || []), ...(d.scopes || [])])]
-    let resourcePool = [...new Set([...(state.meta.knownResources || []), ...(d.resources || [])])]
+    let granted = r => ((d.resources || []).find(x => x.resource === r.key) || {scopes: []}).scopes
     $('#detail').innerHTML = `
         <div class="detail__head">
             <div>
@@ -159,10 +159,15 @@ function renderDetail() {
 
             <div class="form__row">
                 <label>К каким API пускаем</label>
-                <div class="chips" id="resourceChips">
-                    ${resourcePool.map(r => `<button type="button" class="chip ${(d.resources || []).includes(r) ? 'is-on' : ''}" data-resource="${esc(r)}"><code>${esc(r)}</code></button>`).join('')}
-                </div>
-                <div class="form__hint">Ни одного не выбрано — токены только на ресурс по умолчанию${state.meta.knownResources && state.meta.knownResources[0] ? ' (' + esc(state.meta.knownResources[0]) + ')' : ''}.</div>
+                <ul class="apis" id="resourcePick">
+                    ${(state.meta.resources || []).map(r => `<li class="api ${granted(r).length ? 'is-on' : ''}">
+                        <div class="api__name">${esc(r.name)}<code>${esc(r.audience)}</code></div>
+                        <div class="chips">
+                            ${r.scopes.map(s => `<button type="button" class="chip ${granted(r).includes(s) ? 'is-on' : ''}" data-resource="${esc(r.key)}" data-scope="${esc(s)}"><code>${esc(s)}</code></button>`).join('')}
+                        </div>
+                    </li>`).join('')}
+                </ul>
+                <div class="form__hint">Токен на API выписывается только с отмеченными scope'ами. Ничего не отмечено — системе этот API закрыт.</div>
             </div>
             <div class="form__row">
                 <label>Что система может запрашивать</label>
@@ -227,8 +232,12 @@ function bindDetail() {
         d.firstParty = el.dataset.party === 'first'
         renderDetail()
     }))
-    document.querySelectorAll('#resourceChips .chip').forEach(el => el.addEventListener('click', () => {
-        d.resources = toggle(d.resources, el.dataset.resource)
+    document.querySelectorAll('#resourcePick .chip').forEach(el => el.addEventListener('click', () => {
+        let key = el.dataset.resource
+        let rest = (d.resources || []).filter(x => x.resource !== key)
+        let scopes = toggle(((d.resources || []).find(x => x.resource === key) || {}).scopes, el.dataset.scope)
+        // Ресурс без scope'ов реестр не примет - снятый последний scope снимает и ресурс.
+        d.resources = scopes.length ? [...rest, {resource: key, scopes}] : rest
         renderDetail()
     }))
     document.querySelectorAll('#scopeChips .chip').forEach(el => el.addEventListener('click', () => {
@@ -239,6 +248,17 @@ function bindDetail() {
     bind('#rotate', 'click', rotate)
     bind('#remove', 'click', remove)
     bind('#cancel', 'click', () => { state.draft = null; state.errors = []; renderDetail() })
+}
+
+// Запись, заведённая до каталога ресурсов, держит их в scopes (mesh:read) - сервер
+// выводит ресурсы из них сам (effectiveResources), показываем так же.
+function withResources(c) {
+    if (Array.isArray(c.resources)) return c
+    let scopes = c.scopes || []
+    c.resources = (state.meta.resources || [])
+        .map(r => ({resource: r.key, scopes: r.scopes.filter(s => scopes.includes(s))}))
+        .filter(r => r.scopes.length)
+    return c
 }
 
 // ── действия ───────────────────────────────────────────────────────────
@@ -252,11 +272,11 @@ async function save() {
             let res = await api('POST', 'api/clients', body)
             state.secretOnce = res.secret
             state.selectedId = res.item._id
-            state.draft = {...res.item}
+            state.draft = withResources({...res.item})
             toast('Система подключена')
         } else {
             let res = await api('PUT', 'api/clients/' + encodeURIComponent(d._id), body)
-            state.draft = {...res.item}
+            state.draft = withResources({...res.item})
             toast('Изменения сохранены')
         }
         await loadClients()
@@ -366,7 +386,7 @@ async function start() {
         state.selectedId = btn.dataset.id
         state.secretOnce = ''
         state.errors = []
-        state.draft = {...state.clients.find(c => c._id === state.selectedId)}
+        state.draft = withResources({...state.clients.find(c => c._id === state.selectedId)})
         renderList()
         renderDetail()
         await loadJournal()
