@@ -2,7 +2,8 @@
 # Деплой itk-sso: git pull -> пересборка стека -> health-check, при неудаче откат на
 # предыдущий коммит и пересборка на нём, чтобы деплой не оставлял стенд лежащим.
 # Скрипт самостоятельный: свой .env и свой docker-compose.yml рядом, ничего из
-# itk-platform-en не требуется — сервис разворачивается на отдельном VPS.
+# itk-platform-en не требуется — сервис разворачивается на отдельном VPS из клона
+# собственного репозитория itk-sso (deploy.sh лежит в его корне).
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -18,6 +19,16 @@ env_value() {
 log()  { echo -e "\033[1;32m==>\033[0m $*"; }
 warn() { echo -e "\033[1;33m!!\033[0m $*"; }
 err()  { echo -e "\033[1;31m!!\033[0m $*" >&2; }
+
+# git pull и откат git reset --hard действуют на весь чекаут. Если скрипт лежит не в
+# корне репозитория (сервис папкой внутри чужого монорепо), деплой тянул бы и откатывал
+# чужую ветку — останавливаемся, пока не поздно.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ "${REPO_ROOT}" != "$(pwd -P)" ]; then
+  err "deploy.sh должен лежать в корне git-клона itk-sso, а корень чекаута здесь: ${REPO_ROOT:-нет git}"
+  err "Склонируйте репозиторий SSO отдельно: git clone <remote> itk-sso && cd itk-sso"
+  exit 1
+fi
 
 if [ ! -f .env ]; then
   err ".env рядом с deploy.sh не найден: скопируйте .env.example и заполните (как минимум SSO_ISSUER и SSO_COOKIE_KEYS)"

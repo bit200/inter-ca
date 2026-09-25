@@ -4,10 +4,12 @@ OAuth2/OIDC-сервис ITK на [node-oidc-provider](https://github.com/panva/
 Часть плана #17 «OAuth2/SSO-сервис для входа через ITK»: каркас сервиса (#1945),
 реестр клиентов с админкой (#1946) и логаут через отзыв refresh token (#1947).
 
+Отдельный репозиторий с ветками `main` (прод) и `staging` (тестовый стенд).
+
 ```
-npm install --prefix itk-sso
-npm test  --prefix itk-sso     # node --test test/*.test.js
-npm start --prefix itk-sso     # сервис + админка реестра на /admin
+npm install
+npm test       # node --test test/*.test.js
+npm start      # сервис + админка реестра на /admin
 ```
 
 ## Что умеет каркас
@@ -125,14 +127,21 @@ userinfo не ходит и показывает claims id_token, назвав �
 
 ## Деплой на отдельный VPS
 
-Свой стек: `deploy.sh`, `docker-compose.yml`, `Dockerfile` и `.env` лежат здесь же.
-От itk-platform-en/itk-portal деплой не зависит — сервис разворачивается на своей
-машине, в compose поднимается и его собственная mongo.
+Свой стек: `deploy.sh`, `docker-compose.yml`, `Dockerfile` и `.env` лежат в корне
+репозитория. От itk-platform-en/itk-portal деплой не зависит — сервис разворачивается
+на своей машине, в compose поднимается и его собственная mongo.
+
+На VPS клонируется сам репозиторий SSO — прод с ветки `main`, тестовый стенд со `staging`:
 
 ```bash
+git clone -b main <remote> itk-sso   # на тестовом стенде: -b staging
+cd itk-sso
 cp .env.example .env    # SSO_ISSUER, SSO_COOKIE_KEYS, ITK_PORTAL_URL — обязательно
 ./deploy.sh
 ```
+
+`deploy.sh` отказывается работать, если лежит не в корне git-чекаута: `git pull` и
+откат `git reset --hard` иначе задели бы чужой репозиторий целиком.
 
 `deploy.sh` делает то же, что деплой соседних сервисов: `git pull` →
 `docker compose up -d --build` → health-check → **откат на предыдущий коммит и
