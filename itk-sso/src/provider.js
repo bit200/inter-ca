@@ -2,7 +2,9 @@
 
 const { Provider, errors } = require('oidc-provider');
 const { createAdapterClass } = require('./adapter');
-const { createAdapterWithRegistry, attachRegistrySecrets } = require('./clientSource');
+const {
+    createAdapterWithRegistry, attachRegistrySecrets, createClientPolicy, createLoadExistingGrant, createInteractionPolicy,
+} = require('./clientSource');
 const { attachTokenLog } = require('./tokenEvents');
 const { buildJwks } = require('./keys');
 const { byAudience } = require('../lib/resources');
@@ -30,6 +32,8 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
         resources: config.resources,
     });
     const audience = config.resource;
+    // Нужен ли клиенту экран согласия — из карточки реестра (first-party / сторонний).
+    const policy = createClientPolicy(registry);
 
     // У каждого сервиса свой aud (#2111). Ресурс сервиса выдаём только клиенту,
     // которому он разрешён, и только с разрешёнными ему scope'ами; незнакомый
@@ -125,7 +129,11 @@ function buildProviderConfig(config, { accounts, store, registry = null }) {
                 short: { signed: true, sameSite: 'lax' },
             },
 
+            // Наши внутренние системы (first-party в реестре) проходят без экрана согласия.
+            loadExistingGrant: createLoadExistingGrant(policy),
+
             interactions: {
+                policy: createInteractionPolicy(policy),
                 url: (ctx, interaction) => `/interaction/${interaction.uid}`,
             },
 

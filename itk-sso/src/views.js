@@ -55,6 +55,7 @@ button.ghost{background:transparent; color:var(--ink); border-color:var(--hairli
 ul.scopes{list-style:none; margin:0 0 4px; padding:0}
 ul.scopes li{padding:9px 0; border-top:1px solid var(--hairline); font-size:14px}
 ul.scopes li small{display:block; color:var(--muted); font-size:12px; margin-top:2px}
+.owner{font-size:13px; color:var(--muted); margin:-12px 0 20px}
 footer{margin-top:28px; color:var(--muted); font-size:12px}
 form{margin:0}
 `;
@@ -105,9 +106,32 @@ const SCOPE_TEXT = {
     email: ['Почта', 'Адрес, указанный в профиле ITK'],
     roles: ['Роли', 'Права, выданные вам на платформе ITK'],
     offline_access: ['Длительный доступ', 'Приложение сможет обновлять доступ, пока вы не выйдете'],
+    'mock:read': ['Мок-интервью', 'Ваши мок-интервью: вопросы, ответы и разборы'],
+    'mock:write': ['Изменение мок-интервью', 'Приложение сможет создавать и дополнять ваши мок-интервью'],
+    'video:upload': ['Видео', 'Загрузка записей ваших интервью'],
+    'score:read': ['Оценки', 'Оценки ваших ответов на интервью'],
+    'evaluate:run': ['Проверка ответов', 'Запуск оценки ваших ответов'],
+    'profile:read': ['Профиль на платформе', 'Данные профиля ITK: опыт, навыки, статус'],
 };
 
-function renderConsent({ uid, client, scopes = [], accountName = '' }) {
+// Что именно просят — одной фразой в заголовке: «к вашим мок-интервью и оценкам».
+const SCOPE_SUBJECT = {
+    'mock:read': 'мок-интервью',
+    'mock:write': 'мок-интервью',
+    'video:upload': 'видео',
+    'score:read': 'оценкам',
+    'evaluate:run': 'оценкам',
+    'profile:read': 'данным профиля',
+};
+
+function accessSubject(scopes) {
+    const nouns = [...new Set(scopes.map((s) => SCOPE_SUBJECT[s]).filter(Boolean))];
+    if (!nouns.length) return '';
+    const tail = nouns.length > 1 ? `${nouns.slice(0, -1).join(', ')} и ${nouns[nouns.length - 1]}` : nouns[0];
+    return ` к вашим ${tail}`;
+}
+
+function renderConsent({ uid, client, scopes = [], accountName = '', owner = '', contact = '' }) {
     const name = esc(clientLabel(client));
     const items = scopes.map((scope) => {
         const [title, hint] = SCOPE_TEXT[scope] || [scope, 'Доступ, запрошенный приложением'];
@@ -117,8 +141,9 @@ function renderConsent({ uid, client, scopes = [], accountName = '' }) {
     return page('Доступ для приложения', `
 <p class="mark">ITK</p>
 <div class="rule"></div>
-<h1>${name} запрашивает доступ</h1>
+<h1>${name} запрашивает доступ${esc(accessSubject(scopes))}</h1>
 <p class="lede">${accountName ? `Вы вошли как <b>${esc(accountName)}</b>. ` : ''}Приложение получит только то, что перечислено ниже.</p>
+${owner || contact ? `<p class="owner">Это сторонняя система, её ведёт ${esc(owner || 'внешняя команда')}${contact ? ` (${esc(contact)})` : ''}. ITK за неё не отвечает.</p>` : ''}
 <ul class="scopes">${items}</ul>
 <form method="post" action="/interaction/${esc(uid)}/confirm">
   <div class="actions">
@@ -130,4 +155,4 @@ function renderConsent({ uid, client, scopes = [], accountName = '' }) {
 `);
 }
 
-module.exports = { renderLogin, renderConsent, page, esc, clientLabel };
+module.exports = { renderLogin, renderConsent, page, esc, clientLabel, accessSubject };

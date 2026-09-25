@@ -65,7 +65,7 @@ async function startService({ portalHandler, clients = [SEED_CLIENT, SERVICE_CLI
         return portalHandler ? portalHandler(url, options) : new Response('', { status: 401 });
     };
 
-    const { app, provider, store, keys } = await createApp({ config, fetchImpl, registry, tokenLog });
+    const { app, provider, store, keys, revocation } = await createApp({ config, fetchImpl, registry, tokenLog });
     const server = app.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));
     const base = `http://127.0.0.1:${server.address().port}`;
@@ -78,6 +78,7 @@ async function startService({ portalHandler, clients = [SEED_CLIENT, SERVICE_CLI
         store,
         keys,
         calls,
+        revocation,
         async stop() {
             await new Promise((resolve) => server.close(resolve));
             await store.close();

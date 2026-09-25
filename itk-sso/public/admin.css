@@ -203,6 +203,60 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
 .state--off { color: var(--off); background: var(--off-soft); }
 .state__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
+/* Две колонки коротких полей: название рядом с назначением, владелец рядом с контактом. */
+.form__pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.form__row > .seg { justify-self: start; }
+
+/* Тип подключения - главное решение в форме, поэтому это три плитки с объяснением,
+   а не чипы: от выбора зависит, какие поля ниже вообще нужны. */
+fieldset.kinds { border: 0; margin: 0; padding: 0; min-width: 0; grid-template-columns: repeat(3, 1fr); }
+fieldset.kinds legend { font-size: 13px; color: var(--ink-soft); font-weight: 500; padding: 0; margin-bottom: 6px; }
+.kind {
+    position: relative;
+    display: grid;
+    gap: 3px;
+    align-content: start;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+    cursor: pointer;
+}
+.kind:hover { background: var(--line-soft); }
+.kind.is-on { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.kind input { position: absolute; opacity: 0; pointer-events: none; }
+.kind:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.kind__title { font-weight: 600; color: var(--ink); font-size: 14px; }
+.kind.is-on .kind__title { color: var(--accent-deep); }
+.kind__hint { font-size: 12px; color: var(--label); font-weight: 400; line-height: 1.4; }
+
+/* Каталог API: строка на ресурс - имя и aud слева, его scope'ы справа.
+   Отмеченный ресурс подсвечен фоном, без боковой полосы. */
+.apis { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.api {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) 1fr;
+    gap: 6px 14px;
+    align-items: center;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.api:last-child { border-bottom: 0; }
+.api.is-on { background: var(--accent-soft); }
+.api__name { font-weight: 600; font-size: 13px; display: grid; }
+.api__name code { font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--label); word-break: break-all; }
+
+/* Выключенная система: полоса слева от края до края, углы слева прямые. */
+.notice {
+    margin-top: 14px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: var(--off-soft);
+    border-left: 3px solid var(--off);
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+
 /* Секрет показывается один раз - плашка должна быть заметной и объяснять,
    почему второй раз его не будет. Полоса слева идёт от края до края. */
 .secret {
@@ -306,6 +360,7 @@ textarea.field { font-family: var(--mono); font-size: 12.5px; resize: vertical; 
 
 @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }
+    fieldset.kinds, .form__pair, .api { grid-template-columns: 1fr; }
     .registry__list { max-height: 40vh; }
     .topbar { padding: 12px 16px; }
     .layout, .journal { width: calc(100% - 32px); }

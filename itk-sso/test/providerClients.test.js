@@ -158,3 +158,171 @@ test('выдача и отказ пишутся в журнал токенов �
         await svc.stop();
     }
 });
+
+// ── подключение внешней системы через админку: ресурсы, согласие, отзыв ──
+
+const { createJar, pkce, portalOk } = require('./oidcHelpers');
+
+const EXTERNAL_API = 'https://external-api.itk.academy';
+const PERSON = { userId: 'u-7', roles: ['candidate'], name: 'Анна' };
+
+function createWebSystem(reg, extra = {}) {
+    return reg.create({
+        name: 'Партнёрская HR-система',
+        kind: 'login',
+        redirectUris: ['https://hr.partner.example/callback'],
+        scopes: ['openid', 'profile', 'offline_access'],
+        resources: { 'external-api': ['mock:read', 'score:read'] },
+        ...extra,
+    });
+}
+
+/**
+ * «Войти через ITK» глазами браузера: вход, при необходимости — согласие, код, обмен на токены.
+ * Возвращает токены и то, показывали ли человеку экран согласия.
+ */
+async function signIn(svc, client, secret, { scope = 'openid profile offline_access mock:read', agree = true } = {}) {
+    const jar = createJar();
+    const { verifier, challenge } = pkce();
+    const redirectUri = client.redirectUris[0];
+    const visit = async (url, options = {}) => {
+        const res = await fetch(url, { redirect: 'manual', ...options, headers: { cookie: jar.header(), ...(options.headers || {}) } });
+        jar.absorb(res);
+        return res;
+    };
+    const form = (body) => ({
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(body),
+    });
+
+    let res = await visit(`${svc.base}/auth?${new URLSearchParams({
+        client_id: client._id,
+        response_type: 'code',
+        scope,
+        prompt: 'consent',
+        resource: EXTERNAL_API,
+        redirect_uri: redirectUri,
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+    })}`);
+    let location = new URL(res.headers.get('location'), svc.base);
+    const uid = location.pathname.split('/')[2];
+    res = await visit(`${svc.base}/interaction/${uid}/login`, form({ login: 'anna', password: 'верный' }));
+
+    let consentPage = null;
+    let code = null;
+    for (let hop = 0; hop < 8 && !code; hop += 1) {
+        location = new URL(res.headers.get('location'), svc.base);
+        if (location.href.startsWith(redirectUri)) {
+            code = location.searchParams.get('code');
+            break;
+        }
+        if (/^\/interaction\//.test(location.pathname)) {
+            const consentUid = location.pathname.split('/')[2];
+            consentPage = await (await visit(location.href)).text();
+            if (!agree) return { consentPage };
+            res = await visit(`${svc.base}/interaction/${consentUid}/confirm`, form({}));
+        } else {
+            res = await visit(location.href);
+        }
+    }
+    assert.ok(code, 'вход должен вернуть код системе');
+
+    const tokenRes = await fetch(`${svc.base}/token`, form({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: client._id,
+        client_secret: secret,
+        code_verifier: verifier,
+    }));
+    assert.equal(tokenRes.status, 200);
+    return { consentPage, tokens: await tokenRes.json() };
+}
+
+async function refresh(svc, clientId, secret, refreshToken) {
+    return fetch(`${svc.base}/token`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken, client_id: clientId, client_secret: secret }),
+    });
+}
+
+test('сторонней системе человек даёт согласие на экране, где названы его мок-интервью и оценки', async () => {
+    const reg = registry();
+    const { client, secret } = createWebSystem(reg, { owner: 'ООО Партнёр' });
+    const svc = await startService({ clients: [], registry: reg, portalHandler: portalOk(PERSON) });
+    try {
+        const { consentPage } = await signIn(svc, client, secret, { scope: 'openid profile mock:read score:read', agree: false });
+        assert.ok(consentPage, 'третьей стороне без согласия данные не отдаём');
+        assert.match(consentPage, /Партнёрская HR-система запрашивает доступ/);
+        assert.match(consentPage, /мок-интервью/i);
+        assert.match(consentPage, /оценк/i);
+        assert.match(consentPage, /ООО Партнёр/, 'видно, чья это система');
+    } finally {
+        await svc.stop();
+    }
+});
+
+test('наша внутренняя (first-party) система входит без экрана согласия', async () => {
+    const reg = registry();
+    const { client, secret } = createWebSystem(reg, { name: 'Портал ITK', firstParty: true });
+    const svc = await startService({ clients: [], registry: reg, portalHandler: portalOk(PERSON) });
+    try {
+        const { consentPage, tokens } = await signIn(svc, client, secret);
+        assert.equal(consentPage, null, 'согласие для своих не спрашиваем');
+        const jwks = await (await fetch(`${svc.base}/.well-known/jwks.json`)).json();
+        const access = verifyJwtWithJwks(tokens.access_token, jwks);
+        assert.equal(access.payload.sub, 'u-7');
+        assert.equal(access.payload.aud, EXTERNAL_API);
+        assert.match(access.payload.scope, /mock:read/, 'ресурсный scope выдан без согласия');
+        assert.ok(tokens.refresh_token);
+    } finally {
+        await svc.stop();
+    }
+});
+
+test('выключение клиента гасит его refresh token\'ы: после обратного включения они не оживают', async () => {
+    const reg = registry();
+    const log = tokenLog();
+    const { client, secret } = createWebSystem(reg, { firstParty: true });
+    const svc = await startService({ clients: [], registry: reg, tokenLog: log, portalHandler: portalOk(PERSON) });
+    try {
+        const { tokens } = await signIn(svc, client, secret);
+        const first = await refresh(svc, client._id, secret, tokens.refresh_token);
+        assert.equal(first.status, 200, 'пока клиент включён, refresh работает');
+        const rotated = (await first.json()).refresh_token || tokens.refresh_token;
+
+        reg.setEnabled(client._id, false);
+        await svc.revocation.settled();
+        assert.equal((await refresh(svc, client._id, secret, rotated)).status, 401, 'выключенный клиент не обновляет доступ');
+
+        reg.setEnabled(client._id, true);
+        const revived = await refresh(svc, client._id, secret, rotated);
+        assert.equal(revived.status, 400);
+        assert.equal((await revived.json()).error, 'invalid_grant', 'refresh, выданный до выключения, погашен');
+
+        const revokedRows = log.list({ event: 'revoked', clientId: client._id });
+        assert.ok(revokedRows.some((e) => /выключен/.test(e.reason)), 'отзыв виден в журнале токенов');
+    } finally {
+        await svc.stop();
+    }
+});
+
+test('удаление клиента гасит его refresh token\'ы в хранилище', async () => {
+    const reg = registry();
+    const { client, secret } = createWebSystem(reg, { firstParty: true });
+    const svc = await startService({ clients: [], registry: reg, portalHandler: portalOk(PERSON) });
+    try {
+        await signIn(svc, client, secret);
+        const before = (await svc.store.list('RefreshToken')).filter((t) => t.clientId === client._id);
+        assert.equal(before.length, 1);
+        reg.remove(client._id);
+        await svc.revocation.settled();
+        const after = (await svc.store.list('RefreshToken')).filter((t) => t.clientId === client._id);
+        assert.equal(after.length, 0);
+    } finally {
+        await svc.stop();
+    }
+});

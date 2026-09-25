@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const {ClientRegistry, GRANT_TYPES, KNOWN_SCOPES} = require('./clients')
+const {ClientRegistry, GRANT_TYPES, KNOWN_SCOPES, KINDS} = require('./clients')
 const {TokenLog, EVENTS} = require('./tokenLog')
 const {createAuth} = require('./adminAuth')
 
@@ -66,6 +66,10 @@ function createRouter(opts) {
     let log = opts.log || new TokenLog(opts)
     // Админка закрыта паролем (см. lib/adminAuth.js). auth: false - осознанно
     // открытый роутер: так его поднимают тесты, в рабочем запуске так не делают.
+    // Справочник для формы «новая система»: каталог ресурсов (aud и scope'ы каждого,
+    // lib/resources.js) и scope'ы ресурса по умолчанию - из конфига сервиса.
+    let catalog = opts.resources || registry.resources || []
+    let resourceScopes = opts.resourceScopes || []
     let auth = opts.auth === false ? null : createAuth(opts.auth || {password: process.env.SSO_ADMIN_PASSWORD})
 
     async function route(req, res) {
@@ -100,7 +104,13 @@ function createRouter(opts) {
         }
 
         if (p === '/api/meta' && req.method === 'GET') {
-            return send(res, 200, {grantTypes: GRANT_TYPES, knownScopes: KNOWN_SCOPES, events: EVENTS})
+            return send(res, 200, {
+                grantTypes: GRANT_TYPES,
+                kinds: KINDS,
+                knownScopes: [...KNOWN_SCOPES, ...resourceScopes.filter(s => KNOWN_SCOPES.indexOf(s) === -1)],
+                resources: catalog,
+                events: EVENTS,
+            })
         }
 
         if (p === '/api/clients') {

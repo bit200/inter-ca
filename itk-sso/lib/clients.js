@@ -1,4 +1,5 @@
 const crypto = require('crypto')
+const {EventEmitter} = require('events')
 const path = require('path')
 const JsonStore = require('./jsonStore')
 const {DEFAULT_RESOURCES, byKey, normalizeResources} = require('./resources')
@@ -11,7 +12,23 @@ const {DEFAULT_RESOURCES, byKey, normalizeResources} = require('./resources')
 // scope'ами на каждом ему можно выписывать токены, и включён ли он вообще.
 
 const GRANT_TYPES = ['authorization_code', 'refresh_token', 'client_credentials']
-const KNOWN_SCOPES = ['openid', 'profile', 'email', 'offline_access']
+const KNOWN_SCOPES = ['openid', 'profile', 'email', 'roles', 'offline_access']
+
+// Тип подключения в терминах админки, а не OAuth: человек выбирает «что это за
+// система», grant types выводятся из выбора. server-to-server берёт токен от своего
+// имени, «вход пользователей» - это «Войти через ITK» с обновлением, «оба» - всё сразу.
+const KINDS = {
+    service: ['client_credentials'],
+    login: ['authorization_code', 'refresh_token'],
+    both: ['authorization_code', 'refresh_token', 'client_credentials'],
+}
+
+function kindOf(grantTypes) {
+    let code = (grantTypes || []).indexOf('authorization_code') > -1
+    let service = (grantTypes || []).indexOf('client_credentials') > -1
+    if (code && service) return 'both'
+    return service ? 'service' : 'login'
+}
 const SCOPE_RE = /^[A-Za-z0-9_.:-]+$/
 
 class ValidationError extends Error {
@@ -97,6 +114,15 @@ function validate(client, catalog) {
             errors.push({field: 'redirectUris', message: 'Адрес возврата не подходит: ' + uri + ' — нужен полный https-адрес без #'})
         }
     }
+    let logoutUris = client.postLogoutRedirectUris || []
+    if (logoutUris.length && grantTypes.indexOf('authorization_code') === -1) {
+        errors.push({field: 'postLogoutRedirectUris', message: 'Адрес после выхода нужен только системе со входом пользователей'})
+    }
+    for (let uri of logoutUris) {
+        if (!isValidRedirectUri(uri)) {
+            errors.push({field: 'postLogoutRedirectUris', message: 'Адрес после выхода не подходит: ' + uri + ' — нужен полный https-адрес без #'})
+        }
+    }
     let scopes = client.scopes || []
     if (!scopes.length) {
         errors.push({field: 'scopes', message: 'Укажите хотя бы один scope'})
@@ -128,11 +154,32 @@ function validate(client, catalog) {
 //scrypt-хеш, восстановить строку нельзя - её можно только перевыпустить.
 function publicView(client) {
     let {secretHash, secretSalt, ...rest} = client
-    return rest
+    return {
+        ...rest,
+        kind: kindOf(rest.grantTypes),
+        postLogoutRedirectUris: rest.postLogoutRedirectUris || [],
+        owner: rest.owner || '',
+        contact: rest.contact || '',
+        firstParty: !!rest.firstParty,
+    }
 }
 
-class ClientRegistry {
+// grant types из тела запроса: явный список важнее, иначе - из типа подключения.
+function grantTypesFrom(body) {
+    let explicit = normalizeList(body.grantTypes)
+    if (explicit) return explicit
+    if (body.kind !== undefined) {
+        if (!KINDS[body.kind]) throw new ValidationError([{field: 'kind', message: 'Неизвестный тип подключения: ' + body.kind}])
+        return KINDS[body.kind].slice()
+    }
+    return null
+}
+
+// Реестр - EventEmitter: на выключение и удаление клиента он кричит 'revoke',
+// а сервис гасит уже выданные этому клиенту токены (см. src/clientRevocation.js).
+class ClientRegistry extends EventEmitter {
     constructor(opts) {
+        super()
         opts = opts || {}
         this.store = opts.store || new JsonStore(
             opts.file || path.join(__dirname, '..', 'data', 'clients.json'),
@@ -173,8 +220,13 @@ class ClientRegistry {
             name: String(body.name || '').trim(),
             desc: String(body.desc || '').trim(),
             redirectUris: normalizeList(body.redirectUris) || [],
+            postLogoutRedirectUris: normalizeList(body.postLogoutRedirectUris) || [],
             scopes: normalizeList(body.scopes) || ['openid'],
-            grantTypes: normalizeList(body.grantTypes) || ['authorization_code'],
+            grantTypes: grantTypesFrom(body) || ['authorization_code'],
+            owner: String(body.owner || '').trim(),
+            contact: String(body.contact || '').trim(),
+            // Сторонняя система по умолчанию: пропуск согласия - осознанный выбор админа.
+            firstParty: !!body.firstParty,
             enabled: body.enabled === undefined ? true : !!body.enabled,
             cd: this.now(),
             ud: this.now(),
@@ -200,8 +252,12 @@ class ClientRegistry {
         if (body.desc !== undefined) next.desc = String(body.desc).trim()
         if (body.redirectUris !== undefined) next.redirectUris = normalizeList(body.redirectUris) || []
         if (body.scopes !== undefined) next.scopes = normalizeList(body.scopes) || []
-        if (body.grantTypes !== undefined) next.grantTypes = normalizeList(body.grantTypes) || []
+        if (body.grantTypes !== undefined || body.kind !== undefined) next.grantTypes = grantTypesFrom(body) || []
+        if (body.postLogoutRedirectUris !== undefined) next.postLogoutRedirectUris = normalizeList(body.postLogoutRedirectUris) || []
         if (body.resources !== undefined) next.resources = normalizeResources(body.resources) || []
+        if (body.owner !== undefined) next.owner = String(body.owner).trim()
+        if (body.contact !== undefined) next.contact = String(body.contact).trim()
+        if (body.firstParty !== undefined) next.firstParty = !!body.firstParty
         if (body.enabled !== undefined) next.enabled = !!body.enabled
         validate(next, this.resources)
         next.ud = this.now()
@@ -209,6 +265,9 @@ class ClientRegistry {
             let ind = data.clients.findIndex(c => c._id === id)
             data.clients[ind] = next
         })
+        // Выключили - выданные токены гасим сразу: иначе после обратного включения
+        // старые refresh token'ы ожили бы, будто выключения и не было (#1947).
+        if (client.enabled && !next.enabled) this.emit('revoke', {clientId: id, clientName: next.name, reason: 'disabled'})
         return publicView(next)
     }
 
@@ -238,6 +297,7 @@ class ClientRegistry {
         this.store.update(data => {
             data.clients = data.clients.filter(c => c._id !== id)
         })
+        this.emit('revoke', {clientId: id, clientName: client.name, reason: 'removed'})
         return publicView(client)
     }
 
@@ -273,6 +333,8 @@ module.exports = {
     NotFoundError,
     GRANT_TYPES,
     KNOWN_SCOPES,
+    KINDS,
+    kindOf,
     isValidRedirectUri,
     publicView,
 }

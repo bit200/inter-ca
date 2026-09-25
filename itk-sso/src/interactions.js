@@ -7,7 +7,7 @@ const { renderLogin, renderConsent } = require('./views');
  * Экраны входа и согласия для Authorization Code + PKCE.
  * Пароль сюда приходит один раз и сразу уходит на проверку в itk-portal.
  */
-function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
+function createInteractionRouter({ provider, accounts, registry = null, ttl = 3600 }) {
     const router = express.Router();
     const body = express.urlencoded({ extended: false });
 
@@ -27,7 +27,11 @@ function createInteractionRouter({ provider, accounts, ttl = 3600 }) {
 
             const scopes = String(details.params.scope || '').split(' ').filter(Boolean);
             const profile = details.session ? await accounts.profiles.get(details.session.accountId) : null;
+            // Чья это система — из карточки реестра: человек решает, кому отдаёт данные.
+            const card = registry ? registry.getRaw(details.params.client_id) : null;
             return res.send(renderConsent({
+                owner: (card && card.owner) || '',
+                contact: (card && card.contact) || '',
                 uid: details.uid,
                 client,
                 scopes,
