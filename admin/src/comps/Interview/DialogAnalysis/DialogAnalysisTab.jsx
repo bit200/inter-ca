@@ -374,7 +374,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
         {mockUi === 'summary' && <WeakMocksProgress mocks={weakMocks} blocks={blocks}/>}
         {mockUi === 'questions' && <WeakMocksNote mocks={weakMocks} blocks={blocks}/>}
 
-        {dialogDone && analysis.rolesPending && <RolesPendingNotice
+        {/* Роли отмечены и оценка уже идёт - просить их снова незачем. */}
+        {dialogDone && analysis.rolesPending && !answersActive && <RolesPendingNotice
             speakers={listSpeakers(rawConversation.turns).filter(entry => entry.sample)}
             savedRoles={roles}
             sending={sendingRoles}

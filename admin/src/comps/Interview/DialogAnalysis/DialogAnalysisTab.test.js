@@ -343,6 +343,27 @@ describe('таб разбора диалога', () => {
             await waitFor(() => expect(post).toHaveBeenCalledWith('/my-interview/7/speaker-roles', {roles: {SPEAKER_00: 'manager', SPEAKER_01: 'client'}}));
         });
 
+        test('пока оценка ответов идёт, уведомление о ролях скрыто', async () => {
+            setupHttp({...unassigned, rolesPending: true}, {answersEvaluation: {status: 'evaluating'}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.queryByTestId('roles-pending-notice')).toBeNull();
+        });
+
+        test('после «Продолжить оценку» уведомление уходит, как только оценка встала в очередь', async () => {
+            const post = setupHttp({...unassigned, rolesPending: true}, {answersEvaluation: {status: ''}});
+            post.mockImplementation(() => Promise.resolve({dialogAnalysis: {...unassigned, rolesPending: true}, answersStarted: true}));
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const notice = screen.getByTestId('roles-pending-notice');
+            fireEvent.click(within(within(notice).getByText('Первый голос').closest('li')).getByRole('button', {name: 'Интервьюер'}));
+            fireEvent.click(within(notice).getByRole('button', {name: 'Продолжить оценку'}));
+
+            await waitFor(() => expect(screen.queryByTestId('roles-pending-notice')).toBeNull());
+        });
+
         test('если обе роли уже были, смена роли оценку не перезапускает', async () => {
             const post = setupHttp(unassigned, answersDone);
             render(<DialogAnalysisTab item={interview(null)} speakerRoles={{SPEAKER_00: 'manager', SPEAKER_01: 'client'}}/>);
