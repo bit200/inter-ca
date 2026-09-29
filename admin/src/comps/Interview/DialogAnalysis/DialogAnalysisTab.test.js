@@ -17,7 +17,11 @@ const setupHttp = (payload, answers = null) => {
 
 const flush = async () => { await act(async () => { await Promise.resolve(); }); };
 
-beforeEach(() => { global.t = (key) => key; });
+beforeEach(() => {
+    global.t = (key) => key;
+    // Выбранный раздел запоминается в localStorage - тесты не должны его наследовать.
+    window.localStorage.clear();
+});
 
 describe('таб разбора диалога', () => {
     test('без разбора зовёт оценить и ставит запись в очередь', async () => {
@@ -502,6 +506,52 @@ describe('таб разбора диалога', () => {
             fireEvent.click(screen.getByRole('button', {name: /^Диалог/}));
             expect(screen.queryByRole('region', {name: 'Вопрос 1'})).toBeNull();
             expect(screen.getByText('Хотел расти')).toBeInTheDocument();
+        });
+
+        test('«Техника» и «Софт» показывают обзор по своей части, выбор запоминается', async () => {
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b1', technical: true, turnIndexes: [0, 1], evaluation: {score: 8, feedback: 'Определение верное'}},
+                {id: 'b2', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'on_topic', complete: true}},
+            ]}}});
+            const {unmount} = render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            expect(screen.getByRole('button', {name: /^Обзор/})).toHaveTextContent('Обзор2');
+            fireEvent.click(screen.getByRole('button', {name: /^Техника/}));
+            expect(screen.getByRole('region', {name: 'Техника'})).toBeInTheDocument();
+            expect(screen.getByText('Технические вопросы')).toBeInTheDocument();
+            expect(screen.getAllByText('Что такое замыкание?').length).toBeGreaterThan(0);
+            expect(screen.queryByText('Почему ушли с прошлой работы?')).toBeNull();
+
+            fireEvent.click(screen.getByRole('button', {name: /^Софт/}));
+            expect(screen.getByText('Нетехнические вопросы')).toBeInTheDocument();
+            expect(screen.queryByText('Что такое замыкание?')).toBeNull();
+            expect(screen.getAllByText('Почему ушли с прошлой работы?').length).toBeGreaterThan(0);
+            unmount();
+
+            // Повторное открытие карточки - сразу на запомненном «Софте».
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+            expect(screen.getByRole('button', {name: /^Софт/})).toHaveAttribute('aria-current', 'page');
+            expect(screen.queryByText('Что такое замыкание?')).toBeNull();
+        });
+
+        test('без технических вопросов «Техника» выключена и объясняет почему', async () => {
+            window.localStorage.setItem('dlgSection', 'tech');
+            setupHttp(done, {answersEvaluation: {status: 'done', result: {blocks: [
+                {id: 'b2', technical: false, turnIndexes: [2, 3], softEvaluate: {relevance: 'on_topic', complete: true}},
+            ]}}});
+            render(<DialogAnalysisTab item={interview(null)}/>);
+            await flush();
+
+            const tech = screen.getByRole('button', {name: /^Техника/});
+            expect(tech).toHaveAttribute('aria-disabled', 'true');
+            expect(within(tech).getByRole('tooltip', {hidden: true})).toHaveTextContent('Технических вопросов в интервью нет');
+            // Запомненная пустая часть уступает «Обзору».
+            expect(screen.getByRole('button', {name: /^Обзор/})).toHaveAttribute('aria-current', 'page');
+            fireEvent.click(tech);
+            expect(tech).not.toHaveAttribute('aria-current');
+            expect(screen.getByRole('button', {name: /^Софт/})).not.toHaveAttribute('aria-disabled');
         });
 
         test('подсказка про детализацию всплывает при наведении на балл, а не висит в шапке', async () => {

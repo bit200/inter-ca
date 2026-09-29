@@ -83,6 +83,15 @@ import {
     conversationTracks,
     withoutAnswer,
 } from './dialogLens';
+import {
+    QUESTION_SECTIONS,
+    initialSection,
+    isQuestionSection,
+    readSection,
+    resolveSection,
+    saveSection,
+    sectionBlocks,
+} from './sectionTabs';
 
 // Разбор диалога по записи интервью. Очередь на стороне api ведёт запись по
 // шагам queued -> downloading -> analyzing -> done/error, а таб показывает, где
@@ -572,8 +581,17 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
     let [rolePicker, setRolePicker] = useState(null);
     // Разделы как в карточке звонка: «Обзор» - вопросы с результатами, «Диалог» -
     // ход разговора и вся лента. Без вопросов открывать пустой обзор незачем.
-    let [section, setSection] = useState(() => scoredBlocks.length > 0 ? 'overview' : 'dialog');
-    let byQuestions = section === 'overview' && scoredBlocks.length > 0;
+    // «Техника» и «Софт» - тот же обзор по одной части интервью; выбор раздела
+    // запоминается в браузере (sectionTabs.js), пустая часть уступает «Обзору».
+    let [chosenSection, setSection] = useState(() => initialSection(readSection(), scoredBlocks));
+    let section = resolveSection(chosenSection, scoredBlocks);
+    let questionSection = isQuestionSection(section) ? section : null;
+    let sectionScoredBlocks = useMemo(() => sectionBlocks(section, scoredBlocks), [section, scoredBlocks]);
+    let byQuestions = questionSection !== null && scoredBlocks.length > 0;
+    function chooseSection(key) {
+        saveSection(key);
+        setSection(key);
+    }
     // «К диалогу» у вопроса: переключаемся на ленту, докручиваем до его первой
     // реплики и на пару секунд подсвечиваем все реплики вопроса.
     let [focus, setFocus] = useState(null);
@@ -735,7 +753,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 
     let durationMs = interviewDuration(summary, turns);
     let tracks = conversationTracks(turns, durationMs, scores, flags, turnParts(blocks, turns));
-    let questionsCount = scoredBlocks.length;
+    let questionsCount = sectionScoredBlocks.length;
     let questionsLabel = questionsCount + ' ' + (questionsCount % 10 === 1 && questionsCount % 100 !== 11 ? 'вопрос'
         : [2, 3, 4].includes(questionsCount % 10) && ![12, 13, 14].includes(questionsCount % 100) ? 'вопроса' : 'вопросов');
     let linkingNotice = linkingBlock && <div className={styles.linking} role="status">
@@ -793,22 +811,37 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 >{pinned ? 'Открепить' : 'Закрепить'}</button>
             </div>}
             <nav className={styles.sectionTabs} aria-label="Разделы разбора интервью">
-                {[['overview', 'Обзор', scoredBlocks.length], ['dialog', 'Диалог', turns.length]].map(([key, label, count]) => <button
-                    key={key}
+                {['overview', 'tech', 'soft'].map(key => {
+                    let count = sectionBlocks(key, scoredBlocks).length;
+                    // Пустая часть выключена, но не disabled: у disabled-кнопки
+                    // не срабатывает наведение, и подсказка бы не показалась.
+                    let off = key !== 'overview' && count === 0;
+                    return <button
+                        key={key}
+                        type="button"
+                        className={styles.sectionTab}
+                        aria-current={section === key ? 'page' : undefined}
+                        aria-disabled={off ? 'true' : undefined}
+                        onClick={() => !off && chooseSection(key)}
+                    >{off ? <span>{QUESTION_SECTIONS[key].label}</span> : QUESTION_SECTIONS[key].label}<span className={styles.tabCounter}>{count}</span>
+                        {off && <span className={styles.sectionTabHint} role="tooltip">{QUESTION_SECTIONS[key].empty}</span>}
+                    </button>;
+                })}
+                <button
                     type="button"
                     className={styles.sectionTab}
-                    aria-current={section === key ? 'page' : undefined}
-                    onClick={() => setSection(key)}
-                >{label}<span className={styles.tabCounter}>{count}</span></button>)}
+                    aria-current={section === 'dialog' ? 'page' : undefined}
+                    onClick={() => chooseSection('dialog')}
+                >Диалог<span className={styles.tabCounter}>{turns.length}</span></button>
             </nav>
         </div>
 
-        {section === 'overview' && <section className={styles.panel} aria-label="Обзор">
+        {questionSection && <section className={styles.panel} aria-label={QUESTION_SECTIONS[questionSection].label}>
             <header className={styles.panelHead}>
                 <div className={styles.heading}>
                     <span className={styles.eyebrow}>Результаты</span>
                     <h4 className={styles.sectionTitle}>
-                        Вопросы {scoredBlocks.length > 0 && <span className={styles.countChip}>{questionsLabel}</span>}
+                        {QUESTION_SECTIONS[questionSection].title} {scoredBlocks.length > 0 && <span className={styles.countChip}>{questionsLabel}</span>}
                     </h4>
                 </div>
                 <div className={styles.panelHeadActions}>
@@ -824,7 +857,7 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
                 ? <div className={styles.panelBody}>
                     {linkingNotice}
                     <div className={styles.qaList}>
-                        {scoredBlocks.map(block => <QaBlock
+                        {sectionScoredBlocks.map(block => <QaBlock
                             key={block.key}
                             block={block}
                             interviewId={interviewId}
