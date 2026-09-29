@@ -146,3 +146,21 @@ export function uploadVideoFromResponse(r) {
     const doc = r && r.data && typeof r.data === 'object' ? r.data : r;
     return doc && doc._id ? doc : null;
 }
+
+// Превью загруженной записи - сжатая копия (не больше 300 МБ), которую мультер
+// положил в S3: GET /my-interview/:id/video-preview (interviews/api,
+// controllers/interviewVideoUpload.js preview) отдаёт на неё presigned-ссылку,
+// и плеер играет её так же, как запись по публичной ссылке. Ссылка живёт
+// часы, поэтому не хранится, а берётся при каждом открытии карточки.
+// Нет ссылки (запись ещё сжимается, сервер не ответил) - пустая строка:
+// плеер тогда просто не показывается.
+export function previewUrlFromResponse(r) {
+    const doc = r && r.data && typeof r.data === 'object' ? r.data : r;
+    return doc && typeof doc.url === 'string' ? doc.url.trim() : '';
+}
+
+export function fetchVideoPreview({interviewId, http = global.http}) {
+    return http.get(`/my-interview/${interviewId}/video-preview`, {}, {wo_notify: true})
+        .then(previewUrlFromResponse)
+        .catch(() => '');
+}

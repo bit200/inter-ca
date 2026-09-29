@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent, NO_RESPONSE_MESSAGE, uploadVideoFromResponse} from './videoProcessUpload';
+import {startVideoProcess, waitVideoProcess, buildS3UploadInfo, buildJobAttachInfo, uploadVideoState, DEFAULT_MODE, uploadErrorMessage, reportUploadEvent, NO_RESPONSE_MESSAGE, uploadVideoFromResponse, previewUrlFromResponse, fetchVideoPreview} from './videoProcessUpload';
 
 // Поддельный XHR: отвечает по очереди из responses и запоминает запросы
 function makeXHR(responses, log) {
@@ -193,5 +193,32 @@ describe('uploadVideoFromResponse', () => {
         const src = fs.readFileSync(path.join(__dirname, 'Interview/Interview.js'), 'utf8');
         expect(src).toContain('Component: InterviewVideoUploadField');
         expect(src).not.toMatch(/Component: \(\{item\}\) => <InterviewVideoUpload/);
+    });
+});
+
+describe('превью загруженной записи', () => {
+    it('ссылка на сжатую копию берётся из ответа в обеих формах global.http', () => {
+        expect(previewUrlFromResponse({url: 'https://s3/v.mp4?sig'})).toBe('https://s3/v.mp4?sig');
+        expect(previewUrlFromResponse({data: {url: 'https://s3/v.mp4?sig'}})).toBe('https://s3/v.mp4?sig');
+        expect(previewUrlFromResponse({url: '', status: 'processing'})).toBe('');
+        expect(previewUrlFromResponse(null)).toBe('');
+    });
+
+    it('спрашивает GET /my-interview/:id/video-preview без всплывающих ошибок', async () => {
+        const http = {get: jest.fn(async () => ({url: 'https://s3/v.mp4?sig'}))};
+        expect(await fetchVideoPreview({interviewId: 1000, http})).toBe('https://s3/v.mp4?sig');
+        expect(http.get).toHaveBeenCalledWith('/my-interview/1000/video-preview', {}, {wo_notify: true});
+    });
+
+    it('сервер не ответил - превью нет, карточка не падает', async () => {
+        const http = {get: jest.fn(async () => { throw {error: 'bad gateway'}; })};
+        expect(await fetchVideoPreview({interviewId: 1000, http})).toBe('');
+    });
+
+    it('карточка загрузки и плеер разбора берут превью загруженной записи', () => {
+        const card = fs.readFileSync(path.join(__dirname, 'Interview/InterviewVideoUpload.jsx'), 'utf8');
+        const dialog = fs.readFileSync(path.join(__dirname, 'Interview/DialogAnalysis/DialogAnalysisTab.jsx'), 'utf8');
+        expect(card).toMatch(/<VideoPreview src=\{previewUrl\}/);
+        expect(dialog).toMatch(/pickDialogMedia\(value, analysis, uploadPreview\)/);
     });
 });

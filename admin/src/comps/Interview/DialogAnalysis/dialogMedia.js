@@ -17,7 +17,9 @@ function firstUrl(values) {
     return '';
 }
 
-export function pickDialogMedia(interview, analysis) {
+// uploadPreview - ссылка на сжатую копию загруженной записи (useVideoPreview):
+// у загрузки нет item.video, и без неё плеер играл только звук, хотя видео есть.
+export function pickDialogMedia(interview, analysis, uploadPreview) {
     let item = interview && typeof interview === 'object' ? interview : {};
     let state = analysis && typeof analysis === 'object' ? analysis : {};
     let result = state.result && typeof state.result === 'object' ? state.result : {};
@@ -27,7 +29,7 @@ export function pickDialogMedia(interview, analysis) {
     // не прямая ссылка: firstUrl всё равно отсеет его как невалидный источник.
     // Прямая ссылка на запись для плеера приходит только как media.videoUrl/video
     // (аудио/видео сервиса разбора) или старым текстовым Interview.video.
-    let video = firstUrl([item.video, media.videoUrl, media.video]
+    let video = firstUrl([item.video, uploadPreview, media.videoUrl, media.video]
         .filter(value => {
             let source = readVideoSource(value && typeof value === 'object' ? value.url : value);
             return source && source.kind === 'direct';

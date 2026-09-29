@@ -21,6 +21,14 @@ describe('запись для реплик разбора', () => {
             .toEqual({kind: 'video', src: 'https://x/v.webm'});
     });
 
+    test('загруженная запись играет сжатой копией как видео, а не только звуком разбора', () => {
+        const preview = 'https://s3.example/videos/video/5/ab-compress.mp4?X-Amz-Signature=sig';
+        expect(pickDialogMedia({videoUpload: 77}, {audioUrl: 'https://x/a.mp3'}, preview))
+            .toEqual({kind: 'video', src: preview});
+        expect(pickDialogMedia({videoUpload: 77}, {audioUrl: 'https://x/a.mp3'}, ''))
+            .toEqual({kind: 'audio', src: 'https://x/a.mp3'});
+    });
+
     test('без записи плеера нет', () => {
         expect(pickDialogMedia({video: '  '}, null)).toBeNull();
     });
