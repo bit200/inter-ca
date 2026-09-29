@@ -1,4 +1,4 @@
-import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall, technicalScoreShift, SOFT_WEIGHT} from './dialogSummary';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall, technicalScoreShift, SOFT_WEIGHT, readTechnicalSummary, technicalDigest} from './dialogSummary';
 
 // Форма metrics - как её считает services/dialogMetrics.js в itk-platform-api.
 const metrics = {
@@ -113,5 +113,47 @@ describe('итог интервью и метрики разговора', () =>
         expect(formatMs(95000)).toBe('1 мин 35 с');
         expect(formatMs(-800)).toBe('−0,8 с');
         expect(formatMs(null)).toBe('—');
+    });
+
+    it('отдельный технический вывод сервиса читается строкой или объектом, без него - пусто', () => {
+        expect(readTechnicalSummary({overall: {technical: 'Хуки знает, SOLID нет'}})).toBe('Хуки знает, SOLID нет');
+        expect(readTechnicalSummary({overall: {technical: {summary: 'Подробно о технике'}}})).toBe('Подробно о технике');
+        expect(readTechnicalSummary({overall: {technicalSummary: 'Ещё вариант'}})).toBe('Ещё вариант');
+        expect(readTechnicalSummary({overall: {summary: 'Только общий'}})).toBe('');
+        expect(readTechnicalSummary(null)).toBe('');
+    });
+});
+
+describe('детальный вывод по технической части', () => {
+    const block = (number, score, feedback, text) => ({
+        number, technical: true,
+        items: [{turn: {role: 'manager', text: text || `Расскажите про тему ${number}?`}, followUp: false}],
+        evaluation: {state: 'done', score, max: 10, feedback},
+    });
+
+    it('оценённые технические вопросы раскладываются по уровню, внутри - от слабого, с первой фразой отзыва', () => {
+        let digest = technicalDigest([
+            block(1, 8, 'Хорошо объяснил рендеринг. Привёл примеры.', 'Как React решает, что перерисовать?'),
+            block(2, 2, 'Не знает SOLID.'),
+            block(3, 5, 'DRY понимает поверхностно'),
+            block(4, 9, ''),
+            {number: 5, technical: false, items: [], soft: {state: 'done', score: 9}},
+            {number: 6, technical: true, items: [], evaluation: {state: 'pending', score: null}},
+        ]);
+        expect(digest.count).toBe(4);
+        expect(digest.average).toBe(6);
+        expect(digest.groups.map(group => [group.title, group.items.map(item => item.number)]))
+            .toEqual([['Уверенно', [1, 4]], ['С пробелами', [3]], ['Слабо', [2]]]);
+        expect(digest.groups[0].items[0]).toMatchObject({title: 'Как React решает, что перерисовать?', score: 8, note: 'Хорошо объяснил рендеринг.'});
+        expect(digest.groups[0].items[1].note).toBe('');
+    });
+
+    it('без оценённых технических вопросов выжимки нет, длинный отзыв обрезается по слову', () => {
+        expect(technicalDigest([])).toBeNull();
+        expect(technicalDigest([{technical: false, evaluation: {state: 'skipped'}}])).toBeNull();
+        let long = 'слово '.repeat(60).trim();
+        let note = technicalDigest([block(1, 5, long)]).groups[0].items[0].note;
+        expect(note.length).toBeLessThanOrEqual(161);
+        expect(note.endsWith('слово…')).toBe(true);
     });
 });

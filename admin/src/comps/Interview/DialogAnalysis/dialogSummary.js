@@ -4,6 +4,8 @@
 // metrics). Схема у бэкенда ещё устаканивается, поэтому читаем терпимо, а
 // отсутствующее поле - это «ещё не посчитано», а не ошибка.
 
+import {questionTitle, scoreBand, shortQuestionTitle} from './qaBlocks';
+
 function asObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
 }
@@ -45,6 +47,65 @@ export function readOverall(result) {
     let message = firstText(asObject(source.error) && source.error.message, source.errorMessage);
     if (score === null && !summary && !strengths.length && !weaknesses.length && !message) return null;
     return {score, max, summary, strengths, weaknesses, message};
+}
+
+// Разбор технической части отдельным текстом. Общий итог сервис пишет одним абзацем
+// на всё интервью, и о технике там строка-две; развёрнутый технический вывод - это
+// отдельный запрос к модели, и пока его нет, поля просто не будет. Читаем терпимо:
+// overall.technical строкой или объектом {summary}, либо overall.technicalSummary.
+export function readTechnicalSummary(result) {
+    let source = asObject(asObject(result) && result.overall);
+    if (!source) return '';
+    let inner = asObject(source.result) || {};
+    let technical = asObject(source.technical) || asObject(inner.technical) || {};
+    return firstText(typeof source.technical === 'string' ? source.technical : '', technical.summary, technical.text,
+        source.technicalSummary, inner.technicalSummary);
+}
+
+// Первое предложение отзыва по вопросу - как одна строка «почему такой балл».
+export const DIGEST_NOTE_LIMIT = 160;
+
+function firstSentence(text, limit = DIGEST_NOTE_LIMIT) {
+    let full = firstText(text).replace(/\s+/g, ' ');
+    if (!full) return '';
+    let sentence = full.split(/(?<=[.!?…])\s+/)[0];
+    if (sentence.length <= limit) return sentence;
+    let cut = sentence.slice(0, limit + 1);
+    let space = cut.lastIndexOf(' ');
+    return (space > limit / 2 ? cut.slice(0, space) : sentence.slice(0, limit)).replace(/[\s,;:—–-]+$/, '') + '…';
+}
+
+const DIGEST_GROUPS = [
+    {band: 'good', title: 'Уверенно'},
+    {band: 'fair', title: 'С пробелами'},
+    {band: 'poor', title: 'Слабо'},
+];
+
+// Детальный вывод по технике из того, что уже посчитано: оценённые технические
+// вопросы, разложенные по уровню ответа, с баллом и первой фразой отзыва. Общий
+// абзац называет две-три темы - здесь видно все вопросы и откуда взялся балл.
+// Внутри группы - от слабого к сильному: сверху то, над чем работать.
+export function technicalDigest(blocks) {
+    let rated = (Array.isArray(blocks) ? blocks : [])
+        .filter(block => block && block.technical === true && block.evaluation
+            && block.evaluation.state === 'done' && typeof block.evaluation.score === 'number');
+    if (!rated.length) return null;
+    let items = rated.map(block => {
+        let {score, max = 10, feedback} = block.evaluation;
+        return {
+            number: block.number,
+            title: shortQuestionTitle(questionTitle(block)),
+            score,
+            max,
+            band: scoreBand(score, max),
+            note: firstSentence(feedback),
+        };
+    });
+    let average = Math.round(items.reduce((sum, item) => sum + item.score / item.max * 10, 0) / items.length * 10) / 10;
+    let groups = DIGEST_GROUPS
+        .map(group => ({...group, items: items.filter(item => item.band === group.band).sort((a, b) => a.score / a.max - b.score / b.max)}))
+        .filter(group => group.items.length);
+    return {count: items.length, average, max: 10, groups};
 }
 
 export const SOFT_WEIGHT = 0.6;
