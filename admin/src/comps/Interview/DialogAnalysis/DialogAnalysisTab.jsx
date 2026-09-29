@@ -13,7 +13,7 @@ import {
     normalizeAnswers,
     stepState,
 } from './dialogAnalysisState';
-import {formatScore, isScoredBlock, questionTitle, readQaBlocks, scoreBand, questionRemarks, shortQuestionTitle} from './qaBlocks';
+import {formatScore, isScoredBlock, plural, questionTitle, readQaBlocks, scoreBand, questionRemarks, shortQuestionTitle} from './qaBlocks';
 import {mocksByBlockNumber, readMockUiVariant} from './weakMocksLogic';
 import {WeakMockMark, WeakMocksNote, WeakMocksProgress, WeakMocksStrip, useWeakMocks} from './WeakMocks';
 import {useSoftWeights} from './softScoreWeights';
@@ -27,7 +27,7 @@ import {
     saveScoreSortOrder,
     sortScoredBlocks,
 } from './finalScoreWeights';
-import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall} from './dialogSummary';
+import {formatMs, readBlockTimings, readDialogMetrics, readGreeting, readOverall, combineOverall, readTechnicalSummary, technicalDigest} from './dialogSummary';
 import {
     capabilityLabel,
     capabilityStatusLabel,
@@ -358,6 +358,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     // Итог - то, ради чего открывают карточку, поэтому он над процессами и расшифровкой.
     let overall = dialogDone ? combineOverall(readOverall(answers.result), blocks, softWeights.overall) : null;
     let greeting = dialogDone ? readGreeting(answers.result) : null;
+    let technical = overall ? {digest: technicalDigest(blocks), summary: readTechnicalSummary(answers.result)} : null;
     // Мок-интервью по слабым ответам - сразу под итогом: это продолжение его
     // «слабых сторон». Вариант подачи - ?mockUi=strip|summary|questions.
     let mockUi = readMockUiVariant(typeof window === 'undefined' ? '' : window.location.search);
@@ -374,6 +375,7 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     return <div className={styles.tab}>
         {(overall || greeting || dialogMetrics) && <InterviewSummary
             overall={overall}
+            technical={technical}
             greeting={greeting}
             metrics={dialogMetrics}
             summarizing={answers.status === 'summarizing'}
@@ -1189,7 +1191,7 @@ function SoftMarks({soft, block}) {
 
 // Итог интервью: общий балл и сводка, рядом - отметки приветствия и прощания, ниже -
 // цифры разговора. Первое, что читают на карточке, поэтому стоит над всем остальным.
-function InterviewSummary({overall, greeting, metrics, summarizing}) {
+function InterviewSummary({overall, technical, greeting, metrics, summarizing}) {
     let band = overall ? scoreBand(overall.score, overall.max) : 'none';
     let scored = Boolean(overall) && overall.score !== null;
     return <section className={styles.summary} data-band={band} data-scored={scored ? 'true' : undefined} aria-label="Итог интервью">
@@ -1221,6 +1223,7 @@ function InterviewSummary({overall, greeting, metrics, summarizing}) {
                         </div>}
                     </div>}
                 </div>
+                {technical && (technical.digest || technical.summary) && <TechnicalDigest digest={technical.digest} summary={technical.summary}/>}
             </div>
             : <p className={styles.summaryMuted}>
                 {summarizing && <span className={styles.spinner} aria-hidden="true"/>}
@@ -1228,12 +1231,52 @@ function InterviewSummary({overall, greeting, metrics, summarizing}) {
             </p>}
 
         {greeting && greeting.note && <p className={styles.courtesyNote}>{greeting.note}</p>}
+        {overall && <AiNotice/>}
         </div>
         {scored && <aside className={styles.summaryAside}>
             <span className={styles.summaryAsideLabel}>Итоговая оценка</span>
             <SummaryScore score={overall.score} max={overall.max} basis={overall.basis} parts={overall.parts}/>
         </aside>}
         {metrics && <DialogMetrics metrics={metrics}/>}
+    </section>;
+}
+
+// Итог, баллы и отзывы пишет модель - ученик должен видеть это до того, как
+// начнёт спорить с цифрой. Плашка заметная, но не тревожная: это не ошибка.
+function AiNotice() {
+    return <p className={styles.aiNotice} role="note">
+        <span className={styles.aiNoticeMark} aria-hidden="true">ИИ</span>
+        <span>
+            <strong>Разбор сгенерирован нейросетью и может содержать неточности.</strong>{' '}
+            Если балл или вывод расходится с тем, что было на интервью, сверьтесь с расшифровкой ниже.
+        </span>
+    </p>;
+}
+
+// Техническая часть подробно: все оценённые технические вопросы по уровню ответа,
+// у каждого балл и первая фраза отзыва. Если сервис прислал отдельный технический
+// вывод - он идёт абзацем над списком.
+function TechnicalDigest({digest, summary}) {
+    return <section className={styles.techDigest} aria-label="Техническая часть">
+        <header className={styles.techDigestHead}>
+            <h4>Техническая часть</h4>
+            {digest && <span>
+                {digest.count} {plural(digest.count, 'вопрос', 'вопроса', 'вопросов')}, в среднем {formatScore(digest.average)} из {digest.max}
+            </span>}
+        </header>
+        {summary && <p className={styles.techDigestText}>{summary}</p>}
+        {digest && digest.groups.map(group => <div key={group.band} className={styles.techGroup} data-band={group.band}>
+            <h5>{group.title}</h5>
+            <ul>
+                {group.items.map(item => <li key={item.number}>
+                    <span className={styles.techScore}>{formatScore(item.score)}</span>
+                    <span className={styles.techItemText}>
+                        <span className={styles.techItemTitle}>{item.title}</span>
+                        {item.note && <span className={styles.techItemNote}>{item.note}</span>}
+                    </span>
+                </li>)}
+            </ul>
+        </div>)}
     </section>;
 }
 

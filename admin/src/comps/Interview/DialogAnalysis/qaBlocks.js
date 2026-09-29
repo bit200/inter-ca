@@ -368,7 +368,7 @@ const LONG_DELAY_MS = 4500;
 const VERY_LONG_DELAY_MS = 8000;
 const INNER_PAUSE_MS = 3000;
 
-function plural(count, one, few, many) {
+export function plural(count, one, few, many) {
     let mod10 = count % 10;
     let mod100 = count % 100;
     if (mod10 === 1 && mod100 !== 11) return one;

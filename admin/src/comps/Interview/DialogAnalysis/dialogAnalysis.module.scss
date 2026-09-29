@@ -2025,6 +2025,135 @@ button.turnSpeaker{
   }
 }
 
+// Плашка «сгенерировано ИИ»: тёплая подложка и рамка по всему периметру - видна
+// сразу, но не красная: это пояснение, а не ошибка.
+.aiNotice{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--dlg-warn) 30%, transparent);
+  border-radius: 6px;
+  background: var(--dlg-warn-soft);
+  color: var(--dlg-ink);
+  font-size: 13px;
+  line-height: 1.5;
+
+  strong{ color: var(--dlg-warn); font-weight: 600; }
+}
+
+.aiNoticeMark{
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--dlg-warn);
+  color: var(--dlg-card);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+// Техническая часть: по строке на уровень ответа - слева уровень, справа вопросы
+// с баллом и первой фразой отзыва. Балл в цвете уровня, как у вопросов ниже.
+.techDigest{
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--dlg-line);
+}
+
+.techDigestHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+
+  h4{
+    margin: 0;
+    color: var(--dlg-strong);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  span{
+    color: var(--dlg-muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.techDigestText{
+  max-width: 72ch;
+  margin: 0;
+  color: var(--dlg-ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.techGroup{
+  --dlg-band: var(--dlg-muted);
+  --dlg-band-soft: var(--dlg-soft);
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 4px 16px;
+
+  h5{
+    margin: 0;
+    padding-top: 3px;
+    color: var(--dlg-band);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  ul{
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li{
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+.techGroup[data-band="good"]{ --dlg-band: var(--dlg-accent); --dlg-band-soft: var(--dlg-accent-soft); }
+.techGroup[data-band="fair"]{ --dlg-band: var(--dlg-warn); --dlg-band-soft: var(--dlg-warn-soft); }
+.techGroup[data-band="poor"]{ --dlg-band: var(--dlg-bad); --dlg-band-soft: var(--dlg-bad-soft); }
+
+@media (max-width: 575px){
+  .techGroup{ grid-template-columns: minmax(0, 1fr); }
+}
+
+.techScore{
+  flex: none;
+  min-width: 34px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--dlg-band-soft);
+  color: var(--dlg-band);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.techItemText{
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.techItemTitle{ color: var(--dlg-strong); font-weight: 500; }
+.techItemNote{ color: var(--dlg-muted); }
+
 .summaryMuted{
   margin: 0;
   color: var(--dlg-muted);
