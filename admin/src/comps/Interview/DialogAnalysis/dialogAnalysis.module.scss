@@ -656,6 +656,51 @@ button.turnSpeaker{
 
 .sectionTab[aria-current="page"] .tabCounter{ color: var(--dlg-accent); background: var(--dlg-accent-soft); }
 
+// Пустая часть интервью («Техника» или «Софт» без вопросов): вкладка
+// полупрозрачна и не переключается, по наведению - подсказка, что данных нет.
+.sectionTab[aria-disabled="true"]{
+  position: relative;
+  cursor: not-allowed;
+
+  & > :not(.sectionTabHint){ opacity: .45; }
+  &:hover{ color: var(--dlg-muted); background: transparent; }
+}
+
+.sectionTabHint{
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 12px;
+  z-index: 5;
+  width: max-content;
+  max-width: 240px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--dlg-card);
+  background: var(--dlg-strong);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(20, 32, 26, .18);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .12s ease;
+  pointer-events: none;
+}
+
+.sectionTab[aria-disabled="true"]:hover .sectionTabHint,
+.sectionTab[aria-disabled="true"]:focus-visible .sectionTabHint{ visibility: visible; opacity: 1; }
+
+// Вкладки помещаются в строку - прокрутка не нужна и обрезала бы подсказку.
+@media (min-width: 641px){
+  .sectionTabs{ overflow: visible; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .sectionTabHint{ transition: none; }
+}
+
 // Раздел под доком - секция карточки звонка: шапка с подписью и заметкой справа.
 .panel{
   margin-top: 18px;
