@@ -836,6 +836,10 @@ describe('таб разбора диалога', () => {
             expect(notice).toHaveTextContent(/Оценка предварительная/);
             expect(notice).toHaveTextContent(/сгенерирован нейросетью и может содержать неточности/);
             expect(notice).toHaveTextContent(/После ревью ментора вы получите полноценную обратную связь/);
+            // Фраза про ревью ментора - отдельной строкой, своим элементом после жирной.
+            const next = within(notice).getByText('После ревью ментора вы получите полноценную обратную связь.');
+            expect(next.tagName).toBe('SPAN');
+            expect(next.className).toMatch(/aiNoticeNext/);
             const tech = within(summary).getByRole('region', {name: 'Техническая часть'});
             expect(within(tech).getByText('1 вопрос, в среднем 8 из 10')).toBeInTheDocument();
             expect(within(tech).getByText('Уверенно')).toBeInTheDocument();
