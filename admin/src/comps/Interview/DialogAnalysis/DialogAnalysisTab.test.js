@@ -832,7 +832,10 @@ describe('таб разбора диалога', () => {
             expect(within(summary).queryByText(/×/)).not.toBeInTheDocument();
             expect(within(summary).getByText('Технически уверен, на вопросы про мотивацию отвечает уклончиво.')).toBeInTheDocument();
             // Плашка, что разбор написан нейросетью, и подробная техническая часть по вопросам.
-            expect(within(summary).getByRole('note')).toHaveTextContent(/сгенерирован нейросетью и может содержать неточности/);
+            const notice = within(summary).getByRole('note');
+            expect(notice).toHaveTextContent(/Оценка предварительная/);
+            expect(notice).toHaveTextContent(/сгенерирован нейросетью и может содержать неточности/);
+            expect(notice).toHaveTextContent(/После ревью ментора вы получите полноценную обратную связь/);
             const tech = within(summary).getByRole('region', {name: 'Техническая часть'});
             expect(within(tech).getByText('1 вопрос, в среднем 8 из 10')).toBeInTheDocument();
             expect(within(tech).getByText('Уверенно')).toBeInTheDocument();
