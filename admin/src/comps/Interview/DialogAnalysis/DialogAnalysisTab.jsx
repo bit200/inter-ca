@@ -887,6 +887,9 @@ function Result({conversation, blocks: evaluatedBlocks, answerLinks, onAnswerLin
 const TONE_LABELS = {speech: 'Речь без замечаний', warning: 'Средний балл или замечание', critical: 'Слабый ответ или мимо вопроса'};
 
 function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playingIndex, onSelect}) {
+    // Шкала - вспомогательный обзор над лентой, поэтому по умолчанию свёрнута:
+    // видна одна строка-заголовок, раскрывают её по клику.
+    let [open, setOpen] = useState(false);
     let [peek, setPeek] = useState(null);
     // Выключенные в легенде оценки приглушают отрезки, как линза «Техника»/«Поведение»
     // приглушала вопросы: остальное видно, но не спорит.
@@ -904,11 +907,20 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
             return next;
         });
     }
-    return <div className={styles.review}>
+    return <div className={styles.review} data-open={open ? 'true' : undefined}>
         <div className={styles.reviewHead}>
-            <h5>Ход разговора</h5>
-            <span>Наведите для просмотра · нажмите, чтобы прослушать</span>
+            <h5>
+                <button
+                    type="button"
+                    className={styles.reviewToggle}
+                    aria-expanded={open}
+                    aria-controls={open ? 'dlg-conversation-timeline' : undefined}
+                    onClick={() => setOpen(!open)}
+                ><i aria-hidden="true"/>Ход разговора</button>
+            </h5>
+            {open && <span>Наведите для просмотра · нажмите, чтобы прослушать</span>}
         </div>
+        {open && <div id="dlg-conversation-timeline">
         <div className={styles.reviewControls}>
             <div className={styles.reviewLegend} role="group" aria-label="Шкала оценок">
                 <span>Шкала оценок:</span>
@@ -972,6 +984,7 @@ function ConversationTimeline({tracks, parts = [], durationMs, currentMs, playin
         <div className={styles.reviewCurrent}>{shown
             ? <span>▶ {formatDuration(shown.startMs)} · {shown.label} — {shown.text}</span>
             : <span>Цвета показывают оценку ответов, а не эмоции. Манеру общения можно проверить, прослушав запись.</span>}</div>
+        </div>}
     </div>;
 }
 
