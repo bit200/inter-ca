@@ -2,6 +2,8 @@ import React, {useEffect, useRef, useState} from 'react';
 import Perc from '../Suggest/Perc';
 import {startVideoProcess, buildJobAttachInfo, uploadVideoState, uploadErrorMessage, reportUploadEvent, uploadVideoFromResponse, NO_RESPONSE_MESSAGE} from '../videoProcessUpload';
 import {isFileDrag, pickDroppedFile, shouldShowVideoDropzone} from '../videoDropzone';
+import VideoPreview from './VideoPreview/VideoPreview';
+import useVideoPreview from './useVideoPreview';
 
 // Загрузка записи прямо с карточки интервью (вкладка «Обзор»), вместо
 // отдельной несвязанной страницы /video: кандидат раньше грузил файл вслепую
@@ -52,6 +54,12 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
     }, [videoUploadId]);
 
     let uploadedState = uploadVideoState(uploaded);
+    // Сжатую копию можно смотреть прямо здесь, как запись по ссылке.
+    let previewUrl = useVideoPreview({
+        interviewId,
+        videoUploadId: uploaded && uploaded._id,
+        ready: uploadedState === 'done',
+    });
     useEffect(() => {
         if (!uploaded || !uploaded._id || uploadedState !== 'processing') return;
         let timer = setTimeout(() => {
@@ -149,6 +157,7 @@ export default function InterviewVideoUpload({interviewId, videoUploadId, videoL
                 {info.name || `Запись #${uploaded._id}`}
                 {info.duration ? ` · ${(+info.duration).toFixed(0)} мин` : ''}
             </div>}
+            {uploadedState === 'done' && previewUrl && <VideoPreview src={previewUrl} id="interviewUploadPreview"/>}
             {justUploaded && uploadedState === 'done' && <div className="text-muted">
                 Оценка запустилась сама: разбор диалога, оценка ответов и мок-интервью по слабым
                 местам появятся во вкладке «Разбор диалога».

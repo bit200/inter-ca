@@ -61,6 +61,7 @@ import RolesPendingNotice from './RolesPendingNotice';
 import {shouldSendRoles} from './speakerRolesDraft';
 import CallPlayer from '../../TrainMethods/AudioShort/CallPlayer';
 import '../../TrainMethods/AudioShort/Player.css';
+import useVideoPreview from '../useVideoPreview';
 import {pickDialogMedia, playerView, readPlayerAudioOnly, readPlayerPinned, savePlayerAudioOnly, savePlayerPinned, turnIndexAt} from './dialogMedia';
 import AnswerBriefPopover, {MarkersPopover} from './AnswerBriefPopover';
 import {loadEvaluationReference} from './answerBrief';
@@ -166,7 +167,8 @@ export default function DialogAnalysisTab({item, interview, speakerRoles, onSpea
     let [analysisLoaded, setAnalysisLoaded] = useState(() => Boolean(analysisOf(value)));
     let [answersLoaded, setAnswersLoaded] = useState(() => Boolean(answersOf(value)));
     let mounted = useRef(true);
-    let media = pickDialogMedia(value, analysis);
+    let uploadPreview = useVideoPreview({interviewId, videoUploadId: value.videoUpload, ready: !value.video});
+    let media = pickDialogMedia(value, analysis, uploadPreview);
 
     useEffect(() => () => { mounted.current = false; }, []);
 
