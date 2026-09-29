@@ -74,6 +74,13 @@ describe('таб разбора диалога', () => {
 
         expect(screen.queryByRole('button', {name: /^Оценить( заново)?$/})).toBeNull();
         expect(screen.getByText('Расскажите о себе')).toBeInTheDocument();
+        // «Ход разговора» по умолчанию свёрнут: видна только строка-заголовок.
+        const toggle = screen.getByRole('button', {name: 'Ход разговора'});
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('group', {name: 'Реплики: Кандидат'})).toBeNull();
+        expect(screen.getAllByText('Интервьюер')).toHaveLength(1);
+        fireEvent.click(toggle);
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
         // Роль - у реплики и подписью дорожки «Хода разговора», как в карточке звонка.
         expect(screen.getAllByText('Интервьюер')).toHaveLength(2);
         expect(screen.getAllByText('Кандидат')).toHaveLength(2);
@@ -724,6 +731,7 @@ describe('таб разбора диалога', () => {
             // Фильтра частей нет: секция называется всплывающей подсказкой при наведении.
             expect(screen.queryByRole('radiogroup', {name: 'Часть интервью'})).toBeNull();
             expect(screen.queryByText('Часть')).toBeNull();
+            fireEvent.click(screen.getByRole('button', {name: 'Ход разговора'}));
             const lane = screen.getByRole('group', {name: 'Секции интервью'});
             expect(lane.parentElement).toHaveTextContent(/^Секция/);
             expect(Array.from(lane.children).map(node => node.getAttribute('data-part'))).toEqual(['tech', 'behavior']);

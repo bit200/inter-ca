@@ -920,6 +920,37 @@ button.turnSpeaker{
   span{ color: var(--dlg-muted); font-size: 11px; }
 }
 
+// Заголовок «Хода разговора» - переключатель: шкала по умолчанию свёрнута.
+// Уголок слева поворачивается вниз, когда шкала раскрыта.
+.reviewToggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  i{
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--dlg-muted);
+    border-bottom: 1.5px solid var(--dlg-muted);
+    transform: rotate(-45deg);
+    transition: transform .15s ease;
+  }
+  &[aria-expanded="true"] i{ transform: translateY(-2px) rotate(45deg); }
+  &:hover{ color: var(--dlg-accent); }
+  &:hover i{ border-color: var(--dlg-accent); }
+  &:focus-visible{ outline: 2px solid var(--dlg-accent); outline-offset: 1px; }
+
+  @media (prefers-reduced-motion: reduce){ i{ transition: none; } }
+}
+
 .reviewControls{
   display: flex;
   flex-wrap: wrap;
