@@ -2043,6 +2043,11 @@ button.turnSpeaker{
   strong{ color: var(--dlg-warn); font-weight: 600; }
 }
 
+// Вторая фраза плашки - про ревью ментора - с новой строки, под жирной.
+.aiNoticeNext{
+  display: block;
+}
+
 .aiNoticeMark{
   flex: none;
   padding: 1px 7px;

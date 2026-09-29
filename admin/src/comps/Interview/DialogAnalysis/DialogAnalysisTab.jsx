@@ -1250,8 +1250,8 @@ function AiNotice() {
     return <p className={styles.aiNotice} role="note">
         <span className={styles.aiNoticeMark} aria-hidden="true">ИИ</span>
         <span>
-            <strong>Оценка предварительная: разбор сгенерирован нейросетью и может содержать неточности.</strong>{' '}
-            После ревью ментора вы получите полноценную обратную связь.
+            <strong>Оценка предварительная: разбор сгенерирован нейросетью и может содержать неточности.</strong>
+            <span className={styles.aiNoticeNext}>После ревью ментора вы получите полноценную обратную связь.</span>
         </span>
     </p>;
 }
