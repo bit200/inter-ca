@@ -1,4 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
+import VsTaskRun from "../VsTask/VsTaskRun";
+import {isVsTask} from "../VsTask/vsTask";
 import _ from 'underscore';
 import './Train.css'
 import {
@@ -279,7 +281,7 @@ function Train(props) {
     let {opts, maxAttemptsCount} = props || {}
     let activeItem = items[activeInd] || {};
     let item = activeItem.item || {};
-    item.answerType = item.answerType || 'quiz'
+    item.answerType = isVsTask(item) ? 'vs_task' : (item.answerType || 'quiz')
     let {answerType} = item;
     let hist = history[getQuizId()] || {};
 
@@ -379,6 +381,7 @@ function Train(props) {
                 showRecognizedText={true}
                 {...EXT_OBJ}
             ></AudioShort>}
+            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId}/>}
             {answerType === 'code' && <CodeReview
                 opts={props.opts}
                 time={timer.time} //for render in circle the value

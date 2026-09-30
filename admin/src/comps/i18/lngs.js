@@ -3992,6 +3992,118 @@ export default {
     en: "The interview did not open. Reload the page and try again.",
     fr: `L'entretien ne s'est pas ouvert. Rechargez la page et réessayez.`
 },
+"vsTaskOpen": {
+    ru: "Открыть задачу в редакторе",
+    es: "Abrir la tarea en el editor",
+    de: "Aufgabe im Editor öffnen",
+    en: "Open task in editor",
+    fr: "Ouvrir la tâche dans l'éditeur"
+},
+"vsTaskReopen": {
+    ru: "Перезапустить редактор",
+    es: "Reiniciar el editor",
+    de: "Editor neu starten",
+    en: "Restart editor",
+    fr: "Redémarrer l'éditeur"
+},
+"vsTaskStarting": {
+    ru: "Запускаем редактор…",
+    es: "Iniciando el editor…",
+    de: "Editor wird gestartet…",
+    en: "Starting the editor…",
+    fr: "Démarrage de l'éditeur…"
+},
+"vsTaskReady": {
+    ru: "Редактор готов",
+    es: "El editor está listo",
+    de: "Editor ist bereit",
+    en: "Editor is ready",
+    fr: "L'éditeur est prêt"
+},
+"vsTaskNewWindow": {
+    ru: "Открыть в новом окне",
+    es: "Abrir en una ventana nueva",
+    de: "In neuem Fenster öffnen",
+    en: "Open in new window",
+    fr: "Ouvrir dans une nouvelle fenêtre"
+},
+"vsTaskStartFailed": {
+    ru: "Редактор не запустился. Нажмите «Открыть задачу в редакторе» ещё раз.",
+    es: "El editor no se inició. Pulse «Abrir la tarea en el editor» de nuevo.",
+    de: "Der Editor ist nicht gestartet. Klicken Sie erneut auf „Aufgabe im Editor öffnen“.",
+    en: "The editor did not start. Click “Open task in editor” again.",
+    fr: "L'éditeur n'a pas démarré. Cliquez à nouveau sur « Ouvrir la tâche dans l'éditeur »."
+},
+"vsTaskResult": {
+    ru: "Результат тестов",
+    es: "Resultado de las pruebas",
+    de: "Testergebnis",
+    en: "Test result",
+    fr: "Résultat des tests"
+},
+"vsTaskNoResult": {
+    ru: "Тесты ещё не запускались — запустите их в редакторе",
+    es: "Las pruebas aún no se han ejecutado: ejecútelas en el editor",
+    de: "Tests wurden noch nicht ausgeführt – starten Sie sie im Editor",
+    en: "Tests have not run yet — run them in the editor",
+    fr: "Les tests n'ont pas encore été lancés : lancez-les dans l'éditeur"
+},
+"vsTaskAllPassed": {
+    ru: "Все тесты пройдены",
+    es: "Todas las pruebas superadas",
+    de: "Alle Tests bestanden",
+    en: "All tests passed",
+    fr: "Tous les tests sont réussis"
+},
+"vsTaskHasFailed": {
+    ru: "Есть непройденные тесты",
+    es: "Hay pruebas no superadas",
+    de: "Es gibt fehlgeschlagene Tests",
+    en: "Some tests failed",
+    fr: "Certains tests ont échoué"
+},
+"vsTaskPassedOf": {
+    ru: "пройдено",
+    es: "superadas",
+    de: "bestanden",
+    en: "passed",
+    fr: "réussis"
+},
+"vsTaskRefreshResult": {
+    ru: "Обновить результат",
+    es: "Actualizar resultado",
+    de: "Ergebnis aktualisieren",
+    en: "Refresh result",
+    fr: "Actualiser le résultat"
+},
+"vsTaskSql": {
+    ru: "SQL-задача",
+    es: "Tarea SQL",
+    de: "SQL-Aufgabe",
+    en: "SQL task",
+    fr: "Tâche SQL"
+},
+"vsTaskSqlHint": {
+    ru: "Решение — SQL-запрос. База данных поднимается вместе с редактором, тесты сравнивают результат запроса с эталоном.",
+    es: "La solución es una consulta SQL. La base de datos se inicia con el editor; las pruebas comparan el resultado con la referencia.",
+    de: "Die Lösung ist eine SQL-Abfrage. Die Datenbank startet mit dem Editor; Tests vergleichen das Ergebnis mit der Referenz.",
+    en: "The solution is an SQL query. The database starts with the editor; tests compare your query result with the reference.",
+    fr: "La solution est une requête SQL. La base démarre avec l'éditeur ; les tests comparent le résultat à la référence."
+},
+"vsTaskCode": {
+    ru: "Задача в VS Code",
+    es: "Tarea en VS Code",
+    de: "Aufgabe in VS Code",
+    en: "VS Code task",
+    fr: "Tâche VS Code"
+},
+"vsTaskCodeHint": {
+    ru: "Задача решается в редакторе VS Code прямо на странице. Прогресс сохраняется автоматически.",
+    es: "La tarea se resuelve en el editor VS Code en la página. El progreso se guarda automáticamente.",
+    de: "Die Aufgabe wird im VS-Code-Editor direkt auf der Seite gelöst. Der Fortschritt wird automatisch gespeichert.",
+    en: "Solve the task in the VS Code editor right on this page. Progress is saved automatically.",
+    fr: "La tâche se résout dans l'éditeur VS Code sur la page. La progression est enregistrée automatiquement."
+},
 "by_exam": {ru: 'По экзамену'},
 "by_module": {ru: 'По модулю'},
 "xx": {ru: ''},

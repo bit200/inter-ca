@@ -11,6 +11,8 @@ import LazyEditor from "../LazyEditor/LazyEditor";
 import Check from "../StarRating";
 import ColorTheme from "../ColorTheme";
 import {useCodeRun} from './useCodeRun';
+import VsTaskRun from "../VsTask/VsTaskRun";
+import {isVsTask} from "../VsTask/vsTask";
 
 let renderCount = 1;
 let dragInit = {}
@@ -478,4 +480,13 @@ function RunResults(props) {
 }
 
 
-export default CodeRunComponent
+// VS Code-задачи (в т.ч. SQL) решаются не в Monaco + /run-question, а в редакторе
+// на docker-m — развилка здесь, чтобы экзамен и тренировка шли через один вход.
+function CodeRun(props) {
+    if (isVsTask(props.question)) {
+        return <VsTaskRun task={props.question} examId={props.examId} hist={props.vsHist}/>
+    }
+    return <CodeRunComponent {...props}/>
+}
+
+export default CodeRun
