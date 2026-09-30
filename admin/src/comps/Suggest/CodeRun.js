@@ -13,6 +13,7 @@ import ColorTheme from "../ColorTheme";
 import {useCodeRun} from './useCodeRun';
 import VsTaskRun from "../VsTask/VsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
+import {isSqlDetails, SqlRunResults, SqlSchemaPanel} from "./SqlRunResults";
 
 let renderCount = 1;
 let dragInit = {}
@@ -37,6 +38,8 @@ function CodeRunComponent(props) {
     let [validateErrors, setValidateErrors] = useState([]);
     let [hintInd, setHintInd] = useState(-1);
     let [dragOpts, setDragOpts] = useState({});
+    // SQL-задание: вкладка logs (iframe с JS-песочницей) и тест-кейсы по полям не нужны.
+    let isSql = isSqlDetails(jsDetails);
 
     const parentTopRef = useRef(null);
     const parentRightRef = useRef(null);
@@ -52,6 +55,7 @@ function CodeRunComponent(props) {
 
     useEffect(() => {
         window.listenCtrlS = () => {
+            if (isSqlDetails(props.jsDetails)) return;
             setTopTab('logs');
             setForceRenderLogs(new Date().getTime());
         };
@@ -173,7 +177,7 @@ function CodeRunComponent(props) {
                                 {[
                                     {name: 'conditionMsg', type: 'condition'},
                                     {name: 'results', type: 'results'},
-                                    !isLogsReader ? {name: 'logs', type: 'logs'} : null,
+                                    !isLogsReader && !isSql ? {name: 'logs', type: 'logs'} : null,
                                 ].map((it, ind) => {
                                     if (!it) return <React.Fragment key={ind}/>
                                     return (
@@ -188,7 +192,7 @@ function CodeRunComponent(props) {
                             </div>
                         </div>
 
-                        {topTab === 'logs' && !isLogsReader && <>
+                        {topTab === 'logs' && !isLogsReader && !isSql && <>
                             <IframeToRunLocal
                                 isNewExam={isNewExam}
                                 cases={cases}
@@ -219,11 +223,11 @@ function CodeRunComponent(props) {
                             <div style={{padding: '5px'}} className={'animChild'}>
                                 <small>&nbsp;</small>
                                 <h5>{t('runResults')}</h5>
-                                <RunResults runResults={runResults} fields={data.fields}/>
+                                <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
                                 {!isNewExam && <>
                                     <hr/>
                                     <h5>{t('runResultsSubmit')}</h5>
-                                    <RunResults runResults={runSubmitResults} fields={data.fields}/>
+                                    <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
                                 </>}
                             </div>
                         </div>}
@@ -232,7 +236,8 @@ function CodeRunComponent(props) {
                 </div>
                 <div className="crBot" ref={botRef}>
                     <div className={"vertChild casesChild " + (isLogsReader ? 'logsRader' : '')}>
-                        {!isLogsReader && <>
+                        {isSql && <SqlSchemaPanel jsDetails={jsDetails}/>}
+                        {!isLogsReader && !isSql && <>
                             <div className="cases-wrap">
                                 {(cases || []).map((caseItem, ind) => (
                                     <div key={ind}
@@ -431,6 +436,10 @@ function IframeToRunLocal2(props) {
 
 
 function RunResults(props) {
+    if (props.isSql || (props.runResults || {}).sqlResults) {
+        return <SqlRunResults runResults={props.runResults}/>
+    }
+
     function pubResults(r) {
         r = r || {};
         let data = r.ms == '0s' ? r.value ?? r.errMsg : r;
