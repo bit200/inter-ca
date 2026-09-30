@@ -19,6 +19,7 @@ import ExamLoader from "./ExamLoader";
 import IncorrectExamView from "./IncorrectExamView";
 import SubmittedExamPreview from "./SubmittedExamPreview";
 import RunExamInterviewStep from "./RunExamInterviewStep";
+import {getExamVsTasks, isSqlTask} from "../VsTask/vsTask";
 
 // Индекс шага "Мок-интервью" в левой навигации экзамена: задачи занимают 0..n,
 // общие вопросы -1, мок-интервью идёт последним пунктом и живёт на -2.
@@ -122,7 +123,10 @@ function RunExam(props) {
 
 
 
-    const selectedTask = dbTasks[selectedInd] || {}
+    // VS Code-задачи (в т.ч. SQL) идут в той же навигации сразу после обычных задач.
+    const vsTasks = getExamVsTasks(exam)
+    const allTasks = [...(dbTasks || []), ...vsTasks]
+    const selectedTask = allTasks[selectedInd] || {}
     let SUBMIT_DEFAULT = exam.availableSubmitCount || 0;
 
     function canSubmit() {
@@ -260,8 +264,9 @@ function RunExam(props) {
                     className={'nav-link waves-effect waves-light  ' + (selectedInd == -1 ? 'active' : '')}>
                     {t('questions')}({questionsCount})
                 </div>}
-                {(dbTasks || []).map((it, ind) => {
+                {allTasks.map((it, ind) => {
                     let qId = it._id;
+                    let isVs = ind >= (dbTasks || []).length;
                     let perc = submitDetails[qId] ? submitDetails[qId].perc : -1;
                     return (<div key={ind}
                                  className={'nav-link waves-effect waves-light ' + (selectedInd == ind ? 'active' : '')}
@@ -269,6 +274,7 @@ function RunExam(props) {
                                      setSelectedInd(ind)
                                  }}>
                         {t('task')} #{ind + 1}
+                        {isVs && isSqlTask(it) && <span className={'vs-task-nav-sql'}>SQL</span>}
                         {/* {exam.submitDetails && <div className={'taskProgress'}>
                         <div className={"taskProgressValue " + (perc < 30 ? 'error' : perc < 70 ? 'norm' : 'good')}
                              style={{width: (perc + '%')}}></div>
@@ -592,6 +598,8 @@ function RunExam(props) {
             {selectedInd !== -1 && selectedInd !== INTERVIEW_IND && <CodeRun
                 isNewExam={true}
                 question={selectedTask}
+                examId={exam._id}
+                vsHist={(exam.vsHistory || {})[selectedTask._id]}
                 onChangeCurStr={(v) => {
                     if (selectedTask && selectedTask._id && v) {
                         let questionId = selectedTask._id;
