@@ -1,5 +1,13 @@
 import {useEffect, useRef, useState} from 'react';
 
+// Язык Monaco по имени файла; SQL-задание (codeType 'sql') — всегда sql, файлов у него нет.
+export function getEditorLanguage(fileName, codeType) {
+    if (codeType === 'sql') return 'sql';
+    let arr = (fileName || '').split('.');
+    let last = arr[arr.length - 1];
+    return last === 'css' ? 'css' : last === 'html' ? 'html' : last === 'ts' ? 'typescript' : last === 'sql' ? 'sql' : 'javascript';
+}
+
 export function useCodeRun(props) {
     let {isExam, onChangeCode, onChangeLogs} = props;
 
@@ -54,10 +62,7 @@ export function useCodeRun(props) {
     }
 
     function getFileExt() {
-        let name = getFileName(selectedFileInd);
-        let arr = (name || '').split('.');
-        let last = arr[arr.length - 1];
-        return last === 'css' ? 'css' : last === 'html' ? 'html' : last === 'ts' ? 'typescript' : 'javascript';
+        return getEditorLanguage(getFileName(selectedFileInd), (jsDetails || {}).codeType);
     }
 
     function updateCode(newCode) {

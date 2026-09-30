@@ -4,6 +4,10 @@ import React, { useEffect, useState } from "react";
 import CustomStorage from "./CustomStorage";
 import LazyEditor from "../LazyEditor/LazyEditor";
 import { Editor } from "@monaco-editor/react";
+import { getEditorLanguage } from "./useCodeRun";
+import { SqlReferenceResults } from "./SqlRunResults";
+
+const isSql = (obj) => (obj || {}).codeType === 'sql';
 
 const SmartMemo = React.memo(function (props) {
     return <Smart {...props}></Smart>
@@ -80,7 +84,15 @@ function JSDetails(props) {
                     type: 'select',
                     key: 'codeType',
                     name: 'CodeType',
-                    items: ['', 'js', 'promise', 'async', 'react', 'html', 'logreader']
+                    items: ['', 'js', 'promise', 'async', 'react', 'html', 'logreader', 'sql']
+                },
+                {
+                    size: 2,
+                    type: 'select',
+                    key: 'dialect',
+                    name: 'Диалект SQL',
+                    items: ['postgres'],
+                    isVisible: isSql
                 },
                 { size: 2, key: 'timeout', name: 'Timeout (to wait async)' , onChange: () => {
                     global.resetMemo('editor')
@@ -209,7 +221,20 @@ function JSDetails(props) {
                 },
                 { size: 12, Component: () => <div></div> },
                 {
-                    size: 6, childs: [
+                    // SQL-задание: схема и seed вместо имени функции, полей и тест-кейсов.
+                    // Эталонный запрос — редактор «Правильное решение» справа.
+                    size: 6, isVisible: isSql, childs: [
+                        { size: 12, Component: () => <div className={'title-use-case'}>Схема БД (DDL, студент видит)</div> },
+                        { size: 12, key: 'schemaSql', type: 'textarea' },
+                        { size: 12, Component: () => <div className={'title-use-case'}>Seed: данные для «Запустить»</div> },
+                        { size: 12, key: 'seedSql', type: 'textarea' },
+                        { size: 12, Component: () => <div className={'title-use-case'}>Скрытый seed: добавляется при Сдаче, студенту не виден</div> },
+                        { size: 12, key: 'seedHiddenSql', type: 'textarea' },
+                        { size: 12, Component: (props) => <SqlExecReference {...props}></SqlExecReference> },
+                    ]
+                },
+                {
+                    size: 6, isVisible: (obj) => !isSql(obj), childs: [
 
 
                         {
@@ -408,11 +433,7 @@ function EditorView(props) {
     data.details.solutionFiles = data.details.solutionFiles || {};
 
     function getFileExt(name) {
-        let arr = (name || '').split('.')
-        let last = arr[arr.length - 1];
-        let ext = last === 'css' ? 'css' : last === 'html' ? 'html' : last === 'ts' ? 'typescript' : 'javascript';
-
-        return ext;
+        return getEditorLanguage(name, data.details.codeType);
     }
 
     // console.log("RENDER EDITOR", data)
@@ -546,6 +567,35 @@ function ExecTests(props) {
     </div>
 }
 
+// Аналог ExecTests для SQL: эталонный запрос на схеме + seed (и на полном seed со скрытыми
+// данными) — чтобы автор задачи увидел ожидаемую выборку до того, как её увидит студент.
+function SqlExecReference(props) {
+    let [results, setResults] = useState(null)
+    let [loading, setLoading] = useState(false)
+
+    return <div>
+        <hr />
+        <button className={'btn btn-xs btn-default'} disabled={loading} onClick={() => {
+            let { schemaSql, seedSql, seedHiddenSql, correctSolution, timeout } = props.localItem || {};
+            setLoading(true)
+            global.http.post('/admin-get-responses', {
+                codeType: 'sql',
+                schemaSql, seedSql, seedHiddenSql, timeout,
+                codeStr: correctSolution,
+                questionId: CustomStorage.getId()
+            })
+                .then(r => {
+                    setLoading(false)
+                    setResults(r)
+                }, e => {
+                    setLoading(false)
+                    setResults({results: [{name: 'error', message: (e && (e.error || e.message)) || String(e)}]})
+                })
+        }}>{loading ? 'Выполняю…' : 'Получить ожидаемый результат по эталону'}
+        </button>
+        {results && <div style={{ marginTop: '8px' }}><SqlReferenceResults data={results}/></div>}
+    </div>
+}
 
 function MonWrap(props) {
     let { localItem, item } = props;

@@ -4104,6 +4104,62 @@ export default {
     en: "Solve the task in the VS Code editor right on this page. Progress is saved automatically.",
     fr: "La tâche se résout dans l'éditeur VS Code sur la page. La progression est enregistrée automatiquement."
 },
+"sqlSchema": {
+    ru: "Схема базы данных",
+    es: "Esquema de la base de datos",
+    de: "Datenbankschema",
+    en: "Database schema",
+    fr: "Schéma de la base de données"
+},
+"sqlRowsCount": {
+    ru: "строк",
+    es: "filas",
+    de: "Zeilen",
+    en: "rows",
+    fr: "lignes"
+},
+"sqlRowsTruncated": {
+    ru: "Показаны первые 200 строк: запрос вернул больше",
+    es: "Se muestran las primeras 200 filas: la consulta devolvió más",
+    de: "Die ersten 200 Zeilen werden angezeigt: die Abfrage lieferte mehr",
+    en: "Showing the first 200 rows: the query returned more",
+    fr: "Les 200 premières lignes sont affichées : la requête en a renvoyé plus"
+},
+"sqlPublicCase": {
+    ru: "Открытые данные",
+    es: "Datos públicos",
+    de: "Öffentliche Daten",
+    en: "Public data",
+    fr: "Données publiques"
+},
+"sqlHiddenCase": {
+    ru: "Скрытые данные",
+    es: "Datos ocultos",
+    de: "Versteckte Daten",
+    en: "Hidden data",
+    fr: "Données cachées"
+},
+"sqlCaseOk": {
+    ru: "Результат совпал с эталоном",
+    es: "El resultado coincide con la referencia",
+    de: "Das Ergebnis stimmt mit der Referenz überein",
+    en: "The result matches the reference",
+    fr: "Le résultat correspond à la référence"
+},
+"sqlOrdered": {
+    ru: "Эталон с ORDER BY: порядок строк проверяется",
+    es: "La referencia tiene ORDER BY: se comprueba el orden de las filas",
+    de: "Referenz mit ORDER BY: die Zeilenreihenfolge wird geprüft",
+    en: "Reference has ORDER BY: row order is checked",
+    fr: "La référence a un ORDER BY : l'ordre des lignes est vérifié"
+},
+"sqlUnordered": {
+    ru: "Эталон без ORDER BY: порядок строк не важен",
+    es: "La referencia no tiene ORDER BY: el orden de las filas no importa",
+    de: "Referenz ohne ORDER BY: die Zeilenreihenfolge ist egal",
+    en: "Reference has no ORDER BY: row order does not matter",
+    fr: "La référence n'a pas d'ORDER BY : l'ordre des lignes n'importe pas"
+},
 "by_exam": {ru: 'По экзамену'},
 "by_module": {ru: 'По модулю'},
 "xx": {ru: ''},
