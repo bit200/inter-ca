@@ -7681,3 +7681,449 @@ Something is already running on port 8001.
 └────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
 [12:46:34] перезапуск: команда завершилась, код 0
 [12:46:35] перезапуск: стенд слушает 8001
+[16:49:58] после мержа: задача #1943 влита в staging — поднимаю стенд заново
+[16:49:59] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[16:49:59] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 58   │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 137245   │ 23h    │ 48   │ [32m[1monline[22m[39m    │ 0%       │ 33.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2285     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 557977   │ 2D     │ 7    │ [32m[1monline[22m[39m    │ 0%       │ 30.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 1058212  │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 33.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 1917894  │ 0s     │ 119… │ [32m[1monline[22m[39m    │ 133.3%   │ 92.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 1909345  │ 41s    │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 65.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 1917922  │ 0s     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 19.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 292084   │ 2D     │ 100  │ [32m[1monline[22m[39m    │ 0%       │ 25.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2371     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 5379     │ 2D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 79.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 3477185  │ 26h    │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 281.4mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485669   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485668   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2211     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 485680   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 64.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2170     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 32.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2270     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 27.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2250     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 15.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[16:49:59] перезапуск: команда завершилась, код 0
+[16:50:00] перезапуск: стенд слушает 8001
+[16:54:10] после мержа: задача #1947 влита в staging — поднимаю стенд заново
+[16:54:12] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[16:54:12] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 58   │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 137245   │ 23h    │ 48   │ [32m[1monline[22m[39m    │ 0%       │ 33.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2285     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 557977   │ 2D     │ 7    │ [32m[1monline[22m[39m    │ 0%       │ 30.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 1058212  │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 33.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 1962134  │ 0      │ 119… │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 1909345  │ 4m     │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 67.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 1964265  │ 0s     │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 6.8mb    │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 292084   │ 2D     │ 100  │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2371     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 5379     │ 2D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 79.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 3477185  │ 26h    │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 298.4mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485669   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485668   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2211     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 485680   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 4.2%     │ 64.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2170     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 32.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2270     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 27.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2250     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 15.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[16:54:12] перезапуск: команда завершилась, код 0
+[16:54:15] перезапуск: стенд слушает 8001
+[16:58:54] после мержа: задача #1946 влита в staging — поднимаю стенд заново
+[16:58:56] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[16:58:56] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 58   │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 137245   │ 23h    │ 48   │ [32m[1monline[22m[39m    │ 0%       │ 33.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2285     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 557977   │ 2D     │ 7    │ [32m[1monline[22m[39m    │ 0%       │ 30.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 1058212  │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 33.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2008183  │ 0      │ 119… │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 1909345  │ 9m     │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 66.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2011218  │ 0s     │ 4    │ [32m[1monline[22m[39m    │ 0%       │ 25.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 292084   │ 2D     │ 100  │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2371     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 5379     │ 2D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 79.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 3477185  │ 26h    │ 1    │ [32m[1monline[22m[39m    │ 3.7%     │ 299.8mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485669   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485668   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2211     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 485680   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 3.7%     │ 64.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2170     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 32.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2270     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 27.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2250     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 15.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[16:58:56] перезапуск: команда завершилась, код 0
+[16:58:58] перезапуск: стенд слушает 8001
+[17:01:32] после мержа: задача #1945 влита в staging — поднимаю стенд заново
+[17:01:33] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[17:01:33] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 58   │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 137245   │ 23h    │ 48   │ [32m[1monline[22m[39m    │ 0%       │ 33.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2285     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 3.7%     │ 42.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 557977   │ 2D     │ 7    │ [32m[1monline[22m[39m    │ 0%       │ 30.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 1058212  │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 33.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2044760  │ 1s     │ 119… │ [32m[1monline[22m[39m    │ 0%       │ 146.2mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 1909345  │ 12m    │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 66.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2045691  │ 0s     │ 5    │ [32m[1monline[22m[39m    │ 0%       │ 19.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 292084   │ 2D     │ 100  │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2371     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 25.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 5379     │ 2D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 79.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 3477185  │ 26h    │ 1    │ [32m[1monline[22m[39m    │ 11.1%    │ 304.4mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485669   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485668   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2211     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 485680   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 78.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2170     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 32.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2270     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 27.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2250     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 15.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[17:01:33] перезапуск: команда завершилась, код 0
+[17:01:37] перезапуск: стенд слушает 8001
+[17:10:03] после мержа: задача #1954 влита в staging — поднимаю стенд заново
+[17:10:05] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[17:10:05] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 58   │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 137245   │ 24h    │ 48   │ [32m[1monline[22m[39m    │ 0%       │ 42.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2285     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 557977   │ 2D     │ 7    │ [32m[1monline[22m[39m    │ 0%       │ 30.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 1058212  │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 8.3%     │ 33.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2152556  │ 0      │ 120… │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 1909345  │ 20m    │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 67.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2153407  │ 0s     │ 6    │ [32m[1monline[22m[39m    │ 0%       │ 20.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 292084   │ 2D     │ 100  │ [32m[1monline[22m[39m    │ 0%       │ 25.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2371     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 25.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 5379     │ 2D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 59.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 3477185  │ 26h    │ 1    │ [32m[1monline[22m[39m    │ 8.3%     │ 304.7mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485669   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 485668   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 14.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2211     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 14.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 485680   │ 2D     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 106.6mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2170     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 34.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2270     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 27.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2250     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 15.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[17:10:05] перезапуск: команда завершилась, код 0
+[17:10:06] перезапуск: стенд слушает 8001
+[20:36:36] после мержа: задача #2184 влита в staging — поднимаю стенд заново
+[20:36:38] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[20:36:38] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2144625  │ 2m     │ 122  │ [32m[1monline[22m[39m    │ 0%       │ 2.0gb    │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2144639  │ 2m     │ 124  │ [32m[1monline[22m[39m    │ 0%       │ 64.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2271     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 75.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2353     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 73.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2277     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 76.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2218     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 76.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2241521  │ 8h     │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 54.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2153028  │ 0s     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 20.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2232     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 51.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2363     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 75.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3589     │ 2D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 98.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2137     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 318.2mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2207     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 53.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2202     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 56.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2187     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 49.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2139     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 130.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2138     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 55.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2249     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 90.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2234     │ 2D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 51.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[20:36:38] перезапуск: команда завершилась, код 0
+[20:36:39] перезапуск: стенд слушает 8001
+[11:13:49] после мержа: задача #2373 влита в staging — поднимаю стенд заново
+[11:13:50] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[11:13:50] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 8.3%     │ 668.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 62.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 50.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 21h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 28.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 54397    │ 0s     │ 132  │ [32m[1monline[22m[39m    │ 141.7%   │ 147.2mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 60m    │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 64.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 54419    │ 0s     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 17.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 82.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 321.3mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 81.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[11:13:50] перезапуск: команда завершилась, код 0
+[11:13:51] перезапуск: стенд слушает 8001
+[11:18:15] после мержа: задача #2374 влита в staging — поднимаю стенд заново
+[11:18:16] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[11:18:16] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 668.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 62.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 49.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 50.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 21h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 28.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 71672    │ 1s     │ 165  │ [32m[1monline[22m[39m    │ 0%       │ 144.3mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 65m    │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 64.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 71767    │ 0s     │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 20.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 82.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 320.8mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 81.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[11:18:17] перезапуск: команда завершилась, код 0
+[11:18:18] перезапуск: стенд слушает 8001
+[11:19:56] после мержа: задача #2375 влита в staging — поднимаю стенд заново
+[11:19:57] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[11:19:57] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 668.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 62.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 49.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 50.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 21h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 28.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 80142    │ 0      │ 177  │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 67m    │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 64.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 80713    │ 0s     │ 3    │ [32m[1monline[22m[39m    │ 0%       │ 20.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 82.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 8.3%     │ 320.7mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 81.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[11:19:58] перезапуск: команда завершилась, код 0
+[11:19:59] перезапуск: стенд слушает 8001
+[11:23:20] после мержа: задача #2376 влита в staging — поднимаю стенд заново
+[11:23:22] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[11:23:22] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 668.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 18h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 62.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 49.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 50.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 21h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 28.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 99257    │ 1s     │ 203  │ [32m[1monline[22m[39m    │ 0%       │ 147.2mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 70m    │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 64.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 99304    │ 0s     │ 4    │ [32m[1monline[22m[39m    │ 0%       │ 20.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 82.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 320.8mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 81.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[11:23:22] перезапуск: команда завершилась, код 0
+[11:23:23] перезапуск: стенд слушает 8001
+[11:30:02] после мержа: задача #2377 влита в staging — поднимаю стенд заново
+[11:30:03] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[11:30:03] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 19h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 668.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 19h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 62.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 49.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 51.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 22h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 28.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 117417   │ 0s     │ 253  │ [32m[1monline[22m[39m    │ 133.3%   │ 94.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 77m    │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 72.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 117483   │ 0s     │ 5    │ [32m[1monline[22m[39m    │ 0%       │ 19.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 82.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 322.7mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 81.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 8.3%     │ 38.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[11:30:03] перезапуск: команда завершилась, код 0
+[11:30:04] перезапуск: стенд слушает 8001
+[11:31:24] после мержа: задача #2376 влита в staging — поднимаю стенд заново
+[11:31:26] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[11:31:26] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 19h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 668.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 19h    │ 40   │ [32m[1monline[22m[39m    │ 8.3%     │ 62.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 49.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 51.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 48.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 22h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 28.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 131986   │ 2s     │ 263  │ [32m[1monline[22m[39m    │ 0%       │ 144.0mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 78m    │ 2    │ [32m[1monline[22m[39m    │ 0%       │ 72.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 132298   │ 0s     │ 6    │ [32m[1monline[22m[39m    │ 0%       │ 19.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 42.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 82.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 8.3%     │ 324.2mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 81.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[11:31:26] перезапуск: команда завершилась, код 0
+[11:31:27] перезапуск: стенд слушает 8001
+[12:51:36] после мержа: задача #2376 влита в staging — поднимаю стенд заново
+[12:51:38] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[12:51:38] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 20h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 82.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 20h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 50.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 8.3%     │ 44.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 45.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 44.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 23h    │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 25.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 907393   │ 0      │ 860  │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 2h     │ 2    │ [32m[1monline[22m[39m    │ 8.3%     │ 51.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 907728   │ 0s     │ 7    │ [32m[1monline[22m[39m    │ 0%       │ 18.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 34.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 3D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 42.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m21[39m[22m │ medical            │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 438631   │ 36m    │ 8    │ [32m[1monline[22m[39m    │ 0%       │ 82.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m22[39m[22m │ medical-site       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 882375   │ 3m     │ 41   │ [32m[1monline[22m[39m    │ 0%       │ 69.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 225.4mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 22.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 21.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 21.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 54.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 23.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 32.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 3D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 22.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[12:51:38] перезапуск: команда завершилась, код 0
+[12:51:39] перезапуск: стенд слушает 8001
+[15:31:23] после мержа: задача #2669 влита в staging — поднимаю стенд заново
+[15:31:24] перезапуск: стенд под pm2 — процесс гасит и поднимает сам pm2: убитый руками, он поднялся бы по autorestart со старым окружением и открыл лишнюю вкладку в браузере
+[15:31:24] перезапуск: запускаю: pm2 restart itk-client --update-env
+[32m[PM2] [39mApplying action restartProcessId on app [itk-client](ids: [ 9 ])
+[32m[PM2] [39m[itk-client](9) ✓
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ aquagor-admin      │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3497325  │ 47h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 46.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ aquagor-api        │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3497394  │ 47h    │ 40   │ [32m[1monline[22m[39m    │ 0%       │ 26.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m14[39m[22m │ aquagor-mobile     │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2275     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 41.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m17[39m[22m │ aquagor-monitor    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2298     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 43.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m15[39m[22m │ aquagor-sales      │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2283     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 40.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m13[39m[22m │ client_socket      │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 0        │ 0      │ 9    │ [31m[1… │ 0%       │ 0b       │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m20[39m[22m │ dezinfekciya       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 281312   │ 2D     │ 76   │ [32m[1monline[22m[39m    │ 0%       │ 22.5mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m8[39m[22m  │ itk-admin          │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3369831  │ 2s     │ 127… │ [32m[1monline[22m[39m    │ 0%       │ 143.8mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m16[39m[22m │ itk-api            │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 4121156  │ 29h    │ 2    │ [32m[1monline[22m[39m    │ 8.3%     │ 45.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m9[39m[22m  │ itk-client         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3370004  │ 0s     │ 8    │ [32m[1monline[22m[39m    │ 0%       │ 19.6mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m10[39m[22m │ itk-upload         │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2237     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 24.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m18[39m[22m │ llm-call-admin     │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2336     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 38.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m19[39m[22m │ llm-call-api       │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 3572     │ 4D     │ 1    │ [32m[1monline[22m[39m    │ 0%       │ 36.8mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m21[39m[22m │ medical            │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3201784  │ 8m     │ 297  │ [32m[1monline[22m[39m    │ 0%       │ 332.4mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m22[39m[22m │ medical-site       │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 3337587  │ 2m     │ 321  │ [32m[1monline[22m[39m    │ 0%       │ 71.7mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ mongo-tasks        │ default     │ N/A     │ [7m[1mfork[22m[27m    │ 2160     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 326.7mb  │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m7[39m[22m  │ pbps-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2208     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 22.1mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m6[39m[22m  │ rech-admin         │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2201     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 21.4mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m5[39m[22m  │ rech-api           │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2194     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 21.2mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ tasks-admin        │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2162     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 77.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ tasks-api          │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 2161     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 26.0mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m12[39m[22m │ tochno360-admin    │ default     │ 0.1.0   │ [7m[1mfork[22m[27m    │ 2255     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 32.9mb   │ [1migort[22m    │ [90mdisabled[39m │
+│ [1m[36m11[39m[22m │ tochno360-api      │ default     │ 5.0.0   │ [7m[1mfork[22m[27m    │ 2243     │ 4D     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 22.3mb   │ [1migort[22m    │ [90mdisabled[39m │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[15:31:24] перезапуск: команда завершилась, код 0
+[15:31:25] перезапуск: стенд слушает 8001
