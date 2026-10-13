@@ -1,6 +1,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import AnswersEvaluateCell from './AnswersEvaluateCell';
+import lngs from '../i18/lngs';
 
 const text = (item) => {
     render(<AnswersEvaluateCell item={item}/>);
@@ -19,5 +20,10 @@ describe('ячейка «Оценка» в списке интервью', () =>
     });
     it('оценку не запускали — «Не оценено»', () => {
         expect(text({})).toBe('Не оценено');
+    });
+    it('у заголовка колонки answersEvaluateState есть перевод на все языки', () => {
+        ['ru', 'es', 'de', 'en', 'fr'].forEach(l => {
+            expect(lngs.answersEvaluateState[l]).toBeTruthy();
+        });
     });
 });

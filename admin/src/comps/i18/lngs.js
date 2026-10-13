@@ -3289,6 +3289,13 @@ export default {
         en: "My content suggestions",
         fr: `Mes suggestions de contenu`
     },
+    "answersEvaluateState": {
+        ru: "Оценка",
+        es: "Evaluación",
+        de: "Bewertung",
+        en: "Evaluation",
+        fr: `Évaluation`
+    },
     "questionsSize": {
         ru: "Кол-во вопросов",
         es: "Número de preguntas",
