@@ -8,6 +8,8 @@ import './VideoPreview.css';
 // ошибку, хотя через пару секунд всё играет. Поэтому до показа ошибки
 // переспрашиваем файл несколько раз, а пока ждём - показываем лоадер.
 export const RETRY_DELAY = 2000;
+// Пауза растёт вдвое с каждой попыткой: 2с, 4с, 8с, ...
+export const retryDelay = attempt => RETRY_DELAY * 2 ** attempt;
 export const MAX_RETRIES = 8;
 
 export default function VideoPreview({src, time, id}) {
@@ -28,7 +30,7 @@ export default function VideoPreview({src, time, id}) {
         let timer = setTimeout(() => {
             setAttempt(n => n + 1);
             setWaiting(false);
-        }, RETRY_DELAY);
+        }, retryDelay(attempt));
         return () => clearTimeout(timer);
     }, [waiting]);
 
