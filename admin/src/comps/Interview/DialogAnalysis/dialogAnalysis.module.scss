@@ -2126,25 +2126,30 @@ button.turnSpeaker{
   }
 }
 
-.techGroupToggle{
-  display: inline-flex;
+.techDigestToggle{
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px 12px;
+  width: 100%;
   padding: 0;
   border: 0;
   background: none;
-  color: inherit;
   font: inherit;
   cursor: pointer;
   text-align: left;
 }
 .techGroupChevron{
   display: inline-block;
+  color: var(--dlg-muted);
   font-size: 10px;
   transition: transform .15s;
 }
-.techGroup[data-open="true"] .techGroupChevron{ transform: rotate(90deg); }
-.techGroupCount{ font-weight: 500; }
+.techDigest[data-open="true"] .techGroupChevron{ transform: rotate(90deg); }
+.techBandCount{ font-weight: 600; }
+.techBandCount[data-band="good"]{ color: var(--dlg-accent) !important; }
+.techBandCount[data-band="fair"]{ color: var(--dlg-warn) !important; }
+.techBandCount[data-band="poor"]{ color: var(--dlg-bad) !important; }
 
 .techGroup[data-band="good"]{ --dlg-band: var(--dlg-accent); --dlg-band-soft: var(--dlg-accent-soft); }
 .techGroup[data-band="fair"]{ --dlg-band: var(--dlg-warn); --dlg-band-soft: var(--dlg-warn-soft); }
