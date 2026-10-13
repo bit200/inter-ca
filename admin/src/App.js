@@ -53,6 +53,7 @@ import AutoConfirm from "./comps/AutoConfirm";
 import ColorTheme from "./comps/ColorTheme";
 import PersonalMockInterviews from "./comps/MockInterview/components/PersonalMockInterviews";
 import RolesPendingInterviews from "./comps/Interview/RolesPendingInterviews";
+import AnswersEvaluateCell from "./comps/Interview/AnswersEvaluateCell";
 import MockInterviewName from "./comps/MockInterview/components/MockInterviewName";
 
 let err = console.error;
@@ -401,6 +402,7 @@ global.CONFIG = {
                 {name: "Клинет", key: "client"},
                 {name: "Тип", key: "type"},
                 {name: "Статус", key: "status"},
+                {name: "Оценка", key: "answersEvaluateState", component: AnswersEvaluateCell},
                 {name: "Дата", key: "date", type: 'day'},
             ],
         },
