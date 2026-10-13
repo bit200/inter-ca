@@ -86,3 +86,17 @@ html[data-bs-theme="dark"] .videoNotice {
     border-radius: 8px;
     background: #000;
 }
+
+.videoSpinner {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--vn-line);
+    border-top-color: var(--vn-accent);
+    border-radius: 50%;
+    animation: videoSpin 0.9s linear infinite;
+}
+
+@keyframes videoSpin {
+    to { transform: rotate(360deg); }
+}

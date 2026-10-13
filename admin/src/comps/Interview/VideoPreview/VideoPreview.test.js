@@ -1,6 +1,6 @@
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import VideoPreview from './VideoPreview';
+import {render, screen, fireEvent, act} from '@testing-library/react';
+import VideoPreview, {RETRY_DELAY, MAX_RETRIES} from './VideoPreview';
 import {readVideoSource} from './videoSource';
 
 beforeEach(() => { global.t = (key) => key; });
@@ -44,14 +44,32 @@ describe('превью записи интервью', () => {
         expect(click.defaultPrevented).toBe(false);
     });
 
-    test('файл не загрузился: плеер заменяется плашкой', () => {
+    test('первая ошибка: лоадер вместо ошибки, затем плеер снова', () => {
+        jest.useFakeTimers();
         const {container} = render(<VideoPreview src="https://x.test/stream" time={{}}/>);
+        fireEvent.error(container.querySelector('video'));
+        expect(container.querySelector('video')).toBeNull();
+        expect(screen.queryByText('Видео не загрузилось')).toBeNull();
+        expect(screen.getByRole('status')).toBeInTheDocument();
+        act(() => { jest.advanceTimersByTime(RETRY_DELAY); });
+        expect(container.querySelector('video')).not.toBeNull();
+        jest.useRealTimers();
+    });
+
+    test('файл так и не появился: после всех попыток плеер заменяется плашкой', () => {
+        jest.useFakeTimers();
+        const {container} = render(<VideoPreview src="https://x.test/stream" time={{}}/>);
+        for (let i = 0; i < MAX_RETRIES; i++) {
+            fireEvent.error(container.querySelector('video'));
+            act(() => { jest.advanceTimersByTime(RETRY_DELAY); });
+        }
         const video = container.querySelector('video');
         expect(video).toHaveAttribute('src', 'https://x.test/stream');
         fireEvent.error(video);
         expect(container.querySelector('video')).toBeNull();
         expect(screen.getByText('Видео не загрузилось')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: 'Открыть ссылку'})).toHaveAttribute('href', 'https://x.test/stream');
+        jest.useRealTimers();
     });
 
     test('без ссылки - «Видео не загружено»', () => {
