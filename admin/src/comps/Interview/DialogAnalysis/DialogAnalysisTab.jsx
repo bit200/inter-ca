@@ -1268,19 +1268,31 @@ function TechnicalDigest({digest, summary}) {
             </span>}
         </header>
         {summary && <p className={styles.techDigestText}>{summary}</p>}
-        {digest && digest.groups.map(group => <div key={group.band} className={styles.techGroup} data-band={group.band}>
-            <h5>{group.title}</h5>
-            <ul>
-                {group.items.map(item => <li key={item.number}>
-                    <span className={styles.techScore}>{formatScore(item.score)}</span>
-                    <span className={styles.techItemText}>
-                        <span className={styles.techItemTitle}>{item.title}</span>
-                        {item.note && <span className={styles.techItemNote}>{item.note}</span>}
-                    </span>
-                </li>)}
-            </ul>
-        </div>)}
+        {digest && digest.groups.map(group => <TechGroup key={group.band} group={group} />)}
     </section>;
+}
+
+// Группа вопросов одного уровня: по умолчанию свёрнута до «Название (число)»,
+// список вопросов раскрывается по клику.
+function TechGroup({group}) {
+    let [open, setOpen] = useState(false);
+    return <div className={styles.techGroup} data-band={group.band} data-open={open ? 'true' : undefined}>
+        <h5>
+            <button type="button" className={styles.techGroupToggle} aria-expanded={open} onClick={() => setOpen(!open)}>
+                <span className={styles.techGroupChevron} aria-hidden="true">▸</span>
+                {group.title} <span className={styles.techGroupCount}>({group.items.length})</span>
+            </button>
+        </h5>
+        {open && <ul>
+            {group.items.map(item => <li key={item.number}>
+                <span className={styles.techScore}>{formatScore(item.score)}</span>
+                <span className={styles.techItemText}>
+                    <span className={styles.techItemTitle}>{item.title}</span>
+                    {item.note && <span className={styles.techItemNote}>{item.note}</span>}
+                </span>
+            </li>)}
+        </ul>}
+    </div>;
 }
 
 function CourtesyMark({value, yes, no, unknown}) {
