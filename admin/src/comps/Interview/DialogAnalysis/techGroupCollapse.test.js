@@ -1,16 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 
-// Группы технической части («С пробелами», «Слабо») свёрнуты по умолчанию
-// и показывают только число вопросов.
+// Техническая часть свёрнута в одну строку: заголовок, среднее и число вопросов
+// по уровням («С пробелами (4)»); список раскрывается по клику.
 const src = fs.readFileSync(path.join(__dirname, 'DialogAnalysisTab.jsx'), 'utf8');
 
-describe('техническая часть: свёрнутые группы', () => {
-    test('группа по умолчанию свёрнута', () => {
-        expect(src).toMatch(/function TechGroup[\s\S]*?useState\(false\)/);
+describe('техническая часть: свёрнутая секция', () => {
+    test('секция по умолчанию свёрнута', () => {
+        expect(src).toMatch(/function TechnicalDigest[\s\S]*?useState\(false\)/);
     });
-    test('в заголовке показано число вопросов, список только в раскрытом виде', () => {
-        expect(src).toMatch(/\{group\.title\} <span[^>]*>\(\{group\.items\.length\}\)<\/span>/);
-        expect(src).toMatch(/\{open && <ul>/);
+    test('в свёрнутой строке число вопросов по уровням, список только в раскрытом виде', () => {
+        expect(src).toMatch(/\{group\.title\} \(\{group\.items\.length\}\)/);
+        expect(src).toMatch(/\{open && digest && digest\.groups\.map/);
     });
 });
