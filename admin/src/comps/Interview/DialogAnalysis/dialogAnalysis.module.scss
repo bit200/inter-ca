@@ -2126,6 +2126,26 @@ button.turnSpeaker{
   }
 }
 
+.techGroupToggle{
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.techGroupChevron{
+  display: inline-block;
+  font-size: 10px;
+  transition: transform .15s;
+}
+.techGroup[data-open="true"] .techGroupChevron{ transform: rotate(90deg); }
+.techGroupCount{ font-weight: 500; }
+
 .techGroup[data-band="good"]{ --dlg-band: var(--dlg-accent); --dlg-band-soft: var(--dlg-accent-soft); }
 .techGroup[data-band="fair"]{ --dlg-band: var(--dlg-warn); --dlg-band-soft: var(--dlg-warn-soft); }
 .techGroup[data-band="poor"]{ --dlg-band: var(--dlg-bad); --dlg-band-soft: var(--dlg-bad-soft); }
