@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent, act} from '@testing-library/react';
-import VideoPreview, {RETRY_DELAY, MAX_RETRIES} from './VideoPreview';
+import VideoPreview, {RETRY_DELAY, MAX_RETRIES, retryDelay} from './VideoPreview';
 import {readVideoSource} from './videoSource';
 
 beforeEach(() => { global.t = (key) => key; });
@@ -56,12 +56,25 @@ describe('превью записи интервью', () => {
         jest.useRealTimers();
     });
 
+    test('пауза между попытками растёт: 2с, 4с, 8с', () => {
+        jest.useFakeTimers();
+        const {container} = render(<VideoPreview src="https://x.test/stream" time={{}}/>);
+        [2000, 4000, 8000].forEach(ms => {
+            fireEvent.error(container.querySelector('video'));
+            act(() => { jest.advanceTimersByTime(ms - 1); });
+            expect(container.querySelector('video')).toBeNull();
+            act(() => { jest.advanceTimersByTime(1); });
+            expect(container.querySelector('video')).not.toBeNull();
+        });
+        jest.useRealTimers();
+    });
+
     test('файл так и не появился: после всех попыток плеер заменяется плашкой', () => {
         jest.useFakeTimers();
         const {container} = render(<VideoPreview src="https://x.test/stream" time={{}}/>);
         for (let i = 0; i < MAX_RETRIES; i++) {
             fireEvent.error(container.querySelector('video'));
-            act(() => { jest.advanceTimersByTime(RETRY_DELAY); });
+            act(() => { jest.advanceTimersByTime(retryDelay(i)); });
         }
         const video = container.querySelector('video');
         expect(video).toHaveAttribute('src', 'https://x.test/stream');
