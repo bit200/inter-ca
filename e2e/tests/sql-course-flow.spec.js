@@ -210,6 +210,8 @@ test.describe.serial('sql-course-flow', () => {
     const jsResult = () => jsTask().locator('[data-testid="js-task-result"]');
     // «Результат сдачи» на вкладке «Результаты» CodeRun (после «Сдать» она открывается сама).
     const submitResults = () => jsTask().locator('[data-testid="code-run-results"][data-kind="submit"] [data-testid="sql-run-results"]');
+    // «Результат запуска» — «Запустить» гоняет только открытые данные.
+    const runResults = () => jsTask().locator('[data-testid="code-run-results"][data-kind="run"] [data-testid="sql-run-results"]');
 
     async function openCourse() {
       await cPage.goto('/courses');
@@ -229,11 +231,14 @@ test.describe.serial('sql-course-flow', () => {
       await saved;
     }
 
-    // Запрос в Monaco CodeRun и «Сдать». Monaco клиент грузит с CDN, как и админка.
-    // insertText — как вставка из буфера, без автодополнения и автоскобок редактора.
-    // Возвращает ответ /run-question; тело запроса сверяется: ушёл именно этот текст,
-    // со сдачей и модулем курса (по нему сервер проверяет доступ кандидата).
-    async function submitQuery(sql) {
+    // Запрос в Monaco CodeRun и «Сдать» (или «Запустить» — submit: false). Monaco клиент
+    // грузит с CDN, как и админка. Ввод — фокус в редактор и insertText (как вставка из
+    // буфера, без автодополнения и автоскобок): значение идёт в CodeRun штатным onChange
+    // редактора, как при вводе руками; window.monaco не берём — он есть, только пока
+    // @monaco-editor/react грузит редактор с CDN. Возвращает ответ /run-question; тело
+    // запроса сверяется: ушёл именно этот текст, с модулем курса (по нему сервер
+    // проверяет доступ кандидата) и признаком сдачи.
+    async function submitQuery(sql, { submit = true } = {}) {
       const editor = jsTask().locator('.crRight .monaco-editor');
       await expect(editor, 'Monaco CodeRun не загрузился: клиент берёт его с cdn.jsdelivr.net — проверьте сеть стенда')
         .toBeVisible({ timeout: EDITOR_TIMEOUT });
@@ -244,21 +249,35 @@ test.describe.serial('sql-course-flow', () => {
       const [res] = await Promise.all([
         cPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/run-question',
           { timeout: RUN_TIMEOUT }),
-        jsTask().locator('[data-testid="code-run-submit"]').click(),
+        jsTask().locator(`[data-testid="${submit ? 'code-run-submit' : 'code-run-run'}"]`).click(),
       ]);
-      expect(res.request().postDataJSON()).toMatchObject({
-        question: flow.questionId, courseModule: flow.courseModuleId, isSubmit: true, files: { '': sql },
-      });
+      const sent = res.request().postDataJSON();
+      expect(sent).toMatchObject({ question: flow.questionId, courseModule: flow.courseModuleId, files: { '': sql } });
+      expect(!!sent.isSubmit).toBe(submit);
       expect(res.ok(), `POST /api/run-question: HTTP ${res.status()}`).toBeTruthy();
-      await expect(submitResults()).toBeVisible();
-      return res.json();
+      const body = await res.json();
+      // Раннер лёг посреди прогона — причина сразу, а не расхождение таблиц.
+      expect((body.sqlResults || []).filter((it) => it.reason === 'runner_error'), 'SQL-раннер API недоступен').toEqual([]);
+      await expect(submit ? submitResults() : runResults()).toBeVisible();
+      return body;
+    }
+
+    // Снимок SQL-задачи — в test-results/<тест>/ и во вложения html-отчёта, и при зелёном прогоне.
+    async function shot(testInfo, name) {
+      const file = testInfo.outputPath(`${name}.png`);
+      await jsTask().screenshot({ path: file, animations: 'disabled' });
+      await testInfo.attach(name, { path: file, contentType: 'image/png' });
     }
 
     // Квиз, затем SQL-задача — состав одинаков в проверке главы и в итоговой модуля:
     // js-задача лежит в quizes (знаменатель сдачи), в pubQuizes — после квиза.
+    // VS Code закрыт флагом (#4038/#4039): VS-задач (vs_<группа>, answerType vs_task)
+    // кандидат не получает. В данных потока VS-групп нет — проверяем, что их нет и в ответе.
     function expectTraining(training) {
       expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId, flow.questionId]);
       expect((training.pubQuizes || []).map((it) => it.opts.quiz)).toEqual([flow.quizId, `js_${flow.questionId}`]);
+      const vs = (training.pubQuizes || []).filter((it) => /^vs_/.test(String(it.opts.quiz)) || (it.item || {}).answerType === 'vs_task');
+      expect(vs, 'VS-задачи в /load-quizes-by-module кандидата').toEqual([]);
     }
 
     test.beforeAll(async ({ browser }) => {
@@ -279,8 +298,8 @@ test.describe.serial('sql-course-flow', () => {
       await expect(moduleCheck()).toHaveAttribute('data-open', 'false');
     });
 
-    test('8. «Проверить знания» главы: квиз и SQL-задача — неверный запрос, DELETE, верный', async () => {
-      test.setTimeout(EDITOR_TIMEOUT + 3 * RUN_TIMEOUT + 30_000);
+    test('8. «Проверить знания» главы: квиз и SQL-задача — неверный запрос, DELETE, верный', async ({}, testInfo) => {
+      test.setTimeout(EDITOR_TIMEOUT + 5 * RUN_TIMEOUT + 30_000);
       const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module', (u) => u.searchParams.get('question') == flow.questionId);
       await cPage.locator(`#course-quiz-open-question-${flow.questionId}`).click();
       expectTraining(await (await loaded).json());
@@ -292,9 +311,27 @@ test.describe.serial('sql-course-flow', () => {
       await expect(trainItem()).toHaveAttribute('data-quiz-key', `js_${flow.questionId}`);
       await expect(trainItem()).toHaveAttribute('data-answer-type', 'js_task');
       await expect(jsTask()).toHaveClass(/vs-task-sql/);
+      await expect(cPage.locator('[data-testid="vs-task"]')).toHaveCount(0);
       // Под редактором — схема БД из задачи (SqlSchemaPanel), а не тест-кейсы.
       await expect(jsTask().locator('.sqlSchemaPanel')).toContainText('CREATE TABLE users');
       await expect(jsResult()).toHaveCount(0);
+
+      // «Запустить» неверный запрос (>= 30) — открытые данные: таблицы «ваш» и «ожидаемый»
+      // результат рядом, у вашей лишняя строка (Петр, 30). Зачёта «Запустить» не даёт.
+      const wrongNames = USERS.filter((u) => u.age >= 30).map((u) => u.name).sort();
+      const run = await submitQuery(SQL.wrong, { submit: false });
+      expect({ total: run.totalCount, wrong: run.wrongCount }).toEqual({ total: 1, wrong: 1 });
+      const runCase = runResults().locator('[data-testid="sql-case"]');
+      await expect(runCase).toHaveAttribute('data-reason', 'rows_mismatch');
+      await expect(runCase).toContainText(`Строк: ожидалось ${namesOlder(USERS).length}, получено ${wrongNames.length}`);
+      for (const [kind, names] of [['actual', wrongNames], ['expected', namesOlder(USERS)]]) {
+        const table = runCase.locator(`[data-testid="sql-result-table"][data-kind="${kind}"]`);
+        await expect(table).toHaveAttribute('data-rows', String(names.length));
+        await expect(table.locator('thead th')).toHaveText(['name']);
+        await expect(table.locator('tbody td')).toHaveText(names);
+      }
+      await expect(jsResult()).toHaveCount(0);
+      await shot(testInfo, 'sql-run-mismatch');
 
       // Неверный запрос (>= 30): не засчитан, видно расхождение — ваша выборка с лишней
       // строкой рядом с ожидаемой; скрытые данные — только «не прошло», без таблиц.
@@ -322,6 +359,7 @@ test.describe.serial('sql-course-flow', () => {
       const delCase = submitResults().locator('[data-testid="sql-case"][data-hidden="false"]');
       await expect(delCase).toHaveAttribute('data-reason', 'forbidden');
       await expect(delCase).toContainText(SQL.forbiddenMessage);
+      await shot(testInfo, 'sql-forbidden');
 
       // Верный запрос: проходит и на скрытых данных — засчитан, «Далее» становится основной.
       const ok = await submitQuery(SQL.solution);
@@ -330,6 +368,7 @@ test.describe.serial('sql-course-flow', () => {
       await expect(submitResults()).toHaveAttribute('data-passed', '2');
       await expect(submitResults().locator('[data-testid="sql-case"][data-ok="true"]')).toHaveCount(2);
       await expect(jsTask().locator('[data-testid="js-task-next"]')).toHaveClass(/btn-primary/);
+      await shot(testInfo, 'sql-passed');
 
       // «Далее» на последнем задании заканчивает проверку: квиз и задача — 2 из 2.
       const saved = waitApi(cPage, 'POST', '/save-course-module-question-results');
