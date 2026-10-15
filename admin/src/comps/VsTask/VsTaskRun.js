@@ -215,7 +215,8 @@ function VsTaskRun(props) {
             {phase === 'ready' && <span className={'vs-task-status ok'} role={'status'}>
                 <span className={'vs-task-dot'}/>{t('vsTaskReady')}
                 <a href={link} target={'_blank'} rel={'noopener noreferrer'}>{t('vsTaskNewWindow')}</a>
-                {!full && <button type={'button'} className={'btn btn-xs btn-default'} onClick={() => setFull(true)}>
+                {!full && <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-expand'}
+                                  onClick={() => setFull(true)}>
                     <i className={'iconoir-expand'}></i> {t('vsTaskFullscreen')}
                 </button>}
             </span>}
@@ -235,7 +236,8 @@ function VsTaskRun(props) {
         {phase === 'ready' && <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
             {full && <div className={'vs-task-frame-bar'}>
                 <span className={'vs-task-frame-title'}>{task?.name}</span>
-                <button type={'button'} className={'btn btn-xs btn-default'} onClick={() => setFull(false)}>
+                <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-collapse'}
+                        onClick={() => setFull(false)}>
                     <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}
                 </button>
             </div>}

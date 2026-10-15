@@ -30,11 +30,11 @@ const ITEMS = [
     {opts: {quiz: 'vs_9'}, item: {_id: 9, name: 'SQL-задача', type: 'vs_task', answerType: 'vs_task', info_arr: [{lng: 'sql', task_id: 3}]}},
 ];
 
-function renderTrain(onResult) {
+function renderTrain(onResult, getStartIndex) {
     return render(<Train
         getStartItems={async () => ITEMS}
         getStartHistory={() => ({})}
-        getStartIndex={() => 0}
+        getStartIndex={getStartIndex}
         getStartTimers={() => ({})}
         getDefaultQuizTime={() => 40}
         getNextInd={(ind, items) => ++ind % items.length}
@@ -47,12 +47,15 @@ function renderTrain(onResult) {
 describe('Train: VS-задача в проверке знаний', () => {
     test('после квиза открывается VS-задача с ключом vs_<группа>, «Далее» завершает проверку', async () => {
         let onResult = jest.fn();
-        let {container} = renderTrain(onResult);
+        let getStartIndex = jest.fn(() => 0);
+        let {container} = renderTrain(onResult, getStartIndex);
 
-        await screen.findByText('ответить на квиз');
-        // Train после загрузки заданий сбрасывает историю и через setTimeout
-        // открывает первое — даём ему это сделать до ответа.
-        await act(() => new Promise((r) => setTimeout(r, 20)));
+        // Train после загрузки заданий сбрасывает историю и открывает первое через
+        // setTimeout(0) (activeInd -1 → 0). Ответ, данный в этом окне, ушёл бы в
+        // «итог» — ждём getStartIndex и следующий тик, тогда первое уже открыто.
+        await waitFor(() => expect(getStartIndex).toHaveBeenCalled());
+        await act(() => new Promise((r) => setTimeout(r, 0)));
+        await waitFor(() => expect(container.querySelector('[data-testid="train-item"]').getAttribute('data-quiz-key')).toBe('61'));
         fireEvent.click(screen.getByText('ответить на квиз'));
 
         await waitFor(() => expect(container.querySelector('[data-testid="vs-task"]')).toBeTruthy());

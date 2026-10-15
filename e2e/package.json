@@ -11,7 +11,7 @@
     "report": "playwright show-report",
     "install-browsers": "playwright install chromium",
     "test:unit": "node --test helpers/*.test.js",
-    "test:sql-flow": "playwright test sql-course-flow"
+    "test:sql-flow": "E2E_MANUAL=1 playwright test sql-course-flow"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

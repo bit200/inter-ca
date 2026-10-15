@@ -55,7 +55,7 @@ npm run test:unit            # юнит-тесты хелперов (node --test
 Весь поток одной командой (≈45 с):
 
 ```bash
-cd e2e && npm run test:sql-flow          # = npx playwright test sql-course-flow
+cd e2e && npm run test:sql-flow          # = E2E_MANUAL=1 playwright test sql-course-flow
 E2E_BASE_URL=http://localhost:7594 npm run test:sql-flow   # клиент из своего worktree
 ```
 
@@ -163,5 +163,6 @@ mongosh estimation-code --eval 'db.users.updateOne({username:"e2e-admin"},{$set:
 `#course-quiz-open-question-<id>` / `#course-quiz-open-module-<id>` (Button — поэтому
 `id`), `course-quiz-result[data-perc][data-ok]`, `#course-quiz-finish`, тренажёр
 `train-item[data-quiz-key][data-answer-type]`, `quiz-answer`, VS-задача `vs-task`
-(`data-phase`, `data-task-id`), `vs-task-open`, `vs-task-next`, `vs-task-refresh`,
+(`data-phase`, `data-task-id`), `vs-task-open`, `vs-task-collapse` / `vs-task-expand`
+(редактор на весь экран), `vs-task-next`, `vs-task-refresh`,
 `vs-task-result[data-status][data-passed][data-total]`.

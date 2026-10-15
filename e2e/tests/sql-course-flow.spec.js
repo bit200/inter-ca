@@ -14,7 +14,7 @@ const { test, expect } = require('@playwright/test');
 const { ADMIN_URL, BASE_URL, adminCreds, candidateCreds } = require('../helpers/env');
 const { login, loginAdmin } = require('../helpers/auth');
 const { e2eName } = require('../helpers/e2eNames');
-const { seedSql, buildQuiz } = require('../helpers/sqlCourseQuiz');
+const { seedSql, buildQuiz, countOlder } = require('../helpers/sqlCourseQuiz');
 const {
   createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e,
 } = require('../helpers/adminApi');
@@ -35,7 +35,7 @@ const SQL = {
   schema: 'CREATE TABLE users (\n  id   int PRIMARY KEY,\n  name text NOT NULL,\n  age  int NOT NULL\n);',
   seed: seedSql(),
   solution: 'SELECT COUNT(*) AS cnt FROM users WHERE age > 30;',
-  // Негативный случай: «30 и старше» даёт 3 вместо 2.
+  // Негативный случай: «30 и старше» вместо «строго старше» — на seed на одного больше.
   wrong: 'SELECT COUNT(*) AS cnt FROM users WHERE age >= 30;',
   file: 'queries/01_query.sql',
 };
@@ -231,8 +231,8 @@ test.describe.serial('sql-course-flow', () => {
       // Страница квиза сохраняется сама (autoSave), кнопки не нужны.
       await page.locator('[data-testid="quiz-answer-type-quiz"]').click();
       await page.locator('[data-testid="quiz-status-active"]').click();
-      await page.locator('[data-testid="quiz-name"] textarea.w-md-editor-text-input').fill(quizData.name);
       const quizData = buildQuiz();
+      await page.locator('[data-testid="quiz-name"] textarea.w-md-editor-text-input').fill(quizData.name);
       // Валидный квиз — минимум 3 варианта и ровно один верный (api dbsInit/quizDbs.js).
       const variants = quizData.variants.map((v) => [v.text, v.isCorrect]);
       const list = page.locator('[data-testid="quiz-variations"]');
@@ -425,7 +425,7 @@ test.describe.serial('sql-course-flow', () => {
       expect(training.pubQuizes.map((it) => it.opts.quiz)).toEqual([flow.quizId, `vs_${flow.vsTaskGroupId}`]);
 
       await expect(cPage.locator('[data-testid="train-item"]')).toHaveAttribute('data-quiz-key', String(flow.quizId));
-      await answerQuiz(cPage, '2');
+      await answerQuiz(cPage, String(countOlder()));
 
       // Верный ответ сам уводит к следующему заданию — VS-задаче, ключ истории vs_<группа>.
       const item = cPage.locator('[data-testid="train-item"]');
@@ -455,6 +455,11 @@ test.describe.serial('sql-course-flow', () => {
       expect(startInfo.err_obj, `docker-m не поднял сессию: ${JSON.stringify(startInfo.err_obj)}`).toBeFalsy();
       await expect(vsTask()).toHaveAttribute('data-phase', 'ready', { timeout: 15_000 });
       await expect(vsTask().locator('iframe')).toHaveAttribute('src', /tkn=/);
+      // Редактор открывается на весь экран поверх страницы; результат тестов и
+      // «Далее» — под ним, кандидат сворачивает редактор.
+      await expect(vsTask().locator('.vs-task-frame-full')).toBeVisible();
+      await vsTask().locator('[data-testid="vs-task-collapse"]').click();
+      await expect(vsTask().locator('.vs-task-frame-full')).toHaveCount(0);
       // Сессия тренировки — ключ 'train' (не экзамен), её подхватит и итоговая проверка.
       const saved = await cPage.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), `vs-session-train-${flow.vsTaskGroupId}`);
       expect(saved).toMatchObject({ session_id: sessionId, lng: 'sql' });
@@ -517,7 +522,7 @@ test.describe.serial('sql-course-flow', () => {
       expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId]);
       expect(training.pubQuizes.map((it) => it.opts.quiz)).toEqual([flow.quizId, `vs_${flow.vsTaskGroupId}`]);
 
-      await answerQuiz(cPage, '2');
+      await answerQuiz(cPage, String(countOlder()));
       await expect(cPage.locator('[data-testid="train-item"]')).toHaveAttribute('data-quiz-key', `vs_${flow.vsTaskGroupId}`);
       // Та же сессия тренировки (ключ 'train'): результат решения виден без перезапуска.
       await expect(vsResult()).toHaveAttribute('data-status', 'ok');
