@@ -53,6 +53,10 @@ async function createUserApi(creds) {
     post: async (path, data) => body(await ctx.post(`/api${path}`, { headers, data }), `POST ${path}`),
     put: async (path, item) => body(await ctx.put(`/api${path}`, { headers, data: { item } }), `PUT ${path}`),
     del: async (path, _id) => body(await ctx.delete(`/api${path}`, { headers, data: { _id } }), `DELETE ${path} ${_id}`),
+    // Зеркало CRUD без флага is_removed (routing.js в _modules/_server, только админ):
+    // список видит и мягко удалённые записи, DELETE удаляет документ из базы.
+    listAll: async (path, params) => (await api.get(`/show-removed${path}`, { per_page: 10000, ...params })).items || [],
+    purge: async (path, _id) => api.del(`/show-removed${path}`, _id),
     one: async (path, _id) => api.get(`${path}/${_id}`),
     findByName: async (path, search) => (await api.get(path, { search, filters: ['name'], per_page: 1000 })).items || [],
     dispose: () => ctx.dispose(),
@@ -118,47 +122,77 @@ async function waitSqlSync(api, taskId, { timeoutMs = 120_000, intervalMs = 2_00
   throw new Error(`Сборка файлов SQL-задачи #${taskId} не закончилась за ${timeoutMs / 1000} с (последний статус: ${sync ? sync.status : 'нет'})`);
 }
 
-// Уборка: всё с нашим префиксом в имени старше maxAgeMs. Ничего без префикса не
-// трогаем — так курсы и данные реальных пользователей остаются как есть. Порядок —
-// от зависимых к базовым: запись кандидата, курс, модуль, квизы вопроса, вопрос,
-// группа, задача. DELETE в CRUD — мягкий (is_removed), списки их уже не показывают.
-async function cleanupStaleE2e(api, { prefix, maxAgeMs, candidateId, now = Date.now(), log = () => {} }) {
-  const stale = async (path) => (await api.findByName(path, prefix)).filter((it) => isStaleE2eName(prefix, it.name, now, maxAgeMs));
+// Жёсткая уборка прогона: документы удаляются из базы, а не помечаются is_removed.
+// ids — _id сущностей прогона (массивы): courses, modules, questions, groups, tasks,
+// sessions (VsSession). Сначала то, что ссылается на сущности (истории кандидата,
+// запись на курс, VS-сессии, квизы вопроса), потом сами сущности от зависимых к
+// базовым. Активность кандидата (StatsBySecond) — только с момента since: она
+// общая на пользователя и к сущностям не привязана. StatsByDay не трогаем — это
+// сводка, API пересобирает её из StatsBySecond и активных CourseUser.
+async function purgeE2eRun(api, ids, { candidateId, since, log = () => {} } = {}) {
+  const list = (key) => [...new Set((ids[key] || []).filter(Boolean))];
   const removed = {};
-  const note = (path, _id) => {
+  const purge = async (path, _id) => {
+    await api.purge(path, _id);
     (removed[path] = removed[path] || []).push(_id);
   };
+  const purgeWhere = async (path, filter) => {
+    for (const it of await api.listAll(path, { filter })) await purge(path, it._id);
+  };
 
-  for (const course of await stale('/course')) {
-    if (candidateId) {
-      await api.post('/remove-user-course', { user: candidateId, course: course._id }).catch(() => {});
+  for (const question of list('questions')) {
+    for (const path of ['/quiz-history', '/quiz-read-history', '/question-user-history']) {
+      await purgeWhere(path, { question });
     }
-    await api.del('/course', course._id);
-    note('/course', course._id);
   }
-  for (const mod of await stale('/course-module')) {
-    await api.del('/course-module', mod._id);
-    note('/course-module', mod._id);
-  }
-  for (const q of await stale('/theme-question')) {
-    const quizzes = (await api.get('/quiz', { filter: { question: q._id }, per_page: 1000 })).items || [];
-    for (const quiz of quizzes) {
-      await api.del('/quiz', quiz._id);
-      note('/quiz', quiz._id);
+  for (const courseModule of list('modules')) await purgeWhere('/course-module-user-history', { courseModule });
+  for (const course of list('courses')) await purgeWhere('/course-user', { course });
+
+  const sessions = new Set(list('sessions'));
+  if (candidateId) {
+    // Сессии кандидата по VS-группам прогона — в том числе те, чей _id прогон
+    // записать не успел (упал между pre-start-session и сохранением flow).
+    const groups = new Set(list('groups').map(String));
+    for (const s of await api.listAll('/vs-session', { filter: { user: String(candidateId) } })) {
+      if (groups.has(String((s.info || {}).task_group_id))) sessions.add(s._id);
     }
-    await api.del('/theme-question', q._id);
-    note('/theme-question', q._id);
+    if (since) {
+      for (const it of await api.listAll('/stats-by-second', { filter: { user: candidateId } })) {
+        if (new Date(it.cd).getTime() >= since) await purge('/stats-by-second', it._id);
+      }
+    }
   }
-  for (const group of await stale('/vs-task-group')) {
-    await api.del('/vs-task-group', group._id);
-    note('/vs-task-group', group._id);
+  for (const _id of sessions) await purge('/vs-session', _id);
+
+  for (const _id of list('courses')) await purge('/course', _id);
+  for (const _id of list('modules')) await purge('/course-module', _id);
+  for (const question of list('questions')) {
+    await purgeWhere('/quiz', { question });
+    await purge('/theme-question', question);
   }
-  for (const task of await stale('/vs-task')) {
-    await api.del('/vs-task', task._id);
-    note('/vs-task', task._id);
-  }
-  log(`cleanup ${prefix}: ${JSON.stringify(removed)}`);
+  for (const _id of list('groups')) await purge('/vs-task-group', _id);
+  for (const _id of list('tasks')) await purge('/vs-task', _id);
+
+  log(`purge e2e: ${JSON.stringify(removed)}`);
   return removed;
 }
 
-module.exports = { createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, toQuery };
+// Уборка хвостов прошлых прогонов (упавших до своего afterAll или с мягким DELETE
+// старых версий теста): всё с нашим префиксом в имени старше maxAgeMs, включая уже
+// помеченное is_removed. Ничего без префикса не трогаем — так курсы и данные
+// реальных пользователей остаются как есть.
+async function cleanupStaleE2e(api, { prefix, maxAgeMs, candidateId, now = Date.now(), log = () => {} }) {
+  const stale = async (path) => (await api.listAll(path, { search: prefix, filters: ['name'] }))
+    .filter((it) => isStaleE2eName(prefix, it.name, now, maxAgeMs))
+    .map((it) => it._id);
+  const ids = {
+    courses: await stale('/course'),
+    modules: await stale('/course-module'),
+    questions: await stale('/theme-question'),
+    groups: await stale('/vs-task-group'),
+    tasks: await stale('/vs-task'),
+  };
+  return purgeE2eRun(api, ids, { candidateId, log });
+}
+
+module.exports = { createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, purgeE2eRun, toQuery };

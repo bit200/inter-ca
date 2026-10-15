@@ -16,7 +16,7 @@ const { login, loginAdmin } = require('../helpers/auth');
 const { e2eName } = require('../helpers/e2eNames');
 const { seedSql, buildQuiz, countOlder } = require('../helpers/sqlCourseQuiz');
 const {
-  createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e,
+  createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, purgeE2eRun,
 } = require('../helpers/adminApi');
 const { createDockerM, saveSessionResult } = require('../helpers/vsSession');
 
@@ -116,11 +116,22 @@ test.describe.serial('sql-course-flow', () => {
   });
 
   test.afterAll(async () => {
-    // Уборка VS-сессий кандидата штатным путём docker-m (контейнеры, сеть, тома SQL);
-    // запись VsSession — мягким DELETE (is_removed), как остальной e2e-мусор.
+    // VS-сессии кандидата гасим штатным путём docker-m (контейнеры, сеть, тома SQL).
     for (const s of flow.vsSessions || []) {
       await dockerM?.kill(s.session_id).catch((e) => console.log(`kill ${s.session_id}: ${e.message}`));
-      await api?.del('/vs-session', s._id).catch(() => {});
+    }
+    // Всё, что завёл прогон, удаляем из базы — и при упавшем шаге: что успели
+    // создать, то и лежит в flow.
+    if (api) {
+      await purgeE2eRun(api, {
+        courses: [flow.courseId],
+        modules: [flow.courseModuleId],
+        questions: [flow.questionId],
+        groups: [flow.vsTaskGroupId],
+        tasks: [flow.vsTaskId],
+        sessions: (flow.vsSessions || []).map((s) => s._id),
+      }, { candidateId: flow.candidate?._id, since: flow.ts, log: (m) => console.log(m) })
+        .catch((e) => console.log(`purge e2e: ${e.message}`));
     }
     await dockerM?.dispose();
     await candidateApi?.dispose();
