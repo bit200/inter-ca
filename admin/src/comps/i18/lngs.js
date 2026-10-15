@@ -4048,6 +4048,34 @@ export default {
     en: "Collapse",
     fr: "Réduire"
 },
+"vsTaskBack": {
+    ru: "Вернуться к решению",
+    es: "Volver a la solución",
+    de: "Zurück zur Lösung",
+    en: "Back to my solution",
+    fr: "Revenir à la solution"
+},
+"vsTaskSubmit": {
+    ru: "Завершить и отправить решение",
+    es: "Finalizar y enviar la solución",
+    de: "Beenden und Lösung senden",
+    en: "Finish and submit solution",
+    fr: "Terminer et envoyer la solution"
+},
+"vsTaskSubmitting": {
+    ru: "Проверяем решение…",
+    es: "Comprobando la solución…",
+    de: "Lösung wird geprüft…",
+    en: "Checking the solution…",
+    fr: "Vérification de la solution…"
+},
+"vsTaskSubmitFailed": {
+    ru: "Не удалось отправить решение. Нажмите кнопку ещё раз.",
+    es: "No se pudo enviar la solución. Pulse el botón de nuevo.",
+    de: "Die Lösung konnte nicht gesendet werden. Klicken Sie erneut.",
+    en: "Could not submit the solution. Click the button again.",
+    fr: "Impossible d’envoyer la solution. Cliquez à nouveau."
+},
 "vsTaskStartFailed": {
     ru: "Редактор не запустился. Нажмите «Открыть задачу в редакторе» ещё раз.",
     es: "El editor no se inició. Pulse «Abrir la tarea en el editor» de nuevo.",
