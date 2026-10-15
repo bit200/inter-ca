@@ -78,6 +78,22 @@ export function getVscodeLink(startRes) {
         || '';
 }
 
+// docker-m на локалке проксирует VS Code по своему порту (http://localhost:3010/vs/<port>/),
+// но при пустом LOCAL_MACHINE_SERVER_PORT в ссылке нет порта (http://localhost/vs/<port>/) —
+// iframe и «Открыть в другом окне» ведут в никуда. Порт тогда берём у server_http той же сессии.
+export function fixVscodeLink(link, serverHttp) {
+    try {
+        let u = new URL(link);
+        let s = new URL(serverHttp);
+        if (!u.port && s.port && u.hostname === s.hostname && u.protocol === s.protocol && /^\/vs\//.test(u.pathname)) {
+            u.port = s.port;
+            return u.toString();
+        }
+    } catch (e) {
+    }
+    return link;
+}
+
 export function getStartError(startRes) {
     let err = startRes?.err_obj || startRes?.err || startRes?.start_info?.err;
     if (!err) {

@@ -47,3 +47,18 @@ describe('VS Code-задачи: распознавание и сводка те�
         expect(getVscodeLink({})).toBe('');
     });
 });
+
+describe('fixVscodeLink', () => {
+    const {fixVscodeLink} = require('./vsTask');
+    const bad = 'http://localhost/vs/50505/?folder=/home/itk/itk-livecoding&tkn=abc';
+    it('дописывает порт docker-m, если в ссылке его нет', () => {
+        expect(fixVscodeLink(bad, 'http://localhost:3010'))
+            .toBe('http://localhost:3010/vs/50505/?folder=/home/itk/itk-livecoding&tkn=abc');
+    });
+    it('не трогает ссылку с портом, чужой хост и пустой server_http', () => {
+        let ok = 'http://localhost:3010/vs/1/?tkn=a';
+        expect(fixVscodeLink(ok, 'http://localhost:3010')).toBe(ok);
+        expect(fixVscodeLink('https://vcode-cdn.itk.academy/5/', 'https://dm.itk.academy:3010')).toBe('https://vcode-cdn.itk.academy/5/');
+        expect(fixVscodeLink(bad, '')).toBe(bad);
+    });
+});

@@ -4,6 +4,7 @@ import './VsTaskRun.css';
 import {
     getStartError,
     getVscodeLink,
+    fixVscodeLink,
     isSqlTask,
     lastSessionStep,
     pickLng,
@@ -213,7 +214,7 @@ function VsTaskRun(props) {
                 setPhase('error');
                 return;
             }
-            setLink(vsLink);
+            setLink(fixVscodeLink(vsLink, sess?.server_http));
             setPhase('ready');
         } catch (e) {
             if (myRun !== runId.current) return;
