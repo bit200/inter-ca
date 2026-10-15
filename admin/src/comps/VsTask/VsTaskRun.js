@@ -16,6 +16,7 @@ import {
 
 const RESULT_POLL_MS = 15000;
 const STATUS_POLL_MS = 1000;
+const FINISH_ITEM = 'Завершить задачу';
 
 function storageKey(examId, taskId) {
     return 'vs-session-' + (examId || 'train') + '-' + taskId;
@@ -86,7 +87,10 @@ function VsTaskRun(props) {
     let [testInfo, setTestInfo] = useState(null);
     let [refreshing, setRefreshing] = useState(false);
     let [full, setFull] = useState(true);
+    let [submitting, setSubmitting] = useState(false);
+    let [submitFailed, setSubmitFailed] = useState(false);
     let runId = useRef(0);
+    let submitRef = useRef(null);
 
     let saved = {...readSaved(key), ...(hist?.session_id ? hist : {})};
     let sessionId = session?.session_id || saved.session_id || '';
@@ -101,7 +105,21 @@ function VsTaskRun(props) {
         setError('');
         setTestInfo(null);
         setFull(true);
+        setSubmitting(false);
+        setSubmitFailed(false);
     }, [taskId]);
+
+    // Пункт «Завершить задачу» внутри редактора = то же, что кнопка под ним.
+    useEffect(() => {
+        let onMessage = (event) => {
+            let data = event?.data || {};
+            if (data.type === 'treeitemClick' && data.elementText === FINISH_ITEM) {
+                submitRef.current && submitRef.current();
+            }
+        };
+        window.addEventListener('message', onMessage);
+        return () => window.removeEventListener('message', onMessage);
+    }, []);
 
     useEffect(() => {
         sessionId && loadResult(sessionId);
@@ -142,6 +160,25 @@ function VsTaskRun(props) {
                 scb && scb();
             });
     }
+
+    // «Завершить задачу»: сохраняем состояние редактора и гоняем полный набор тестов на docker-m
+    // (как в админке), затем подтягиваем итог. Доступно, пока сессия есть, — и после сворачивания.
+    async function submit() {
+        let base = session?.server_http;
+        if (!base || !sessionId || submitting) return;
+        setSubmitting(true);
+        setSubmitFailed(false);
+        try {
+            let q = '?session_id=' + encodeURIComponent(sessionId);
+            await fetch(base + '/create_upload_session_patch' + q).then(r => r.json());
+            await fetch(base + '/full_test_new_sse' + q).then(r => r.text());
+            await loadResult(sessionId);
+        } catch (e) {
+            setSubmitFailed(true);
+        }
+        setSubmitting(false);
+    }
+    submitRef.current = submit;
 
     async function open(isRestart) {
         let myRun = ++runId.current;
@@ -206,8 +243,14 @@ function VsTaskRun(props) {
                     className={'btn ' + (phase === 'ready' ? 'btn-default' : isSolved ? 'btn-light' : 'btn-primary')}
                     disabled={starting}
                     onClick={() => open(phase === 'ready' || phase === 'error')}>
-                {phase === 'ready' || phase === 'error' ? t('vsTaskReopen') : t('vsTaskOpen')}
+                {phase === 'ready' || phase === 'error' ? t('vsTaskReopen') : saved.session_id ? t('vsTaskBack') : t('vsTaskOpen')}
             </button>
+            {phase === 'ready' && session?.server_http && <button type={'button'}
+                                                                  className={'btn btn-success'}
+                                                                  disabled={submitting}
+                                                                  onClick={submit}>
+                {submitting ? t('vsTaskSubmitting') : t('vsTaskSubmit')}
+            </button>}
             {starting && <span className={'vs-task-status'} role={'status'}>
                 <span className={'vs-task-dot'}/>{t('vsTaskStarting')}
                 {step && <span className={'vs-task-step'}>{step}</span>}
@@ -228,6 +271,7 @@ function VsTaskRun(props) {
                 <i className={'iconoir-nav-arrow-right'}></i>
             </button>}
         </div>
+        {submitFailed && <div className={'vs-task-error'} role={'alert'}>{t('vsTaskSubmitFailed')}</div>}
         {phase === 'error' && <div className={'vs-task-error'} role={'alert'}>
             {t('vsTaskStartFailed')}
             {error && <div className={'vs-task-error-details'}>{String(error)}</div>}
@@ -236,6 +280,12 @@ function VsTaskRun(props) {
         {phase === 'ready' && <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
             {full && <div className={'vs-task-frame-bar'}>
                 <span className={'vs-task-frame-title'}>{task?.name}</span>
+                {session?.server_http && <button type={'button'}
+                                                 className={'btn btn-xs btn-success'}
+                                                 disabled={submitting}
+                                                 onClick={submit}>
+                    {submitting ? t('vsTaskSubmitting') : t('vsTaskSubmit')}
+                </button>}
                 <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-collapse'}
                         onClick={() => setFull(false)}>
                     <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}

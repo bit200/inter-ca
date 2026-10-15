@@ -111,4 +111,42 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         render(<CodeRun question={SQL_TASK} examId={77}/>);
         expect(screen.getByText('vsTaskOpen')).toBeInTheDocument();
     });
+
+    test('«Завершить и отправить решение»: сохраняет патч, гонит тесты и обновляет результат', async () => {
+        let get = mockHttp({testInfo: {status: 'ok', details: {total: 2, passed: 2, failed: 0}}});
+        let calls = [];
+        global.fetch = jest.fn((url) => {
+            calls.push(url);
+            return Promise.resolve({json: () => Promise.resolve({}), text: () => Promise.resolve('')});
+        });
+        let {container} = render(<VsTaskRun task={SQL_TASK} examId={77}/>);
+        fireEvent.click(screen.getByText('vsTaskOpen'));
+        await waitFor(() => expect(container.querySelector('iframe')).toBeTruthy());
+
+        let before = get.mock.calls.filter(c => c[0] === '/populated-session').length;
+        fireEvent.click(container.querySelector('.vs-task-actions .btn-success'));
+        await waitFor(() => expect(calls).toEqual([
+            'http://dm/create_upload_session_patch?session_id=s-1',
+            'http://dm/full_test_new_sse?session_id=s-1'
+        ]));
+        await waitFor(() => expect(get.mock.calls.filter(c => c[0] === '/populated-session').length).toBeGreaterThan(before));
+    });
+
+    test('пункт «Завершить задачу» в самом редакторе отправляет решение', async () => {
+        mockHttp();
+        global.fetch = jest.fn(() => Promise.resolve({json: () => Promise.resolve({}), text: () => Promise.resolve('')}));
+        let {container} = render(<VsTaskRun task={SQL_TASK} examId={77}/>);
+        fireEvent.click(screen.getByText('vsTaskOpen'));
+        await waitFor(() => expect(container.querySelector('iframe')).toBeTruthy());
+
+        window.dispatchEvent(new MessageEvent('message', {data: {type: 'treeitemClick', elementText: 'Завершить задачу'}}));
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
+    });
+
+    test('при сохранённой сессии кнопка зовёт «Вернуться к решению»', () => {
+        mockHttp();
+        window.localStorage.setItem('vs-session-77-42', JSON.stringify({session_id: 's-1', lng: 'sql'}));
+        render(<VsTaskRun task={SQL_TASK} examId={77}/>);
+        expect(screen.getByText('vsTaskBack')).toBeInTheDocument();
+    });
 });
