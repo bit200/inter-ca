@@ -85,7 +85,10 @@ export function fixVscodeLink(link, serverHttp) {
     try {
         let u = new URL(link);
         let s = new URL(serverHttp);
-        if (!u.port && s.port && u.hostname === s.hostname && u.protocol === s.protocol && /^\/vs\//.test(u.pathname)) {
+        let local = h => ['localhost', '127.0.0.1', '0.0.0.0'].includes(h);
+        // server_http платформы на локалке — http://0.0.0.0:3010, а в ссылке localhost: хост не совпадает
+        let sameHost = u.hostname === s.hostname || (local(u.hostname) && local(s.hostname));
+        if (!u.port && s.port && sameHost && u.protocol === s.protocol && /^\/vs\//.test(u.pathname)) {
             u.port = s.port;
             return u.toString();
         }

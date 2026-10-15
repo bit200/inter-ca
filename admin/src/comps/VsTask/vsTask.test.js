@@ -55,6 +55,10 @@ describe('fixVscodeLink', () => {
         expect(fixVscodeLink(bad, 'http://localhost:3010'))
             .toBe('http://localhost:3010/vs/50505/?folder=/home/itk/itk-livecoding&tkn=abc');
     });
+    it('локально: server_http 0.0.0.0:3010, в ссылке localhost с пустым портом', () => {
+        expect(fixVscodeLink('http://localhost:/vs/50506/?folder=/h&tkn=a', 'http://0.0.0.0:3010'))
+            .toBe('http://localhost:3010/vs/50506/?folder=/h&tkn=a');
+    });
     it('не трогает ссылку с портом, чужой хост и пустой server_http', () => {
         let ok = 'http://localhost:3010/vs/1/?tkn=a';
         expect(fixVscodeLink(ok, 'http://localhost:3010')).toBe(ok);
