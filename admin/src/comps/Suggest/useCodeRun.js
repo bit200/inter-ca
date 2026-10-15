@@ -124,6 +124,7 @@ export function useCodeRun(props) {
             files: {'': codeRef.current},
             logsReader,
             question: question._id || getQuestionId(),
+            courseModule: props.courseModule,
             ...params
         })
             .then(r => {
@@ -140,6 +141,7 @@ export function useCodeRun(props) {
                 if (params && params.isSubmit) {
                     !wrongCount && trySet('very_good', ['very_good']);
                     setRunSubmitResults(r);
+                    props.onSubmitResults && props.onSubmitResults(r);
                 } else {
                     !wrongCount && trySet('norm', ['good', 'very_good']);
                     setRunResults(r);

@@ -132,7 +132,7 @@ function CodeRunComponent(props) {
                         <div className={'mainTasksWrap sticky3'}>
                             <div className="pull-right">
                                 <div className="buttonsRun2">
-                                    {!props.isNewExam && <>
+                                    {!props.isNewExam && !props.woSolution && <>
                                         {!!question.hints && !!question.hints.length &&
                                             <button title="Подсказка" className={'btn btn-sm btn-light'}
                                                     onClick={() => { setHintInd(0); hintModal.show(); }}>

@@ -4153,6 +4153,34 @@ export default {
     en: "Solve the task in the VS Code editor right on this page. Progress is saved automatically.",
     fr: "La tâche se résout dans l'éditeur VS Code sur la page. La progression est enregistrée automatiquement."
 },
+"jsTaskCode": {
+    ru: "Задача на код",
+    es: "Tarea de código",
+    de: "Programmieraufgabe",
+    en: "Coding task",
+    fr: "Tâche de code"
+},
+"jsTaskHint": {
+    ru: "«Запуск» проверяет решение на видимых примерах, «Сабмит» — на всех тестах. Задача засчитывается, когда сабмит проходит целиком.",
+    es: "«Ejecutar» prueba la solución con los ejemplos visibles, «Enviar» con todas las pruebas. La tarea cuenta cuando el envío pasa por completo.",
+    de: "«Ausführen» prüft die Lösung an sichtbaren Beispielen, «Senden» an allen Tests. Die Aufgabe zählt, wenn die Abgabe komplett besteht.",
+    en: "Run checks your solution on the visible examples, Submit on all tests. The task counts once a submit passes in full.",
+    fr: "« Exécuter » teste la solution sur les exemples visibles, « Envoyer » sur tous les tests. La tâche compte quand l'envoi passe entièrement."
+},
+"jsTaskPassed": {
+    ru: "Все тесты пройдены — задача засчитана",
+    es: "Todas las pruebas superadas: tarea aceptada",
+    de: "Alle Tests bestanden – Aufgabe angerechnet",
+    en: "All tests passed — task counted",
+    fr: "Tous les tests réussis — tâche validée"
+},
+"jsTaskFailed": {
+    ru: "Пройдено тестов",
+    es: "Pruebas superadas",
+    de: "Bestandene Tests",
+    en: "Tests passed",
+    fr: "Tests réussis"
+},
 "sqlSchema": {
     ru: "Схема базы данных",
     es: "Esquema de la base de datos",

@@ -1,0 +1,20 @@
+/* CodeRun рассчитан на всю страницу (высота от 100vh минус шапка) — в модалке
+   проверки знаний даём ему фиксированную рамку, чтобы «Далее» оставалось на экране. */
+.js-task-editor {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.js-task-editor .codeRunWrap {
+    height: min(62vh, 620px);
+}
+
+.js-task-result.err .vs-task-dot {
+    background: var(--bs-danger);
+    animation: none;
+}
+
+.js-task-result.ok {
+    color: var(--bs-success);
+}

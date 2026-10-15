@@ -154,6 +154,7 @@ function CourseQuiz(props, ref) {
 
 
     // VS-задачи группы входят в знаменатель наравне с квизами: решённая даёт балл.
+    // js-задачи (js_<id>) сервер кладёт прямо в quizes — они уже в quizes.length.
     function getQuizPerc(quizHistory) {
         return calcQuizPerc(quizHistory.history, quizes.length + countVsQuizes(pubQuizes));
     }

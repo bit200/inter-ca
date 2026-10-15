@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import VsTaskRun from "../VsTask/VsTaskRun";
+import JsTaskRun from "./JsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
 import _ from 'underscore';
 import './Train.css'
@@ -392,6 +393,16 @@ function Train(props) {
                                                            history: hist, quizId: getQuizId(), opts: activeItem.opts
                                                        })
                                                    }}/>}
+            {answerType === 'js_task' && <JsTaskRun task={item} onNext={() => onNext()}
+                                                    onResult={(res) => {
+                                                        // Сабмит js-задачи (все тесты прошли = isCorrect) — в историю
+                                                        // тренажёра: задача считается в проценте сдачи как квиз.
+                                                        let hist = extendHistory(activeInd, {isSubmit: true, isCorrect: res.isCorrect})
+                                                        props.onChange && props.onChange({
+                                                            answerType: 'js_task', data: {isCorrect: res.isCorrect},
+                                                            history: hist, quizId: getQuizId(), opts: activeItem.opts
+                                                        })
+                                                    }}/>}
             {answerType === 'code' && <CodeReview
                 opts={props.opts}
                 time={timer.time} //for render in circle the value
