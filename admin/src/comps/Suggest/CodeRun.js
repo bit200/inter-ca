@@ -425,9 +425,11 @@ function IframeToRunLocal2(props) {
     }, [forceRenderLogs, activeCaseInd]);
 
     let bsTheme = ColorTheme.getTheme();
+    // iframe не шлёт заголовок Authorization: файлы задачи API отдаёт только по ?token=.
+    let query = '/index.html?cd=' + cd + '&darkMode=' + bsTheme + '&token=' + encodeURIComponent(user.get_token() || '');
     let url = isNewExam
-        ? global.env.domain + '/' + (isFirst.current ? 'admin_files' : 'admin_init') + '/' + CustomStorage.getId() + '/' + question._id + '/index.html?cd=' + cd + '&darkMode=' + bsTheme
-        : global.env.domain + '/' + (isFirst.current ? 'files' : 'init') + '/' + user.get_id() + '/' + question._id + '/index.html?cd=' + cd + '&darkMode=' + bsTheme;
+        ? global.env.domain + '/' + (isFirst.current ? 'admin_files' : 'admin_init') + '/' + CustomStorage.getId() + '/' + question._id + query
+        : global.env.domain + '/' + (isFirst.current ? 'files' : 'init') + '/' + user.get_id() + '/' + question._id + query;
 
     return <div className='logsRunWraps'>
         <a className={'btn btn-light btn-sm pull-right'}
