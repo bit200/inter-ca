@@ -13,9 +13,9 @@ function Cell({value}) {
     return <td>{String(value)}</td>;
 }
 
-export function SqlResultTable({result, title}) {
+export function SqlResultTable({result, title, kind}) {
     let {columns = [], rows = [], truncated} = result || {};
-    return <div className="sqlResultBlock">
+    return <div className="sqlResultBlock" data-testid="sql-result-table" data-kind={kind} data-rows={rows.length}>
         <div className="sqlResultTitle">
             {title}
             <small>{t('sqlRowsCount')}: {rows.length}{truncated ? '+' : ''}</small>
@@ -37,16 +37,17 @@ export function SqlResultTable({result, title}) {
 }
 
 function SqlCase({item, showTitle}) {
-    let {ok, hidden, message, actual, expected} = item || {};
-    return <div className="sqlCase" status={ok ? 'ok' : 'error'}>
+    let {ok, hidden, reason, message, actual, expected} = item || {};
+    return <div className="sqlCase" status={ok ? 'ok' : 'error'}
+                data-testid="sql-case" data-ok={String(!!ok)} data-hidden={String(!!hidden)} data-reason={reason || ''}>
         <div className="sqlCaseHead">
             <span className="run-circle"></span>
             {showTitle && <b>{hidden ? t('sqlHiddenCase') : t('sqlPublicCase')}</b>}
             <span>{ok ? t('sqlCaseOk') : message}</span>
         </div>
         {(actual || expected) && <div className="sqlCaseTables">
-            {actual && <SqlResultTable title={t('currentResult')} result={actual}/>}
-            {expected && <SqlResultTable title={t('expectResult')} result={expected}/>}
+            {actual && <SqlResultTable title={t('currentResult')} result={actual} kind="actual"/>}
+            {expected && <SqlResultTable title={t('expectResult')} result={expected} kind="expected"/>}
         </div>}
     </div>
 }
@@ -58,7 +59,7 @@ export function SqlRunResults({runResults}) {
     let requestError = !sqlResults.length && firstError
         ? firstError.errMsg || (firstError.res1 || {}).errMsg
         : '';
-    return <div className="sqlRunResults">
+    return <div className="sqlRunResults" data-testid="sql-run-results" data-passed={passCount || 0} data-total={totalCount}>
         <div>{t('testPasses')} {passCount} {t('from')} {totalCount}</div>
         {requestError && <div className="sqlCase" status="error">
             <div className="sqlCaseHead"><span className="run-circle"></span><span>{String(requestError)}</span></div>

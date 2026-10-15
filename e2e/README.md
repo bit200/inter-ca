@@ -77,11 +77,30 @@ SQL-задача в браузерном формате: вопрос `type: 'js
    SQL-задачу (`js_<id вопроса>`, только публичная часть JsDetails: без эталона и
    скрытых данных).
 
-Часть 2 (кандидат проходит курс в клиенте) — отдельная задача, допишется в этот же
-файл следующим `describe` после `admin setup`.
+Часть 2 (`candidate`) — кандидат e2e-candidate проходит курс в клиенте:
+
+7. курс виден в «Курсах» и открывается, глава с вопросом открывается, итоговая
+   проверка модуля под замком;
+8. «Проверить знания» главы: квиз, затем SQL-задача (`train-item` с ключом
+   `js_<id вопроса>`, CodeRun в Train). Запрос печатается в Monaco и сдаётся кнопкой
+   «Сдать» (`/run-question` с `isSubmit` и `courseModule`):
+   - неверный (`>= 30`) — не засчитан, `0 / 2`; в «Результате сдачи» видно расхождение:
+     ваша выборка с лишней строкой рядом с ожидаемой (`SqlRunResults`), по скрытым
+     данным — только «не прошло», без таблиц;
+   - `DELETE FROM users …` — не засчитан, текст `checkSqlSafety` («Разрешены только
+     запросы на чтение…»);
+   - верный — засчитан на обоих наборах данных; «Далее» заканчивает проверку: 100%,
+     2 из 2 (квиз + задача), глава сдана (`CourseUser.qHistory`);
+9. итоговая проверка модуля: квиз и та же задача заново — модуль засчитан и в UI, и в
+   API (`CourseModuleUserHistory.status`, `CourseUser.mHistory`,
+   `QuestionUserHistory.quizStatus`);
+10. повторный вход — курс 100%, глава и модуль сданы.
+
+Весь поток одной командой, headless, один воркер (≈25 с):
 
 ```bash
-cd e2e && npm run test:sql-flow          # = E2E_MANUAL=1 playwright test sql-course-flow.spec (≈10 с)
+cd e2e && npm run test:sql-flow          # = E2E_MANUAL=1 playwright test sql-course-flow.spec
+E2E_BASE_URL=http://localhost:7647 npm run test:sql-flow    # клиент из своего worktree
 E2E_ADMIN_URL=http://localhost:7641 npm run test:sql-flow   # админка из своего worktree
 ```
 
@@ -89,7 +108,7 @@ E2E_ADMIN_URL=http://localhost:7641 npm run test:sql-flow   # админка и�
 
 - `itk-api` — API на `:6057` (`itk-platform-en/interviews/api`);
 - `itk-admin` — админка на `:8002` (`E2E_ADMIN_URL`), с разметкой testid (см. ниже);
-- клиент на `:8001` (`E2E_BASE_URL`) — `admin/` этого репозитория (часть 2);
+- клиент на `:8001` (`E2E_BASE_URL`) — `admin/` этого репозитория с разметкой testid (часть 2);
 - Postgres SQL-раннера: `SQL_RUNNER_DSN` в `.env` API, поднимается
   `api/scripts/sql-runner-db.sh` (контейнер Postgres на `:5439`).
 
@@ -109,6 +128,7 @@ Env: `E2E_ADMIN_URL`, `E2E_API_URL`, `E2E_BASE_URL`, `E2E_ADMIN_USERNAME` /
   завёл, удаляется из базы под админом — `DELETE /api/show-removed/<раздел>`,
   физически, а не пометкой `is_removed`: истории по вопросу и модулю
   (`QuizHistory`, `QuizReadHistory`, `QuestionUserHistory`, `CourseModuleUserHistory`),
+  код кандидата в задаче (`CodeHistory`, его пишет `/save-solution` на каждую правку),
   запись на курс (`CourseUser`), активность кандидата за время прогона
   (`StatsBySecond`), затем курс, модуль, квизы вопроса, его `JsDetails`, версии
   (`Version`, `VersionContribute`) и сам вопрос. Перед прогоном так же убираются
@@ -118,9 +138,17 @@ Env: `E2E_ADMIN_URL`, `E2E_API_URL`, `E2E_BASE_URL`, `E2E_ADMIN_USERNAME` /
   нет. Штатный путь — «Статистика» пользователя → вкладка courses → «Добавить курс»
   (`POST /api/add-user-course`: `CourseUser` со `status: 'active'` и пересборкой
   истории курса). Кандидату курс виден именно по активному `CourseUser`.
-- **Эталон в Monaco.** Тест вставляет запрос `keyboard.insertText` — как вставку из
-  буфера, без автодополнения и автоскобок редактора. Сам Monaco админка грузит с
-  `cdn.jsdelivr.net`: без сети шаг 2 падает с этой подсказкой (ждёт 30 с).
+- **Эталон и решение в Monaco.** Тест вставляет запрос `keyboard.insertText` — как
+  вставку из буфера, без автодополнения и автоскобок редактора (в CodeRun кандидата
+  перед этим `Ctrl+A`, `Delete`). Сам Monaco и админка, и клиент грузят с
+  `cdn.jsdelivr.net`: без сети шаги 2 и 8 падают с этой подсказкой (ждут 30 с). Что
+  ушло на проверку, тест сверяет по телу `/run-question`, а не по тексту редактора.
+- **Таймауты.** Локальные и явные: Monaco — 30 с, эталон — 20 с, каждая сдача
+  (`/run-question`) — 20 с; ожидание результата — `expect`/`expect.poll`, без sleep.
+- **API перезапускается.** `itk-api` под node-dev перезапускается на любую правку
+  файлов в `itk-platform-en/interviews/api` (мерж соседней задачи): шаг, попавший на
+  эти секунды, падает с `ERR_CONNECTION_REFUSED` в консоли браузера — это стенд, а не
+  поток; прогон повторить.
 - **Квизы вопроса.** API сам заводит вопросу аудио-квиз — тест его выключает, чтобы при
   `moduleQuizSize = 1` в проверке был предсказуемо наш квиз.
 - Общие шаги админки (квиз, модуль, курс, запись) — `helpers/adminCourseSetup.js`,
@@ -218,3 +246,11 @@ SQL-задачи (`POST /create-sql-task-files`) и поднимает VS Code-�
 (`data-phase`, `data-task-id`), `vs-task-open`, `vs-task-collapse` / `vs-task-expand`
 (редактор на весь экран), `vs-task-next`, `vs-task-refresh`,
 `vs-task-result[data-status][data-passed][data-total]`.
+
+js-задача в проверке (`TrainMethods/JsTaskRun.js`): `js-task[data-task-id]` (id вопроса),
+`js-task-result[data-ok]`, `js-task-next`. CodeRun (`Suggest/CodeRun.js`):
+`code-run-run` («Запустить»), `code-run-submit` («Сдать»),
+`code-run-results[data-kind=run|submit]` — результат прогона и сдачи. SQL-результат
+(`Suggest/SqlRunResults.js`): `sql-run-results[data-passed][data-total]`,
+`sql-case[data-ok][data-hidden][data-reason]` (`reason` — из `services/sqlRunner.js`:
+`rows_mismatch`, `forbidden`, …), `sql-result-table[data-kind=actual|expected][data-rows]`.

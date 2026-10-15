@@ -30,6 +30,7 @@ function runRows(since) {
     '/quiz-history': [{ _id: 1, question: 30 }, { _id: 2, question: 999 }],
     '/quiz-read-history': [{ _id: 3, question: 30 }],
     '/question-user-history': [{ _id: 4, question: 30 }],
+    '/code-history': [{ _id: 8, question: 30 }, { _id: 9, question: 31 }],
     '/course-module-user-history': [{ _id: 5, courseModule: 20 }],
     '/course-user': [{ _id: 6, course: 10 }, { _id: 7, course: 11 }],
     '/vs-session': [
@@ -56,7 +57,7 @@ test('purgeE2eRun удаляет из базы всё, что завёл про�
   await purgeE2eRun(api, RUN, { candidateId: 5, since });
 
   assert.deepStrictEqual(api.calls, [
-    '/quiz-history 1', '/quiz-read-history 3', '/question-user-history 4',
+    '/quiz-history 1', '/quiz-read-history 3', '/question-user-history 4', '/code-history 8',
     '/course-module-user-history 5', '/course-user 6',
     '/stats-by-second 71', '/vs-session 60', '/vs-session 61',
     '/course 10', '/course-module 20', '/quiz 80', '/quiz 81',
@@ -69,6 +70,7 @@ test('purgeE2eRun удаляет из базы всё, что завёл про�
   assert.deepStrictEqual(api.rows['/stats-by-second'].map((it) => it._id), [70]);
   assert.deepStrictEqual(api.rows['/quiz'].map((it) => it._id), [82]);
   assert.deepStrictEqual(api.rows['/js-details'].map((it) => it._id), [91]);
+  assert.deepStrictEqual(api.rows['/code-history'].map((it) => it._id), [9]);
   assert.deepStrictEqual(api.rows['/version'].map((it) => it._id), [93]);
 });
 

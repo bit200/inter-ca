@@ -3,8 +3,9 @@
 // API на общем Postgres) → квиз → модуль → курс → кандидат.
 // Часть 1 («admin setup») — подготовка через UI админки itk-platform (E2E_ADMIN_URL)
 // под обычным admin (не super_admin: VS Code для admin закрыт флагом, поток его не
-// трогает). Часть 2 (кандидат проходит курс в клиенте) допишется в этот же файл
-// отдельным describe после «admin setup».
+// трогает). Часть 2 («candidate») — кандидат проходит курс в клиенте (E2E_BASE_URL):
+// курс → глава → «Проверить знания» (квиз и SQL-задача в CodeRun: неверный запрос,
+// DELETE, верный) → итоговая проверка модуля → повторный вход.
 //
 // describe.serial гарантирует порядок; созданные _id лежат в общем объекте `flow` —
 // из него их читает часть 2 — и дублируются в test-results/sql-course-flow.json для
@@ -13,10 +14,10 @@
 const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ADMIN_URL, adminCreds, candidateCreds } = require('../helpers/env');
-const { loginAdmin } = require('../helpers/auth');
+const { ADMIN_URL, BASE_URL, adminCreds, candidateCreds } = require('../helpers/env');
+const { login, loginAdmin } = require('../helpers/auth');
 const { e2eName } = require('../helpers/e2eNames');
-const { USERS, HIDDEN_USERS, seedSql, namesOlder, buildQuiz } = require('../helpers/sqlCourseQuiz');
+const { USERS, HIDDEN_USERS, seedSql, countOlder, namesOlder, buildQuiz } = require('../helpers/sqlCourseQuiz');
 const {
   createAdminApi, loginUser, assertSqlRunnerReady, cleanupStaleE2e, purgeE2eRun,
 } = require('../helpers/adminApi');
@@ -31,6 +32,8 @@ const CLEANUP_HOURS = Number(process.env.E2E_CLEANUP_HOURS || 6);
 const EDITOR_TIMEOUT = 30_000;
 // Эталон на двух наборах данных: две временные БД в Postgres раннера.
 const REFERENCE_TIMEOUT = 20_000;
+// Сдача запроса кандидатом (/run-question с isSubmit): те же две временные БД.
+const RUN_TIMEOUT = 20_000;
 
 const SQL = {
   schema: 'CREATE TABLE users (\n  id   int PRIMARY KEY,\n  name text NOT NULL,\n  age  int NOT NULL\n);',
@@ -40,6 +43,9 @@ const SQL = {
   solution: 'SELECT name FROM users WHERE age > 30 ORDER BY name',
   // Негатив: «30 и старше» вместо «строго старше» — лишняя строка (Петр, 30).
   wrong: 'SELECT name FROM users WHERE age >= 30 ORDER BY name',
+  // Изменение данных: раннер отвечает текстом checkSqlSafety, до Postgres запрос не доходит.
+  destructive: 'DELETE FROM users WHERE age > 30',
+  forbiddenMessage: 'Разрешены только запросы на чтение: SELECT или WITH',
 };
 
 const flow = { ts: Date.now() };
@@ -56,6 +62,9 @@ test.describe.serial('sql-course-flow', () => {
   /** @type {import('@playwright/test').Page} */
   let page;
   let api;
+
+  /** @type {import('@playwright/test').Page} — кандидат в клиенте inter-ca */
+  let cPage;
 
   test.beforeAll(async ({ browser }) => {
     api = await createAdminApi();
@@ -82,6 +91,7 @@ test.describe.serial('sql-course-flow', () => {
       }, { candidateId: flow.candidate?._id, since: flow.ts, log: (m) => console.log(m) })
         .catch((e) => console.log(`purge e2e: ${e.message}`));
     }
+    await cPage?.context().close();
     await page?.close();
     await api?.dispose();
   });
@@ -185,6 +195,203 @@ test.describe.serial('sql-course-flow', () => {
       const task = training.pubQuizes[1].item;
       expect(task.answerType).toBe('js_task');
       expect(task.jsDetails).toEqual({ codeType: 'sql', schemaSql: SQL.schema, seedSql: SQL.seed });
+      const { name, ...ids } = flow;
+      console.log('sql-course-flow ids:', JSON.stringify(ids));
+    });
+  });
+
+  test.describe('candidate', () => {
+    const courseRow = () => cPage.locator(`[data-testid="course-list-item"][data-course-id="${flow.courseId}"]`);
+    const moduleItem = () => cPage.locator(`[data-testid="course-module"][data-module-id="${flow.courseModuleId}"]`);
+    const topic = () => cPage.locator(`[data-testid="course-topic"][data-question-id="${flow.questionId}"]`);
+    const moduleCheck = () => cPage.locator('[data-testid="course-module-check"]');
+    const trainItem = () => cPage.locator('[data-testid="train-item"]');
+    const jsTask = () => cPage.locator(`[data-testid="js-task"][data-task-id="${flow.questionId}"]`);
+    const jsResult = () => jsTask().locator('[data-testid="js-task-result"]');
+    // «Результат сдачи» на вкладке «Результаты» CodeRun (после «Сдать» она открывается сама).
+    const submitResults = () => jsTask().locator('[data-testid="code-run-results"][data-kind="submit"] [data-testid="sql-run-results"]');
+
+    async function openCourse() {
+      await cPage.goto('/courses');
+      await expect(courseRow()).toContainText(flow.name('курс'));
+      const details = waitApi(cPage, 'GET', '/get-my-course-details', (u) => u.searchParams.get('_id') == flow.courseId);
+      // В строке две ссылки на курс: название и «Продолжить» — жмём название.
+      await courseRow().getByRole('link', { name: flow.name('курс') }).click();
+      await details;
+      // Клиент сам дописывает ?topic=<глава> (последняя открытая) — сверяем только путь.
+      await cPage.waitForURL((u) => u.pathname === `/courses/${flow.courseId}`);
+    }
+
+    // Ответ на квиз тренажёра: вариант с точным текстом (порядок вариантов перемешан).
+    async function answerQuiz(text) {
+      const saved = waitApi(cPage, 'POST', '/save-quiz-history');
+      await cPage.locator('[data-testid="quiz-answer"]').filter({ hasText: new RegExp(`^\\s*${text}\\s*$`) }).click();
+      await saved;
+    }
+
+    // Запрос в Monaco CodeRun и «Сдать». Monaco клиент грузит с CDN, как и админка.
+    // insertText — как вставка из буфера, без автодополнения и автоскобок редактора.
+    // Возвращает ответ /run-question; тело запроса сверяется: ушёл именно этот текст,
+    // со сдачей и модулем курса (по нему сервер проверяет доступ кандидата).
+    async function submitQuery(sql) {
+      const editor = jsTask().locator('.crRight .monaco-editor');
+      await expect(editor, 'Monaco CodeRun не загрузился: клиент берёт его с cdn.jsdelivr.net — проверьте сеть стенда')
+        .toBeVisible({ timeout: EDITOR_TIMEOUT });
+      await editor.locator('.view-lines').click();
+      await cPage.keyboard.press('ControlOrMeta+A');
+      await cPage.keyboard.press('Delete');
+      await cPage.keyboard.insertText(sql);
+      const [res] = await Promise.all([
+        cPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/run-question',
+          { timeout: RUN_TIMEOUT }),
+        jsTask().locator('[data-testid="code-run-submit"]').click(),
+      ]);
+      expect(res.request().postDataJSON()).toMatchObject({
+        question: flow.questionId, courseModule: flow.courseModuleId, isSubmit: true, files: { '': sql },
+      });
+      expect(res.ok(), `POST /api/run-question: HTTP ${res.status()}`).toBeTruthy();
+      await expect(submitResults()).toBeVisible();
+      return res.json();
+    }
+
+    // Квиз, затем SQL-задача — состав одинаков в проверке главы и в итоговой модуля:
+    // js-задача лежит в quizes (знаменатель сдачи), в pubQuizes — после квиза.
+    function expectTraining(training) {
+      expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId, flow.questionId]);
+      expect((training.pubQuizes || []).map((it) => it.opts.quiz)).toEqual([flow.quizId, `js_${flow.questionId}`]);
+    }
+
+    test.beforeAll(async ({ browser }) => {
+      cPage = await (await browser.newContext({ baseURL: BASE_URL })).newPage();
+    });
+
+    test('7. Кандидат видит тестовый курс и открывает главу', async () => {
+      await login(cPage, candidateCreds());
+      await openCourse();
+      await expect(moduleItem()).toContainText(flow.name('модуль'));
+      await expect(moduleItem()).toHaveAttribute('data-done', 'false');
+
+      // Первая глава модуля открыта сразу, итоговая проверка — под замком, пока глава не сдана.
+      await topic().click();
+      const chapter = cPage.locator(`[data-testid="course-chapter"][data-question-id="${flow.questionId}"]`);
+      await expect(chapter).toContainText('имена пользователей старше 30');
+      await expect(topic()).toHaveAttribute('data-done', 'false');
+      await expect(moduleCheck()).toHaveAttribute('data-open', 'false');
+    });
+
+    test('8. «Проверить знания» главы: квиз и SQL-задача — неверный запрос, DELETE, верный', async () => {
+      test.setTimeout(EDITOR_TIMEOUT + 3 * RUN_TIMEOUT + 30_000);
+      const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module', (u) => u.searchParams.get('question') == flow.questionId);
+      await cPage.locator(`#course-quiz-open-question-${flow.questionId}`).click();
+      expectTraining(await (await loaded).json());
+
+      await expect(trainItem()).toHaveAttribute('data-quiz-key', String(flow.quizId));
+      await answerQuiz(String(countOlder()));
+
+      // Верный ответ сам уводит к следующему заданию — SQL-задаче в CodeRun.
+      await expect(trainItem()).toHaveAttribute('data-quiz-key', `js_${flow.questionId}`);
+      await expect(trainItem()).toHaveAttribute('data-answer-type', 'js_task');
+      await expect(jsTask()).toHaveClass(/vs-task-sql/);
+      // Под редактором — схема БД из задачи (SqlSchemaPanel), а не тест-кейсы.
+      await expect(jsTask().locator('.sqlSchemaPanel')).toContainText('CREATE TABLE users');
+      await expect(jsResult()).toHaveCount(0);
+
+      // Неверный запрос (>= 30): не засчитан, видно расхождение — ваша выборка с лишней
+      // строкой рядом с ожидаемой; скрытые данные — только «не прошло», без таблиц.
+      const bad = await submitQuery(SQL.wrong);
+      expect({ total: bad.totalCount, wrong: bad.wrongCount }).toEqual({ total: 2, wrong: 2 });
+      await expect(jsResult()).toHaveAttribute('data-ok', 'false');
+      await expect(jsResult()).toContainText('0 / 2');
+      await expect(submitResults()).toHaveAttribute('data-passed', '0');
+      const pubCase = submitResults().locator('[data-testid="sql-case"][data-hidden="false"]');
+      await expect(pubCase).toHaveAttribute('data-ok', 'false');
+      await expect(pubCase).toHaveAttribute('data-reason', 'rows_mismatch');
+      const actual = pubCase.locator('[data-testid="sql-result-table"][data-kind="actual"]');
+      const expected = pubCase.locator('[data-testid="sql-result-table"][data-kind="expected"]');
+      await expect(actual.locator('tbody td')).toHaveText(USERS.filter((u) => u.age >= 30).map((u) => u.name).sort());
+      await expect(expected.locator('tbody td')).toHaveText(namesOlder(USERS));
+      const hiddenCase = submitResults().locator('[data-testid="sql-case"][data-hidden="true"]');
+      await expect(hiddenCase).toHaveAttribute('data-ok', 'false');
+      await expect(hiddenCase.locator('[data-testid="sql-result-table"]')).toHaveCount(0);
+
+      // DELETE: раннер не пускает изменение данных — текст checkSqlSafety, не засчитано.
+      const del = await submitQuery(SQL.destructive);
+      expect(del.wrongCount).toBe(del.totalCount);
+      expect(del.sqlResults.map((it) => it.reason)).toEqual(['forbidden', 'forbidden']);
+      await expect(jsResult()).toHaveAttribute('data-ok', 'false');
+      const delCase = submitResults().locator('[data-testid="sql-case"][data-hidden="false"]');
+      await expect(delCase).toHaveAttribute('data-reason', 'forbidden');
+      await expect(delCase).toContainText(SQL.forbiddenMessage);
+
+      // Верный запрос: проходит и на скрытых данных — засчитан, «Далее» становится основной.
+      const ok = await submitQuery(SQL.solution);
+      expect({ total: ok.totalCount, wrong: ok.wrongCount }).toEqual({ total: 2, wrong: 0 });
+      await expect(jsResult()).toHaveAttribute('data-ok', 'true');
+      await expect(submitResults()).toHaveAttribute('data-passed', '2');
+      await expect(submitResults().locator('[data-testid="sql-case"][data-ok="true"]')).toHaveCount(2);
+      await expect(jsTask().locator('[data-testid="js-task-next"]')).toHaveClass(/btn-primary/);
+
+      // «Далее» на последнем задании заканчивает проверку: квиз и задача — 2 из 2.
+      const saved = waitApi(cPage, 'POST', '/save-course-module-question-results');
+      await jsTask().locator('[data-testid="js-task-next"]').click();
+      const body = (await saved).request().postDataJSON();
+      expect(body).toMatchObject({ question: flow.questionId, quizPerc: 100, total: 2, status: 'ok', courseUserId: flow.courseUserId });
+      await expect(cPage.locator('[data-testid="course-quiz-result"]')).toHaveAttribute('data-perc', '100');
+      await cPage.locator('#course-quiz-finish').click();
+
+      await expect(topic()).toHaveAttribute('data-done', 'true');
+      await expect(moduleCheck()).toHaveAttribute('data-open', 'true');
+      await expect.poll(async () => ((await api.one('/course-user', flow.courseUserId)).qHistory || {})[flow.questionId], {
+        timeout: 10_000, message: 'CourseUser.qHistory главы',
+      }).toEqual({ status: 'ok' });
+    });
+
+    test('9. Итоговая проверка модуля пройдена — модуль засчитан', async () => {
+      test.setTimeout(EDITOR_TIMEOUT + RUN_TIMEOUT + 30_000);
+      const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module',
+        (u) => u.searchParams.get('question') === '0' && u.searchParams.get('_id') == flow.courseModuleId);
+      await cPage.locator(`#course-quiz-open-module-${flow.courseModuleId}`).click();
+      expectTraining(await (await loaded).json());
+
+      await answerQuiz(String(countOlder()));
+      await expect(trainItem()).toHaveAttribute('data-quiz-key', `js_${flow.questionId}`);
+      // Итоговая проверка — новая попытка: задачу сдают заново.
+      await expect(jsResult()).toHaveCount(0);
+      const ok = await submitQuery(SQL.solution);
+      expect(ok.wrongCount).toBe(0);
+      await expect(jsResult()).toHaveAttribute('data-ok', 'true');
+
+      const saved = waitApi(cPage, 'POST', '/save-course-module-results');
+      await jsTask().locator('[data-testid="js-task-next"]').click();
+      const body = (await saved).request().postDataJSON();
+      expect(body).toMatchObject({ courseModule: flow.courseModuleId, quizPerc: 100, total: 2, status: 'ok' });
+      await expect(cPage.locator('[data-testid="course-quiz-result"]')).toHaveAttribute('data-ok', 'true');
+      await cPage.locator('#course-quiz-finish').click();
+      await expect(moduleItem()).toHaveAttribute('data-done', 'true');
+
+      await expect.poll(async () => {
+        const hist = (await api.get('/course-module-user-history', { filter: { user: flow.candidate._id, courseModule: flow.courseModuleId } })).items || [];
+        return hist.map((it) => it.status);
+      }, { timeout: 10_000, message: 'CourseModuleUserHistory модуля' }).toEqual(['ok']);
+      await expect.poll(async () => ((await api.one('/course-user', flow.courseUserId)).mHistory || {})[flow.courseModuleId], {
+        timeout: 10_000, message: 'CourseUser.mHistory модуля',
+      }).toEqual({ status: 'ok' });
+      // Сданная задача отмечена и в истории вопроса (/run-question при isSubmit без ошибок).
+      const qHist = (await api.get('/question-user-history', { filter: { user: flow.candidate._id, question: flow.questionId } })).items || [];
+      expect(qHist.map((it) => it.quizStatus)).toEqual(['ok']);
+    });
+
+    test('10. Повторный вход — прогресс курса сохранился', async () => {
+      await cPage.context().clearCookies();
+      await cPage.evaluate(() => localStorage.clear());
+      await login(cPage, candidateCreds());
+      await cPage.goto('/courses');
+      // Процент изучения: модуль и его глава, оба сданы.
+      await expect(courseRow()).toHaveAttribute('data-perc', '100');
+      await openCourse();
+      await expect(moduleItem()).toHaveAttribute('data-done', 'true');
+      await expect(topic()).toHaveAttribute('data-done', 'true');
+      await expect(moduleCheck()).toHaveAttribute('data-open', 'true');
       const { name, ...ids } = flow;
       console.log('sql-course-flow ids:', JSON.stringify(ids));
     });
