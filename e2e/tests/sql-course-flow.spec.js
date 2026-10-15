@@ -266,8 +266,9 @@ test.describe.serial('sql-course-flow', () => {
       expect(res.request().postDataJSON()).toMatchObject({ question: flow.questionId, courseModule: flow.courseModuleId, files: { '': sql } });
       expect(res.request().postDataJSON().isSubmit).toBeFalsy();
       expect(res.ok(), `POST /api/run-question: HTTP ${res.status()}`).toBeTruthy();
+      const body = expectRunnerUp(await res.json());
       await expect(runResults()).toBeVisible();
-      return res.json();
+      return body;
     }
 
     async function submitQuery(sql) {
@@ -281,8 +282,24 @@ test.describe.serial('sql-course-flow', () => {
         question: flow.questionId, courseModule: flow.courseModuleId, isSubmit: true, files: { '': sql },
       });
       expect(res.ok(), `POST /api/run-question: HTTP ${res.status()}`).toBeTruthy();
+      const body = expectRunnerUp(await res.json());
       await expect(submitResults()).toBeVisible();
-      return res.json();
+      return body;
+    }
+
+    // SQL-раннер лёг посреди прогона (шаг 1 его проверил) — /run-question отдаёт кейсы с
+    // runner_error: падаем с этой причиной, а не на «расхождении» таблиц ниже.
+    function expectRunnerUp(body) {
+      const down = (body.sqlResults || []).filter((it) => it.reason === 'runner_error').map((it) => it.message);
+      expect(down, 'SQL-раннер API недоступен (api/scripts/sql-runner-db.sh)').toEqual([]);
+      return body;
+    }
+
+    // Снимок SQL-задачи — в test-results/<тест>/ и во вложения html-отчёта, и при зелёном прогоне.
+    async function shot(testInfo, name) {
+      const file = testInfo.outputPath(`${name}.png`);
+      await jsTask().screenshot({ path: file, animations: 'disabled' });
+      await testInfo.attach(name, { path: file, contentType: 'image/png' });
     }
 
     // Квиз, затем SQL-задача — состав одинаков в проверке главы и в итоговой модуля:
@@ -290,6 +307,10 @@ test.describe.serial('sql-course-flow', () => {
     function expectTraining(training) {
       expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId, flow.questionId]);
       expect((training.pubQuizes || []).map((it) => it.opts.quiz)).toEqual([flow.quizId, `js_${flow.questionId}`]);
+      // Флаг VS Code (#4039): VS-задач (vs_<группа>, answerType vs_task) в ответе нет —
+      // отдельной проверкой, чтобы падение называло причину.
+      const vs = (training.pubQuizes || []).filter((it) => /^vs_/.test(String(it.opts.quiz)) || (it.item || {}).answerType === 'vs_task');
+      expect(vs, 'VS-задачи в /load-quizes-by-module кандидата').toEqual([]);
     }
 
     test.beforeAll(async ({ browser }) => {
@@ -310,7 +331,7 @@ test.describe.serial('sql-course-flow', () => {
       await expect(moduleCheck()).toHaveAttribute('data-open', 'false');
     });
 
-    test('8. «Проверить знания» главы: квиз и SQL-задача — запуск без условия, «;», неверная сдача, DELETE, верная', async () => {
+    test('8. «Проверить знания» главы: квиз и SQL-задача — запуск без условия, «;», неверная сдача, DELETE, верная', async ({}, testInfo) => {
       test.setTimeout(EDITOR_TIMEOUT + 5 * RUN_TIMEOUT + 30_000);
       const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module', (u) => u.searchParams.get('question') == flow.questionId);
       await cPage.locator(`#course-quiz-open-question-${flow.questionId}`).click();
@@ -344,6 +365,7 @@ test.describe.serial('sql-course-flow', () => {
         .toHaveText(USERS.map((u) => u.name).sort());
       await expect(runCase.locator('[data-testid="sql-result-table"][data-kind="expected"] tbody td')).toHaveText(namesOlder(USERS));
       await expect(jsResult()).toHaveCount(0);
+      await shot(testInfo, 'sql-run-mismatch');
 
       // Два запроса через «;»: текст checkSqlSafety, страница живёт дальше.
       const two = await runQuery(SQL.twoQueries);
@@ -377,6 +399,7 @@ test.describe.serial('sql-course-flow', () => {
       const delCase = submitResults().locator('[data-testid="sql-case"][data-hidden="false"]');
       await expect(delCase).toHaveAttribute('data-reason', 'forbidden');
       await expect(delCase).toContainText(SQL.forbiddenMessage);
+      await shot(testInfo, 'sql-forbidden');
 
       // Верный запрос: проходит и на скрытых данных — засчитан, «Далее» становится основной.
       const ok = await submitQuery(SQL.solution);
@@ -385,6 +408,7 @@ test.describe.serial('sql-course-flow', () => {
       await expect(submitResults()).toHaveAttribute('data-passed', '2');
       await expect(submitResults().locator('[data-testid="sql-case"][data-ok="true"]')).toHaveCount(2);
       await expect(jsTask().locator('[data-testid="js-task-next"]')).toHaveClass(/btn-primary/);
+      await shot(testInfo, 'sql-passed');
 
       // «Далее» на последнем задании заканчивает проверку: квиз и задача — 2 из 2.
       const saved = waitApi(cPage, 'POST', '/save-course-module-question-results');
