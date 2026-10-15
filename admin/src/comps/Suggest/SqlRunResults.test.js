@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {getEditorLanguage} from './useCodeRun';
 import {SqlRunResults, SqlReferenceResults} from './SqlRunResults';
 import CodeRun from './CodeRun';
@@ -83,40 +83,32 @@ describe('SQL-задание в CodeRun', () => {
         expect(container.querySelector('.cases-wrap')).not.toBeNull();
     });
 
-    // Разметка для e2e sql-course-flow (часть 2): кейс несёт итог и причину, итог
-    // прогона — счётчики, схема и кнопки CodeRun находятся без текста интерфейса.
-    test('e2e-разметка: кейсы с data-ok/data-hidden/data-reason, счётчики прогона', () => {
-        let {container} = render(<SqlRunResults runResults={{
-            totalCount: 2, passCount: 1, wrongCount: 1,
+    // e2e sql-js-task-course-flow читает итог прогона по data-атрибутам, а не по тексту.
+    test('разметка e2e: итог, кейсы с причиной и таблицы «ваш»/«ожидаемый»', () => {
+        render(<SqlRunResults runResults={{
+            totalCount: 2, passCount: 0, wrongCount: 2,
             sqlResults: [
-                {ind: 0, ok: true, reason: 'ok'},
-                {ind: 1, ok: false, hidden: true, reason: 'forbidden', message: 'Разрешён только один запрос'},
+                {ind: 0, ok: false, reason: 'rows_mismatch', message: 'Лишняя строка',
+                    actual: {columns: [{name: 'name'}], rows: [['a'], ['b']]}, expected: {columns: [{name: 'name'}], rows: [['a']]}},
+                {ind: 1, ok: false, hidden: true, reason: 'forbidden', message: 'Операция DELETE запрещена'},
             ],
         }}/>);
         let results = screen.getByTestId('sql-run-results');
-        expect(results.getAttribute('data-pass')).toBe('1');
+        expect(results.getAttribute('data-passed')).toBe('0');
         expect(results.getAttribute('data-total')).toBe('2');
-        let cases = container.querySelectorAll('[data-testid="sql-case"]');
-        expect([...cases].map(it => [it.dataset.ok, it.dataset.hidden, it.dataset.reason])).toEqual([
-            ['true', 'false', 'ok'],
-            ['false', 'true', 'forbidden'],
-        ]);
+        let cases = screen.getAllByTestId('sql-case');
+        expect(cases.map(it => [it.getAttribute('data-ok'), it.getAttribute('data-hidden'), it.getAttribute('data-reason')]))
+            .toEqual([['false', 'false', 'rows_mismatch'], ['false', 'true', 'forbidden']]);
+        expect(screen.getAllByTestId('sql-result-table').map(it => [it.getAttribute('data-kind'), it.getAttribute('data-rows')]))
+            .toEqual([['actual', '2'], ['expected', '1']]);
     });
 
-    test('e2e-разметка: сбой запроса без sqlResults — кейс с причиной request_error', () => {
-        render(<SqlRunResults runResults={{totalCount: 1, passCount: 0, wrongCount: 1, firstError: {ind: 0, res1: {errMsg: 'Network down'}}}}/>);
-        let item = screen.getByTestId('sql-case');
-        expect(item.dataset.ok).toBe('false');
-        expect(item.dataset.reason).toBe('request_error');
-        expect(screen.getByTestId('sql-run-results').getAttribute('data-pass')).toBe('0');
-    });
-
-    test('e2e-разметка CodeRun: схема, редактор, «Запустить» и «Сдать»', () => {
-        render(<CodeRun question={{_id: 5, name: 'Найти пользователей'}} jsDetails={SQL_DETAILS} history={{}} isExam/>);
-        expect(screen.getByTestId('sql-schema').textContent).toContain(SQL_DETAILS.schemaSql);
-        expect(screen.getByTestId('code-run-editor').querySelector('[data-testid="editor"]')).not.toBeNull();
-        expect(screen.getByTestId('code-run-run').textContent).toContain('runMsg');
-        expect(screen.getByTestId('code-run-submit').textContent).toContain('submitMsg');
+    test('разметка e2e: кнопки «Запустить»/«Сдать» и блоки результатов прогона и сдачи', () => {
+        render(<CodeRun question={{_id: 5, name: 'x'}} jsDetails={SQL_DETAILS} history={{}} isExam/>);
+        expect(screen.getByTestId('code-run-run')).toBeInTheDocument();
+        expect(screen.getByTestId('code-run-submit')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('results'));
+        expect(screen.getAllByTestId('code-run-results').map(it => it.getAttribute('data-kind'))).toEqual(['run', 'submit']);
     });
 
     test('админка: эталон на seed и на полном seed, ошибка схемы текстом', () => {

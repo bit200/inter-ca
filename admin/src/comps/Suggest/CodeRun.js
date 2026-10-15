@@ -155,9 +155,7 @@ function CodeRunComponent(props) {
                                             {t('runMsg')}
                                         </button>
                                         {!props.isNewExam &&
-                                            <button className={'btn btn-sm btn-primary'}
-                                                    data-testid={'code-run-submit'}
-                                                    onClick={() => submit()}>
+                                            <button className={'btn btn-sm btn-primary'} data-testid={'code-run-submit'} onClick={() => submit()}>
                                                 <i className="iconoir-arcade"></i>
                                                 {t('submitMsg')}
                                             </button>}
@@ -222,19 +220,17 @@ function CodeRunComponent(props) {
                                     />
                                 </>}
                             </div>}
-                        {topTab === 'results' && <div className={'card3 ' + (runLoading ? 'o5' : '')}
-                                                      data-testid={'code-run-results'}
-                                                      data-loading={runLoading ? 'true' : 'false'}>
+                        {topTab === 'results' && <div className={'card3 ' + (runLoading ? 'o5' : '')}>
                             <div style={{padding: '5px'}} className={'animChild'}>
                                 <small>&nbsp;</small>
                                 <h5>{t('runResults')}</h5>
-                                <div data-testid={'code-run-results-run'}>
+                                <div data-testid={'code-run-results'} data-kind={'run'}>
                                     <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
                                 </div>
                                 {!isNewExam && <>
                                     <hr/>
                                     <h5>{t('runResultsSubmit')}</h5>
-                                    <div data-testid={'code-run-results-submit'}>
+                                    <div data-testid={'code-run-results'} data-kind={'submit'}>
                                         <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
                                     </div>
                                 </>}
@@ -306,7 +302,7 @@ function CodeRunComponent(props) {
             </div>
             <div className="resizeV" id={'drag2'}></div>
         </div>
-        <div className="crRight" ref={rightRef} data-testid={'code-run-editor'}>
+        <div className="crRight" ref={rightRef}>
             <div className="filesWrap">
                 <div className="btn-reset">
                     <button className={'btn btn-xs btn-light'} onClick={() => {
