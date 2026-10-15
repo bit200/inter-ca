@@ -3,6 +3,9 @@ const path = require('path');
 // Креды и адреса стенда — в e2e/.env (он в .gitignore), см. README.
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { defineConfig, devices } = require('@playwright/test');
+const { assertManualRun } = require('./helpers/manualRun');
+
+assertManualRun(process.env);
 
 // Запускается только руками (npm test), не подключено к CI — см. ../E2E_TEST_PLAN.md
 // про причину (флейковость внешнего itk-live сервиса) и про то, какой слой тестов
