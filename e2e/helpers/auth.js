@@ -16,4 +16,15 @@ async function login(page, { username, password } = {}) {
   await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 10_000 });
 }
 
-module.exports = { login };
+// Логин в админку itk-platform (другой адрес, другая форма: id username/password —
+// функциональные, их читает handleChange в libs/Login/Login.js). После входа Root
+// уводит с '/' на стартовую страницу, ждём, что ушли с /login.
+async function loginAdmin(page, { adminUrl, username, password }) {
+  await page.goto(`${adminUrl}/login`);
+  await page.locator('#username').fill(username);
+  await page.locator('#password').fill(password);
+  await page.locator('#login-submit').click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15_000 });
+}
+
+module.exports = { login, loginAdmin };

@@ -1,4 +1,7 @@
 // @ts-check
+const path = require('path');
+// Креды и адреса стенда — в e2e/.env (он в .gitignore), см. README.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { defineConfig, devices } = require('@playwright/test');
 
 // Запускается только руками (npm test), не подключено к CI — см. ../E2E_TEST_PLAN.md
@@ -20,7 +23,9 @@ module.exports = defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
 
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
+    // Клиент (inter-ca/admin, pm2 itk-client). Админка itk-platform — отдельный адрес
+    // E2E_ADMIN_URL, его берут тесты через helpers/env.js.
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:8001',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
