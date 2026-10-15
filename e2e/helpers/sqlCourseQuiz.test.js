@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { USERS, seedSql, countOlder, buildQuiz } = require('./sqlCourseQuiz');
+const { USERS, HIDDEN_USERS, seedSql, countOlder, namesOlder, buildQuiz } = require('./sqlCourseQuiz');
 
 test('seed содержит всех пользователей', () => {
   assert.strictEqual(
@@ -23,4 +23,10 @@ test('квиз валиден: ≥3 варианта, один верный, о�
   assert.strictEqual(ok.length, 1);
   assert.strictEqual(ok[0].text, String(countOlder()));
   assert.strictEqual(new Set(variants.map((v) => v.text)).size, variants.length);
+});
+
+test('эталон «имена старше 30 по имени»: скрытые данные меняют выборку, граница 30 не входит', () => {
+  assert.deepStrictEqual(namesOlder(), ['Ира', 'Олег']);
+  assert.deepStrictEqual(namesOlder([...USERS, ...HIDDEN_USERS]), ['Борис', 'Ира', 'Олег']);
+  assert.strictEqual(seedSql(HIDDEN_USERS), "INSERT INTO users VALUES (5, 'Борис', 55), (6, 'Вера', 30);");
 });

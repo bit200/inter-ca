@@ -77,10 +77,10 @@ async function loginUser(creds) {
   }
 }
 
-// Сборка SQL-задачи ходит в Postgres раннера (эталонный результат) и в docker-m
-// (файлы задачи). Если что-то из этого лежит, тест должен упасть сразу и сказать,
-// что поднять, а не висеть до таймаута сборки.
-async function assertSqlBuildReady(api, { waitMs = 40_000 } = {}) {
+// SQL-раннер API (services/sqlRunner.js) считает эталон и проверяет решения на
+// временной БД в своём Postgres. Если он лежит, тест должен упасть сразу и сказать,
+// что поднять, а не висеть до таймаута.
+async function assertSqlRunnerReady(api, { waitMs = 40_000 } = {}) {
   const started = Date.now();
   let status = null;
   // ok === null — вотчер API ещё ни разу не проверял сервер (первые секунды после
@@ -96,6 +96,12 @@ async function assertSqlBuildReady(api, { waitMs = 40_000 } = {}) {
       `Postgres раннера: ${status && status.target ? status.target : 'SQL_RUNNER_DSN'}; поднять: ${status && status.fixHint ? status.fixHint : 'api/scripts/sql-runner-db.sh'}`
     );
   }
+  return status;
+}
+
+// Сборка VS-задачи SQL ходит ещё и в docker-m (файлы задачи).
+async function assertSqlBuildReady(api, opts) {
+  await assertSqlRunnerReady(api, opts);
   const built = await api.get('/vs-image/built');
   if (built && built.err_obj) {
     throw new Error(
@@ -168,6 +174,10 @@ async function purgeE2eRun(api, ids, { candidateId, since, log = () => {} } = {}
   for (const _id of list('modules')) await purge('/course-module', _id);
   for (const question of list('questions')) {
     await purgeWhere('/quiz', { question });
+    // Задача вопроса (JsDetails) и его версии — их заводит «Выпустить» на странице вопроса.
+    await purgeWhere('/js-details', { question });
+    await purgeWhere('/version', { sourceId: String(question) });
+    await purgeWhere('/version-contribute', { sourceId: question });
     await purge('/theme-question', question);
   }
   for (const _id of list('groups')) await purge('/vs-task-group', _id);
@@ -195,4 +205,4 @@ async function cleanupStaleE2e(api, { prefix, maxAgeMs, candidateId, now = Date.
   return purgeE2eRun(api, ids, { candidateId, log });
 }
 
-module.exports = { createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, purgeE2eRun, toQuery };
+module.exports = { createAdminApi, createUserApi, loginUser, assertSqlRunnerReady, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, purgeE2eRun, toQuery };

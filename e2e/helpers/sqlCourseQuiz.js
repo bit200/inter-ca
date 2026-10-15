@@ -10,12 +10,25 @@ const USERS = [
   { id: 4, name: 'Петр', age: 30 },
 ];
 
+// Скрытые данные SQL-задачи: добавляются к USERS только при сдаче. Вера ровно 30 —
+// граница «строго старше», Борис — новое имя в начале сортировки.
+const HIDDEN_USERS = [
+  { id: 5, name: 'Борис', age: 55 },
+  { id: 6, name: 'Вера', age: 30 },
+];
+
 function seedSql(users = USERS) {
   return `INSERT INTO users VALUES ${users.map((u) => `(${u.id}, '${u.name}', ${u.age})`).join(', ')};`;
 }
 
 function countOlder(users = USERS, threshold = THRESHOLD) {
   return users.filter((u) => u.age > threshold).length;
+}
+
+// Ожидаемая выборка эталона «имена пользователей старше threshold, по имени»
+// (строки по одной колонке name).
+function namesOlder(users = USERS, threshold = THRESHOLD) {
+  return users.filter((u) => u.age > threshold).map((u) => u.name).sort();
 }
 
 // Вопрос перечисляет данные и уточняет «строго старше»; верный вариант один,
@@ -35,4 +48,4 @@ function buildQuiz(users = USERS, threshold = THRESHOLD) {
   };
 }
 
-module.exports = { USERS, THRESHOLD, seedSql, countOlder, buildQuiz };
+module.exports = { USERS, HIDDEN_USERS, THRESHOLD, seedSql, countOlder, namesOlder, buildQuiz };
