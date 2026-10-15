@@ -176,9 +176,15 @@ test.describe.serial('sql-course-flow', () => {
     test('6. Запись кандидата на курс', async () => {
       await enrollCandidate(page, api, flow);
 
-      // Итог подготовки: проверка знаний модуля отдаёт квиз вопроса.
+      // Итог подготовки: проверка знаний модуля отдаёт квиз вопроса и саму SQL-задачу
+      // (#4040: элемент js_<id вопроса>, входит в знаменатель сдачи наравне с квизом).
+      // Кандидату уходит только публичная часть JsDetails — без эталона и скрытых данных.
       const training = await api.get('/load-quizes-by-module', { _id: flow.courseModuleId });
-      expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId]);
+      expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId, flow.questionId]);
+      expect((training.pubQuizes || []).map((it) => it.opts.quiz)).toEqual([flow.quizId, `js_${flow.questionId}`]);
+      const task = training.pubQuizes[1].item;
+      expect(task.answerType).toBe('js_task');
+      expect(task.jsDetails).toEqual({ codeType: 'sql', schemaSql: SQL.schema, seedSql: SQL.seed });
       const { name, ...ids } = flow;
       console.log('sql-course-flow ids:', JSON.stringify(ids));
     });
