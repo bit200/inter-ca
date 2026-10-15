@@ -51,6 +51,19 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         expect(container.querySelectorAll('.vs-task-cell.err')).toHaveLength(1);
     });
 
+    test('редактор открывается на весь экран, «Свернуть» возвращает в страницу', async () => {
+        mockHttp();
+        let {container} = render(<VsTaskRun task={SQL_TASK} examId={77}/>);
+        fireEvent.click(screen.getByText('vsTaskOpen'));
+
+        await waitFor(() => expect(container.querySelector('.vs-task-frame-full iframe')).toBeTruthy());
+        fireEvent.click(screen.getByText('vsTaskExitFullscreen'));
+        expect(container.querySelector('.vs-task-frame-full')).toBeNull();
+        expect(container.querySelector('iframe')).toBeTruthy();
+        fireEvent.click(screen.getByText('vsTaskFullscreen'));
+        expect(container.querySelector('.vs-task-frame-full iframe')).toBeTruthy();
+    });
+
     test('ошибка старта docker-m — понятное сообщение вместо пустого iframe', async () => {
         mockHttp({startRes: {err_obj: {msg: 'Error: connect ECONNREFUSED', code: 501}}});
         let {container} = render(<VsTaskRun task={SQL_TASK}/>);

@@ -4034,6 +4034,20 @@ export default {
     en: "Open in new window",
     fr: "Ouvrir dans une nouvelle fenêtre"
 },
+"vsTaskFullscreen": {
+    ru: "На весь экран",
+    es: "Pantalla completa",
+    de: "Vollbild",
+    en: "Fullscreen",
+    fr: "Plein écran"
+},
+"vsTaskExitFullscreen": {
+    ru: "Свернуть",
+    es: "Contraer",
+    de: "Verkleinern",
+    en: "Collapse",
+    fr: "Réduire"
+},
 "vsTaskStartFailed": {
     ru: "Редактор не запустился. Нажмите «Открыть задачу в редакторе» ещё раз.",
     es: "El editor no se inició. Pulse «Abrir la tarea en el editor» de nuevo.",

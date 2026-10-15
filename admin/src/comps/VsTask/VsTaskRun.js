@@ -81,6 +81,7 @@ function VsTaskRun(props) {
     let [error, setError] = useState('');
     let [testInfo, setTestInfo] = useState(null);
     let [refreshing, setRefreshing] = useState(false);
+    let [full, setFull] = useState(true);
     let runId = useRef(0);
 
     let saved = {...readSaved(key), ...(hist?.session_id ? hist : {})};
@@ -95,6 +96,7 @@ function VsTaskRun(props) {
         setStep('');
         setError('');
         setTestInfo(null);
+        setFull(true);
     }, [taskId]);
 
     useEffect(() => {
@@ -143,6 +145,7 @@ function VsTaskRun(props) {
         setError('');
         setStep('');
         setLink('');
+        setFull(true);
         try {
             let lng = pickLng(task, saved);
             let pre = await global.http.get('/pre-start-session', {
@@ -204,6 +207,9 @@ function VsTaskRun(props) {
             {phase === 'ready' && <span className={'vs-task-status ok'} role={'status'}>
                 <span className={'vs-task-dot'}/>{t('vsTaskReady')}
                 <a href={link} target={'_blank'} rel={'noopener noreferrer'}>{t('vsTaskNewWindow')}</a>
+                {!full && <button type={'button'} className={'btn btn-xs btn-default'} onClick={() => setFull(true)}>
+                    <i className={'iconoir-expand'}></i> {t('vsTaskFullscreen')}
+                </button>}
             </span>}
         </div>
         {phase === 'error' && <div className={'vs-task-error'} role={'alert'}>
@@ -211,7 +217,13 @@ function VsTaskRun(props) {
             {error && <div className={'vs-task-error-details'}>{String(error)}</div>}
         </div>}
 
-        {phase === 'ready' && <div className={'vs-task-frame'}>
+        {phase === 'ready' && <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
+            {full && <div className={'vs-task-frame-bar'}>
+                <span className={'vs-task-frame-title'}>{task?.name}</span>
+                <button type={'button'} className={'btn btn-xs btn-default'} onClick={() => setFull(false)}>
+                    <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}
+                </button>
+            </div>}
             <iframe src={link} title={task?.name || 'VS Code'} allow={'clipboard-read; clipboard-write'}/>
         </div>}
 
