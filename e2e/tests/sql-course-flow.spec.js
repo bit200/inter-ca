@@ -27,7 +27,7 @@ const {
 const PREFIX = 'e2e-sql';
 // Старше этого — мусор прошлых прогонов, удаляем перед стартом.
 const CLEANUP_HOURS = Number(process.env.E2E_CLEANUP_HOURS || 6);
-// Monaco в админке грузится лениво (чанк + воркеры) — первый раз до ~10 с.
+// Monaco в админке грузится лениво с cdn.jsdelivr.net (@monaco-editor/react) — до ~10 с.
 const EDITOR_TIMEOUT = 30_000;
 // Эталон на двух наборах данных: две временные БД в Postgres раннера.
 const REFERENCE_TIMEOUT = 20_000;
@@ -115,7 +115,8 @@ test.describe.serial('sql-course-flow', () => {
       // Эталон — Monaco «Правильное решение». insertText — как вставка из буфера:
       // без автодополнения и автоскобок редактора.
       const editor = page.locator('[data-testid="jsd-solution-editor"] .monaco-editor');
-      await expect(editor).toBeVisible({ timeout: EDITOR_TIMEOUT });
+      await expect(editor, 'Monaco «Правильное решение» не загрузился: @monaco-editor/react админки берёт его '
+        + 'с cdn.jsdelivr.net — проверьте сеть стенда').toBeVisible({ timeout: EDITOR_TIMEOUT });
       await editor.locator('.view-lines').click();
       await page.keyboard.insertText(SQL.solution);
       await expect(editor.locator('.view-lines')).toContainText('ORDER BY name');
