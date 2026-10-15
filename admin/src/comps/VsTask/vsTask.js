@@ -98,7 +98,9 @@ export function fixVscodeLink(link, serverHttp) {
 }
 
 export function getStartError(startRes) {
-    let err = startRes?.err_obj || startRes?.err || startRes?.start_info?.err;
+    // docker-m кладёт причину сбоя в start_info.start_data.err (ctrl_start_session возвращает {err})
+    let err = startRes?.err_obj || startRes?.err || startRes?.start_info?.err
+        || startRes?.start_info?.start_data?.err;
     if (!err) {
         return '';
     }

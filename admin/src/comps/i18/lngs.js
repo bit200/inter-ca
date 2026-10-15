@@ -4077,11 +4077,11 @@ export default {
     fr: "Impossible d’envoyer la solution. Cliquez à nouveau."
 },
 "vsTaskStartFailed": {
-    ru: "Редактор не запустился. Нажмите «Открыть задачу в редакторе» ещё раз.",
-    es: "El editor no se inició. Pulse «Abrir la tarea en el editor» de nuevo.",
-    de: "Der Editor ist nicht gestartet. Klicken Sie erneut auf „Aufgabe im Editor öffnen“.",
-    en: "The editor did not start. Click “Open task in editor” again.",
-    fr: "L'éditeur n'a pas démarré. Cliquez à nouveau sur « Ouvrir la tâche dans l'éditeur »."
+    ru: "Редактор не запустился. Нажмите «Перезапустить редактор».",
+    es: "El editor no se inició. Pulse «Reiniciar el editor».",
+    de: "Der Editor ist nicht gestartet. Klicken Sie auf „Editor neu starten“.",
+    en: "The editor did not start. Click “Restart editor”.",
+    fr: "L'éditeur n'a pas démarré. Cliquez sur « Redémarrer l'éditeur »."
 },
 "vsTaskResult": {
     ru: "Результат тестов",

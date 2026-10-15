@@ -1,4 +1,4 @@
-import {getExamVsTasks, getVscodeLink, isSqlTask, isVsTask, lastSessionStep, pickLng, pubTestInfo} from './vsTask';
+import {getExamVsTasks, getStartError, getVscodeLink, isSqlTask, isVsTask, lastSessionStep, pickLng, pubTestInfo} from './vsTask';
 
 describe('VS Code-задачи: распознавание и сводка тестов', () => {
     test('VsTaskGroup из экзамена — VS-задача, обычный вопрос — нет', () => {
@@ -83,5 +83,24 @@ describe('учёт VS-задач в проценте проверки знани
         expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: false, vsSystemError: true}}, 2).quizPerc).toBe(100);
         expect(calcQuizPerc({61: {isCorrect: false}, vs_9: {vsSystemError: true}}, 2).quizPerc).toBe(0);
         expect(calcQuizPerc({vs_9: {vsSystemError: true}}, 1).quizPerc).toBe(0);
+    });
+});
+
+describe('getStartError', () => {
+    it('достаёт причину сбоя docker-m из start_info.start_data.err', () => {
+        expect(getStartError({start_info: {status: 'ok', start_data: {err: 'docker pull failed'}}})).toBe('docker pull failed');
+        expect(getStartError({start_info: {start_data: {err: {msg: 'no image'}}}})).toBe('no image');
+    });
+    it('пусто, если сбоя нет', () => {
+        expect(getStartError({start_info: {start_data: {vscode_link: 'http://x/vs/1/'}}})).toBe('');
+    });
+});
+
+describe('подсказка при сбое запуска редактора', () => {
+    it('называет кнопку «Перезапустить редактор», а не «Открыть задачу»', () => {
+        let lngs = require('../i18/lngs.js');
+        let src = require('fs').readFileSync(require.resolve('../i18/lngs.js'), 'utf8');
+        let m = src.match(/"vsTaskStartFailed":\s*\{\s*ru:\s*"([^"]+)"/);
+        expect(m[1]).toContain('«Перезапустить редактор»');
     });
 });
