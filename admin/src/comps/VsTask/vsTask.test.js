@@ -79,4 +79,9 @@ describe('учёт VS-задач в проценте проверки знани
         expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: true}}, 2).quizPerc).toBe(100);
         expect(calcQuizPerc({61: {isCorrect: true}}, 2).quizPerc).toBe(50);
     });
+    it('сбой платформы (VS Code не запустился) не снижает процент', () => {
+        expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: false, vsSystemError: true}}, 2).quizPerc).toBe(100);
+        expect(calcQuizPerc({61: {isCorrect: false}, vs_9: {vsSystemError: true}}, 2).quizPerc).toBe(0);
+        expect(calcQuizPerc({vs_9: {vsSystemError: true}}, 1).quizPerc).toBe(0);
+    });
 });
