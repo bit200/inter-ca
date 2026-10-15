@@ -16,9 +16,13 @@ npm run install-browsers   # один раз, ставит headless Chromium
 Клиент (`admin/` этого репозитория, pm2 `itk-client`) должен быть уже поднят
 локально — по умолчанию `http://localhost:8001`, другой адрес — `E2E_BASE_URL`.
 
+Без `E2E_MANUAL=1` Playwright не стартует (защита от случайного автозапуска: каждый
+прогон создаёт `e2e-*` записи на стенде). `test:manual`, `test:ui`, `test:headed` ставят
+переменную сами; для `npm test` — `E2E_MANUAL=1 npm test`.
+
 ```bash
-npm test                     # все тесты, headless
-npm test -- sql-course-flow  # один файл
+npm run test:manual          # все тесты, headless
+E2E_MANUAL=1 npm test -- sql-course-flow  # один файл
 npm run test:ui              # с UI-раннером Playwright (удобно отлаживать)
 npm run test:headed          # с видимым браузером
 npm run report               # открыть html-отчёт последнего прогона
