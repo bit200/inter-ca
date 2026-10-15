@@ -62,3 +62,17 @@ describe('fixVscodeLink', () => {
         expect(fixVscodeLink(bad, '')).toBe(bad);
     });
 });
+
+describe('учёт VS-задач в проценте проверки знаний', () => {
+    const {calcQuizPerc, countVsQuizes} = require('./vsTask');
+    const pub = [{opts: {quiz: 61}}, {opts: {quiz: 'vs_9'}}];
+    it('считает VS-задачи группы по ключу vs_', () => {
+        expect(countVsQuizes(pub)).toBe(1);
+        expect(countVsQuizes(undefined)).toBe(0);
+    });
+    it('нерешённая VS-задача снижает процент, решённая — нет', () => {
+        expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: false}}, 2).quizPerc).toBe(50);
+        expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: true}}, 2).quizPerc).toBe(100);
+        expect(calcQuizPerc({61: {isCorrect: true}}, 2).quizPerc).toBe(50);
+    });
+});

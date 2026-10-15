@@ -512,13 +512,13 @@ test.describe.serial('sql-course-flow', () => {
 
     test('11. Глава засчитана, итоговая проверка модуля (edu) — модуль сдан', async () => {
       // «Далее» на VS-задаче — последнее задание, проверка главы заканчивается.
-      // ТЕКУЩЕЕ ПОВЕДЕНИЕ: VS-задача не входит в процент сдачи — /api/load-quizes-by-module
+      // VS-задача входит в процент сдачи (#4030): /api/load-quizes-by-module
       // отдаёт её в pubQuizes вне quizes, а знаменатель процента — quizes. Сдача главы
       // и модуля зависит только от квизов (total = 1 — один наш квиз).
       const qSaved = waitApi(cPage, 'POST', '/save-course-module-question-results');
       await vsTask().locator('[data-testid="vs-task-next"]').click();
       const qBody = (await qSaved).request().postDataJSON();
-      expect(qBody).toMatchObject({ question: flow.questionId, quizPerc: 100, total: 1, status: 'ok', courseUserId: flow.courseUserId });
+      expect(qBody).toMatchObject({ question: flow.questionId, quizPerc: 100, total: 2, status: 'ok', courseUserId: flow.courseUserId });
       const result = cPage.locator('[data-testid="course-quiz-result"]');
       await expect(result).toHaveAttribute('data-perc', '100');
       await cPage.locator('#course-quiz-finish').click();
@@ -541,7 +541,7 @@ test.describe.serial('sql-course-flow', () => {
       const mSaved = waitApi(cPage, 'POST', '/save-course-module-results');
       await vsTask().locator('[data-testid="vs-task-next"]').click();
       const mBody = (await mSaved).request().postDataJSON();
-      expect(mBody).toMatchObject({ courseModule: flow.courseModuleId, quizPerc: 100, total: 1, status: 'ok' });
+      expect(mBody).toMatchObject({ courseModule: flow.courseModuleId, quizPerc: 100, total: 2, status: 'ok' });
       await expect(cPage.locator('[data-testid="course-quiz-result"]')).toHaveAttribute('data-ok', 'true');
       await cPage.locator('#course-quiz-finish').click();
       await expect(moduleItem()).toHaveAttribute('data-done', 'true');

@@ -382,7 +382,16 @@ function Train(props) {
                 showRecognizedText={true}
                 {...EXT_OBJ}
             ></AudioShort>}
-            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId} onNext={() => onNext()}/>}
+            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId} onNext={() => onNext()}
+                                                   onResult={(res) => {
+                                                       // Результат тестов VS-задачи пишем в историю тренажёра, чтобы он
+                                                       // вошёл в процент сдачи (на сервер квиз-история не уходит).
+                                                       let hist = extendHistory(activeInd, {isCorrect: res.isCorrect, vsResult: res})
+                                                       props.onChange && props.onChange({
+                                                           answerType: 'vs_task', data: {isCorrect: res.isCorrect},
+                                                           history: hist, quizId: getQuizId(), opts: activeItem.opts
+                                                       })
+                                                   }}/>}
             {answerType === 'code' && <CodeReview
                 opts={props.opts}
                 time={timer.time} //for render in circle the value

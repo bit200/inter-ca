@@ -77,7 +77,7 @@ export function VsTestSummary({info, onRefresh, refreshing}) {
 function VsTaskRun(props) {
     // onNext — VS-задача внутри тренажёра (Train): без него из задачи некуда было
     // уйти, и проверка знаний с VS-задачей в конце не заканчивалась никогда.
-    let {task, examId, hist, onSession, onNext} = props;
+    let {task, examId, hist, onSession, onNext, onResult} = props;
     let taskId = task?._id;
     let key = storageKey(examId, taskId);
 
@@ -224,6 +224,10 @@ function VsTaskRun(props) {
     }
 
     let info = testInfo || pubTestInfo(null);
+    // Тренажёр (Train) учитывает результат задачи в проценте сдачи проверки знаний.
+    useEffect(() => {
+        info.hasResult && onResult && onResult({isCorrect: info.status === 'ok', ...info});
+    }, [info.hasResult, info.status, info.passed, info.total]);
     let starting = phase === 'starting';
     // В тренажёре решённая задача — повод идти дальше: основной становится «Далее».
     let isSolved = !!onNext && info.status === 'ok';

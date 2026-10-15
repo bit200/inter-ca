@@ -101,3 +101,26 @@ export function getStartError(startRes) {
     }
     return typeof err === 'string' ? err : (err.msg || 'start failed');
 }
+
+// Состав проверки знаний (/load-quizes-by-module): квизы лежат в quizes и pubQuizes,
+// VS-задачи группы — только в pubQuizes с ключом истории vs_<id группы>.
+export function countVsQuizes(pubQuizes) {
+    return (pubQuizes || []).filter(it => String(it?.opts?.quiz ?? '').startsWith('vs_')).length;
+}
+
+// Процент сдачи проверки знаний: верный квиз, оценённое аудио и решённая VS-задача
+// (isCorrect, его ставит Train по test_info.status === 'ok') — по одному баллу;
+// знаменатель — все задания проверки, а не только квизы.
+export function calcQuizPerc(history, total) {
+    let corTotal = 0;
+    let count = 0;
+    Object.values(history || {}).forEach(item => {
+        count++;
+        if (item && (item.isCorrect || item.data?.isCorrect)) {
+            corTotal++;
+        } else if (item && item.hash && (item.rate || item.audioRate)) {
+            corTotal++;
+        }
+    });
+    return {quizPerc: Math.round(100 * (corTotal / (total || 1))), total: count};
+}

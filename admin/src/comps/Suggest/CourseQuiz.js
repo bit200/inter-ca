@@ -17,6 +17,7 @@ import TrainPageCourse from "../TrainMethods/TrainPageCourse";
 import quiz from "../Quiz";
 import MockInterviewIframe from "../MockInterview/components/MockInterviewIframe";
 import CourseInterviewHistory from "../MockInterview/components/CourseInterviewHistory";
+import {calcQuizPerc, countVsQuizes} from "../VsTask/vsTask";
 import {startInterviewAttempt} from "../MockInterview/startInterviewAttempt";
 
 let quizIteration = 0;
@@ -152,28 +153,13 @@ function CourseQuiz(props, ref) {
     }, [quizResults])
 
 
+    // VS-задачи группы входят в знаменатель наравне с квизами: решённая даёт балл.
     function getQuizPerc(quizHistory) {
-        let corTotal = 0;
-        let total = 0;
-        let isAudio = (item = {}) => {
-            return item.hash;
-        }
-
-        _.each(quizHistory.history, (item, ind) => {
-            total++;
-            if (item && (item?.isCorrect || item?.data?.isCorrect)) {
-                corTotal++
-            } else if (item && isAudio(item) && (item.rate || item.audioRate)) {
-                corTotal++
-            }
-        })
-
-        return {quizPerc: Math.round(100 * (corTotal / (quizes.length || 1))), total};
-
+        return calcQuizPerc(quizHistory.history, quizes.length + countVsQuizes(pubQuizes));
     }
 
     function saveResults(quizPerc, cb) {
-        let total = (quizes || []).length;
+        let total = (quizes || []).length + countVsQuizes(pubQuizes);
         onAction('complete_quiz', quizPerc)
 
 
