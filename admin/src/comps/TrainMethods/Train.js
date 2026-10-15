@@ -386,7 +386,7 @@ function Train(props) {
                                                    onResult={(res) => {
                                                        // Результат тестов VS-задачи пишем в историю тренажёра, чтобы он
                                                        // вошёл в процент сдачи (на сервер квиз-история не уходит).
-                                                       let hist = extendHistory(activeInd, {isCorrect: res.isCorrect, vsResult: res})
+                                                       let hist = extendHistory(activeInd, {isCorrect: res.isCorrect, vsSystemError: !!res.systemError, vsResult: res})
                                                        props.onChange && props.onChange({
                                                            answerType: 'vs_task', data: {isCorrect: res.isCorrect},
                                                            history: hist, quizId: getQuizId(), opts: activeItem.opts

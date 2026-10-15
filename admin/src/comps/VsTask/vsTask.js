@@ -114,16 +114,23 @@ export function countVsQuizes(pubQuizes) {
 // Процент сдачи проверки знаний: верный квиз, оценённое аудио и решённая VS-задача
 // (isCorrect, его ставит Train по test_info.status === 'ok') — по одному баллу;
 // знаменатель — все задания проверки, а не только квизы.
+// VS-задача со сбоем платформы (vsSystemError: VS Code не запустился, vstasks не ответил) и без
+// решения не вина ученика — выпадает из знаменателя, балл не снижается.
 export function calcQuizPerc(history, total) {
     let corTotal = 0;
     let count = 0;
+    let skipped = 0;
     Object.values(history || {}).forEach(item => {
         count++;
+        if (item && item.vsSystemError && !item.isCorrect) {
+            skipped++;
+            return;
+        }
         if (item && (item.isCorrect || item.data?.isCorrect)) {
             corTotal++;
         } else if (item && item.hash && (item.rate || item.audioRate)) {
             corTotal++;
         }
     });
-    return {quizPerc: Math.round(100 * (corTotal / (total || 1))), total: count};
+    return {quizPerc: Math.round(100 * (corTotal / (Math.max((total || 0) - skipped, 1)))), total: count};
 }

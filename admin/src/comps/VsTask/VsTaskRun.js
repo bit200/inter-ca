@@ -226,8 +226,14 @@ function VsTaskRun(props) {
     let info = testInfo || pubTestInfo(null);
     // Тренажёр (Train) учитывает результат задачи в проценте сдачи проверки знаний.
     useEffect(() => {
-        info.hasResult && onResult && onResult({isCorrect: info.status === 'ok', ...info});
+        info.hasResult && onResult && onResult({isCorrect: info.status === 'ok', systemError: false, ...info});
     }, [info.hasResult, info.status, info.passed, info.total]);
+    // Сбой запуска VS Code или отправки (docker-m, vstasks) — не вина ученика: сообщаем Train,
+    // чтобы задача не снижала процент проверки знаний.
+    let systemError = phase === 'error' || submitFailed;
+    useEffect(() => {
+        systemError && onResult && onResult({isCorrect: false, systemError: true});
+    }, [systemError]);
     let starting = phase === 'starting';
     // В тренажёре решённая задача — повод идти дальше: основной становится «Далее».
     let isSolved = !!onNext && info.status === 'ok';
