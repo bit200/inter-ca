@@ -147,7 +147,8 @@ async function purgeE2eRun(api, ids, { candidateId, since, log = () => {} } = {}
   };
 
   for (const question of list('questions')) {
-    for (const path of ['/quiz-history', '/quiz-read-history', '/question-user-history']) {
+    // CodeHistory — код кандидата в js-задаче (/save-solution на каждую правку в CodeRun).
+    for (const path of ['/quiz-history', '/quiz-read-history', '/question-user-history', '/code-history']) {
       await purgeWhere(path, { question });
     }
   }

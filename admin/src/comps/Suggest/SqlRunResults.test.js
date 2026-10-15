@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {getEditorLanguage} from './useCodeRun';
 import {SqlRunResults, SqlReferenceResults} from './SqlRunResults';
 import CodeRun from './CodeRun';
@@ -81,6 +81,34 @@ describe('SQL-задание в CodeRun', () => {
         let {container} = render(<CodeRun question={{_id: 6, name: 'x'}} jsDetails={{codeType: 'js', fields: []}} history={{}} isExam/>);
         expect(screen.getByText('logs')).toBeInTheDocument();
         expect(container.querySelector('.cases-wrap')).not.toBeNull();
+    });
+
+    // e2e sql-js-task-course-flow читает итог прогона по data-атрибутам, а не по тексту.
+    test('разметка e2e: итог, кейсы с причиной и таблицы «ваш»/«ожидаемый»', () => {
+        render(<SqlRunResults runResults={{
+            totalCount: 2, passCount: 0, wrongCount: 2,
+            sqlResults: [
+                {ind: 0, ok: false, reason: 'rows_mismatch', message: 'Лишняя строка',
+                    actual: {columns: [{name: 'name'}], rows: [['a'], ['b']]}, expected: {columns: [{name: 'name'}], rows: [['a']]}},
+                {ind: 1, ok: false, hidden: true, reason: 'forbidden', message: 'Операция DELETE запрещена'},
+            ],
+        }}/>);
+        let results = screen.getByTestId('sql-run-results');
+        expect(results.getAttribute('data-passed')).toBe('0');
+        expect(results.getAttribute('data-total')).toBe('2');
+        let cases = screen.getAllByTestId('sql-case');
+        expect(cases.map(it => [it.getAttribute('data-ok'), it.getAttribute('data-hidden'), it.getAttribute('data-reason')]))
+            .toEqual([['false', 'false', 'rows_mismatch'], ['false', 'true', 'forbidden']]);
+        expect(screen.getAllByTestId('sql-result-table').map(it => [it.getAttribute('data-kind'), it.getAttribute('data-rows')]))
+            .toEqual([['actual', '2'], ['expected', '1']]);
+    });
+
+    test('разметка e2e: кнопки «Запустить»/«Сдать» и блоки результатов прогона и сдачи', () => {
+        render(<CodeRun question={{_id: 5, name: 'x'}} jsDetails={SQL_DETAILS} history={{}} isExam/>);
+        expect(screen.getByTestId('code-run-run')).toBeInTheDocument();
+        expect(screen.getByTestId('code-run-submit')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('results'));
+        expect(screen.getAllByTestId('code-run-results').map(it => it.getAttribute('data-kind'))).toEqual(['run', 'submit']);
     });
 
     test('админка: эталон на seed и на полном seed, ошибка схемы текстом', () => {
