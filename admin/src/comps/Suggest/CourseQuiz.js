@@ -30,6 +30,7 @@ function CourseQuiz(props, ref) {
     let navigate = useNavigate();
 
     let [loading, setLoading] = useState(false);
+    let [loadError, setLoadError] = useState(false);
     let [open, setOpen] = useState(false);
     let [opts, setOpts] = useState({});
     let [quizResults, setQuizResults] = useState(false);
@@ -200,15 +201,18 @@ function CourseQuiz(props, ref) {
         ++quizIteration
         let opts = {question: questionId || 0, _id: moduleId, cd: new Date().getTime()};
         setPubQuizes([])
+        setLoadError(false)
         global.http.get('/load-quizes-by-module', opts).then((r) => {
             setLoading(false)
             //console.log("qqqqq LOADED INFORMATIONNNNNNNNN",);
             let items = [...r.quizes || []]
             setQuizes(items)
-            setPubQuizes([...r.pubQuizes])
+            setPubQuizes([...(r.pubQuizes || [])])
             scb && scb();
         }).catch(e => {
             setLoading(false)
+            // пустой список - только по успешному ответу, иначе "Далее" засчитает главу без проверки
+            setLoadError(true)
             window.notify.error(e.toString())
         })
     }
@@ -263,13 +267,13 @@ function CourseQuiz(props, ref) {
     let fn = (...args) => {
         //console.log("qqqqq ]]]]]]]]]]", args);
     }
-    let isEmptyQuiz = !isLastModule && !_quizes.length;
+    let isEmptyQuiz = !isLastModule && !_quizes.length && !loadError;
 
     useImperativeHandle(ref, () => ({
         // "Проверка знаний" не нужна, если для темы нет квиз-вопросов (isEmptyQuiz
         // сам себя закрывает без модалки) - готовность самих квизов проверяет
         // вызывающая сторона по qHistory, тут только доступность списка.
-        hasPendingQuiz: () => !loading && !isEmptyQuiz && !!_quizes.length,
+        hasPendingQuiz: () => !loading && !loadError && !isEmptyQuiz && !!_quizes.length,
         openQuiz: () => reGenerateQuiz(),
     }));
 
@@ -290,6 +294,13 @@ function CourseQuiz(props, ref) {
             }}>
                 <i className="iconoir-double-check"></i>
                 {launchingInterview ? 'Открываем интервью...' : (title || t('checkKnowledge'))}</Button>}
+            {loadError && <>
+                <button id={'course-quiz-retry-' + (questionId || moduleId)} className={'btn btn-sm btn-primary'}
+                        onClick={() => loadQuiz()}>
+                    <i className="iconoir-refresh"></i> Повторить
+                </button>
+                <div><small>Не удалось загрузить задачи для проверки</small></div>
+            </>}
             {isEmptyQuiz && <><Button
                 // disabled={true}
                 className={'btn btn-sm btn-primary'} onClick={(scb) => {
@@ -308,7 +319,7 @@ function CourseQuiz(props, ref) {
                     </small>
                 </div>
             </>}
-            {isLastModule && !_quizes.length && !hasInterview &&
+            {isLastModule && !_quizes.length && !hasInterview && !loadError &&
                 <Link to='/courses' className={'btn btn-sm btn-primary'} onClick={(scb) => {
                     saveResults(100, () => {
                     })
