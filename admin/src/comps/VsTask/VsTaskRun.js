@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import './VsTaskRun.css';
 import {
     getStartError,
@@ -226,6 +227,23 @@ function VsTaskRun(props) {
     // В тренажёре решённая задача — повод идти дальше: основной становится «Далее».
     let isSolved = !!onNext && info.status === 'ok';
 
+    const frameNode = <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
+            {full && <div className={'vs-task-frame-bar'}>
+                <span className={'vs-task-frame-title'}>{task?.name}</span>
+                {session?.server_http && <button type={'button'}
+                                                 className={'btn btn-xs btn-success'}
+                                                 disabled={submitting}
+                                                 onClick={submit}>
+                    {submitting ? t('vsTaskSubmitting') : t('vsTaskSubmit')}
+                </button>}
+                <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-collapse'}
+                        onClick={() => setFull(false)}>
+                    <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}
+                </button>
+            </div>}
+            <iframe src={link} title={task?.name || 'VS Code'} allow={'clipboard-read; clipboard-write'}/>
+        </div>;
+
     return <div className={'vs-task' + (isSql ? ' vs-task-sql' : '')} data-phase={phase}
                 data-testid={'vs-task'} data-task-id={taskId}>
         <div className={'vs-task-head'}>
@@ -277,22 +295,7 @@ function VsTaskRun(props) {
             {error && <div className={'vs-task-error-details'}>{String(error)}</div>}
         </div>}
 
-        {phase === 'ready' && <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
-            {full && <div className={'vs-task-frame-bar'}>
-                <span className={'vs-task-frame-title'}>{task?.name}</span>
-                {session?.server_http && <button type={'button'}
-                                                 className={'btn btn-xs btn-success'}
-                                                 disabled={submitting}
-                                                 onClick={submit}>
-                    {submitting ? t('vsTaskSubmitting') : t('vsTaskSubmit')}
-                </button>}
-                <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-collapse'}
-                        onClick={() => setFull(false)}>
-                    <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}
-                </button>
-            </div>}
-            <iframe src={link} title={task?.name || 'VS Code'} allow={'clipboard-read; clipboard-write'}/>
-        </div>}
+        {phase === 'ready' && (full ? createPortal(frameNode, document.body) : frameNode)}
 
         <VsTestSummary info={info}
                        refreshing={refreshing}

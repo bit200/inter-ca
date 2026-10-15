@@ -40,8 +40,8 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         expect(screen.getByText('vsTaskSql')).toBeInTheDocument();
         fireEvent.click(screen.getByText('vsTaskOpen'));
 
-        await waitFor(() => expect(container.querySelector('iframe')).toBeTruthy());
-        expect(container.querySelector('iframe').getAttribute('src')).toBe('https://vcode/s-1');
+        await waitFor(() => expect(document.querySelector('iframe')).toBeTruthy());
+        expect(document.querySelector('iframe').getAttribute('src')).toBe('https://vcode/s-1');
         expect(get).toHaveBeenCalledWith('/pre-start-session',
             expect.objectContaining({task_group_id: 42, lng: 'sql', type: 'client', exam_id: 77}), {wo_notify: true});
         expect(get).toHaveBeenCalledWith('/exec-start-session', {session_id: 's-1'}, {wo_notify: true});
@@ -56,12 +56,15 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         let {container} = render(<VsTaskRun task={SQL_TASK} examId={77}/>);
         fireEvent.click(screen.getByText('vsTaskOpen'));
 
-        await waitFor(() => expect(container.querySelector('.vs-task-frame-full iframe')).toBeTruthy());
-        fireEvent.click(screen.getByText('vsTaskExitFullscreen'));
+        await waitFor(() => expect(document.querySelector('.vs-task-frame-full iframe')).toBeTruthy());
+        // fixed внутри модалки с transform обрезается её шириной — оверлей живёт в body
+        expect(document.querySelector('.vs-task-frame-full').parentElement).toBe(document.body);
         expect(container.querySelector('.vs-task-frame-full')).toBeNull();
-        expect(container.querySelector('iframe')).toBeTruthy();
+        fireEvent.click(screen.getByText('vsTaskExitFullscreen'));
+        expect(document.querySelector('.vs-task-frame-full')).toBeNull();
+        expect(document.querySelector('iframe')).toBeTruthy();
         fireEvent.click(screen.getByText('vsTaskFullscreen'));
-        expect(container.querySelector('.vs-task-frame-full iframe')).toBeTruthy();
+        expect(document.querySelector('.vs-task-frame-full iframe')).toBeTruthy();
     });
 
     test('ошибка старта docker-m — понятное сообщение вместо пустого iframe', async () => {
@@ -71,7 +74,7 @@ describe('VS Code-задача в экзамене/тренировке', () => 
 
         await waitFor(() => expect(screen.getByText('vsTaskStartFailed')).toBeInTheDocument());
         expect(screen.getByText('Error: connect ECONNREFUSED')).toBeInTheDocument();
-        expect(container.querySelector('iframe')).toBeNull();
+        expect(document.querySelector('iframe')).toBeNull();
         expect(screen.getByText('vsTaskReopen')).toBeInTheDocument();
     });
 
@@ -121,7 +124,7 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         });
         let {container} = render(<VsTaskRun task={SQL_TASK} examId={77}/>);
         fireEvent.click(screen.getByText('vsTaskOpen'));
-        await waitFor(() => expect(container.querySelector('iframe')).toBeTruthy());
+        await waitFor(() => expect(document.querySelector('iframe')).toBeTruthy());
 
         let before = get.mock.calls.filter(c => c[0] === '/populated-session').length;
         fireEvent.click(container.querySelector('.vs-task-actions .btn-success'));
@@ -137,7 +140,7 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         global.fetch = jest.fn(() => Promise.resolve({json: () => Promise.resolve({}), text: () => Promise.resolve('')}));
         let {container} = render(<VsTaskRun task={SQL_TASK} examId={77}/>);
         fireEvent.click(screen.getByText('vsTaskOpen'));
-        await waitFor(() => expect(container.querySelector('iframe')).toBeTruthy());
+        await waitFor(() => expect(document.querySelector('iframe')).toBeTruthy());
 
         window.dispatchEvent(new MessageEvent('message', {data: {type: 'treeitemClick', elementText: 'Завершить задачу'}}));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
