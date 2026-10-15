@@ -368,7 +368,8 @@ function Train(props) {
         {/*})}*/}
 
 
-        <div className={'trainContent ' + (isErrRec ? ' timerErrorWrap' : '')}>
+        <div className={'trainContent ' + (isErrRec ? ' timerErrorWrap' : '')}
+             data-testid={'train-item'} data-quiz-key={getQuizId()} data-answer-type={answerType}>
 
             {/*<div>PERC: {timer.time} / {timer.totalTime}</div>*/}
             <div className={'timerWrap'}>
@@ -381,7 +382,7 @@ function Train(props) {
                 showRecognizedText={true}
                 {...EXT_OBJ}
             ></AudioShort>}
-            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId}/>}
+            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId} onNext={() => onNext()}/>}
             {answerType === 'code' && <CodeReview
                 opts={props.opts}
                 time={timer.time} //for render in circle the value

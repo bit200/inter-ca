@@ -160,7 +160,7 @@ function PreviewCourseModule(props) {
             <EmptyModule></EmptyModule>
         </div>}
         {isOk && <div className="cmMainBlocks">
-            {selectedBlock && <div className='animChild'>
+            {selectedBlock && <div className='animChild' data-testid={'course-chapter'} data-question-id={selectedBlock._id}>
                 <div className="card">
                     <div className="card-body">
                         <QuestionDetailsNew item={selectedBlock}

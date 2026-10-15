@@ -176,7 +176,9 @@ function CourseDetails(props) {
                                 >
                                     <a
                                         key={ind}
-
+                                        data-testid={'course-module'}
+                                        data-module-id={module.module}
+                                        data-done={(mHistory[module.module] || {}).status === 'ok' ? 'true' : 'false'}
                                         className={"listBlockCh " + (isActive ? "activeBlock " : "")}
                                         onClick={(e) => {
                                             //console.log("qqqqq open module", ind, selectedModuleInd);
@@ -251,6 +253,9 @@ function CourseDetails(props) {
                                                         return (
                                                             <a
                                                                 key={_id + "_" + ind}
+                                                                data-testid={'course-topic'}
+                                                                data-question-id={_id}
+                                                                data-done={(qHistory[_id] || {}).status === 'ok' ? 'true' : 'false'}
                                                                 className={
                                                                     "listBlockCh " +
                                                                     (selectedBlockInd === ind ? "activeBlock" : "")
@@ -286,6 +291,8 @@ function CourseDetails(props) {
                                                 {
                                                     <>
                                                         <a
+                                                            data-testid={'course-module-check'}
+                                                            data-open={isActiveOk(-1) ? 'true' : 'false'}
                                                             className={
                                                                 "listBlockCh " +
                                                                 (selectedBlockInd === -1 ? "activeBlock" : "")

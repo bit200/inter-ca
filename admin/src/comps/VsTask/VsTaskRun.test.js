@@ -82,6 +82,28 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         expect(get).toHaveBeenCalledWith('/populated-session', {session_id: 's-old'}, {wo_notify: true});
     });
 
+    test('в тренажёре есть «Далее»: уход с задачи, основной — когда все тесты прошли', async () => {
+        mockHttp({testInfo: {status: 'ok', details: {total: 2, passed: 2}}});
+        let onNext = jest.fn();
+        render(<VsTaskRun task={SQL_TASK} hist={{session_id: 's-old', lng: 'sql'}} onNext={onNext}/>);
+
+        await waitFor(() => expect(screen.getByTestId('vs-task-result').getAttribute('data-status')).toBe('ok'));
+        expect(screen.getByTestId('vs-task-result').getAttribute('data-passed')).toBe('2');
+        expect(screen.getByTestId('vs-task-result').getAttribute('data-total')).toBe('2');
+        expect(screen.getByTestId('vs-task-next')).toHaveClass('btn-primary');
+        expect(screen.getByTestId('vs-task-open')).not.toHaveClass('btn-primary');
+
+        fireEvent.click(screen.getByTestId('vs-task-next'));
+        expect(onNext).toHaveBeenCalledTimes(1);
+    });
+
+    test('вне тренажёра (экзамен, CodeRun) «Далее» нет', () => {
+        mockHttp();
+        render(<VsTaskRun task={SQL_TASK} examId={77}/>);
+        expect(screen.queryByTestId('vs-task-next')).toBeNull();
+        expect(screen.getByTestId('vs-task').getAttribute('data-task-id')).toBe('42');
+    });
+
     test('CodeRun отдаёт VS-задачу в редактор VS Code, а не в Monaco', () => {
         mockHttp();
         window.env = window.env || {domain: ''};

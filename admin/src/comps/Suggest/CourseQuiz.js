@@ -292,7 +292,9 @@ function CourseQuiz(props, ref) {
                 {t('loadingResultsTesting')}
                 ...</button>}
         {!loading && <>
-            {(!!_quizes.length || hasInterview) && <Button className={'btn btn-sm btn-primary'} onClick={(scb) => {
+            {(!!_quizes.length || hasInterview) && <Button className={'btn btn-sm btn-primary'}
+                                                           id={questionId ? 'course-quiz-open-question-' + questionId : 'course-quiz-open-module-' + moduleId}
+                                                           onClick={(scb) => {
                 if (hasInterview) {
                     launchInterview(scb);
                     return;
@@ -365,7 +367,8 @@ function CourseQuiz(props, ref) {
                     />
                 </div>}
 
-                {quizResults && <div className={'animChild'}>
+                {quizResults && <div className={'animChild'} data-testid={'course-quiz-result'}
+                                     data-perc={quizPerc} data-ok={isQuizOk ? 'true' : 'false'}>
                     {/*{<div>*/}
                     <div className={'quiz-result-title'}>
                         {isQuizOk ? t('congratQuizMsg') : t('needMoreTimeQuizMsg')}
@@ -401,12 +404,12 @@ function CourseQuiz(props, ref) {
 
                     }
 
-                    {isQuizOk && !isLastModule && <Button color={0} onClick={(scb) => {
+                    {isQuizOk && !isLastModule && <Button color={0} id={'course-quiz-finish'} onClick={(scb) => {
                         onClose()
                         scb && scb()
                     }
                     }>Отлично, перейти к след модулю</Button>}
-                    {isQuizOk && isLastModule && <Button color={0} onClick={(scb) => {
+                    {isQuizOk && isLastModule && <Button color={0} id={'course-quiz-finish'} onClick={(scb) => {
                         onClose()
                         scb && scb()
                     }

@@ -112,7 +112,8 @@ function Layout2(props) {
                           // "Рекрутер": "Recruiter",
                           // "Алгоритмика Миддл (и)": "Middle-Level Algorithms"
                         }
-                        return (<div className="row" key={ind}>
+                        return (<div className="row" key={ind} data-testid={'course-list-item'}
+                                     data-course-id={it._id} data-perc={perc}>
                             <div className="col-md-10">
 
 
