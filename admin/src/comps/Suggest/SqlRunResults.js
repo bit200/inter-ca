@@ -37,8 +37,9 @@ export function SqlResultTable({result, title}) {
 }
 
 function SqlCase({item, showTitle}) {
-    let {ok, hidden, message, actual, expected} = item || {};
-    return <div className="sqlCase" status={ok ? 'ok' : 'error'}>
+    let {ok, hidden, reason, message, actual, expected} = item || {};
+    return <div className="sqlCase" status={ok ? 'ok' : 'error'} data-testid="sql-case"
+                data-ok={ok ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} data-reason={reason || ''}>
         <div className="sqlCaseHead">
             <span className="run-circle"></span>
             {showTitle && <b>{hidden ? t('sqlHiddenCase') : t('sqlPublicCase')}</b>}
@@ -58,9 +59,10 @@ export function SqlRunResults({runResults}) {
     let requestError = !sqlResults.length && firstError
         ? firstError.errMsg || (firstError.res1 || {}).errMsg
         : '';
-    return <div className="sqlRunResults">
+    return <div className="sqlRunResults" data-testid="sql-run-results"
+                data-pass={passCount || 0} data-total={totalCount}>
         <div>{t('testPasses')} {passCount} {t('from')} {totalCount}</div>
-        {requestError && <div className="sqlCase" status="error">
+        {requestError && <div className="sqlCase" status="error" data-testid="sql-case" data-ok="false" data-reason="request_error">
             <div className="sqlCaseHead"><span className="run-circle"></span><span>{String(requestError)}</span></div>
         </div>}
         {sqlResults.map((item, ind) => <SqlCase key={ind} item={item} showTitle={sqlResults.length > 1}/>)}
@@ -70,7 +72,7 @@ export function SqlRunResults({runResults}) {
 // Нижняя панель вместо тест-кейсов: студент видит, какие таблицы есть в БД.
 export function SqlSchemaPanel({jsDetails}) {
     let {schemaSql, dialect} = jsDetails || {};
-    return <div className="sqlSchemaPanel">
+    return <div className="sqlSchemaPanel" data-testid="sql-schema">
         <div className="sqlResultTitle">
             {t('sqlSchema')}
             <small>{dialect === 'postgres' || !dialect ? 'PostgreSQL 16' : dialect}</small>

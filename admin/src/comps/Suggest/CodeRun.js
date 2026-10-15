@@ -149,12 +149,15 @@ function CodeRunComponent(props) {
                                     </>}
                                     <div className={'ib ' + (jsDetails.hideRunStatus == 'hidden' ? 'hiddenBlock' : '')}>
                                         <button className={'btn btn-sm btn-light'} disabled={runLoading}
+                                                data-testid={'code-run-run'}
                                                 onClick={() => run()}>
                                             <i className="iconoir-terminal"></i>
                                             {t('runMsg')}
                                         </button>
                                         {!props.isNewExam &&
-                                            <button className={'btn btn-sm btn-primary'} onClick={() => submit()}>
+                                            <button className={'btn btn-sm btn-primary'}
+                                                    data-testid={'code-run-submit'}
+                                                    onClick={() => submit()}>
                                                 <i className="iconoir-arcade"></i>
                                                 {t('submitMsg')}
                                             </button>}
@@ -219,15 +222,21 @@ function CodeRunComponent(props) {
                                     />
                                 </>}
                             </div>}
-                        {topTab === 'results' && <div className={'card3 ' + (runLoading ? 'o5' : '')}>
+                        {topTab === 'results' && <div className={'card3 ' + (runLoading ? 'o5' : '')}
+                                                      data-testid={'code-run-results'}
+                                                      data-loading={runLoading ? 'true' : 'false'}>
                             <div style={{padding: '5px'}} className={'animChild'}>
                                 <small>&nbsp;</small>
                                 <h5>{t('runResults')}</h5>
-                                <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
+                                <div data-testid={'code-run-results-run'}>
+                                    <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
+                                </div>
                                 {!isNewExam && <>
                                     <hr/>
                                     <h5>{t('runResultsSubmit')}</h5>
-                                    <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
+                                    <div data-testid={'code-run-results-submit'}>
+                                        <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
+                                    </div>
                                 </>}
                             </div>
                         </div>}
@@ -297,7 +306,7 @@ function CodeRunComponent(props) {
             </div>
             <div className="resizeV" id={'drag2'}></div>
         </div>
-        <div className="crRight" ref={rightRef}>
+        <div className="crRight" ref={rightRef} data-testid={'code-run-editor'}>
             <div className="filesWrap">
                 <div className="btn-reset">
                     <button className={'btn btn-xs btn-light'} onClick={() => {

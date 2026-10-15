@@ -48,4 +48,17 @@ function buildQuiz(users = USERS, threshold = THRESHOLD) {
   };
 }
 
-module.exports = { USERS, HIDDEN_USERS, THRESHOLD, seedSql, countOlder, namesOlder, buildQuiz };
+// Зачёт проверки знаний курса (#4040, клиент: calcQuizPerc в VsTask/vsTask.js, порог
+// QUIZ_NORMAL в CourseQuiz.js): каждое задание проверки — верный квиз или сданная
+// js-задача (все кейсы, включая скрытые) — один балл, знаменатель — все задания.
+const CHECK_PASS_PERC = 85;
+
+function courseCheckResult(solved) {
+  const total = solved.length;
+  const quizPerc = Math.round(100 * (solved.filter(Boolean).length / Math.max(total, 1)));
+  return { quizPerc, total, status: quizPerc >= CHECK_PASS_PERC ? 'ok' : 'error' };
+}
+
+module.exports = {
+  USERS, HIDDEN_USERS, THRESHOLD, CHECK_PASS_PERC, seedSql, countOlder, namesOlder, buildQuiz, courseCheckResult,
+};

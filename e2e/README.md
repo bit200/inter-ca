@@ -77,19 +77,52 @@ SQL-задача в браузерном формате: вопрос `type: 'js
    SQL-задачу (`js_<id вопроса>`, только публичная часть JsDetails: без эталона и
    скрытых данных).
 
-Часть 2 (кандидат проходит курс в клиенте) — отдельная задача, допишется в этот же
-файл следующим `describe` после `admin setup`.
+Часть 2 (`candidate`) — кандидат (`E2E_USERNAME`) проходит курс в клиенте inter-ca
+(`E2E_BASE_URL`):
+
+7. вход через форму (`helpers/auth.js`), курс `e2e-sql-*` в списке `/courses`, открывается;
+8. модуль → глава с SQL-вопросом: материал виден, итоговая проверка модуля под замком;
+9. «Проверить знания» главы (`CourseQuiz` с `questionId` → `/load-quizes-by-module`):
+   квиз и SQL-задача `js_<id вопроса>` (`JsTaskRun` → `CodeRun`), схема БД
+   (`SqlSchemaPanel`) и Monaco; элементов VS Code и VS-задач нет (флаг #4039);
+10. SQL-задача: запрос без `age > 30` → «Запустить» — в `SqlRunResults` расхождение с
+    эталоном (`rows_mismatch`, таблицы «ваш»/«ожидаемый»), «Сдать» — не засчитана;
+    `DELETE` и два запроса через «;» — понятная ошибка `checkSqlSafety` (`forbidden`),
+    страница живёт; верный запрос — оба кейса (открытый и скрытый) прошли, засчитана;
+11. «Далее» → глава засчитана: `quizPerc 100, total 2`, `CourseUser.qHistory` — `ok`;
+12. итоговая проверка модуля: квиз верно, SQL неверно → по правилу #4040 (каждое задание —
+    балл, порог 85%) **50%, `status: 'error'`**: `CourseModuleUserHistory.status` —
+    `error`, `CourseUser.mHistory` модуля пуст. Правило — `courseCheckResult` в
+    `helpers/sqlCourseQuiz.js` (с юнит-тестом);
+13. «Пройти заново» → квиз и SQL верно → 100%, модуль засчитан (`status` и `mHistory` — `ok`);
+14. выход (куки и localStorage) и повторный вход — курс 100%, глава и модуль сданы,
+    то же в `/get-my-course-details` кандидата.
+
+Весь поток (части 1 и 2) — одной командой:
 
 ```bash
-cd e2e && npm run test:sql-flow          # = E2E_MANUAL=1 playwright test sql-course-flow.spec (≈10 с)
-E2E_ADMIN_URL=http://localhost:7641 npm run test:sql-flow   # админка из своего worktree
+cd e2e && npm run test:sql-flow          # = E2E_MANUAL=1 playwright test sql-course-flow.spec (≈25 с)
+E2E_ADMIN_URL=http://localhost:7641 E2E_BASE_URL=http://localhost:7643 npm run test:sql-flow   # админка и клиент из своих worktree
 ```
+
+Ввод в Monaco (и в админке, и у кандидата) — штатный: клик в редактор, «выделить всё»
+(`ControlOrMeta+A`), затем `keyboard.insertText` — как вставка из буфера, без
+автодополнения и автоскобок, которые при посимвольном `type` дописали бы лишнее.
+API Monaco клиент в `window` не отдаёт, поэтому через него тест не ходит.
+
+Привязка VS-группы к вопросу (чтобы проверить, что кандидат не получает VS-задач и при
+привязанной группе) нужна под `super_admin` — этот поток идёт под обычным `admin`, так
+что проверяется только отсутствие VS-задач и элементов VS Code; с привязанной группой
+поток — `sql-vs-course-flow.spec.js`.
+
+Кандидат у потока один на стенд: два прогона одновременно (два воркера на одном стенде)
+мешают друг другу — уборка одного удаляет историю кандидата, пока второй ещё идёт.
 
 Должны быть подняты (docker-m и VS Code этому потоку **не нужны**):
 
 - `itk-api` — API на `:6057` (`itk-platform-en/interviews/api`);
 - `itk-admin` — админка на `:8002` (`E2E_ADMIN_URL`), с разметкой testid (см. ниже);
-- клиент на `:8001` (`E2E_BASE_URL`) — `admin/` этого репозитория (часть 2);
+- клиент на `:8001` (`E2E_BASE_URL`) — `admin/` этого репозитория (часть 2), с разметкой testid;
 - Postgres SQL-раннера: `SQL_RUNNER_DSN` в `.env` API, поднимается
   `api/scripts/sql-runner-db.sh` (контейнер Postgres на `:5439`).
 
@@ -218,3 +251,12 @@ SQL-задачи (`POST /create-sql-task-files`) и поднимает VS Code-�
 (`data-phase`, `data-task-id`), `vs-task-open`, `vs-task-collapse` / `vs-task-expand`
 (редактор на весь экран), `vs-task-next`, `vs-task-refresh`,
 `vs-task-result[data-status][data-passed][data-total]`.
+
+js-задача в проверке знаний (#4040): `js-task[data-task-id]`, `js-task-result[data-ok]`,
+`js-task-next`; `CodeRun`: `code-run-run` («Запустить»), `code-run-submit` («Сдать»),
+`code-run-editor` (колонка с Monaco), `code-run-results` (`data-loading`),
+`code-run-results-run` / `code-run-results-submit`; SQL: `sql-schema` (`SqlSchemaPanel`),
+`sql-run-results[data-pass][data-total]`, `sql-case[data-ok][data-hidden][data-reason]`
+(`reason` — из `sqlRunner`: `rows_mismatch`, `forbidden`, …; сбой запроса —
+`request_error`). Экран результата проверки: `#course-quiz-restart` («Пройти заново»),
+`#course-quiz-continue` («Продолжить обучение»).

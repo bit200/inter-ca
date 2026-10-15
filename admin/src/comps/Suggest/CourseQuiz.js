@@ -378,11 +378,11 @@ function CourseQuiz(props, ref) {
                     </div>}
                     <hr/>
                     {!isQuizOk && <>
-                        <Button color={0} onClick={(scb) => {
+                        <Button color={0} id={'course-quiz-continue'} onClick={(scb) => {
                             setOpen(false)
                             scb && scb()
                         }}>{t('continueLearning')}</Button>
-                        <Button color={4} onClick={(scb) => {
+                        <Button color={4} id={'course-quiz-restart'} onClick={(scb) => {
                             reGenerateQuiz(scb)
                         }}>
                             {t('restartQuiz')}

@@ -83,6 +83,42 @@ describe('SQL-задание в CodeRun', () => {
         expect(container.querySelector('.cases-wrap')).not.toBeNull();
     });
 
+    // Разметка для e2e sql-course-flow (часть 2): кейс несёт итог и причину, итог
+    // прогона — счётчики, схема и кнопки CodeRun находятся без текста интерфейса.
+    test('e2e-разметка: кейсы с data-ok/data-hidden/data-reason, счётчики прогона', () => {
+        let {container} = render(<SqlRunResults runResults={{
+            totalCount: 2, passCount: 1, wrongCount: 1,
+            sqlResults: [
+                {ind: 0, ok: true, reason: 'ok'},
+                {ind: 1, ok: false, hidden: true, reason: 'forbidden', message: 'Разрешён только один запрос'},
+            ],
+        }}/>);
+        let results = screen.getByTestId('sql-run-results');
+        expect(results.getAttribute('data-pass')).toBe('1');
+        expect(results.getAttribute('data-total')).toBe('2');
+        let cases = container.querySelectorAll('[data-testid="sql-case"]');
+        expect([...cases].map(it => [it.dataset.ok, it.dataset.hidden, it.dataset.reason])).toEqual([
+            ['true', 'false', 'ok'],
+            ['false', 'true', 'forbidden'],
+        ]);
+    });
+
+    test('e2e-разметка: сбой запроса без sqlResults — кейс с причиной request_error', () => {
+        render(<SqlRunResults runResults={{totalCount: 1, passCount: 0, wrongCount: 1, firstError: {ind: 0, res1: {errMsg: 'Network down'}}}}/>);
+        let item = screen.getByTestId('sql-case');
+        expect(item.dataset.ok).toBe('false');
+        expect(item.dataset.reason).toBe('request_error');
+        expect(screen.getByTestId('sql-run-results').getAttribute('data-pass')).toBe('0');
+    });
+
+    test('e2e-разметка CodeRun: схема, редактор, «Запустить» и «Сдать»', () => {
+        render(<CodeRun question={{_id: 5, name: 'Найти пользователей'}} jsDetails={SQL_DETAILS} history={{}} isExam/>);
+        expect(screen.getByTestId('sql-schema').textContent).toContain(SQL_DETAILS.schemaSql);
+        expect(screen.getByTestId('code-run-editor').querySelector('[data-testid="editor"]')).not.toBeNull();
+        expect(screen.getByTestId('code-run-run').textContent).toContain('runMsg');
+        expect(screen.getByTestId('code-run-submit').textContent).toContain('submitMsg');
+    });
+
     test('админка: эталон на seed и на полном seed, ошибка схемы текстом', () => {
         render(<SqlReferenceResults data={{ordered: true, results: [
             {name: 'seed', expected: {columns: [{name: 'id'}], rows: [['1']]}},
