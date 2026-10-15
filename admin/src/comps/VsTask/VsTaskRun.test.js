@@ -153,3 +153,13 @@ describe('VS Code-задача в экзамене/тренировке', () => 
         expect(screen.getByText('vsTaskBack')).toBeInTheDocument();
     });
 });
+
+describe('VsTaskRun: слой полноэкранного редактора', () => {
+    it('z-index рамки не меньше слоя MyModal (иначе редактор уходит за модалку)', () => {
+        const fs = require('fs');
+        const z = (file, sel) => Number(new RegExp(sel + '\\s*{[^}]*?z-index:\\s*(\\d+)').exec(fs.readFileSync(__dirname + file, 'utf8'))[1]);
+        const frame = z('/VsTaskRun.css', '\\.vs-task-frame-full');
+        const modal = z('/../../libs/MyModal/myModal.css', '[^{}]*');
+        expect(frame).toBeGreaterThanOrEqual(Math.min(modal, 2147483647));
+    });
+});

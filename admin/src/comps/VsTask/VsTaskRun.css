@@ -135,7 +135,7 @@
 .vs-task-frame-full {
     position: fixed;
     inset: 0;
-    z-index: 2000;
+    z-index: 2147483647; /* максимум; MyModal (10000000000) клампится к нему же, при равенстве выигрывает более поздний узел в body */
     display: flex;
     flex-direction: column;
     border: 0;
