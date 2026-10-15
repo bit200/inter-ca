@@ -39,9 +39,11 @@ async function login(ctx, { username, password }) {
   return data;
 }
 
-async function createAdminApi() {
+// API от имени пользователя: админ (уборка, чтение того, что UI не показывает)
+// или кандидат (его собственные сессии и история — /populated-session и т.п.).
+async function createUserApi(creds) {
   const ctx = await request.newContext({ baseURL: API_URL });
-  const { token, user } = await login(ctx, adminCreds());
+  const { token, user } = await login(ctx, creds);
   const headers = { Authorization: token };
 
   const api = {
@@ -57,6 +59,8 @@ async function createAdminApi() {
   };
   return api;
 }
+
+const createAdminApi = () => createUserApi(adminCreds());
 
 // Пользователь по логину — нужен _id кандидата для записи на курс. Сам API логина
 // отдаёт пользователя, так что пароль кандидата здесь же и проверяется.
@@ -157,4 +161,4 @@ async function cleanupStaleE2e(api, { prefix, maxAgeMs, candidateId, now = Date.
   return removed;
 }
 
-module.exports = { createAdminApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, toQuery };
+module.exports = { createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e, toQuery };

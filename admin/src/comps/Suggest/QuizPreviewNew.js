@@ -138,6 +138,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
                     <div
                         key={ind}
                         className={"quiz-answer-it no-select  " + clName}
+                        data-testid={'quiz-answer'}
                         onClick={() => {
 
                             if (isSubmit && !opts.canResubmitQuiz) {

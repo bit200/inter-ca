@@ -1,34 +1,43 @@
 // Сквозной поток платформы: SQL-задача → группа → вопрос → модуль → курс → кандидат.
 // Часть 1 — подготовка через UI админки itk-platform (E2E_ADMIN_URL). Часть 2 —
-// прохождение курса кандидатом в клиенте (E2E_BASE_URL) — допишется в этот же файл
-// следующим test-блоком: describe.serial гарантирует порядок, а созданные _id лежат
-// в общем объекте `flow` (и дублируются в test-results/sql-course-flow.json для
-// разбора прогона).
+// прохождение курса кандидатом в клиенте (E2E_BASE_URL): курс, глава, проверка
+// знаний с квизом и VS-задачей, решение SQL-задачи в VS Code-сессии, итоговая
+// проверка модуля, повторный вход. describe.serial гарантирует порядок, а созданные
+// _id лежат в общем объекте `flow` (и дублируются в test-results/sql-course-flow.json
+// для разбора прогона).
 //
 // Сервисы, env и как завести тестовых пользователей — e2e/README.md, раздел
 // «Сквозной поток sql-course-flow».
 const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ADMIN_URL, adminCreds, candidateCreds } = require('../helpers/env');
-const { loginAdmin } = require('../helpers/auth');
+const { ADMIN_URL, BASE_URL, adminCreds, candidateCreds } = require('../helpers/env');
+const { login, loginAdmin } = require('../helpers/auth');
 const { e2eName } = require('../helpers/e2eNames');
-const { seedSql, buildQuiz } = require('../helpers/sqlCourseQuiz');
+const { seedSql, buildQuiz, countOlder } = require('../helpers/sqlCourseQuiz');
 const {
-  createAdminApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e,
+  createAdminApi, createUserApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e,
 } = require('../helpers/adminApi');
+const { createDockerM, saveSessionResult } = require('../helpers/vsSession');
 
 const PREFIX = 'e2e-sql';
 // Старше этого — мусор прошлых прогонов, удаляем перед стартом.
 const CLEANUP_HOURS = Number(process.env.E2E_CLEANUP_HOURS || 6);
 // Сборка файлов SQL-задачи: эталон в Postgres раннера + docker-m. Обычно 5–20 с.
 const SQL_SYNC_TIMEOUT = 120_000;
+// Старт VS Code-сессии (docker compose: редактор + Postgres сессии). Обычно 5–15 с.
+const VS_START_TIMEOUT = 180_000;
+// Прогон SQL-раннера сессии и запись результата в VsSession.
+const VS_TESTS_TIMEOUT = 120_000;
 
 const SQL = {
   description: 'Посчитайте пользователей старше 30 лет. Верните одну колонку `cnt`.',
   schema: 'CREATE TABLE users (\n  id   int PRIMARY KEY,\n  name text NOT NULL,\n  age  int NOT NULL\n);',
   seed: seedSql(),
   solution: 'SELECT COUNT(*) AS cnt FROM users WHERE age > 30;',
+  // Негативный случай: «30 и старше» вместо «строго старше» — на seed на одного больше.
+  wrong: 'SELECT COUNT(*) AS cnt FROM users WHERE age >= 30;',
+  file: 'queries/01_query.sql',
 };
 
 const flow = { ts: Date.now() };
@@ -61,10 +70,36 @@ function waitPut(page, apiPath, predicate = () => true) {
     && new URL(r.url()).pathname === `/api${apiPath}` && predicate(r.request().postDataJSON() || {}));
 }
 
+function waitApi(page, method, apiPath, predicate = () => true) {
+  return page.waitForResponse((r) => r.request().method() === method
+    && new URL(r.url()).pathname === `/api${apiPath}` && predicate(new URL(r.url()), r.request()));
+}
+
+// Ответ на квиз тренажёра: вариант с точным текстом (порядок вариантов перемешан).
+async function answerQuiz(page, text) {
+  const saved = waitApi(page, 'POST', '/save-quiz-history');
+  await page.locator('[data-testid="quiz-answer"]').filter({ hasText: new RegExp(`^\\s*${text}\\s*$`) }).click();
+  await saved;
+}
+
+// Ждём, пока VsSession получит новый результат тестов (last_cd сменился).
+async function waitTestInfo(candidateApi, sessionId, prevCd) {
+  let info = null;
+  await expect.poll(async () => {
+    info = (await candidateApi.get('/populated-session', { session_id: sessionId })).item.test_info || {};
+    return info.last_cd && info.last_cd !== prevCd;
+  }, { timeout: 30_000, message: `VsSession ${sessionId}: новый test_info` }).toBe(true);
+  return info;
+}
+
 test.describe.serial('sql-course-flow', () => {
   /** @type {import('@playwright/test').Page} */
   let page;
   let api;
+  /** @type {import('@playwright/test').Page} — кандидат в клиенте inter-ca */
+  let cPage;
+  let candidateApi;
+  let dockerM;
 
   test.beforeAll(async ({ browser }) => {
     api = await createAdminApi();
@@ -81,6 +116,15 @@ test.describe.serial('sql-course-flow', () => {
   });
 
   test.afterAll(async () => {
+    // Уборка VS-сессий кандидата штатным путём docker-m (контейнеры, сеть, тома SQL);
+    // запись VsSession — мягким DELETE (is_removed), как остальной e2e-мусор.
+    for (const s of flow.vsSessions || []) {
+      await dockerM?.kill(s.session_id).catch((e) => console.log(`kill ${s.session_id}: ${e.message}`));
+      await api?.del('/vs-session', s._id).catch(() => {});
+    }
+    await dockerM?.dispose();
+    await candidateApi?.dispose();
+    await cPage?.context().close();
     await page?.close();
     await api?.dispose();
   });
@@ -187,8 +231,8 @@ test.describe.serial('sql-course-flow', () => {
       // Страница квиза сохраняется сама (autoSave), кнопки не нужны.
       await page.locator('[data-testid="quiz-answer-type-quiz"]').click();
       await page.locator('[data-testid="quiz-status-active"]').click();
-      await page.locator('[data-testid="quiz-name"] textarea.w-md-editor-text-input').fill(quizData.name);
       const quizData = buildQuiz();
+      await page.locator('[data-testid="quiz-name"] textarea.w-md-editor-text-input').fill(quizData.name);
       // Валидный квиз — минимум 3 варианта и ровно один верный (api dbsInit/quizDbs.js).
       const variants = quizData.variants.map((v) => [v.text, v.isCorrect]);
       const list = page.locator('[data-testid="quiz-variations"]');
@@ -324,6 +368,193 @@ test.describe.serial('sql-course-flow', () => {
       const vs = (training.pubQuizes || []).filter((it) => (it.opts || {}).quiz === `vs_${flow.vsTaskGroupId}`);
       expect(vs).toHaveLength(1);
       expect(vs[0].item.info_arr[0]).toMatchObject({ task_id: flow.vsTaskId, lng: 'sql' });
+      const { name, ...ids } = flow;
+      console.log('sql-course-flow ids:', JSON.stringify(ids));
+    });
+  });
+
+  test.describe('candidate', () => {
+    const courseRow = () => cPage.locator(`[data-testid="course-list-item"][data-course-id="${flow.courseId}"]`);
+    const topic = () => cPage.locator(`[data-testid="course-topic"][data-question-id="${flow.questionId}"]`);
+    const moduleItem = () => cPage.locator(`[data-testid="course-module"][data-module-id="${flow.courseModuleId}"]`);
+    const vsTask = () => cPage.locator('[data-testid="vs-task"]');
+    const vsResult = () => vsTask().locator('[data-testid="vs-task-result"]');
+
+    async function openCourse() {
+      await cPage.goto('/courses');
+      await expect(courseRow()).toContainText(flow.name('курс'));
+      const details = waitApi(cPage, 'GET', '/get-my-course-details', (u) => u.searchParams.get('_id') == flow.courseId);
+      // В строке две ссылки на курс: название и «Продолжить» — жмём название.
+      await courseRow().getByRole('link', { name: flow.name('курс') }).click();
+      await details;
+      await cPage.waitForURL(`**/courses/${flow.courseId}`);
+    }
+
+    test.beforeAll(async ({ browser }) => {
+      candidateApi = await createUserApi(candidateCreds());
+      dockerM = await createDockerM();
+      // Без docker-m SQL-задачу не решить — падаем до прохождения курса, а не на шаге 10.
+      await dockerM.assertUp();
+      cPage = await (await browser.newContext({ baseURL: BASE_URL })).newPage();
+    });
+
+    test('7. Кандидат видит тестовый курс и открывает его', async () => {
+      await login(cPage, candidateCreds());
+      await openCourse();
+      await expect(moduleItem()).toContainText(flow.name('модуль'));
+      await expect(moduleItem()).toHaveAttribute('data-done', 'false');
+    });
+
+    test('8. Глава с вопросом: материал', async () => {
+      // Первая глава модуля открыта сразу (PreviewCourseModule), следующая и
+      // итоговая проверка — под замком, пока глава не сдана.
+      await topic().click();
+      const chapter = cPage.locator(`[data-testid="course-chapter"][data-question-id="${flow.questionId}"]`);
+      await expect(chapter).toContainText('посчитать пользователей старше 30');
+      await expect(topic()).toHaveAttribute('data-done', 'false');
+      await expect(cPage.locator('[data-testid="course-module-check"]')).toHaveAttribute('data-open', 'false');
+    });
+
+    test('9. Проверка главы: квиз, затем VS-задача группы', async () => {
+      // «Проверить знания» главы — CourseQuiz с questionId: /api/load-quizes-by-module
+      // с question, у VS-группы флаг course_test (в части 1 включён «Все»).
+      const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module', (u) => u.searchParams.get('question') == flow.questionId);
+      await cPage.locator(`#course-quiz-open-question-${flow.questionId}`).click();
+      const training = await (await loaded).json();
+      expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId]);
+      expect(training.pubQuizes.map((it) => it.opts.quiz)).toEqual([flow.quizId, `vs_${flow.vsTaskGroupId}`]);
+
+      await expect(cPage.locator('[data-testid="train-item"]')).toHaveAttribute('data-quiz-key', String(flow.quizId));
+      await answerQuiz(cPage, String(countOlder()));
+
+      // Верный ответ сам уводит к следующему заданию — VS-задаче, ключ истории vs_<группа>.
+      const item = cPage.locator('[data-testid="train-item"]');
+      await expect(item).toHaveAttribute('data-quiz-key', `vs_${flow.vsTaskGroupId}`);
+      await expect(item).toHaveAttribute('data-answer-type', 'vs_task');
+      await expect(vsTask()).toHaveAttribute('data-task-id', String(flow.vsTaskGroupId));
+      await expect(vsTask()).toContainText(flow.name('группа SQL'));
+      await expect(vsTask()).toHaveClass(/vs-task-sql/);
+      await expect(vsResult()).toHaveAttribute('data-status', 'none');
+    });
+
+    test('10. SQL-задача: сессия, неверное и верное решение', async () => {
+      test.setTimeout(VS_START_TIMEOUT + 2 * VS_TESTS_TIMEOUT);
+
+      // VsTaskRun → /pre-start-session (без exam_id) → /exec-start-session → iframe.
+      const pre = waitApi(cPage, 'GET', '/pre-start-session');
+      const started = cPage.waitForResponse((r) => new URL(r.url()).pathname === '/api/exec-start-session', { timeout: VS_START_TIMEOUT });
+      await vsTask().locator('[data-testid="vs-task-open"]').click();
+      const preRes = await pre;
+      const q = new URL(preRes.url()).searchParams;
+      expect({ group: q.get('task_group_id'), lng: q.get('lng'), exam: q.get('exam_id') }).toEqual({ group: String(flow.vsTaskGroupId), lng: 'sql', exam: '' });
+      const { session_id: sessionId, session } = await preRes.json();
+      expect(sessionId).toBeTruthy();
+      flow.vsSessions = [...(flow.vsSessions || []), { _id: session._id, session_id: sessionId }];
+
+      const startInfo = await (await started).json();
+      expect(startInfo.err_obj, `docker-m не поднял сессию: ${JSON.stringify(startInfo.err_obj)}`).toBeFalsy();
+      await expect(vsTask()).toHaveAttribute('data-phase', 'ready', { timeout: 15_000 });
+      await expect(vsTask().locator('iframe')).toHaveAttribute('src', /tkn=/);
+      // Редактор открывается на весь экран поверх страницы; результат тестов и
+      // «Далее» — под ним, кандидат сворачивает редактор.
+      await expect(vsTask().locator('.vs-task-frame-full')).toBeVisible();
+      await vsTask().locator('[data-testid="vs-task-collapse"]').click();
+      await expect(vsTask().locator('.vs-task-frame-full')).toHaveCount(0);
+      // Сессия тренировки — ключ 'train' (не экзамен), её подхватит и итоговая проверка.
+      const saved = await cPage.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), `vs-session-train-${flow.vsTaskGroupId}`);
+      expect(saved).toMatchObject({ session_id: sessionId, lng: 'sql' });
+
+      await dockerM.waitTaskFiles(sessionId, SQL.file);
+      let prevCd = null;
+
+      // Негатив: неверный запрос → status 'err', passed < total.
+      await dockerM.writeFile(sessionId, SQL.file, SQL.wrong);
+      const bad = await dockerM.runSqlTests(sessionId, { timeoutMs: VS_TESTS_TIMEOUT });
+      expect(bad.result.total).toBeGreaterThan(0);
+      expect(bad.result.passed).toBeLessThan(bad.result.total);
+      await saveSessionResult(sessionId, bad.info);
+      const badInfo = await waitTestInfo(candidateApi, sessionId, prevCd);
+      expect(badInfo.status).toBe('err');
+      expect(badInfo.details.passed).toBeLessThan(badInfo.details.total);
+      prevCd = badInfo.last_cd;
+      await vsTask().locator('[data-testid="vs-task-refresh"]').click();
+      await expect(vsResult()).toHaveAttribute('data-status', 'err');
+      await expect(vsResult()).toHaveAttribute('data-passed', String(badInfo.details.passed));
+
+      // Верное решение → status 'ok', passed == total > 0.
+      await dockerM.writeFile(sessionId, SQL.file, SQL.solution);
+      const good = await dockerM.runSqlTests(sessionId, { timeoutMs: VS_TESTS_TIMEOUT });
+      expect(good.result.passed).toBe(good.result.total);
+      await saveSessionResult(sessionId, good.info);
+      const okInfo = await waitTestInfo(candidateApi, sessionId, prevCd);
+      expect(okInfo.status).toBe('ok');
+      expect(okInfo.details.total).toBeGreaterThan(0);
+      expect(okInfo.details.passed).toBe(okInfo.details.total);
+      flow.vsTestInfo = { status: okInfo.status, passed: okInfo.details.passed, total: okInfo.details.total };
+
+      await vsTask().locator('[data-testid="vs-task-refresh"]').click();
+      await expect(vsResult()).toHaveAttribute('data-status', 'ok');
+      await expect(vsResult()).toHaveAttribute('data-passed', String(okInfo.details.total));
+      await expect(vsResult()).toHaveAttribute('data-total', String(okInfo.details.total));
+      await expect(vsTask().locator('[data-testid="vs-task-next"]')).toHaveClass(/btn-primary/);
+    });
+
+    test('11. Глава засчитана, итоговая проверка модуля (edu) — модуль сдан', async () => {
+      // «Далее» на VS-задаче — последнее задание, проверка главы заканчивается.
+      // ТЕКУЩЕЕ ПОВЕДЕНИЕ: VS-задача не входит в процент сдачи — /api/load-quizes-by-module
+      // отдаёт её в pubQuizes вне quizes, а знаменатель процента — quizes. Сдача главы
+      // и модуля зависит только от квизов (total = 1 — один наш квиз).
+      const qSaved = waitApi(cPage, 'POST', '/save-course-module-question-results');
+      await vsTask().locator('[data-testid="vs-task-next"]').click();
+      const qBody = (await qSaved).request().postDataJSON();
+      expect(qBody).toMatchObject({ question: flow.questionId, quizPerc: 100, total: 1, status: 'ok', courseUserId: flow.courseUserId });
+      const result = cPage.locator('[data-testid="course-quiz-result"]');
+      await expect(result).toHaveAttribute('data-perc', '100');
+      await cPage.locator('#course-quiz-finish').click();
+
+      await expect(topic()).toHaveAttribute('data-done', 'true');
+      await expect(cPage.locator('[data-testid="course-module-check"]')).toHaveAttribute('data-open', 'true');
+
+      // Итоговая проверка модуля: CourseQuiz без questionId, флаг edu у VS-группы.
+      const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module', (u) => u.searchParams.get('question') === '0' && u.searchParams.get('_id') == flow.courseModuleId);
+      await cPage.locator(`#course-quiz-open-module-${flow.courseModuleId}`).click();
+      const training = await (await loaded).json();
+      expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId]);
+      expect(training.pubQuizes.map((it) => it.opts.quiz)).toEqual([flow.quizId, `vs_${flow.vsTaskGroupId}`]);
+
+      await answerQuiz(cPage, String(countOlder()));
+      await expect(cPage.locator('[data-testid="train-item"]')).toHaveAttribute('data-quiz-key', `vs_${flow.vsTaskGroupId}`);
+      // Та же сессия тренировки (ключ 'train'): результат решения виден без перезапуска.
+      await expect(vsResult()).toHaveAttribute('data-status', 'ok');
+
+      const mSaved = waitApi(cPage, 'POST', '/save-course-module-results');
+      await vsTask().locator('[data-testid="vs-task-next"]').click();
+      const mBody = (await mSaved).request().postDataJSON();
+      expect(mBody).toMatchObject({ courseModule: flow.courseModuleId, quizPerc: 100, total: 1, status: 'ok' });
+      await expect(cPage.locator('[data-testid="course-quiz-result"]')).toHaveAttribute('data-ok', 'true');
+      await cPage.locator('#course-quiz-finish').click();
+      await expect(moduleItem()).toHaveAttribute('data-done', 'true');
+
+      await expect.poll(async () => {
+        const hist = (await api.get('/course-module-user-history', { filter: { user: flow.candidate._id, courseModule: flow.courseModuleId } })).items || [];
+        return hist.map((it) => it.status);
+      }, { timeout: 10_000, message: 'CourseModuleUserHistory модуля' }).toEqual(['ok']);
+      await expect.poll(async () => ((await api.one('/course-user', flow.courseUserId)).mHistory || {})[flow.courseModuleId], {
+        timeout: 10_000, message: 'CourseUser.mHistory модуля',
+      }).toEqual({ status: 'ok' });
+    });
+
+    test('12. Повторный вход — прогресс курса сохранился', async () => {
+      await cPage.context().clearCookies();
+      await cPage.evaluate(() => localStorage.clear());
+      await login(cPage, candidateCreds());
+      await cPage.goto('/courses');
+      // Процент изучения: модуль + его глава, оба сданы.
+      await expect(courseRow()).toHaveAttribute('data-perc', '100');
+      await openCourse();
+      await expect(moduleItem()).toHaveAttribute('data-done', 'true');
+      await expect(topic()).toHaveAttribute('data-done', 'true');
+      await expect(cPage.locator('[data-testid="course-module-check"]')).toHaveAttribute('data-open', 'true');
       const { name, ...ids } = flow;
       console.log('sql-course-flow ids:', JSON.stringify(ids));
     });

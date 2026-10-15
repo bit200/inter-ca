@@ -39,6 +39,7 @@ npm run test:unit            # юнит-тесты хелперов (node --test
 | `E2E_API_URL` | `http://localhost:6057` | API itk-platform (pm2 `itk-api`) |
 | `E2E_ADMIN_USERNAME` / `E2E_ADMIN_PASSWORD` | — | пользователь с ролью `admin` |
 | `E2E_USERNAME` / `E2E_PASSWORD` | — | тестовый кандидат |
+| `E2E_DOCKER_M_URL` | `http://localhost:3010` | docker-m: VS Code-сессия кандидата в sql-course-flow |
 | `E2E_CLEANUP_HOURS` | `6` | e2e-сущности старше стольких часов удаляются перед прогоном |
 
 ## Сквозной поток sql-course-flow
@@ -47,14 +48,28 @@ npm run test:unit            # юнит-тесты хелперов (node --test
 (`admin setup`) всё заводит через UI админки: SQL-задачу быстрой формой → VS-группу
 с этой задачей (lng `sql`) → вопрос-задачу с квизом и привязкой группы (флаг «Все»)
 → модуль с вопросом → курс «Актив» с модулем → запись кандидата на курс. Часть 2
-(прохождение курса кандидатом в клиенте) допишется в этот же файл.
+(`candidate`) проходит курс кандидатом в клиенте: курс в списке → глава → «Проверить
+знания» (квиз, затем VS-задача) → решение SQL-задачи в VS Code-сессии (неверное и
+верное) → итоговая проверка модуля → повторный вход, прогресс на месте.
+
+Весь поток одной командой (≈45 с):
+
+```bash
+cd e2e && npm run test:sql-flow          # = E2E_MANUAL=1 playwright test sql-course-flow
+E2E_BASE_URL=http://localhost:7594 npm run test:sql-flow   # клиент из своего worktree
+```
 
 Должны быть подняты:
 
 - `itk-api` — API на `:6057` (`itk-platform-en/interviews/api`);
 - `itk-admin` — админка на `:8002`, с разметкой testid (см. ниже);
-- клиент на `:8001` (нужен части 2);
-- docker-m на `:3010` — собирает файлы SQL-задачи (`POST /create-sql-task-files`);
+- клиент на `:8001` (`E2E_BASE_URL`) — `admin/` этого репозитория с разметкой testid;
+- docker-m на `:3010` (`E2E_DOCKER_M_URL`) — собирает файлы SQL-задачи
+  (`POST /create-sql-task-files`) и поднимает VS Code-сессию кандидата (контейнеры
+  `<session_id>-main` и `-db`). Архив задачи он кладёт в
+  `docker-m/_gen_sources/gzip_tasks/`, а саму папку не создаёт: без неё сессия
+  стартует без файлов задачи (тест падает на шаге 10 с этой подсказкой) —
+  один раз `mkdir -p _gen_sources/gzip_tasks` в docker-m;
 - Postgres SQL-раннера (`SQL_RUNNER_DSN` в `.env` API, поднимается
   `api/scripts/sql-runner-db.sh`) — эталонный результат и превью в форме.
 
@@ -89,6 +104,22 @@ mongosh estimation-code --eval 'db.users.updateOne({username:"e2e-admin"},{$set:
   нет. Штатный путь — «Статистика» пользователя → вкладка courses → «Добавить курс»
   (`POST /api/add-user-course`: `CourseUser` со `status: 'active'` и пересборкой
   истории курса). Кандидату курс виден именно по активному `CourseUser`.
+- **VS-сессия кандидата (шаг 10).** Сессию поднимает сам клиент: кнопка
+  «Открыть задачу в редакторе» в `VsTaskRun` → `/pre-start-session` (без `exam_id`,
+  ключ `vs-session-train-<id группы>`) → `/exec-start-session` → iframe VS Code.
+  Печатать в iframe тест не стал: штатного прогона SQL-тестов с записью
+  `VsSession.test_info` нет (кнопка тестов в VS Code зовёт `/cmd/test.sh`, которого в
+  SQL-образе нет; `full_test_new` docker-m берёт код из S3-патча). Поэтому
+  `helpers/vsSession.js` делает то же, что docker-m и кандидат в терминале: пишет
+  `queries/01_query.sql` в контейнер сессии (`GET :3010/api/cmd_run
+  type=exec_session_cmd`), гоняет раннер сессии `node /cmd/sql_test.js` и сохраняет
+  итог `POST /api/save-session-result` (тело как в docker-m `full_test_new`). Результат
+  проверяется и в API (`GET /api/populated-session`: `status` `err` → `ok`,
+  `passed == total > 0`), и в UI (`VsTaskRun`, «Обновить результат»). После прогона
+  сессии убираются: `cmd_run type=kill_user_session` + мягкий `DELETE /api/vs-session`.
+- **Сдача модуля.** VS-задача сейчас не входит в процент сдачи: `/api/load-quizes-by-module`
+  отдаёт её в `pubQuizes`, а знаменатель — `quizes`. Глава и модуль засчитываются по
+  квизам (`total: 1`), тест фиксирует это как текущее поведение.
 - **Квизы вопроса.** VS-задача попадает в тренировку модуля, только если у вопроса
   есть валидный квиз (≥3 вариантов, ровно один верный). API сам заводит вопросу
   аудио-квиз — тест его выключает, чтобы при `moduleQuizSize = 1` тренировка была
@@ -124,3 +155,14 @@ mongosh estimation-code --eval 'db.users.updateOne({username:"e2e-admin"},{$set:
 `#vs-flag-<группа>-<all|edu|course_test|exam>`, `quiz-*`, `#quiz-add-top`,
 `question-create-*`, `module-*`, `sprint-*`, `course-*`, `user-course-*`. Полный
 список с файлами — `interviews/admin/src/e2eSelectors.test.js`.
+
+### Разметка клиента (sql-course-flow, часть 2)
+
+`course-list-item[data-course-id][data-perc]` (список курсов), `course-module`,
+`course-topic` (`data-done`), `course-module-check` (`data-open`), `course-chapter`,
+`#course-quiz-open-question-<id>` / `#course-quiz-open-module-<id>` (Button — поэтому
+`id`), `course-quiz-result[data-perc][data-ok]`, `#course-quiz-finish`, тренажёр
+`train-item[data-quiz-key][data-answer-type]`, `quiz-answer`, VS-задача `vs-task`
+(`data-phase`, `data-task-id`), `vs-task-open`, `vs-task-collapse` / `vs-task-expand`
+(редактор на весь экран), `vs-task-next`, `vs-task-refresh`,
+`vs-task-result[data-status][data-passed][data-total]`.

@@ -50,6 +50,15 @@
     gap: 12px;
 }
 
+/* «Далее» в тренажёре — уход с задачи, а не действие над ней: прижата вправо,
+   чтобы не спорить с «Открыть задачу в редакторе» */
+.vs-task-next {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .vs-task-status {
     display: inline-flex;
     align-items: center;

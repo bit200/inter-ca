@@ -39,10 +39,12 @@ function writeSaved(key, value) {
 export function VsTestSummary({info, onRefresh, refreshing}) {
     let {hasResult, total, passed, failed, status} = info;
     let cells = hasResult && total <= 40 ? Array.from({length: total}, (_, i) => i < passed) : null;
-    return <div className={'vs-task-result'} data-status={status}>
+    return <div className={'vs-task-result'} data-testid={'vs-task-result'} data-status={status}
+                data-passed={passed} data-total={total}>
         <div className={'vs-task-result-head'}>
             <span className={'vs-task-result-title'}>{t('vsTaskResult')}</span>
             {onRefresh && <button type={'button'}
+                                  data-testid={'vs-task-refresh'}
                                   className={'btn btn-xs btn-default'}
                                   disabled={refreshing}
                                   onClick={onRefresh}>
@@ -70,7 +72,9 @@ export function VsTestSummary({info, onRefresh, refreshing}) {
 }
 
 function VsTaskRun(props) {
-    let {task, examId, hist, onSession} = props;
+    // onNext — VS-задача внутри тренажёра (Train): без него из задачи некуда было
+    // уйти, и проверка знаний с VS-задачей в конце не заканчивалась никогда.
+    let {task, examId, hist, onSession, onNext} = props;
     let taskId = task?._id;
     let key = storageKey(examId, taskId);
 
@@ -182,8 +186,11 @@ function VsTaskRun(props) {
 
     let info = testInfo || pubTestInfo(null);
     let starting = phase === 'starting';
+    // В тренажёре решённая задача — повод идти дальше: основной становится «Далее».
+    let isSolved = !!onNext && info.status === 'ok';
 
-    return <div className={'vs-task' + (isSql ? ' vs-task-sql' : '')} data-phase={phase}>
+    return <div className={'vs-task' + (isSql ? ' vs-task-sql' : '')} data-phase={phase}
+                data-testid={'vs-task'} data-task-id={taskId}>
         <div className={'vs-task-head'}>
             <span className={'vs-task-kind'}>
                 <i className={isSql ? 'iconoir-database' : 'iconoir-code'}></i>
@@ -195,7 +202,8 @@ function VsTaskRun(props) {
 
         <div className={'vs-task-actions'}>
             <button type={'button'}
-                    className={'btn ' + (phase === 'ready' ? 'btn-default' : 'btn-primary')}
+                    data-testid={'vs-task-open'}
+                    className={'btn ' + (phase === 'ready' ? 'btn-default' : isSolved ? 'btn-light' : 'btn-primary')}
                     disabled={starting}
                     onClick={() => open(phase === 'ready' || phase === 'error')}>
                 {phase === 'ready' || phase === 'error' ? t('vsTaskReopen') : t('vsTaskOpen')}
@@ -207,10 +215,18 @@ function VsTaskRun(props) {
             {phase === 'ready' && <span className={'vs-task-status ok'} role={'status'}>
                 <span className={'vs-task-dot'}/>{t('vsTaskReady')}
                 <a href={link} target={'_blank'} rel={'noopener noreferrer'}>{t('vsTaskNewWindow')}</a>
-                {!full && <button type={'button'} className={'btn btn-xs btn-default'} onClick={() => setFull(true)}>
+                {!full && <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-expand'}
+                                  onClick={() => setFull(true)}>
                     <i className={'iconoir-expand'}></i> {t('vsTaskFullscreen')}
                 </button>}
             </span>}
+            {onNext && <button type={'button'}
+                               data-testid={'vs-task-next'}
+                               className={'btn vs-task-next ' + (isSolved ? 'btn-primary' : 'btn-light')}
+                               onClick={() => onNext()}>
+                {t('next')}
+                <i className={'iconoir-nav-arrow-right'}></i>
+            </button>}
         </div>
         {phase === 'error' && <div className={'vs-task-error'} role={'alert'}>
             {t('vsTaskStartFailed')}
@@ -220,7 +236,8 @@ function VsTaskRun(props) {
         {phase === 'ready' && <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
             {full && <div className={'vs-task-frame-bar'}>
                 <span className={'vs-task-frame-title'}>{task?.name}</span>
-                <button type={'button'} className={'btn btn-xs btn-default'} onClick={() => setFull(false)}>
+                <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-collapse'}
+                        onClick={() => setFull(false)}>
                     <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}
                 </button>
             </div>}
