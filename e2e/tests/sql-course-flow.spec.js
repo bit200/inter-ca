@@ -13,6 +13,7 @@ const { test, expect } = require('@playwright/test');
 const { ADMIN_URL, adminCreds, candidateCreds } = require('../helpers/env');
 const { loginAdmin } = require('../helpers/auth');
 const { e2eName } = require('../helpers/e2eNames');
+const { seedSql, buildQuiz } = require('../helpers/sqlCourseQuiz');
 const {
   createAdminApi, loginUser, assertSqlBuildReady, waitSqlSync, cleanupStaleE2e,
 } = require('../helpers/adminApi');
@@ -26,7 +27,7 @@ const SQL_SYNC_TIMEOUT = 120_000;
 const SQL = {
   description: 'Посчитайте пользователей старше 30 лет. Верните одну колонку `cnt`.',
   schema: 'CREATE TABLE users (\n  id   int PRIMARY KEY,\n  name text NOT NULL,\n  age  int NOT NULL\n);',
-  seed: "INSERT INTO users VALUES (1, 'Анна', 25), (2, 'Олег', 31), (3, 'Ира', 42), (4, 'Петр', 30);",
+  seed: seedSql(),
   solution: 'SELECT COUNT(*) AS cnt FROM users WHERE age > 30;',
 };
 
@@ -186,9 +187,10 @@ test.describe.serial('sql-course-flow', () => {
       // Страница квиза сохраняется сама (autoSave), кнопки не нужны.
       await page.locator('[data-testid="quiz-answer-type-quiz"]').click();
       await page.locator('[data-testid="quiz-status-active"]').click();
-      await page.locator('[data-testid="quiz-name"] textarea.w-md-editor-text-input').fill('Сколько пользователей старше 30 в seed?');
+      await page.locator('[data-testid="quiz-name"] textarea.w-md-editor-text-input').fill(quizData.name);
+      const quizData = buildQuiz();
       // Валидный квиз — минимум 3 варианта и ровно один верный (api dbsInit/quizDbs.js).
-      const variants = [['2', true], ['3', false], ['4', false]];
+      const variants = quizData.variants.map((v) => [v.text, v.isCorrect]);
       const list = page.locator('[data-testid="quiz-variations"]');
       for (const [ind, [text, isCorrect]] of variants.entries()) {
         await list.locator('.btn-push-add').last().click();
