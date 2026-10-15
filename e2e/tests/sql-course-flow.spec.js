@@ -4,8 +4,10 @@
 // Часть 1 («admin setup») — подготовка через UI админки itk-platform (E2E_ADMIN_URL)
 // под обычным admin (не super_admin: VS Code для admin закрыт флагом, поток его не
 // трогает). Часть 2 («candidate») — кандидат проходит курс в клиенте (E2E_BASE_URL):
-// курс → глава → «Проверить знания» (квиз и SQL-задача в CodeRun: неверный запрос,
-// DELETE, верный) → итоговая проверка модуля → повторный вход.
+// курс → глава → «Проверить знания» (квиз и SQL-задача в CodeRun: запуск без условия,
+// запрещённые DELETE и «;», неверная сдача, верная) → итоговая проверка модуля: сначала
+// с несданной SQL-задачей (правило процента #4040 — модуль не засчитан), затем сдана →
+// повторный вход.
 //
 // describe.serial гарантирует порядок; созданные _id лежат в общем объекте `flow` —
 // из него их читает часть 2 — и дублируются в test-results/sql-course-flow.json для
@@ -17,7 +19,9 @@ const { test, expect } = require('@playwright/test');
 const { ADMIN_URL, BASE_URL, adminCreds, candidateCreds } = require('../helpers/env');
 const { login, loginAdmin } = require('../helpers/auth');
 const { e2eName } = require('../helpers/e2eNames');
-const { USERS, HIDDEN_USERS, seedSql, countOlder, namesOlder, buildQuiz } = require('../helpers/sqlCourseQuiz');
+const {
+  USERS, HIDDEN_USERS, seedSql, countOlder, namesOlder, buildQuiz, courseCheckResult,
+} = require('../helpers/sqlCourseQuiz');
 const {
   createAdminApi, loginUser, assertSqlRunnerReady, cleanupStaleE2e, purgeE2eRun,
 } = require('../helpers/adminApi');
@@ -46,6 +50,11 @@ const SQL = {
   // Изменение данных: раннер отвечает текстом checkSqlSafety, до Postgres запрос не доходит.
   destructive: 'DELETE FROM users WHERE age > 30',
   forbiddenMessage: 'Разрешены только запросы на чтение: SELECT или WITH',
+  // Забыто условие age > 30 — все пользователи вместо двух.
+  noFilter: 'SELECT name FROM users ORDER BY name',
+  // Второй запрос через «;» — checkSqlSafety пускает только один.
+  twoQueries: 'SELECT name FROM users; DELETE FROM users',
+  twoQueriesMessage: 'Разрешён только один запрос: уберите «;» в середине',
 };
 
 const flow = { ts: Date.now() };
@@ -210,7 +219,6 @@ test.describe.serial('sql-course-flow', () => {
     const jsResult = () => jsTask().locator('[data-testid="js-task-result"]');
     // «Результат сдачи» на вкладке «Результаты» CodeRun (после «Сдать» она открывается сама).
     const submitResults = () => jsTask().locator('[data-testid="code-run-results"][data-kind="submit"] [data-testid="sql-run-results"]');
-    // «Результат запуска» — «Запустить» гоняет только открытые данные.
     const runResults = () => jsTask().locator('[data-testid="code-run-results"][data-kind="run"] [data-testid="sql-run-results"]');
 
     async function openCourse() {
@@ -231,14 +239,12 @@ test.describe.serial('sql-course-flow', () => {
       await saved;
     }
 
-    // Запрос в Monaco CodeRun и «Сдать» (или «Запустить» — submit: false). Monaco клиент
-    // грузит с CDN, как и админка. Ввод — фокус в редактор и insertText (как вставка из
-    // буфера, без автодополнения и автоскобок): значение идёт в CodeRun штатным onChange
-    // редактора, как при вводе руками; window.monaco не берём — он есть, только пока
-    // @monaco-editor/react грузит редактор с CDN. Возвращает ответ /run-question; тело
-    // запроса сверяется: ушёл именно этот текст, с модулем курса (по нему сервер
-    // проверяет доступ кандидата) и признаком сдачи.
-    async function submitQuery(sql, { submit = true } = {}) {
+    // Запрос в Monaco CodeRun и «Сдать». Monaco клиент грузит с CDN, как и админка.
+    // insertText — как вставка из буфера, без автодополнения и автоскобок редактора.
+    // Возвращает ответ /run-question; тело запроса сверяется: ушёл именно этот текст,
+    // со сдачей и модулем курса (по нему сервер проверяет доступ кандидата).
+    // API Monaco клиент в window не отдаёт — ввод штатный: клик, «выделить всё», вставка.
+    async function typeQuery(sql) {
       const editor = jsTask().locator('.crRight .monaco-editor');
       await expect(editor, 'Monaco CodeRun не загрузился: клиент берёт его с cdn.jsdelivr.net — проверьте сеть стенда')
         .toBeVisible({ timeout: EDITOR_TIMEOUT });
@@ -246,19 +252,46 @@ test.describe.serial('sql-course-flow', () => {
       await cPage.keyboard.press('ControlOrMeta+A');
       await cPage.keyboard.press('Delete');
       await cPage.keyboard.insertText(sql);
+      await expect(editor.locator('.view-lines')).toHaveText(sql);
+    }
+
+    // «Запустить»: только открытые данные, итог — в «Результате запуска», задачу не засчитывает.
+    async function runQuery(sql) {
+      await typeQuery(sql);
       const [res] = await Promise.all([
         cPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/run-question',
           { timeout: RUN_TIMEOUT }),
-        jsTask().locator(`[data-testid="${submit ? 'code-run-submit' : 'code-run-run'}"]`).click(),
+        jsTask().locator('[data-testid="code-run-run"]').click(),
       ]);
-      const sent = res.request().postDataJSON();
-      expect(sent).toMatchObject({ question: flow.questionId, courseModule: flow.courseModuleId, files: { '': sql } });
-      expect(!!sent.isSubmit).toBe(submit);
+      expect(res.request().postDataJSON()).toMatchObject({ question: flow.questionId, courseModule: flow.courseModuleId, files: { '': sql } });
+      expect(res.request().postDataJSON().isSubmit).toBeFalsy();
       expect(res.ok(), `POST /api/run-question: HTTP ${res.status()}`).toBeTruthy();
-      const body = await res.json();
-      // Раннер лёг посреди прогона — причина сразу, а не расхождение таблиц.
-      expect((body.sqlResults || []).filter((it) => it.reason === 'runner_error'), 'SQL-раннер API недоступен').toEqual([]);
-      await expect(submit ? submitResults() : runResults()).toBeVisible();
+      const body = expectRunnerUp(await res.json());
+      await expect(runResults()).toBeVisible();
+      return body;
+    }
+
+    async function submitQuery(sql) {
+      await typeQuery(sql);
+      const [res] = await Promise.all([
+        cPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/run-question',
+          { timeout: RUN_TIMEOUT }),
+        jsTask().locator('[data-testid="code-run-submit"]').click(),
+      ]);
+      expect(res.request().postDataJSON()).toMatchObject({
+        question: flow.questionId, courseModule: flow.courseModuleId, isSubmit: true, files: { '': sql },
+      });
+      expect(res.ok(), `POST /api/run-question: HTTP ${res.status()}`).toBeTruthy();
+      const body = expectRunnerUp(await res.json());
+      await expect(submitResults()).toBeVisible();
+      return body;
+    }
+
+    // SQL-раннер лёг посреди прогона (шаг 1 его проверил) — /run-question отдаёт кейсы с
+    // runner_error: падаем с этой причиной, а не на «расхождении» таблиц ниже.
+    function expectRunnerUp(body) {
+      const down = (body.sqlResults || []).filter((it) => it.reason === 'runner_error').map((it) => it.message);
+      expect(down, 'SQL-раннер API недоступен (api/scripts/sql-runner-db.sh)').toEqual([]);
       return body;
     }
 
@@ -271,11 +304,11 @@ test.describe.serial('sql-course-flow', () => {
 
     // Квиз, затем SQL-задача — состав одинаков в проверке главы и в итоговой модуля:
     // js-задача лежит в quizes (знаменатель сдачи), в pubQuizes — после квиза.
-    // VS Code закрыт флагом (#4038/#4039): VS-задач (vs_<группа>, answerType vs_task)
-    // кандидат не получает. В данных потока VS-групп нет — проверяем, что их нет и в ответе.
     function expectTraining(training) {
       expect((training.quizes || []).map((it) => it._id)).toEqual([flow.quizId, flow.questionId]);
       expect((training.pubQuizes || []).map((it) => it.opts.quiz)).toEqual([flow.quizId, `js_${flow.questionId}`]);
+      // Флаг VS Code (#4039): VS-задач (vs_<группа>, answerType vs_task) в ответе нет —
+      // отдельной проверкой, чтобы падение называло причину.
       const vs = (training.pubQuizes || []).filter((it) => /^vs_/.test(String(it.opts.quiz)) || (it.item || {}).answerType === 'vs_task');
       expect(vs, 'VS-задачи в /load-quizes-by-module кандидата').toEqual([]);
     }
@@ -298,7 +331,7 @@ test.describe.serial('sql-course-flow', () => {
       await expect(moduleCheck()).toHaveAttribute('data-open', 'false');
     });
 
-    test('8. «Проверить знания» главы: квиз и SQL-задача — неверный запрос, DELETE, верный', async ({}, testInfo) => {
+    test('8. «Проверить знания» главы: квиз и SQL-задача — запуск без условия, «;», неверная сдача, DELETE, верная', async ({}, testInfo) => {
       test.setTimeout(EDITOR_TIMEOUT + 5 * RUN_TIMEOUT + 30_000);
       const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module', (u) => u.searchParams.get('question') == flow.questionId);
       await cPage.locator(`#course-quiz-open-question-${flow.questionId}`).click();
@@ -311,27 +344,34 @@ test.describe.serial('sql-course-flow', () => {
       await expect(trainItem()).toHaveAttribute('data-quiz-key', `js_${flow.questionId}`);
       await expect(trainItem()).toHaveAttribute('data-answer-type', 'js_task');
       await expect(jsTask()).toHaveClass(/vs-task-sql/);
-      await expect(cPage.locator('[data-testid="vs-task"]')).toHaveCount(0);
       // Под редактором — схема БД из задачи (SqlSchemaPanel), а не тест-кейсы.
       await expect(jsTask().locator('.sqlSchemaPanel')).toContainText('CREATE TABLE users');
       await expect(jsResult()).toHaveCount(0);
+      // Флаг VS Code (#4039): кандидату не уходит VS-задач и не видно элементов VS Code.
+      // Привязать VS-группу к вопросу можно только под super_admin — поток идёт под admin,
+      // вариант с привязанной группой — sql-vs-course-flow.spec.js.
+      await expect(cPage.locator('[data-testid^="vs-task"]')).toHaveCount(0);
+      await expect(jsTask().locator('iframe')).toHaveCount(0);
 
-      // «Запустить» неверный запрос (>= 30) — открытые данные: таблицы «ваш» и «ожидаемый»
-      // результат рядом, у вашей лишняя строка (Петр, 30). Зачёта «Запустить» не даёт.
-      const wrongNames = USERS.filter((u) => u.age >= 30).map((u) => u.name).sort();
-      const run = await submitQuery(SQL.wrong, { submit: false });
-      expect({ total: run.totalCount, wrong: run.wrongCount }).toEqual({ total: 1, wrong: 1 });
+      // «Запустить» без условия age > 30: расхождение с эталоном на открытых данных —
+      // все пользователи против двух; задача от запуска не засчитывается.
+      const all = await runQuery(SQL.noFilter);
+      expect({ total: all.totalCount, wrong: all.wrongCount }).toEqual({ total: 1, wrong: 1 });
       const runCase = runResults().locator('[data-testid="sql-case"]');
+      await expect(runCase).toHaveAttribute('data-ok', 'false');
       await expect(runCase).toHaveAttribute('data-reason', 'rows_mismatch');
-      await expect(runCase).toContainText(`Строк: ожидалось ${namesOlder(USERS).length}, получено ${wrongNames.length}`);
-      for (const [kind, names] of [['actual', wrongNames], ['expected', namesOlder(USERS)]]) {
-        const table = runCase.locator(`[data-testid="sql-result-table"][data-kind="${kind}"]`);
-        await expect(table).toHaveAttribute('data-rows', String(names.length));
-        await expect(table.locator('thead th')).toHaveText(['name']);
-        await expect(table.locator('tbody td')).toHaveText(names);
-      }
+      await expect(runCase).toContainText(`Строк: ожидалось ${namesOlder(USERS).length}, получено ${USERS.length}`);
+      await expect(runCase.locator('[data-testid="sql-result-table"][data-kind="actual"] tbody td'))
+        .toHaveText(USERS.map((u) => u.name).sort());
+      await expect(runCase.locator('[data-testid="sql-result-table"][data-kind="expected"] tbody td')).toHaveText(namesOlder(USERS));
       await expect(jsResult()).toHaveCount(0);
       await shot(testInfo, 'sql-run-mismatch');
+
+      // Два запроса через «;»: текст checkSqlSafety, страница живёт дальше.
+      const two = await runQuery(SQL.twoQueries);
+      expect(two.sqlResults[0]).toMatchObject({ ok: false, reason: 'forbidden', message: SQL.twoQueriesMessage });
+      await expect(runResults().locator('[data-testid="sql-case"]')).toHaveAttribute('data-reason', 'forbidden');
+      await expect(runResults().locator('[data-testid="sql-case"]')).toContainText(SQL.twoQueriesMessage);
 
       // Неверный запрос (>= 30): не засчитан, видно расхождение — ваша выборка с лишней
       // строкой рядом с ожидаемой; скрытые данные — только «не прошло», без таблиц.
@@ -385,7 +425,47 @@ test.describe.serial('sql-course-flow', () => {
       }).toEqual({ status: 'ok' });
     });
 
-    test('9. Итоговая проверка модуля пройдена — модуль засчитан', async () => {
+    test('9. Итоговая проверка модуля: SQL не решена — модуль не засчитан (правило процента)', async () => {
+      test.setTimeout(EDITOR_TIMEOUT + RUN_TIMEOUT + 30_000);
+      // Квиз верно, SQL-задача сдана неверно: по баллу за задание, 1 из 2 = 50% < 85%.
+      const expected = courseCheckResult([true, false]);
+      expect(expected).toEqual({ quizPerc: 50, total: 2, status: 'error' });
+
+      const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module',
+        (u) => u.searchParams.get('question') === '0' && u.searchParams.get('_id') == flow.courseModuleId);
+      await cPage.locator(`#course-quiz-open-module-${flow.courseModuleId}`).click();
+      expectTraining(await (await loaded).json());
+      await answerQuiz(String(countOlder()));
+      await expect(trainItem()).toHaveAttribute('data-quiz-key', `js_${flow.questionId}`);
+      const bad = await submitQuery(SQL.wrong);
+      expect(bad.wrongCount).toBeGreaterThan(0);
+      await expect(jsResult()).toHaveAttribute('data-ok', 'false');
+
+      const saved = waitApi(cPage, 'POST', '/save-course-module-results');
+      await jsTask().locator('[data-testid="js-task-next"]').click();
+      const body = (await saved).request().postDataJSON();
+      expect(body).toMatchObject({ courseModule: flow.courseModuleId, courseUserId: flow.courseUserId, ...expected });
+      const result = cPage.locator('[data-testid="course-quiz-result"]');
+      await expect(result).toHaveAttribute('data-perc', String(expected.quizPerc));
+      await expect(result).toHaveAttribute('data-ok', 'false');
+
+      await expect.poll(async () => {
+        const hist = (await api.get('/course-module-user-history', { filter: { user: flow.candidate._id, courseModule: flow.courseModuleId } })).items || [];
+        return hist.map((it) => ({ status: it.status, quizPerc: it.quizPerc }));
+      }, { timeout: 10_000, message: 'CourseModuleUserHistory модуля' }).toEqual([{ status: 'error', quizPerc: expected.quizPerc }]);
+      expect(((await api.one('/course-user', flow.courseUserId)).mHistory || {})[flow.courseModuleId]).toBeUndefined();
+
+      // Кандидат уходит со страницы и возвращается — модуль по данным сервера не сдан.
+      await openCourse();
+      await expect(moduleItem()).toHaveAttribute('data-done', 'false');
+      await expect(topic()).toHaveAttribute('data-done', 'true');
+      // Курс открывается на последней главе (?topic) — итоговая проверка в «Закреплении».
+      await expect(moduleCheck()).toHaveAttribute('data-open', 'true');
+      await moduleCheck().click();
+      await expect(cPage.locator(`#course-quiz-open-module-${flow.courseModuleId}`)).toBeVisible();
+    });
+
+    test('10. Итоговая проверка модуля пройдена — модуль засчитан', async () => {
       test.setTimeout(EDITOR_TIMEOUT + RUN_TIMEOUT + 30_000);
       const loaded = waitApi(cPage, 'GET', '/load-quizes-by-module',
         (u) => u.searchParams.get('question') === '0' && u.searchParams.get('_id') == flow.courseModuleId);
@@ -412,6 +492,9 @@ test.describe.serial('sql-course-flow', () => {
         const hist = (await api.get('/course-module-user-history', { filter: { user: flow.candidate._id, courseModule: flow.courseModuleId } })).items || [];
         return hist.map((it) => it.status);
       }, { timeout: 10_000, message: 'CourseModuleUserHistory модуля' }).toEqual(['ok']);
+      // Пересдача пишет в ту же запись: последняя попытка — 100%, прошлая — 50%.
+      const [mHist] = (await api.get('/course-module-user-history', { filter: { user: flow.candidate._id, courseModule: flow.courseModuleId } })).items;
+      expect(mHist.history.map((it) => it.quizPerc).slice(0, 2)).toEqual([100, courseCheckResult([true, false]).quizPerc]);
       await expect.poll(async () => ((await api.one('/course-user', flow.courseUserId)).mHistory || {})[flow.courseModuleId], {
         timeout: 10_000, message: 'CourseUser.mHistory модуля',
       }).toEqual({ status: 'ok' });
@@ -420,7 +503,7 @@ test.describe.serial('sql-course-flow', () => {
       expect(qHist.map((it) => it.quizStatus)).toEqual(['ok']);
     });
 
-    test('10. Повторный вход — прогресс курса сохранился', async () => {
+    test('11. Повторный вход — прогресс курса сохранился', async () => {
       await cPage.context().clearCookies();
       await cPage.evaluate(() => localStorage.clear());
       await login(cPage, candidateCreds());
