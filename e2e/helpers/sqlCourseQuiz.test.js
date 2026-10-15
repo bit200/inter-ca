@@ -1,6 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { USERS, HIDDEN_USERS, seedSql, countOlder, namesOlder, buildQuiz } = require('./sqlCourseQuiz');
+const {
+  USERS, HIDDEN_USERS, seedSql, countOlder, namesOlder, buildQuiz, courseCheckResult,
+} = require('./sqlCourseQuiz');
 
 test('seed содержит всех пользователей', () => {
   assert.strictEqual(
@@ -29,4 +31,13 @@ test('эталон «имена старше 30 по имени»: скрыты�
   assert.deepStrictEqual(namesOlder(), ['Ира', 'Олег']);
   assert.deepStrictEqual(namesOlder([...USERS, ...HIDDEN_USERS]), ['Борис', 'Ира', 'Олег']);
   assert.strictEqual(seedSql(HIDDEN_USERS), "INSERT INTO users VALUES (5, 'Борис', 55), (6, 'Вера', 30);");
+});
+
+test('зачёт проверки: квиз и SQL-задача по баллу, порог 85% — одна ошибка из двух не проходит', () => {
+  assert.deepStrictEqual(courseCheckResult([true, true]), { quizPerc: 100, total: 2, status: 'ok' });
+  assert.deepStrictEqual(courseCheckResult([true, false]), { quizPerc: 50, total: 2, status: 'error' });
+  assert.deepStrictEqual(courseCheckResult([false, false]), { quizPerc: 0, total: 2, status: 'error' });
+  // 6 из 7 = 86% — порог пройден, 5 из 6 = 83% — нет.
+  assert.strictEqual(courseCheckResult([...Array(6).fill(true), false]).status, 'ok');
+  assert.strictEqual(courseCheckResult([...Array(5).fill(true), false]).status, 'error');
 });
