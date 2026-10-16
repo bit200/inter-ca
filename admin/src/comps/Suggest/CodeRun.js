@@ -13,6 +13,7 @@ import ColorTheme from "../ColorTheme";
 import {useCodeRun} from './useCodeRun';
 import VsTaskRun from "../VsTask/VsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
+import {CodeReviewBlock} from "./CodeReviewBlock";
 import {isSqlDetails, SqlRunResults, SqlSchemaPanel} from "./SqlRunResults";
 
 let renderCount = 1;
@@ -25,7 +26,7 @@ function CodeRunComponent(props) {
         runLoading, curCasesStr, setCurCasesStr,
         cases, setCases, jsDetails,
         topTab, setTopTab,
-        runResults, runSubmitResults,
+        runResults, runSubmitResults, submissionId,
         activeCaseInd, setActiveCaseInd,
         data,
         question, caseItem, firstErrorInd, isLogsReader,
@@ -233,6 +234,8 @@ function CodeRunComponent(props) {
                                     <div data-testid={'code-run-results'} data-kind={'submit'}>
                                         <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
                                     </div>
+                                    <CodeReviewBlock submissionId={submissionId}
+                                                     isExam={!!props.isExam && !props.courseCheck}/>
                                 </>}
                             </div>
                         </div>}

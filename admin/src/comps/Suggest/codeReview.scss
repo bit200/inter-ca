@@ -1,0 +1,116 @@
+// Блок «Разбор решения» (CodeReviewBlock.js): цвета — из переменных темы, как в sqlRun.scss.
+.codeReview {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.45;
+
+    h5 {
+        margin-bottom: 8px;
+    }
+}
+
+.codeReviewWait {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--bs-secondary-color);
+}
+
+.codeReviewSpin {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--bs-border-color);
+    border-top-color: var(--bs-secondary-color);
+    border-radius: 50%;
+    animation: codeReviewSpin 0.9s linear infinite;
+}
+
+@keyframes codeReviewSpin {
+    to { transform: rotate(360deg); }
+}
+
+.codeReviewDone {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.codeReviewVerdict {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-weight: 600;
+
+    small {
+        font-weight: 400;
+        color: var(--bs-secondary-color);
+    }
+}
+
+.codeReviewDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bs-success);
+}
+
+.codeReviewVerdict[data-verdict='fail'] .codeReviewDot {
+    background: var(--bs-danger);
+}
+
+.codeReviewHuman {
+    padding: 6px 8px;
+    border: 1px solid var(--bs-warning);
+    border-radius: 4px;
+    color: var(--bs-body-color);
+}
+
+.codeReviewSummary {
+    margin: 0;
+}
+
+.codeReviewTitle {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.codeReviewHints {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.codeReviewScores {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.codeReviewScoreHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+
+    small {
+        color: var(--bs-secondary-color);
+    }
+}
+
+.codeReviewBar {
+    height: 4px;
+    margin: 3px 0;
+    background: var(--bs-border-color);
+
+    i {
+        display: block;
+        height: 100%;
+        background: var(--bs-success);
+    }
+}
+
+.codeReviewScore[data-level='mid'] .codeReviewBar i { background: var(--bs-warning); }
+.codeReviewScore[data-level='low'] .codeReviewBar i { background: var(--bs-danger); }
