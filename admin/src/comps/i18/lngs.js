@@ -2849,6 +2849,13 @@ export default {
         en: "Back to the course",
         fr: `Retour au cours`
     },
+    "questionNotInCourses": {
+        ru: "Эта задача недоступна: её нет в ваших курсах",
+        es: "Esta tarea no está disponible: no figura en sus cursos",
+        de: "Diese Aufgabe ist nicht verfügbar: sie gehört nicht zu Ihren Kursen",
+        en: "This task is unavailable: it is not in your courses",
+        fr: `Cette tâche n'est pas disponible : elle ne fait pas partie de vos cours`
+    },
     "backToCourseSolved": {
         ru: "Решено — вернуться к курсу",
         es: "Resuelto: volver al curso",

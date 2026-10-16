@@ -2,13 +2,15 @@ import React, {useState, useEffect} from 'react';
 import _ from 'underscore';
 
 import {
-    Link, Outlet
+    Link, Outlet, useNavigate
 } from "react-router-dom";
+import {handleQuestionDenied} from './questionAccessDenied'
 import CodeRun from './Suggest/CodeRun'
 import {safeBackPath} from './Suggest/courseTopicUrl'
 
 
 function CodeRunWrap(props) {
+    const navigate = useNavigate();
     let [curCasesStr, setCurCasesStr] = useState('');
     let [jsDetails, setJsDetails] = useState({});
     let [history, setHistory] = useState({});
@@ -54,7 +56,7 @@ function CodeRunWrap(props) {
     }
 
     useEffect(() => {
-        global.http.get('/load-question-run', {question: getQuestionId()})
+        global.http.get('/load-question-run', {question: getQuestionId()}, {no_refresh: true})
             .then(r => {
                //console.log("aaaaaa", r)
                 let {jsDetails} = r;
@@ -67,6 +69,12 @@ function CodeRunWrap(props) {
                 // setTimeout(() => {
                 //     run()
                 // }, 100)
+            })
+            .catch(e => {
+                handleQuestionDenied(e, {
+                    notify: window.notify, message: t('questionNotInCourses'),
+                    go: path => navigate(path)
+                })
             })
     }, [])
 
