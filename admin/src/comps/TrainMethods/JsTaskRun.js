@@ -42,6 +42,7 @@ function JsTaskRun(props) {
                 courseModule={task.moduleInfo?._id}
                 woSolution={true}
                 isExam={true}
+                courseCheck={true}
                 onChangeCode={saveCode}
                 onSubmitResults={(r) => {
                     setSubmitResults(r);
