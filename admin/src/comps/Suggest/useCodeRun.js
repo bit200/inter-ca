@@ -44,7 +44,7 @@ export function useCodeRun(props) {
     }, [(props.question || {})._id]);
 
     function getQuestionId() {
-        return window.location.href.split('=')[1] || 1061;
+        return new URLSearchParams(window.location.search).get('question') || window.location.href.split('=')[1] || 1061;
     }
 
     function getFileName(ind = selectedFileInd, _files) {

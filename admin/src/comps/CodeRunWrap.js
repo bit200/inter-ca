@@ -5,6 +5,7 @@ import {
     Link, Outlet
 } from "react-router-dom";
 import CodeRun from './Suggest/CodeRun'
+import {safeBackPath} from './Suggest/courseTopicUrl'
 
 
 function CodeRunWrap(props) {
@@ -12,11 +13,13 @@ function CodeRunWrap(props) {
     let [jsDetails, setJsDetails] = useState({});
     let [history, setHistory] = useState({});
     let [data, setData] = useState({});
+    let [solved, setSolved] = useState(false);
+    let backPath = safeBackPath(new URLSearchParams(window.location.search).get('back'));
 
    //console.log('*........ ## ROOT RENDER', props);
 
     function getQuestionId() {
-        return window.location.href.split('=')[1] || 1061
+        return new URLSearchParams(window.location.search).get('question') || window.location.href.split('=')[1] || 1061
     }
 
     function saveChanges(code, file, testCase) {
@@ -70,7 +73,15 @@ function CodeRunWrap(props) {
 
     // let v = useActionData();
     return <div>
+        {backPath && <div className={'tr'} style={{padding: '8px 12px'}}>
+            <a className={'btn btn-sm ' + (solved ? 'btn-success' : 'btn-light')}
+               data-testid={'run-back-to-course'}
+               href={backPath}>
+                <i className="iconoir-nav-arrow-left"></i> {solved ? t('backToCourseSolved') : t('backToCourse')}
+            </a>
+        </div>}
         <CodeRun
+            onSubmitResults={(r) => { if (r && !r.wrongCount) setSolved(true) }}
             question={data.question}
             onChangeCurStr={(v) => {
                //console.log("on chagne str", v)

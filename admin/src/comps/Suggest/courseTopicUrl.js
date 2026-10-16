@@ -21,3 +21,16 @@ export function topicParamFor(module, blockInd) {
     let id = (module.questions || [])[blockInd];
     return id == null ? null : String(id);
 }
+
+// Задача курса открывается в редакторе (/run) в этой же вкладке; адрес возврата едет в ?back=,
+// чтобы после сабмита можно было вернуться к теме курса.
+export function buildRunUrl(questionId, backPath) {
+    let url = "/run?question=" + encodeURIComponent(questionId);
+    return backPath ? url + "&back=" + encodeURIComponent(backPath) : url;
+}
+
+// Возврат разрешён только на путь внутри сайта: "/..." и не "//host" (открытый редирект).
+export function safeBackPath(back) {
+    if (typeof back !== "string" || !/^\/(?![\/\\])/.test(back)) return null;
+    return back;
+}

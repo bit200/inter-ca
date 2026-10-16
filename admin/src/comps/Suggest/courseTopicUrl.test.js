@@ -18,3 +18,18 @@ describe("courseTopicUrl", () => {
         expect(topicParamFor(undefined, 0)).toBeNull();
     });
 });
+
+describe("courseTopicUrl: переход в редактор и обратно", () => {
+    const {buildRunUrl, safeBackPath} = require("./courseTopicUrl");
+    test("ссылка на редактор несёт адрес возврата", () => {
+        expect(buildRunUrl("2146", "/courses/1367?topic=2146"))
+            .toBe("/run?question=2146&back=%2Fcourses%2F1367%3Ftopic%3D2146");
+        expect(buildRunUrl("2146")).toBe("/run?question=2146");
+    });
+    test("возврат только на внутренний путь", () => {
+        expect(safeBackPath("/courses/1367?topic=2146")).toBe("/courses/1367?topic=2146");
+        expect(safeBackPath("//evil.com")).toBeNull();
+        expect(safeBackPath("https://evil.com")).toBeNull();
+        expect(safeBackPath(null)).toBeNull();
+    });
+});
