@@ -4,14 +4,40 @@ import './VideoPreview.css';
 
 // Превью записи над вопросами интервью. Плеер показываем, только когда его
 // есть чем наполнить; иначе - спокойная плашка с тем, что случилось и куда идти.
+// Сразу после загрузки файл на S3 может быть ещё недоступен: плеер получает
+// ошибку, хотя через пару секунд всё играет. Поэтому до показа ошибки
+// переспрашиваем файл несколько раз, а пока ждём - показываем лоадер.
+export const RETRY_DELAY = 2000;
+// Пауза растёт вдвое с каждой попыткой: 2с, 4с, 8с, ...
+export const retryDelay = attempt => RETRY_DELAY * 2 ** attempt;
+export const MAX_RETRIES = 8;
+
 export default function VideoPreview({src, time, id}) {
     let source = readVideoSource(src);
     let video = useRef();
     let [failed, setFailed] = useState(false);
+    let [attempt, setAttempt] = useState(0);
+    let [waiting, setWaiting] = useState(false);
 
     useEffect(() => {
         setFailed(false);
+        setAttempt(0);
+        setWaiting(false);
     }, [src]);
+
+    useEffect(() => {
+        if (!waiting) return;
+        let timer = setTimeout(() => {
+            setAttempt(n => n + 1);
+            setWaiting(false);
+        }, retryDelay(attempt));
+        return () => clearTimeout(timer);
+    }, [waiting]);
+
+    const onError = () => {
+        if (attempt < MAX_RETRIES) setWaiting(true);
+        else setFailed(true);
+    };
 
     useEffect(() => {
         let el = video.current;
@@ -47,7 +73,18 @@ export default function VideoPreview({src, time, id}) {
         />;
     }
 
+    if (waiting) {
+        return <div className="videoNotice videoLoading" role="status">
+            <div className="videoSpinner" aria-hidden="true"></div>
+            <div className="videoNoticeBody">
+                <div className="videoNoticeTitle">Видео обрабатывается</div>
+                <div className="videoNoticeText">Ждём, пока файл станет доступен. Это займёт несколько секунд.</div>
+            </div>
+        </div>;
+    }
+
     return <video
+        key={attempt}
         ref={video}
         controls
         preload="metadata"
@@ -55,7 +92,7 @@ export default function VideoPreview({src, time, id}) {
         src={source.src}
         width="100%"
         id={id}
-        onError={() => setFailed(true)}
+        onError={onError}
     />;
 }
 

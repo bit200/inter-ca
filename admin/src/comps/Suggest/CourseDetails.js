@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from "react";
 import _ from "underscore";
 
-import {Link, Outlet} from "react-router-dom";
+import {Link, Outlet, useSearchParams} from "react-router-dom";
+import {findTopicPosition, topicParamFor, CHECK_TOPIC} from "./courseTopicUrl";
 import CustomStorage from "./CustomStorage";
 import PreviewCourseModule from "./PreviewCourseModule";
 import Loader from "../Loader";
@@ -27,6 +28,7 @@ function CourseDetails(props) {
     let [chatOpen, setChatOpen] = useState(false);
 
     let [activeInd, setActiveInd] = useState(0);
+    let [searchParams, setSearchParams] = useSearchParams();
     let isAdmin = false;
 
     function getActiveInd(course, mHistory) {
@@ -84,9 +86,28 @@ function CourseDetails(props) {
                 //   dbQuestionsObj
                 // );
                 setActiveInd(activeInd);
-                setSelectedModuleInd(Math.min(activeInd, course.modules.length - 1));
+                let topicParam = searchParams.get("topic");
+                let pos = findTopicPosition(courseUser.modules, topicParam, activeInd);
+                if (pos) {
+                    setSelectedModuleInd(pos.moduleInd);
+                    setSelectedBlockInd(pos.blockInd);
+                } else if (topicParam === CHECK_TOPIC) {
+                    setSelectedBlockInd(-1);
+                    setSelectedModuleInd(Math.min(activeInd, course.modules.length - 1));
+                } else {
+                    setSelectedModuleInd(Math.min(activeInd, course.modules.length - 1));
+                }
             });
     }, []);
+
+    // Состояние выбора -> URL (после загрузки, чтобы не затереть ?topic до чтения)
+    useEffect(() => {
+        if (parentLoading || !(data.modules || []).length) return;
+        let topic = topicParamFor(data.modules[selectedModuleInd], selectedBlockInd);
+        if (topic && topic !== searchParams.get("topic")) {
+            setSearchParams({topic}, {replace: true});
+        }
+    }, [parentLoading, data, selectedModuleInd, selectedBlockInd]);
 
     function isOkFn(ind) {
         return isAdmin || ind <= activeInd;
@@ -176,7 +197,9 @@ function CourseDetails(props) {
                                 >
                                     <a
                                         key={ind}
-
+                                        data-testid={'course-module'}
+                                        data-module-id={module.module}
+                                        data-done={(mHistory[module.module] || {}).status === 'ok' ? 'true' : 'false'}
                                         className={"listBlockCh " + (isActive ? "activeBlock " : "")}
                                         onClick={(e) => {
                                             //console.log("qqqqq open module", ind, selectedModuleInd);
@@ -251,6 +274,9 @@ function CourseDetails(props) {
                                                         return (
                                                             <a
                                                                 key={_id + "_" + ind}
+                                                                data-testid={'course-topic'}
+                                                                data-question-id={_id}
+                                                                data-done={(qHistory[_id] || {}).status === 'ok' ? 'true' : 'false'}
                                                                 className={
                                                                     "listBlockCh " +
                                                                     (selectedBlockInd === ind ? "activeBlock" : "")
@@ -286,6 +312,8 @@ function CourseDetails(props) {
                                                 {
                                                     <>
                                                         <a
+                                                            data-testid={'course-module-check'}
+                                                            data-open={isActiveOk(-1) ? 'true' : 'false'}
                                                             className={
                                                                 "listBlockCh " +
                                                                 (selectedBlockInd === -1 ? "activeBlock" : "")

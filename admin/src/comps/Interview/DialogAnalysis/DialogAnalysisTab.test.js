@@ -842,7 +842,7 @@ describe('таб разбора диалога', () => {
             expect(next.className).toMatch(/aiNoticeNext/);
             const tech = within(summary).getByRole('region', {name: 'Техническая часть'});
             expect(within(tech).getByText('1 вопрос, в среднем 8 из 10')).toBeInTheDocument();
-            expect(within(tech).getByText('Уверенно')).toBeInTheDocument();
+            expect(within(tech).getByText('Уверенно (1)')).toBeInTheDocument();
             expect(within(summary).getByText('Приветствие есть')).toBeInTheDocument();
             expect(within(summary).getByText('Прощания нет')).toBeInTheDocument();
             expect(within(summary).getByText('Кандидат 65%')).toBeInTheDocument();

@@ -24,6 +24,7 @@ export function useCodeRun(props) {
     let [topTab, setTopTab] = useState('condition');
     let [runResults, setRunResults] = useState({});
     let [runSubmitResults, setRunSubmitResults] = useState({});
+    let [submissionId, setSubmissionId] = useState(null);
     let [activeCaseInd, setActiveCaseInd] = useState(0);
     let [data, setData] = useState({});
     const codeRef = useRef('');
@@ -44,7 +45,7 @@ export function useCodeRun(props) {
     }, [(props.question || {})._id]);
 
     function getQuestionId() {
-        return window.location.href.split('=')[1] || 1061;
+        return new URLSearchParams(window.location.search).get('question') || window.location.href.split('=')[1] || 1061;
     }
 
     function getFileName(ind = selectedFileInd, _files) {
@@ -120,10 +121,12 @@ export function useCodeRun(props) {
         setRunLoading(true);
         global.http.post('/run-question', {
             curCasesStr,
-            isExam,
+            // Проверка знаний курса (courseCheck) встроена как isExam, но не экзамен: сдача уходит в ИИ-проверку.
+            isExam: isExam && !props.courseCheck,
             files: {'': codeRef.current},
             logsReader,
             question: question._id || getQuestionId(),
+            courseModule: props.courseModule,
             ...params
         })
             .then(r => {
@@ -140,6 +143,8 @@ export function useCodeRun(props) {
                 if (params && params.isSubmit) {
                     !wrongCount && trySet('very_good', ['very_good']);
                     setRunSubmitResults(r);
+                    setSubmissionId(r.submissionId || null);
+                    props.onSubmitResults && props.onSubmitResults(r);
                 } else {
                     !wrongCount && trySet('norm', ['good', 'very_good']);
                     setRunResults(r);
@@ -191,7 +196,7 @@ export function useCodeRun(props) {
         runLoading, curCasesStr, setCurCasesStr,
         cases, setCases, jsDetails,
         topTab, setTopTab,
-        runResults, runSubmitResults,
+        runResults, runSubmitResults, submissionId,
         activeCaseInd, setActiveCaseInd,
         data,
         // computed

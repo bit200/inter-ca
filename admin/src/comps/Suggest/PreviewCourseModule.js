@@ -17,6 +17,7 @@ import {Videos} from "../Suggest/QuestionDetails"
 import Train from "../TrainMethods/Train";
 import {EmptyModule} from "./CourseDetails";
 import './md.scss'
+import {buildRunUrl} from "./courseTopicUrl";
 import Skeleton from "../../libs/Skeleton";
 
 function PreviewCourseModule(props) {
@@ -160,7 +161,7 @@ function PreviewCourseModule(props) {
             <EmptyModule></EmptyModule>
         </div>}
         {isOk && <div className="cmMainBlocks">
-            {selectedBlock && <div className='animChild'>
+            {selectedBlock && <div className='animChild' data-testid={'course-chapter'} data-question-id={selectedBlock._id}>
                 <div className="card">
                     <div className="card-body">
                         <QuestionDetailsNew item={selectedBlock}
@@ -359,11 +360,11 @@ export function QuestionDetailsNew(props) {
             {selectedBlock.type === 'js-task' && <>
                 <a
                     className={'btn btn-sm2 btn-primary afade'} style={{margin: '10px 0', animationDelay: getDelay()}}
-                    href={'/run?question=' + selectedBlock._id}
-                    // onClick={() => {
-                    //     openInNewTab('/run?question=' + selectedBlock._id)
-                    // }}
-                    target={"_blank"}>
+                    data-testid={'course-run-in-editor'}
+                    href={answerSubType === 'course'
+                        ? buildRunUrl(selectedBlock._id, window.location.pathname + window.location.search)
+                        : '/run?question=' + selectedBlock._id}
+                    target={answerSubType === 'course' ? undefined : "_blank"}>
                     {/*<i className="iconoir-code"></i>*/}
                     <i className="iconoir-codepen"></i>
                     {/*<i className="iconoir-laptop-dev-mode"></i>*/}

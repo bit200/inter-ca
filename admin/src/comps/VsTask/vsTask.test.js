@@ -1,4 +1,4 @@
-import {getExamVsTasks, getVscodeLink, isSqlTask, isVsTask, lastSessionStep, pickLng, pubTestInfo} from './vsTask';
+import {getExamVsTasks, getStartError, getVscodeLink, isSqlTask, isVsTask, lastSessionStep, pickLng, pubTestInfo} from './vsTask';
 
 describe('VS Code-задачи: распознавание и сводка тестов', () => {
     test('VsTaskGroup из экзамена — VS-задача, обычный вопрос — нет', () => {
@@ -45,5 +45,62 @@ describe('VS Code-задачи: распознавание и сводка те�
         expect(getVscodeLink({start_info: {start_data: {vscode_link: 'https://v/1'}}})).toBe('https://v/1');
         expect(getVscodeLink({vscode_link: 'https://v/2'})).toBe('https://v/2');
         expect(getVscodeLink({})).toBe('');
+    });
+});
+
+describe('fixVscodeLink', () => {
+    const {fixVscodeLink} = require('./vsTask');
+    const bad = 'http://localhost/vs/50505/?folder=/home/itk/itk-livecoding&tkn=abc';
+    it('дописывает порт docker-m, если в ссылке его нет', () => {
+        expect(fixVscodeLink(bad, 'http://localhost:3010'))
+            .toBe('http://localhost:3010/vs/50505/?folder=/home/itk/itk-livecoding&tkn=abc');
+    });
+    it('локально: server_http 0.0.0.0:3010, в ссылке localhost с пустым портом', () => {
+        expect(fixVscodeLink('http://localhost:/vs/50506/?folder=/h&tkn=a', 'http://0.0.0.0:3010'))
+            .toBe('http://localhost:3010/vs/50506/?folder=/h&tkn=a');
+    });
+    it('не трогает ссылку с портом, чужой хост и пустой server_http', () => {
+        let ok = 'http://localhost:3010/vs/1/?tkn=a';
+        expect(fixVscodeLink(ok, 'http://localhost:3010')).toBe(ok);
+        expect(fixVscodeLink('https://vcode-cdn.itk.academy/5/', 'https://dm.itk.academy:3010')).toBe('https://vcode-cdn.itk.academy/5/');
+        expect(fixVscodeLink(bad, '')).toBe(bad);
+    });
+});
+
+describe('учёт VS-задач в проценте проверки знаний', () => {
+    const {calcQuizPerc, countVsQuizes} = require('./vsTask');
+    const pub = [{opts: {quiz: 61}}, {opts: {quiz: 'vs_9'}}];
+    it('считает VS-задачи группы по ключу vs_', () => {
+        expect(countVsQuizes(pub)).toBe(1);
+        expect(countVsQuizes(undefined)).toBe(0);
+    });
+    it('нерешённая VS-задача снижает процент, решённая — нет', () => {
+        expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: false}}, 2).quizPerc).toBe(50);
+        expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: true}}, 2).quizPerc).toBe(100);
+        expect(calcQuizPerc({61: {isCorrect: true}}, 2).quizPerc).toBe(50);
+    });
+    it('сбой платформы (VS Code не запустился) не снижает процент', () => {
+        expect(calcQuizPerc({61: {isCorrect: true}, vs_9: {isCorrect: false, vsSystemError: true}}, 2).quizPerc).toBe(100);
+        expect(calcQuizPerc({61: {isCorrect: false}, vs_9: {vsSystemError: true}}, 2).quizPerc).toBe(0);
+        expect(calcQuizPerc({vs_9: {vsSystemError: true}}, 1).quizPerc).toBe(0);
+    });
+});
+
+describe('getStartError', () => {
+    it('достаёт причину сбоя docker-m из start_info.start_data.err', () => {
+        expect(getStartError({start_info: {status: 'ok', start_data: {err: 'docker pull failed'}}})).toBe('docker pull failed');
+        expect(getStartError({start_info: {start_data: {err: {msg: 'no image'}}}})).toBe('no image');
+    });
+    it('пусто, если сбоя нет', () => {
+        expect(getStartError({start_info: {start_data: {vscode_link: 'http://x/vs/1/'}}})).toBe('');
+    });
+});
+
+describe('подсказка при сбое запуска редактора', () => {
+    it('называет кнопку «Перезапустить редактор», а не «Открыть задачу»', () => {
+        let lngs = require('../i18/lngs.js');
+        let src = require('fs').readFileSync(require.resolve('../i18/lngs.js'), 'utf8');
+        let m = src.match(/"vsTaskStartFailed":\s*\{\s*ru:\s*"([^"]+)"/);
+        expect(m[1]).toContain('«Перезапустить редактор»');
     });
 });

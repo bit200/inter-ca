@@ -158,4 +158,27 @@ describe('CourseQuiz - финальная проверка знаний чере
 
         expect(onSuccess).toHaveBeenCalledWith({ status: 'ok' });
     });
+
+    it('при сбое загрузки заданий показывает "Повторить", а не "Далее" и не засчитывает главу', async () => {
+        let fail = true;
+        global.http.get = jest.fn((url) => {
+            if (url === '/load-quizes-by-module') {
+                return fail ? Promise.reject(new Error('refused'))
+                    : Promise.resolve({ quizes: [{ _id: 1 }], pubQuizes: [{ _id: 1 }] });
+            }
+            return Promise.resolve({ items: [] });
+        });
+        render(<CourseQuiz isLastModule={false} moduleId={500} courseUserId={42}
+                           onAction={jest.fn()} onSuccess={onSuccess} />);
+        await act(async () => {});
+
+        expect(screen.queryByText('next')).toBeNull();
+        expect(screen.queryByText('noCheckTasks')).toBeNull();
+        expect(onSuccess).not.toHaveBeenCalled();
+
+        fail = false;
+        await act(async () => { fireEvent.click(screen.getByText(/Повторить/)); });
+        expect(screen.getByText('checkKnowledge')).toBeTruthy();
+        expect(screen.queryByText(/Повторить/)).toBeNull();
+    });
 });

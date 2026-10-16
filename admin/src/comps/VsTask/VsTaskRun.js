@@ -1,8 +1,10 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import './VsTaskRun.css';
 import {
     getStartError,
     getVscodeLink,
+    fixVscodeLink,
     isSqlTask,
     lastSessionStep,
     pickLng,
@@ -16,6 +18,7 @@ import {
 
 const RESULT_POLL_MS = 15000;
 const STATUS_POLL_MS = 1000;
+const FINISH_ITEM = 'Завершить задачу';
 
 function storageKey(examId, taskId) {
     return 'vs-session-' + (examId || 'train') + '-' + taskId;
@@ -39,10 +42,12 @@ function writeSaved(key, value) {
 export function VsTestSummary({info, onRefresh, refreshing}) {
     let {hasResult, total, passed, failed, status} = info;
     let cells = hasResult && total <= 40 ? Array.from({length: total}, (_, i) => i < passed) : null;
-    return <div className={'vs-task-result'} data-status={status}>
+    return <div className={'vs-task-result'} data-testid={'vs-task-result'} data-status={status}
+                data-passed={passed} data-total={total}>
         <div className={'vs-task-result-head'}>
             <span className={'vs-task-result-title'}>{t('vsTaskResult')}</span>
             {onRefresh && <button type={'button'}
+                                  data-testid={'vs-task-refresh'}
                                   className={'btn btn-xs btn-default'}
                                   disabled={refreshing}
                                   onClick={onRefresh}>
@@ -70,7 +75,9 @@ export function VsTestSummary({info, onRefresh, refreshing}) {
 }
 
 function VsTaskRun(props) {
-    let {task, examId, hist, onSession} = props;
+    // onNext — VS-задача внутри тренажёра (Train): без него из задачи некуда было
+    // уйти, и проверка знаний с VS-задачей в конце не заканчивалась никогда.
+    let {task, examId, hist, onSession, onNext, onResult} = props;
     let taskId = task?._id;
     let key = storageKey(examId, taskId);
 
@@ -81,7 +88,11 @@ function VsTaskRun(props) {
     let [error, setError] = useState('');
     let [testInfo, setTestInfo] = useState(null);
     let [refreshing, setRefreshing] = useState(false);
+    let [full, setFull] = useState(true);
+    let [submitting, setSubmitting] = useState(false);
+    let [submitFailed, setSubmitFailed] = useState(false);
     let runId = useRef(0);
+    let submitRef = useRef(null);
 
     let saved = {...readSaved(key), ...(hist?.session_id ? hist : {})};
     let sessionId = session?.session_id || saved.session_id || '';
@@ -95,7 +106,22 @@ function VsTaskRun(props) {
         setStep('');
         setError('');
         setTestInfo(null);
+        setFull(true);
+        setSubmitting(false);
+        setSubmitFailed(false);
     }, [taskId]);
+
+    // Пункт «Завершить задачу» внутри редактора = то же, что кнопка под ним.
+    useEffect(() => {
+        let onMessage = (event) => {
+            let data = event?.data || {};
+            if (data.type === 'treeitemClick' && data.elementText === FINISH_ITEM) {
+                submitRef.current && submitRef.current();
+            }
+        };
+        window.addEventListener('message', onMessage);
+        return () => window.removeEventListener('message', onMessage);
+    }, []);
 
     useEffect(() => {
         sessionId && loadResult(sessionId);
@@ -137,12 +163,32 @@ function VsTaskRun(props) {
             });
     }
 
+    // «Завершить задачу»: сохраняем состояние редактора и гоняем полный набор тестов на docker-m
+    // (как в админке), затем подтягиваем итог. Доступно, пока сессия есть, — и после сворачивания.
+    async function submit() {
+        let base = session?.server_http;
+        if (!base || !sessionId || submitting) return;
+        setSubmitting(true);
+        setSubmitFailed(false);
+        try {
+            let q = '?session_id=' + encodeURIComponent(sessionId);
+            await fetch(base + '/create_upload_session_patch' + q).then(r => r.json());
+            await fetch(base + '/full_test_new_sse' + q).then(r => r.text());
+            await loadResult(sessionId);
+        } catch (e) {
+            setSubmitFailed(true);
+        }
+        setSubmitting(false);
+    }
+    submitRef.current = submit;
+
     async function open(isRestart) {
         let myRun = ++runId.current;
         setPhase('starting');
         setError('');
         setStep('');
         setLink('');
+        setFull(true);
         try {
             let lng = pickLng(task, saved);
             let pre = await global.http.get('/pre-start-session', {
@@ -168,7 +214,7 @@ function VsTaskRun(props) {
                 setPhase('error');
                 return;
             }
-            setLink(vsLink);
+            setLink(fixVscodeLink(vsLink, sess?.server_http));
             setPhase('ready');
         } catch (e) {
             if (myRun !== runId.current) return;
@@ -178,9 +224,39 @@ function VsTaskRun(props) {
     }
 
     let info = testInfo || pubTestInfo(null);
+    // Тренажёр (Train) учитывает результат задачи в проценте сдачи проверки знаний.
+    useEffect(() => {
+        info.hasResult && onResult && onResult({isCorrect: info.status === 'ok', systemError: false, ...info});
+    }, [info.hasResult, info.status, info.passed, info.total]);
+    // Сбой запуска VS Code или отправки (docker-m, vstasks) — не вина ученика: сообщаем Train,
+    // чтобы задача не снижала процент проверки знаний.
+    let systemError = phase === 'error' || submitFailed;
+    useEffect(() => {
+        systemError && onResult && onResult({isCorrect: false, systemError: true});
+    }, [systemError]);
     let starting = phase === 'starting';
+    // В тренажёре решённая задача — повод идти дальше: основной становится «Далее».
+    let isSolved = !!onNext && info.status === 'ok';
 
-    return <div className={'vs-task' + (isSql ? ' vs-task-sql' : '')} data-phase={phase}>
+    const frameNode = <div className={'vs-task-frame' + (full ? ' vs-task-frame-full' : '')}>
+            {full && <div className={'vs-task-frame-bar'}>
+                <span className={'vs-task-frame-title'}>{task?.name}</span>
+                {session?.server_http && <button type={'button'}
+                                                 className={'btn btn-xs btn-success'}
+                                                 disabled={submitting}
+                                                 onClick={submit}>
+                    {submitting ? t('vsTaskSubmitting') : t('vsTaskSubmit')}
+                </button>}
+                <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-collapse'}
+                        onClick={() => setFull(false)}>
+                    <i className={'iconoir-collapse'}></i> {t('vsTaskExitFullscreen')}
+                </button>
+            </div>}
+            <iframe src={link} title={task?.name || 'VS Code'} allow={'clipboard-read; clipboard-write'}/>
+        </div>;
+
+    return <div className={'vs-task' + (isSql ? ' vs-task-sql' : '')} data-phase={phase}
+                data-testid={'vs-task'} data-task-id={taskId}>
         <div className={'vs-task-head'}>
             <span className={'vs-task-kind'}>
                 <i className={isSql ? 'iconoir-database' : 'iconoir-code'}></i>
@@ -192,11 +268,18 @@ function VsTaskRun(props) {
 
         <div className={'vs-task-actions'}>
             <button type={'button'}
-                    className={'btn ' + (phase === 'ready' ? 'btn-default' : 'btn-primary')}
+                    data-testid={'vs-task-open'}
+                    className={'btn ' + (phase === 'ready' ? 'btn-default' : isSolved ? 'btn-light' : 'btn-primary')}
                     disabled={starting}
                     onClick={() => open(phase === 'ready' || phase === 'error')}>
-                {phase === 'ready' || phase === 'error' ? t('vsTaskReopen') : t('vsTaskOpen')}
+                {phase === 'ready' || phase === 'error' ? t('vsTaskReopen') : saved.session_id ? t('vsTaskBack') : t('vsTaskOpen')}
             </button>
+            {phase === 'ready' && session?.server_http && <button type={'button'}
+                                                                  className={'btn btn-success'}
+                                                                  disabled={submitting}
+                                                                  onClick={submit}>
+                {submitting ? t('vsTaskSubmitting') : t('vsTaskSubmit')}
+            </button>}
             {starting && <span className={'vs-task-status'} role={'status'}>
                 <span className={'vs-task-dot'}/>{t('vsTaskStarting')}
                 {step && <span className={'vs-task-step'}>{step}</span>}
@@ -204,16 +287,26 @@ function VsTaskRun(props) {
             {phase === 'ready' && <span className={'vs-task-status ok'} role={'status'}>
                 <span className={'vs-task-dot'}/>{t('vsTaskReady')}
                 <a href={link} target={'_blank'} rel={'noopener noreferrer'}>{t('vsTaskNewWindow')}</a>
+                {!full && <button type={'button'} className={'btn btn-xs btn-default'} data-testid={'vs-task-expand'}
+                                  onClick={() => setFull(true)}>
+                    <i className={'iconoir-expand'}></i> {t('vsTaskFullscreen')}
+                </button>}
             </span>}
+            {onNext && <button type={'button'}
+                               data-testid={'vs-task-next'}
+                               className={'btn vs-task-next ' + (isSolved ? 'btn-primary' : 'btn-light')}
+                               onClick={() => onNext()}>
+                {t('next')}
+                <i className={'iconoir-nav-arrow-right'}></i>
+            </button>}
         </div>
+        {submitFailed && <div className={'vs-task-error'} role={'alert'}>{t('vsTaskSubmitFailed')}</div>}
         {phase === 'error' && <div className={'vs-task-error'} role={'alert'}>
             {t('vsTaskStartFailed')}
             {error && <div className={'vs-task-error-details'}>{String(error)}</div>}
         </div>}
 
-        {phase === 'ready' && <div className={'vs-task-frame'}>
-            <iframe src={link} title={task?.name || 'VS Code'} allow={'clipboard-read; clipboard-write'}/>
-        </div>}
+        {phase === 'ready' && (full ? createPortal(frameNode, document.body) : frameNode)}
 
         <VsTestSummary info={info}
                        refreshing={refreshing}

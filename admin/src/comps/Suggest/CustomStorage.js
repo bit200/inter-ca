@@ -38,7 +38,7 @@ const CustomStorage = {
         }, timer)
     },
     getId(v) {
-        let arr = window.location.href.split('/');
+        let arr = window.location.pathname.split('/');
         return arr[arr.length - 1]
     },
     setImport(v) {

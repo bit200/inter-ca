@@ -2,21 +2,26 @@ import React, {useState, useEffect} from 'react';
 import _ from 'underscore';
 
 import {
-    Link, Outlet
+    Link, Outlet, useNavigate
 } from "react-router-dom";
+import {handleQuestionDenied} from './questionAccessDenied'
 import CodeRun from './Suggest/CodeRun'
+import {safeBackPath} from './Suggest/courseTopicUrl'
 
 
 function CodeRunWrap(props) {
+    const navigate = useNavigate();
     let [curCasesStr, setCurCasesStr] = useState('');
     let [jsDetails, setJsDetails] = useState({});
     let [history, setHistory] = useState({});
     let [data, setData] = useState({});
+    let [solved, setSolved] = useState(false);
+    let backPath = safeBackPath(new URLSearchParams(window.location.search).get('back'));
 
    //console.log('*........ ## ROOT RENDER', props);
 
     function getQuestionId() {
-        return window.location.href.split('=')[1] || 1061
+        return new URLSearchParams(window.location.search).get('question') || window.location.href.split('=')[1] || 1061
     }
 
     function saveChanges(code, file, testCase) {
@@ -51,7 +56,7 @@ function CodeRunWrap(props) {
     }
 
     useEffect(() => {
-        global.http.get('/load-question-run', {question: getQuestionId()})
+        global.http.get('/load-question-run', {question: getQuestionId()}, {no_refresh: true})
             .then(r => {
                //console.log("aaaaaa", r)
                 let {jsDetails} = r;
@@ -65,12 +70,26 @@ function CodeRunWrap(props) {
                 //     run()
                 // }, 100)
             })
+            .catch(e => {
+                handleQuestionDenied(e, {
+                    notify: window.notify, message: t('questionNotInCourses'),
+                    go: path => navigate(path)
+                })
+            })
     }, [])
 
 
     // let v = useActionData();
     return <div>
+        {backPath && <div className={'tr'} style={{padding: '8px 12px'}}>
+            <a className={'btn btn-sm ' + (solved ? 'btn-success' : 'btn-light')}
+               data-testid={'run-back-to-course'}
+               href={backPath}>
+                <i className="iconoir-nav-arrow-left"></i> {solved ? t('backToCourseSolved') : t('backToCourse')}
+            </a>
+        </div>}
         <CodeRun
+            onSubmitResults={(r) => { if (r && !r.wrongCount) setSolved(true) }}
             question={data.question}
             onChangeCurStr={(v) => {
                //console.log("on chagne str", v)

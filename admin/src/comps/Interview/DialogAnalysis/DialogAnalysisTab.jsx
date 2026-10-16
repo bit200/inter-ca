@@ -1258,17 +1258,25 @@ function AiNotice() {
 
 // Техническая часть подробно: все оценённые технические вопросы по уровню ответа,
 // у каждого балл и первая фраза отзыва. Если сервис прислал отдельный технический
-// вывод - он идёт абзацем над списком.
+// вывод - он идёт абзацем над списком. По умолчанию секция свёрнута в одну строку:
+// заголовок, среднее и число вопросов по уровням; список раскрывается по клику.
 function TechnicalDigest({digest, summary}) {
-    return <section className={styles.techDigest} aria-label="Техническая часть">
+    let [open, setOpen] = useState(false);
+    return <section className={styles.techDigest} aria-label="Техническая часть" data-open={open ? 'true' : undefined}>
         <header className={styles.techDigestHead}>
-            <h4>Техническая часть</h4>
-            {digest && <span>
-                {digest.count} {plural(digest.count, 'вопрос', 'вопроса', 'вопросов')}, в среднем {formatScore(digest.average)} из {digest.max}
-            </span>}
+            <button type="button" className={styles.techDigestToggle} aria-expanded={open} onClick={() => setOpen(!open)}>
+                <span className={styles.techGroupChevron} aria-hidden="true">▸</span>
+                <h4>Техническая часть</h4>
+                {digest && <span>
+                    {digest.count} {plural(digest.count, 'вопрос', 'вопроса', 'вопросов')}, в среднем {formatScore(digest.average)} из {digest.max}
+                </span>}
+                {digest && digest.groups.map(group => <span key={group.band} className={styles.techBandCount} data-band={group.band}>
+                    {group.title} ({group.items.length})
+                </span>)}
+            </button>
         </header>
-        {summary && <p className={styles.techDigestText}>{summary}</p>}
-        {digest && digest.groups.map(group => <div key={group.band} className={styles.techGroup} data-band={group.band}>
+        {open && summary && <p className={styles.techDigestText}>{summary}</p>}
+        {open && digest && digest.groups.map(group => <div key={group.band} className={styles.techGroup} data-band={group.band}>
             <h5>{group.title}</h5>
             <ul>
                 {group.items.map(item => <li key={item.number}>

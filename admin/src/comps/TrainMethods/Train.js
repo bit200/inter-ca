@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import VsTaskRun from "../VsTask/VsTaskRun";
+import JsTaskRun from "./JsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
 import _ from 'underscore';
 import './Train.css'
@@ -368,7 +369,8 @@ function Train(props) {
         {/*})}*/}
 
 
-        <div className={'trainContent ' + (isErrRec ? ' timerErrorWrap' : '')}>
+        <div className={'trainContent ' + (isErrRec ? ' timerErrorWrap' : '')}
+             data-testid={'train-item'} data-quiz-key={getQuizId()} data-answer-type={answerType}>
 
             {/*<div>PERC: {timer.time} / {timer.totalTime}</div>*/}
             <div className={'timerWrap'}>
@@ -381,7 +383,26 @@ function Train(props) {
                 showRecognizedText={true}
                 {...EXT_OBJ}
             ></AudioShort>}
-            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId}/>}
+            {answerType === 'vs_task' && <VsTaskRun task={item} examId={opts?.examId} onNext={() => onNext()}
+                                                   onResult={(res) => {
+                                                       // Результат тестов VS-задачи пишем в историю тренажёра, чтобы он
+                                                       // вошёл в процент сдачи (на сервер квиз-история не уходит).
+                                                       let hist = extendHistory(activeInd, {isCorrect: res.isCorrect, vsSystemError: !!res.systemError, vsResult: res})
+                                                       props.onChange && props.onChange({
+                                                           answerType: 'vs_task', data: {isCorrect: res.isCorrect},
+                                                           history: hist, quizId: getQuizId(), opts: activeItem.opts
+                                                       })
+                                                   }}/>}
+            {answerType === 'js_task' && <JsTaskRun task={item} onNext={() => onNext()}
+                                                    onResult={(res) => {
+                                                        // Сабмит js-задачи (все тесты прошли = isCorrect) — в историю
+                                                        // тренажёра: задача считается в проценте сдачи как квиз.
+                                                        let hist = extendHistory(activeInd, {isSubmit: true, isCorrect: res.isCorrect})
+                                                        props.onChange && props.onChange({
+                                                            answerType: 'js_task', data: {isCorrect: res.isCorrect},
+                                                            history: hist, quizId: getQuizId(), opts: activeItem.opts
+                                                        })
+                                                    }}/>}
             {answerType === 'code' && <CodeReview
                 opts={props.opts}
                 time={timer.time} //for render in circle the value

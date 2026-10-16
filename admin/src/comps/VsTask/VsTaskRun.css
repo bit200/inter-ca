@@ -50,6 +50,15 @@
     gap: 12px;
 }
 
+/* «Далее» в тренажёре — уход с задачи, а не действие над ней: прижата вправо,
+   чтобы не спорить с «Открыть задачу в редакторе» */
+.vs-task-next {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .vs-task-status {
     display: inline-flex;
     align-items: center;
@@ -121,6 +130,39 @@
     height: 72vh;
     min-height: 420px;
     border: 0;
+}
+
+.vs-task-frame-full {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647; /* максимум; MyModal (10000000000) клампится к нему же, при равенстве выигрывает более поздний узел в body */
+    display: flex;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+}
+
+.vs-task-frame-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 12px;
+    background: var(--bs-body-bg, #fff);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.vs-task-frame-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.vs-task-frame-full iframe {
+    flex: 1;
+    height: auto;
+    min-height: 0;
 }
 
 .vs-task-result {

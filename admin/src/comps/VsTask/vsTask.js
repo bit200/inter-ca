@@ -78,10 +78,62 @@ export function getVscodeLink(startRes) {
         || '';
 }
 
+// docker-m на локалке проксирует VS Code по своему порту (http://localhost:3010/vs/<port>/),
+// но при пустом LOCAL_MACHINE_SERVER_PORT в ссылке нет порта (http://localhost/vs/<port>/) —
+// iframe и «Открыть в другом окне» ведут в никуда. Порт тогда берём у server_http той же сессии.
+export function fixVscodeLink(link, serverHttp) {
+    try {
+        let u = new URL(link);
+        let s = new URL(serverHttp);
+        let local = h => ['localhost', '127.0.0.1', '0.0.0.0'].includes(h);
+        // server_http платформы на локалке — http://0.0.0.0:3010, а в ссылке localhost: хост не совпадает
+        let sameHost = u.hostname === s.hostname || (local(u.hostname) && local(s.hostname));
+        if (!u.port && s.port && sameHost && u.protocol === s.protocol && /^\/vs\//.test(u.pathname)) {
+            u.port = s.port;
+            return u.toString();
+        }
+    } catch (e) {
+    }
+    return link;
+}
+
 export function getStartError(startRes) {
-    let err = startRes?.err_obj || startRes?.err || startRes?.start_info?.err;
+    // docker-m кладёт причину сбоя в start_info.start_data.err (ctrl_start_session возвращает {err})
+    let err = startRes?.err_obj || startRes?.err || startRes?.start_info?.err
+        || startRes?.start_info?.start_data?.err;
     if (!err) {
         return '';
     }
     return typeof err === 'string' ? err : (err.msg || 'start failed');
+}
+
+// Состав проверки знаний (/load-quizes-by-module): квизы лежат в quizes и pubQuizes,
+// VS-задачи группы — только в pubQuizes с ключом истории vs_<id группы>.
+export function countVsQuizes(pubQuizes) {
+    return (pubQuizes || []).filter(it => String(it?.opts?.quiz ?? '').startsWith('vs_')).length;
+}
+
+// Процент сдачи проверки знаний: верный квиз, оценённое аудио, решённая VS-задача
+// (isCorrect, его ставит Train по test_info.status === 'ok') и js-задача (isCorrect по
+// сабмиту, где прошли все тесты) — по одному баллу;
+// знаменатель — все задания проверки, а не только квизы.
+// VS-задача со сбоем платформы (vsSystemError: VS Code не запустился, vstasks не ответил) и без
+// решения не вина ученика — выпадает из знаменателя, балл не снижается.
+export function calcQuizPerc(history, total) {
+    let corTotal = 0;
+    let count = 0;
+    let skipped = 0;
+    Object.values(history || {}).forEach(item => {
+        count++;
+        if (item && item.vsSystemError && !item.isCorrect) {
+            skipped++;
+            return;
+        }
+        if (item && (item.isCorrect || item.data?.isCorrect)) {
+            corTotal++;
+        } else if (item && item.hash && (item.rate || item.audioRate)) {
+            corTotal++;
+        }
+    });
+    return {quizPerc: Math.round(100 * (corTotal / (Math.max((total || 0) - skipped, 1)))), total: count};
 }

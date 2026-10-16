@@ -2842,6 +2842,27 @@ export default {
         en: "The module will be opened after successfully completing previous modules",
         fr: `Le module sera ouvert après avoir réussi les modules précédents`
     },
+    "backToCourse": {
+        ru: "Вернуться к курсу",
+        es: "Volver al curso",
+        de: "Zurück zum Kurs",
+        en: "Back to the course",
+        fr: `Retour au cours`
+    },
+    "questionNotInCourses": {
+        ru: "Эта задача недоступна: её нет в ваших курсах",
+        es: "Esta tarea no está disponible: no figura en sus cursos",
+        de: "Diese Aufgabe ist nicht verfügbar: sie gehört nicht zu Ihren Kursen",
+        en: "This task is unavailable: it is not in your courses",
+        fr: `Cette tâche n'est pas disponible : elle ne fait pas partie de vos cours`
+    },
+    "backToCourseSolved": {
+        ru: "Решено — вернуться к курсу",
+        es: "Resuelto: volver al curso",
+        de: "Gelöst – zurück zum Kurs",
+        en: "Solved — back to the course",
+        fr: `Résolu — retour au cours`
+    },
     "runTaskInEditor": {
         ru: "Запустить задачу в редакторе",
         es: "Ejecutar tarea en el editor",
@@ -3288,6 +3309,13 @@ export default {
         de: "Meine Inhaltsvorschläge",
         en: "My content suggestions",
         fr: `Mes suggestions de contenu`
+    },
+    "answersEvaluateState": {
+        ru: "Оценка",
+        es: "Evaluación",
+        de: "Bewertung",
+        en: "Evaluation",
+        fr: `Évaluation`
     },
     "questionsSize": {
         ru: "Кол-во вопросов",
@@ -4027,12 +4055,54 @@ export default {
     en: "Open in new window",
     fr: "Ouvrir dans une nouvelle fenêtre"
 },
+"vsTaskFullscreen": {
+    ru: "На весь экран",
+    es: "Pantalla completa",
+    de: "Vollbild",
+    en: "Fullscreen",
+    fr: "Plein écran"
+},
+"vsTaskExitFullscreen": {
+    ru: "Свернуть",
+    es: "Contraer",
+    de: "Verkleinern",
+    en: "Collapse",
+    fr: "Réduire"
+},
+"vsTaskBack": {
+    ru: "Вернуться к решению",
+    es: "Volver a la solución",
+    de: "Zurück zur Lösung",
+    en: "Back to my solution",
+    fr: "Revenir à la solution"
+},
+"vsTaskSubmit": {
+    ru: "Завершить и отправить решение",
+    es: "Finalizar y enviar la solución",
+    de: "Beenden und Lösung senden",
+    en: "Finish and submit solution",
+    fr: "Terminer et envoyer la solution"
+},
+"vsTaskSubmitting": {
+    ru: "Проверяем решение…",
+    es: "Comprobando la solución…",
+    de: "Lösung wird geprüft…",
+    en: "Checking the solution…",
+    fr: "Vérification de la solution…"
+},
+"vsTaskSubmitFailed": {
+    ru: "Не удалось отправить решение. Нажмите кнопку ещё раз.",
+    es: "No se pudo enviar la solución. Pulse el botón de nuevo.",
+    de: "Die Lösung konnte nicht gesendet werden. Klicken Sie erneut.",
+    en: "Could not submit the solution. Click the button again.",
+    fr: "Impossible d’envoyer la solution. Cliquez à nouveau."
+},
 "vsTaskStartFailed": {
-    ru: "Редактор не запустился. Нажмите «Открыть задачу в редакторе» ещё раз.",
-    es: "El editor no se inició. Pulse «Abrir la tarea en el editor» de nuevo.",
-    de: "Der Editor ist nicht gestartet. Klicken Sie erneut auf „Aufgabe im Editor öffnen“.",
-    en: "The editor did not start. Click “Open task in editor” again.",
-    fr: "L'éditeur n'a pas démarré. Cliquez à nouveau sur « Ouvrir la tâche dans l'éditeur »."
+    ru: "Редактор не запустился. Нажмите «Перезапустить редактор».",
+    es: "El editor no se inició. Pulse «Reiniciar el editor».",
+    de: "Der Editor ist nicht gestartet. Klicken Sie auf „Editor neu starten“.",
+    en: "The editor did not start. Click “Restart editor”.",
+    fr: "L'éditeur n'a pas démarré. Cliquez sur « Redémarrer l'éditeur »."
 },
 "vsTaskResult": {
     ru: "Результат тестов",
@@ -4180,6 +4250,34 @@ export default {
     de: "Die automatische Prüfung ist fehlgeschlagen – der Mentor prüft die Lösung",
     en: "Automatic review failed – a mentor will check the solution",
     fr: "La vérification automatique a échoué – un mentor examinera la solution"
+},
+"jsTaskCode": {
+    ru: "Задача на код",
+    es: "Tarea de código",
+    de: "Programmieraufgabe",
+    en: "Coding task",
+    fr: "Tâche de code"
+},
+"jsTaskHint": {
+    ru: "«Запуск» проверяет решение на видимых примерах, «Сабмит» — на всех тестах. Задача засчитывается, когда сабмит проходит целиком.",
+    es: "«Ejecutar» prueba la solución con los ejemplos visibles, «Enviar» con todas las pruebas. La tarea cuenta cuando el envío pasa por completo.",
+    de: "«Ausführen» prüft die Lösung an sichtbaren Beispielen, «Senden» an allen Tests. Die Aufgabe zählt, wenn die Abgabe komplett besteht.",
+    en: "Run checks your solution on the visible examples, Submit on all tests. The task counts once a submit passes in full.",
+    fr: "« Exécuter » teste la solution sur les exemples visibles, « Envoyer » sur tous les tests. La tâche compte quand l'envoi passe entièrement."
+},
+"jsTaskPassed": {
+    ru: "Все тесты пройдены — задача засчитана",
+    es: "Todas las pruebas superadas: tarea aceptada",
+    de: "Alle Tests bestanden – Aufgabe angerechnet",
+    en: "All tests passed — task counted",
+    fr: "Tous les tests réussis — tâche validée"
+},
+"jsTaskFailed": {
+    ru: "Пройдено тестов",
+    es: "Pruebas superadas",
+    de: "Bestandene Tests",
+    en: "Tests passed",
+    fr: "Tests réussis"
 },
 "sqlSchema": {
     ru: "Схема базы данных",

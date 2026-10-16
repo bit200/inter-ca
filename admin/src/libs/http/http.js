@@ -120,7 +120,7 @@ const http = {
             if (code === 401) {
               // console.log('........ ## urlrlrlrlrlrlr', url);
               return user.logout();
-            } else if (code === 402 || code === 403) {
+            } else if ((code === 402 || code === 403) && !params.no_refresh) {
       
               console.log("qqqqq error 403", code);
               if (iter_count < 5) {
@@ -140,7 +140,7 @@ const http = {
               }
 
             } else {
-              if (!params.wo_notify) {
+              if (!params.wo_notify && !params.no_refresh) {
                 notify.error(e.msg || e.error || e.message || e.errmsg || 'An Error please try again later')
               }
 

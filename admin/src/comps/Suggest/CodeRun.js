@@ -13,6 +13,7 @@ import ColorTheme from "../ColorTheme";
 import {useCodeRun} from './useCodeRun';
 import VsTaskRun from "../VsTask/VsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
+import {CodeReviewBlock} from "./CodeReviewBlock";
 import {isSqlDetails, SqlRunResults, SqlSchemaPanel} from "./SqlRunResults";
 
 let renderCount = 1;
@@ -25,7 +26,7 @@ function CodeRunComponent(props) {
         runLoading, curCasesStr, setCurCasesStr,
         cases, setCases, jsDetails,
         topTab, setTopTab,
-        runResults, runSubmitResults,
+        runResults, runSubmitResults, submissionId,
         activeCaseInd, setActiveCaseInd,
         data,
         question, caseItem, firstErrorInd, isLogsReader,
@@ -132,7 +133,7 @@ function CodeRunComponent(props) {
                         <div className={'mainTasksWrap sticky3'}>
                             <div className="pull-right">
                                 <div className="buttonsRun2">
-                                    {!props.isNewExam && <>
+                                    {!props.isNewExam && !props.woSolution && <>
                                         {!!question.hints && !!question.hints.length &&
                                             <button title="Подсказка" className={'btn btn-sm btn-light'}
                                                     onClick={() => { setHintInd(0); hintModal.show(); }}>
@@ -149,12 +150,13 @@ function CodeRunComponent(props) {
                                     </>}
                                     <div className={'ib ' + (jsDetails.hideRunStatus == 'hidden' ? 'hiddenBlock' : '')}>
                                         <button className={'btn btn-sm btn-light'} disabled={runLoading}
+                                                data-testid={'code-run-run'}
                                                 onClick={() => run()}>
                                             <i className="iconoir-terminal"></i>
                                             {t('runMsg')}
                                         </button>
                                         {!props.isNewExam &&
-                                            <button className={'btn btn-sm btn-primary'} onClick={() => submit()}>
+                                            <button className={'btn btn-sm btn-primary'} data-testid={'code-run-submit'} onClick={() => submit()}>
                                                 <i className="iconoir-arcade"></i>
                                                 {t('submitMsg')}
                                             </button>}
@@ -223,11 +225,17 @@ function CodeRunComponent(props) {
                             <div style={{padding: '5px'}} className={'animChild'}>
                                 <small>&nbsp;</small>
                                 <h5>{t('runResults')}</h5>
-                                <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
+                                <div data-testid={'code-run-results'} data-kind={'run'}>
+                                    <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
+                                </div>
                                 {!isNewExam && <>
                                     <hr/>
                                     <h5>{t('runResultsSubmit')}</h5>
-                                    <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
+                                    <div data-testid={'code-run-results'} data-kind={'submit'}>
+                                        <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
+                                    </div>
+                                    <CodeReviewBlock submissionId={submissionId}
+                                                     isExam={!!props.isExam && !props.courseCheck}/>
                                 </>}
                             </div>
                         </div>}
@@ -420,9 +428,11 @@ function IframeToRunLocal2(props) {
     }, [forceRenderLogs, activeCaseInd]);
 
     let bsTheme = ColorTheme.getTheme();
+    // iframe не шлёт заголовок Authorization: файлы задачи API отдаёт только по ?token=.
+    let query = '/index.html?cd=' + cd + '&darkMode=' + bsTheme + '&token=' + encodeURIComponent(user.get_token() || '');
     let url = isNewExam
-        ? global.env.domain + '/' + (isFirst.current ? 'admin_files' : 'admin_init') + '/' + CustomStorage.getId() + '/' + question._id + '/index.html?cd=' + cd + '&darkMode=' + bsTheme
-        : global.env.domain + '/' + (isFirst.current ? 'files' : 'init') + '/' + user.get_id() + '/' + question._id + '/index.html?cd=' + cd + '&darkMode=' + bsTheme;
+        ? global.env.domain + '/' + (isFirst.current ? 'admin_files' : 'admin_init') + '/' + CustomStorage.getId() + '/' + question._id + query
+        : global.env.domain + '/' + (isFirst.current ? 'files' : 'init') + '/' + user.get_id() + '/' + question._id + query;
 
     return <div className='logsRunWraps'>
         <a className={'btn btn-light btn-sm pull-right'}
