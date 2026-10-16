@@ -2842,6 +2842,20 @@ export default {
         en: "The module will be opened after successfully completing previous modules",
         fr: `Le module sera ouvert après avoir réussi les modules précédents`
     },
+    "backToCourse": {
+        ru: "Вернуться к курсу",
+        es: "Volver al curso",
+        de: "Zurück zum Kurs",
+        en: "Back to the course",
+        fr: `Retour au cours`
+    },
+    "backToCourseSolved": {
+        ru: "Решено — вернуться к курсу",
+        es: "Resuelto: volver al curso",
+        de: "Gelöst – zurück zum Kurs",
+        en: "Solved — back to the course",
+        fr: `Résolu — retour au cours`
+    },
     "runTaskInEditor": {
         ru: "Запустить задачу в редакторе",
         es: "Ejecutar tarea en el editor",

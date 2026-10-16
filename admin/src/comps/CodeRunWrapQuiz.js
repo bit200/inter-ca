@@ -16,7 +16,7 @@ function CodeRunWrap(props) {
    //console.log('*........ ## ROOT RENDER', props);
 
     function getQuestionId() {
-        return window.location.href.split('=')[1] || 1061
+        return new URLSearchParams(window.location.search).get('question') || window.location.href.split('=')[1] || 1061
     }
 
     function saveChanges(code, file, testCase) {
