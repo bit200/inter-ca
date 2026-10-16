@@ -1,0 +1,65 @@
+.examAiReview {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+
+  &-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  &-hint {
+    opacity: 0.7;
+  }
+
+  &-verdict {
+    font-weight: 600;
+    color: #2e7d32;
+
+    &[data-verdict='fail'] {
+      color: #c62828;
+    }
+
+    &[data-verdict='needs_review'] {
+      color: #ef6c00;
+    }
+  }
+
+  &-scores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  &-score {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  &-scoreName {
+    opacity: 0.7;
+    font-size: 12px;
+  }
+
+  &-scoreValue {
+    font-size: 20px;
+    font-weight: 600;
+
+    small {
+      font-size: 12px;
+      font-weight: normal;
+      opacity: 0.7;
+    }
+  }
+
+  &-reason {
+    font-size: 12px;
+  }
+
+  &-summary {
+    margin-top: 10px;
+    white-space: pre-wrap;
+  }
+}

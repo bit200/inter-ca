@@ -4104,6 +4104,83 @@ export default {
     en: "Solve the task in the VS Code editor right on this page. Progress is saved automatically.",
     fr: "La tâche se résout dans l'éditeur VS Code sur la page. La progression est enregistrée automatiquement."
 },
+"aiReviewTitle": {
+    ru: "ИИ-проверка решения",
+    es: "Revisión del código por IA",
+    de: "KI-Prüfung der Lösung",
+    en: "AI review of the solution",
+    fr: "Vérification de la solution par IA"
+},
+"aiReviewPending": {
+    ru: "Решение проверяется — обычно это занимает до пары минут",
+    es: "La solución se está revisando, suele tardar un par de minutos",
+    de: "Die Lösung wird geprüft, das dauert meist ein paar Minuten",
+    en: "The solution is being reviewed, this usually takes a couple of minutes",
+    fr: "La solution est en cours de vérification, cela prend généralement quelques minutes"
+},
+"aiReviewTestsPassed": {
+    ru: "Автотесты пройдены",
+    es: "Pruebas superadas",
+    de: "Tests bestanden",
+    en: "Tests passed",
+    fr: "Tests réussis"
+},
+"aiReviewTestsFailed": {
+    ru: "Автотесты не пройдены",
+    es: "Pruebas no superadas",
+    de: "Tests nicht bestanden",
+    en: "Tests failed",
+    fr: "Tests échoués"
+},
+"aiReviewNoTests": {
+    ru: "Автотестов нет — решение посмотрит ментор",
+    es: "No hay pruebas: el mentor revisará la solución",
+    de: "Keine Tests – der Mentor prüft die Lösung",
+    en: "No tests – a mentor will review the solution",
+    fr: "Pas de tests – un mentor examinera la solution"
+},
+"aiReviewCorrectness": {
+    ru: "Корректность",
+    es: "Corrección",
+    de: "Korrektheit",
+    en: "Correctness",
+    fr: "Exactitude"
+},
+"aiReviewOptimality": {
+    ru: "Оптимальность",
+    es: "Eficiencia",
+    de: "Effizienz",
+    en: "Efficiency",
+    fr: "Efficacité"
+},
+"aiReviewReadability": {
+    ru: "Читаемость",
+    es: "Legibilidad",
+    de: "Lesbarkeit",
+    en: "Readability",
+    fr: "Lisibilité"
+},
+"aiReviewEmptyCode": {
+    ru: "Решение не отправлено — проверять нечего",
+    es: "No se envió ninguna solución",
+    de: "Keine Lösung eingereicht",
+    en: "No solution was submitted",
+    fr: "Aucune solution soumise"
+},
+"aiReviewTooLarge": {
+    ru: "Решение слишком длинное для автоматической проверки — его посмотрит ментор",
+    es: "La solución es demasiado larga para la revisión automática: la revisará el mentor",
+    de: "Die Lösung ist zu lang für die automatische Prüfung – der Mentor prüft sie",
+    en: "The solution is too long for automatic review – a mentor will check it",
+    fr: "La solution est trop longue pour la vérification automatique – un mentor la vérifiera"
+},
+"aiReviewFailed": {
+    ru: "Автоматическая проверка не удалась — решение посмотрит ментор",
+    es: "La revisión automática falló: la revisará el mentor",
+    de: "Die automatische Prüfung ist fehlgeschlagen – der Mentor prüft die Lösung",
+    en: "Automatic review failed – a mentor will check the solution",
+    fr: "La vérification automatique a échoué – un mentor examinera la solution"
+},
 "sqlSchema": {
     ru: "Схема базы данных",
     es: "Esquema de la base de datos",

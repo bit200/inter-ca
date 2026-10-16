@@ -5,6 +5,7 @@ import MDEditor from "@uiw/react-md-editor";
 import LogsStarterPreview from "../Suggest/LogsStarterPreview";
 import LazyEditor from "../LazyEditor/LazyEditor";
 import MyImg from "../MyImg";
+import ExamTaskAiReview, {useExamAiReviews} from "./ExamTaskAiReview";
 
 const SubmittedExamPreview = (props) => {
     const {dbTasks, submitDetails, jsObj, questionsDb, submitLoading, exam, history} = props
@@ -17,6 +18,7 @@ const SubmittedExamPreview = (props) => {
     const [selectedType, setSelectedType] = useState(hasQuiz ? 'quiz' : 'task')
     const [selectedQuizInd, setSelectedQuizInd] = useState(0)
     const [selectedTaskInd, setSelectedTaskInd] = useState(0)
+    const aiReviews = useExamAiReviews(exam?._id)
 
     let selTask = dbTasks[selectedTaskInd] || {}
     let it = selTask
@@ -26,6 +28,7 @@ const SubmittedExamPreview = (props) => {
     let jsDetails = jsObj[qId] || {}
     let files = Object.keys(hist.files || {}) || ['']
     let isLogsReader = jsDetails.codeType == 'logreader'
+    let aiReview = aiReviews.find(review => +review.question === +qId)
 
     let isIncorrect = !questionsDb.length && !dbTasks.length
     if (isIncorrect) {
@@ -100,6 +103,7 @@ const SubmittedExamPreview = (props) => {
                                     {isLogsReader && <div>
                                         <LogsStarterPreview _id={it._id}></LogsStarterPreview>
                                     </div>}
+                                    <ExamTaskAiReview review={aiReview}/>
                                 </div>
                                 <div className="col-sm-6">
                                     {isLogsReader && <div style={{height: '500px'}}>
