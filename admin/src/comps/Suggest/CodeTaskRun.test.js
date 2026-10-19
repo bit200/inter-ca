@@ -78,3 +78,30 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(global.http.post.mock.calls[0][1].files).toEqual({'': 'abc'});
     });
 });
+
+describe('Превью React-задачи (codeType code, lang react)', () => {
+    const {buildPreviewUrl, isReactPreview} = require('./CodeRun');
+    const REACT = {...DETAILS, lang: 'react', starterFiles: {'src/index.jsx': 'x'}, editablePaths: ['src/index.jsx']};
+
+    beforeEach(() => { global.env = {domain: 'http://api'}; });
+
+    test('адреса превью: кандидат и экзамен', () => {
+        expect(buildPreviewUrl({isNewExam: false, userId: 5, questionId: 7, token: 'a b', cd: 1}))
+            .toBe('http://api/preview/5/7?cd=1&token=a%20b');
+        expect(buildPreviewUrl({isNewExam: true, examId: 9, questionId: 7, token: 't', cd: 1}))
+            .toBe('http://api/admin_preview/9/7?cd=1&token=t');
+        expect(isReactPreview(REACT)).toBe(true);
+        expect(isReactPreview(DETAILS)).toBe(false);
+        expect(isReactPreview({codeType: 'react', lang: 'react'})).toBe(false);
+    });
+
+    test('вкладка «Превью» только у react-задачи; iframe грузит бандл api', () => {
+        const {unmount} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
+        expect(screen.queryByText('previewTab')).toBeNull();
+        unmount();
+        render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={REACT} history={{}} isNewExam examId={9}/>);
+        fireEvent.click(screen.getByText('previewTab'));
+        expect(screen.getByTestId('react-preview').querySelector('iframe').getAttribute('src'))
+            .toMatch(/^http:\/\/api\/admin_preview\/9\/7\?/);
+    });
+});
