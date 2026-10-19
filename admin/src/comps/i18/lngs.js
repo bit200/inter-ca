@@ -2863,6 +2863,13 @@ export default {
         en: "Back to the course",
         fr: `Retour au cours`
     },
+    "courseNotFound": {
+        ru: "Курс не найден",
+        es: "Curso no encontrado",
+        de: "Kurs nicht gefunden",
+        en: "Course not found",
+        fr: `Cours introuvable`
+    },
     "questionNotInCourses": {
         ru: "Эта задача недоступна: её нет в ваших курсах",
         es: "Esta tarea no está disponible: no figura en sus cursos",

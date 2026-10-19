@@ -57,7 +57,7 @@ function CourseDetails(props) {
 
                 setLoading(false)
                 setParentLoading(false)
-                if (handleCourseLoadError(r, {notify: window.notify, go: path => navigate(path)})) {
+                if (handleCourseLoadError(r, {notify: window.notify, translate: t, go: path => navigate(path)})) {
                     return;
                 }
                 let {courseUser, course, dbQuestions} = r;

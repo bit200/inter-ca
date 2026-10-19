@@ -9,10 +9,16 @@ describe('ошибка загрузки курса', () => {
         expect(go).toHaveBeenCalledWith('/courses');
         expect(window.alert).not.toHaveBeenCalled();
     });
-    test('без msg берётся текст по умолчанию', () => {
-        const notify = {error: jest.fn()};
-        handleCourseLoadError({error: 1}, {notify, go: jest.fn()});
-        expect(notify.error).toHaveBeenCalledWith('Курс не найден');
+    test('без msg берётся переведённый текст по умолчанию', () => {
+        const notify = {error: jest.fn()}, translate = jest.fn(k => 'tr:' + k);
+        handleCourseLoadError({error: 1}, {notify, go: jest.fn(), translate});
+        expect(notify.error).toHaveBeenCalledWith('tr:courseNotFound');
+    });
+    test('текст ошибки сервера выводится через перевод', () => {
+        const notify = {error: jest.fn()}, translate = jest.fn(k => 'tr:' + k);
+        handleCourseLoadError({error: true, msg: 'Course not found'}, {notify, go: jest.fn(), translate});
+        expect(translate).toHaveBeenCalledWith('Course not found');
+        expect(notify.error).toHaveBeenCalledWith('tr:Course not found');
     });
     test('успешный ответ не обрабатывается', () => {
         const notify = {error: jest.fn()}, go = jest.fn();
