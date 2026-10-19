@@ -1,8 +1,10 @@
 import {useEffect, useRef, useState} from 'react';
+import {collectEditableFiles, getCodeTaskContent, getCodeTaskFiles, getCodeTaskLanguage, isCodeTaskDetails} from './CodeTaskResults';
 
 // Язык Monaco по имени файла; SQL-задание (codeType 'sql') — всегда sql, файлов у него нет.
-export function getEditorLanguage(fileName, codeType) {
+export function getEditorLanguage(fileName, codeType, lang) {
     if (codeType === 'sql') return 'sql';
+    if (codeType === 'code') return getCodeTaskLanguage(fileName, lang);
     let arr = (fileName || '').split('.');
     let last = arr[arr.length - 1];
     return last === 'css' ? 'css' : last === 'html' ? 'html' : last === 'ts' ? 'typescript' : last === 'sql' ? 'sql' : 'javascript';
@@ -55,6 +57,7 @@ export function useCodeRun(props) {
 
     function getStarter(_jsDetails, ind = 0, fname) {
         let fileName = fname || getFileName(ind);
+        if (isCodeTaskDetails(_jsDetails)) return getCodeTaskContent(_jsDetails, null, fileName);
         return ((_jsDetails.starterFiles || {})[fileName] || '') || (_jsDetails.starter || '') || '';
     }
 
@@ -63,7 +66,11 @@ export function useCodeRun(props) {
     }
 
     function getFileExt() {
-        return getEditorLanguage(getFileName(selectedFileInd), (jsDetails || {}).codeType);
+        return getEditorLanguage(getFileName(selectedFileInd), (jsDetails || {}).codeType, (jsDetails || {}).lang);
+    }
+
+    function isReadOnlyFile() {
+        return isCodeTaskDetails(jsDetails) && !!(files[selectedFileInd] || {}).readOnly;
     }
 
     function updateCode(newCode) {
@@ -101,8 +108,14 @@ export function useCodeRun(props) {
 
         let str = _history.testCasesStr || _jsDetails.curCasesStr || _jsDetails.pubCasesStr || '';
         let builtCases = buildTestCases(str, _jsDetails.fields);
-        let fileName = getFileName(0, _jsDetails.files);
-        let __code = !isLogsRaederFn(_jsDetails)
+        let _files = isCodeTaskDetails(_jsDetails) ? getCodeTaskFiles(_jsDetails) : _jsDetails.files;
+        // у code-задачи первым открывается первый редактируемый файл
+        let firstEditable = isCodeTaskDetails(_jsDetails) ? _files.findIndex(f => !f.readOnly) : 0;
+        firstEditable = Math.max(firstEditable, 0);
+        let fileName = getFileName(firstEditable, _files);
+        let __code = isCodeTaskDetails(_jsDetails)
+            ? getCodeTaskContent(_jsDetails, _history, fileName)
+            : !isLogsRaederFn(_jsDetails)
             ? (_history.files || {})[fileName] || getStarter(_jsDetails, 0, fileName)
             : getStarter(_jsDetails, 0, fileName);
 
@@ -113,7 +126,8 @@ export function useCodeRun(props) {
         setCases(builtCases);
         setJsDetails(_jsDetails);
         setRunResults(_runResults);
-        setFiles(_jsDetails.files || []);
+        setFiles(_files || []);
+        setSelectedFileInd(firstEditable);
     }
 
     function run(params) {
@@ -123,7 +137,9 @@ export function useCodeRun(props) {
             curCasesStr,
             // Проверка знаний курса (courseCheck) встроена как isExam, но не экзамен: сдача уходит в ИИ-проверку.
             isExam: isExam && !props.courseCheck,
-            files: {'': codeRef.current},
+            files: isCodeTaskDetails(jsDetails)
+                ? collectEditableFiles(jsDetails, history, getFileName(), codeRef.current)
+                : {'': codeRef.current},
             logsReader,
             question: question._id || getQuestionId(),
             courseModule: props.courseModule,
@@ -171,6 +187,7 @@ export function useCodeRun(props) {
     }
 
     function onChangeCodeLocal(newCode) {
+        if (isReadOnlyFile()) return;
         let fileName = getFileName();
         history.files[fileName] = newCode;
         updateCode(newCode);
@@ -204,7 +221,7 @@ export function useCodeRun(props) {
         // actions
         run, submit, buildTestCases,
         onChangeCodeLocal, onChangeLogsLocal,
-        getFileName, getStarter, getFileExt, updateCode,
+        getFileName, getStarter, getFileExt, updateCode, isReadOnlyFile,
         startTime: startTimeRef.current,
     };
 }

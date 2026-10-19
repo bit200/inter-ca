@@ -14,6 +14,7 @@ import {useCodeRun} from './useCodeRun';
 import VsTaskRun from "../VsTask/VsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
 import {CodeReviewBlock} from "./CodeReviewBlock";
+import {CodeFilesTree, CodeTaskResults, getCodeTaskContent, isCodeTaskDetails} from './CodeTaskResults';
 import {isSqlDetails, SqlRunResults, SqlSchemaPanel} from "./SqlRunResults";
 
 let renderCount = 1;
@@ -32,7 +33,7 @@ function CodeRunComponent(props) {
         question, caseItem, firstErrorInd, isLogsReader,
         run, submit, buildTestCases,
         onChangeCodeLocal, onChangeLogsLocal,
-        getFileName, getStarter, getFileExt, updateCode,
+        getFileName, getStarter, getFileExt, updateCode, isReadOnlyFile,
         startTime,
     } = useCodeRun(props);
 
@@ -41,6 +42,8 @@ function CodeRunComponent(props) {
     let [dragOpts, setDragOpts] = useState({});
     // SQL-задание: вкладка logs (iframe с JS-песочницей) и тест-кейсы по полям не нужны.
     let isSql = isSqlDetails(jsDetails);
+    // codeType 'code': дерево файлов, тесты списком, без iframe-превью и тест-кейсов по полям.
+    let isCode = isCodeTaskDetails(jsDetails);
 
     const parentTopRef = useRef(null);
     const parentRightRef = useRef(null);
@@ -179,7 +182,7 @@ function CodeRunComponent(props) {
                                 {[
                                     {name: 'conditionMsg', type: 'condition'},
                                     {name: 'results', type: 'results'},
-                                    !isLogsReader && !isSql ? {name: 'logs', type: 'logs'} : null,
+                                    !isLogsReader && !isSql && !isCode ? {name: 'logs', type: 'logs'} : null,
                                 ].map((it, ind) => {
                                     if (!it) return <React.Fragment key={ind}/>
                                     return (
@@ -194,7 +197,7 @@ function CodeRunComponent(props) {
                             </div>
                         </div>
 
-                        {topTab === 'logs' && !isLogsReader && !isSql && <>
+                        {topTab === 'logs' && !isLogsReader && !isSql && !isCode && <>
                             <IframeToRunLocal
                                 isNewExam={isNewExam}
                                 cases={cases}
@@ -226,13 +229,13 @@ function CodeRunComponent(props) {
                                 <small>&nbsp;</small>
                                 <h5>{t('runResults')}</h5>
                                 <div data-testid={'code-run-results'} data-kind={'run'}>
-                                    <RunResults runResults={runResults} fields={data.fields} isSql={isSql}/>
+                                    <RunResults runResults={runResults} fields={data.fields} isSql={isSql} isCode={isCode}/>
                                 </div>
                                 {!isNewExam && <>
                                     <hr/>
                                     <h5>{t('runResultsSubmit')}</h5>
                                     <div data-testid={'code-run-results'} data-kind={'submit'}>
-                                        <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql}/>
+                                        <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql} isCode={isCode}/>
                                     </div>
                                     <CodeReviewBlock submissionId={submissionId}
                                                      isExam={!!props.isExam && !props.courseCheck}/>
@@ -245,7 +248,7 @@ function CodeRunComponent(props) {
                 <div className="crBot" ref={botRef}>
                     <div className={"vertChild casesChild " + (isLogsReader ? 'logsRader' : '')}>
                         {isSql && <SqlSchemaPanel jsDetails={jsDetails}/>}
-                        {!isLogsReader && !isSql && <>
+                        {!isLogsReader && !isSql && !isCode && <>
                             <div className="cases-wrap">
                                 {(cases || []).map((caseItem, ind) => (
                                     <div key={ind}
@@ -310,13 +313,17 @@ function CodeRunComponent(props) {
                 <div className="btn-reset">
                     <button className={'btn btn-xs btn-light'} onClick={() => {
                         onConfirm({name: t('areYouSure')}, () => {
-                            onChangeCodeLocal(getStarter(jsDetails))
+                            onChangeCodeLocal(getStarter(jsDetails, selectedFileInd))
                         })
                     }}>
                         {t('resetCode')}
                     </button>
                 </div>
-                {files && files.length > 1 && files.map((it, ind) => (
+                {isCode && <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
+                    setSelectedFileInd(ind);
+                    updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
+                }}/>}
+                {!isCode && files && files.length > 1 && files.map((it, ind) => (
                     <div key={ind}
                          onClick={() => {
                              let _code = ((history || {}).files || {})[it.name] || getStarter(jsDetails, ind);
@@ -331,7 +338,7 @@ function CodeRunComponent(props) {
             {jsDetails._id}
             <SmartCodeEditor
                 getFileExt={getFileExt}
-                isLogsReader={isLogsReader}
+                isLogsReader={isLogsReader || isReadOnlyFile()}
                 code={code}
                 setValidateErrors={setValidateErrors}
                 onChangeCodeLocal={onChangeCodeLocal}
@@ -446,6 +453,9 @@ function IframeToRunLocal2(props) {
 
 
 function RunResults(props) {
+    if (props.isCode || (props.runResults || {}).tests) {
+        return <CodeTaskResults runResults={props.runResults}/>
+    }
     if (props.isSql || (props.runResults || {}).sqlResults) {
         return <SqlRunResults runResults={props.runResults}/>
     }
