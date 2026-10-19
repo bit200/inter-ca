@@ -53,6 +53,14 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(buildTreeRows([{name: 'a/b/c.py'}]).map(r => r.type)).toEqual(['dir', 'dir', 'file']);
     });
 
+    test('дерево файлов не зажато в 22px: видны оба файла, контейнер получает класс filesWrapTree', () => {
+        let {container} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
+        expect(container.querySelector('.filesWrap').className).toContain('filesWrapTree');
+        expect(container.querySelector('.crRight').className).toContain('crRightTree');
+        expect(screen.getAllByTestId('code-file').map(f => f.getAttribute('data-path')))
+            .toEqual(['src/app.py', 'src/util.py', 'tests/test_app.py']);
+    });
+
     test('«Запустить» шлёт все редактируемые файлы, без тестов', async () => {
         render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{files: {'src/util.py': 'x = 2'}}} isExam/>);
         fireEvent.click(screen.getByTestId('code-run-run'));

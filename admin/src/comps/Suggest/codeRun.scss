@@ -24,6 +24,14 @@
 
 }
 
+// Дерево файлов code-задачи: высота по содержимому (иначе виден только первый ряд «src»), длинный список прокручивается.
+.filesWrap.filesWrapTree {
+    height: auto;
+    max-height: 30%;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
 .filesItem {
     float: left;
     margin-right: 5px;
@@ -115,6 +123,11 @@
 height:  calc(100% - 6px);
 
 
+}
+.crRight.crRightTree {
+    display: flex;
+    flex-direction: column;
+    > section { min-height: 0; }
 }
 .myEditorWrap {
     /*background: rgba(0, 128, 0, 0.48);*/
