@@ -24,12 +24,35 @@
 
 }
 
-// Дерево файлов code-задачи: высота по содержимому (иначе виден только первый ряд «src»), длинный список прокручивается.
-.filesWrap.filesWrapTree {
-    height: auto;
-    max-height: 30%;
-    overflow-y: auto;
+// Дерево файлов code-задачи: отдельная колонка слева от редактора, ширину тянут за ручку.
+.codeSplit, .codeSplitFlat {
+    display: flex;
+    height: 100%;
+}
+.codeSplitFlat { flex-direction: column; }
+.codeEditorFlat, .codeEditorCol {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    > section { min-height: 0; }
+}
+.codeTreeCol {
     flex-shrink: 0;
+    overflow: auto;
+    padding: 6px 0;
+    border-right: 1px solid var(--bs-border-color);
+}
+.codeTreeResize {
+    flex-shrink: 0;
+    width: 6px;
+    margin-left: -3px;
+    margin-right: -3px;
+    z-index: 2;
+    cursor: ew-resize;
+    transition: background .2s ease;
+    &:hover { background: var(--c1); }
 }
 
 .filesItem {

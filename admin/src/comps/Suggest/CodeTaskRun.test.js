@@ -53,12 +53,19 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(buildTreeRows([{name: 'a/b/c.py'}]).map(r => r.type)).toEqual(['dir', 'dir', 'file']);
     });
 
-    test('дерево файлов не зажато в 22px: видны оба файла, контейнер получает класс filesWrapTree', () => {
+    test('дерево файлов — отдельная колонка слева от редактора, ширину можно тянуть', () => {
         let {container} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
-        expect(container.querySelector('.filesWrap').className).toContain('filesWrapTree');
-        expect(container.querySelector('.crRight').className).toContain('crRightTree');
+        let col = screen.getByTestId('code-tree-col');
+        expect(col.parentNode.querySelector('.codeEditorCol')).not.toBeNull();
+        expect(col.contains(screen.getByTestId('code-files-tree'))).toBe(true);
+        expect(container.querySelector('.codeEditorCol').contains(screen.getByTestId('code-files-tree'))).toBe(false);
         expect(screen.getAllByTestId('code-file').map(f => f.getAttribute('data-path')))
             .toEqual(['src/app.py', 'src/util.py', 'tests/test_app.py']);
+        expect(col.style.width).toBe('200px');
+        fireEvent.mouseDown(screen.getByTestId('code-tree-resize'), {clientX: 200});
+        fireEvent.mouseMove(window, {clientX: 300});
+        fireEvent.mouseUp(window);
+        expect(col.style.width).toBe('300px');
     });
 
     test('«Запустить» шлёт все редактируемые файлы, без тестов', async () => {

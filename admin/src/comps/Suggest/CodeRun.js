@@ -81,6 +81,29 @@ function CodeRunComponent(props) {
         leftRef.current.style.width = perc + '%';
     }
 
+    // Колонка дерева файлов code-задачи: ширина в px, тянется за ручку между деревом и редактором.
+    let [treeWidth, setTreeWidth] = useState(() => {
+        let w = +Storage.get('codeTreeWidth');
+        return w >= 120 ? w : 200;
+    });
+
+    function startTreeResize(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        let startX = e.clientX, startW = treeWidth, last = startW;
+        let move = (ev) => {
+            last = Math.min(500, Math.max(120, startW + ev.clientX - startX));
+            setTreeWidth(last);
+        };
+        let up = () => {
+            window.removeEventListener('mousemove', move);
+            window.removeEventListener('mouseup', up);
+            Storage.set('codeTreeWidth', last);
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+    }
+
     function getHeight(el) { return el.clientHeight; }
     function getWidth(el) { return el.clientWidth; }
 
@@ -319,40 +342,49 @@ function CodeRunComponent(props) {
             <div className="resizeV" id={'drag2'}></div>
         </div>
         <div className={'crRight' + (isCode ? ' crRightTree' : '')} ref={rightRef}>
-            <div className={'filesWrap' + (isCode ? ' filesWrapTree' : '')}>
-                <div className="btn-reset">
-                    <button className={'btn btn-xs btn-light'} onClick={() => {
-                        onConfirm({name: t('areYouSure')}, () => {
-                            onChangeCodeLocal(getStarter(jsDetails, selectedFileInd))
-                        })
-                    }}>
-                        {t('resetCode')}
-                    </button>
-                </div>
-                {isCode && <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
-                    setSelectedFileInd(ind);
-                    updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
-                }}/>}
-                {!isCode && files && files.length > 1 && files.map((it, ind) => (
-                    <div key={ind}
-                         onClick={() => {
-                             let _code = ((history || {}).files || {})[it.name] || getStarter(jsDetails, ind);
-                             setSelectedFileInd(ind);
-                             updateCode(_code);
-                         }}
-                         className={'ib filesItem ' + (ind === selectedFileInd ? 'selectedFile' : '')}>
-                        {it.name || '-'}
+            <div className={isCode ? 'codeSplit' : 'codeSplitFlat'}>
+                {isCode && <>
+                    <div className="codeTreeCol" style={{width: treeWidth}} data-testid="code-tree-col">
+                        <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
+                            setSelectedFileInd(ind);
+                            updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
+                        }}/>
                     </div>
-                ))}
+                    <div className="codeTreeResize" data-testid="code-tree-resize" onMouseDown={startTreeResize}></div>
+                </>}
+                <div className={isCode ? 'codeEditorCol' : 'codeEditorFlat'}>
+                    <div className="filesWrap">
+                        <div className="btn-reset">
+                            <button className={'btn btn-xs btn-light'} onClick={() => {
+                                onConfirm({name: t('areYouSure')}, () => {
+                                    onChangeCodeLocal(getStarter(jsDetails, selectedFileInd))
+                                })
+                            }}>
+                                {t('resetCode')}
+                            </button>
+                        </div>
+                        {!isCode && files && files.length > 1 && files.map((it, ind) => (
+                            <div key={ind}
+                                 onClick={() => {
+                                     let _code = ((history || {}).files || {})[it.name] || getStarter(jsDetails, ind);
+                                     setSelectedFileInd(ind);
+                                     updateCode(_code);
+                                 }}
+                                 className={'ib filesItem ' + (ind === selectedFileInd ? 'selectedFile' : '')}>
+                                {it.name || '-'}
+                            </div>
+                        ))}
+                    </div>
+                    {jsDetails._id}
+                    <SmartCodeEditor
+                        getFileExt={getFileExt}
+                        isLogsReader={isLogsReader || isReadOnlyFile()}
+                        code={code}
+                        setValidateErrors={setValidateErrors}
+                        onChangeCodeLocal={onChangeCodeLocal}
+                    />
+                </div>
             </div>
-            {jsDetails._id}
-            <SmartCodeEditor
-                getFileExt={getFileExt}
-                isLogsReader={isLogsReader || isReadOnlyFile()}
-                code={code}
-                setValidateErrors={setValidateErrors}
-                onChangeCodeLocal={onChangeCodeLocal}
-            />
         </div>
     </div>
 }
