@@ -3,7 +3,7 @@ import {getEditorLanguage} from './useCodeRun';
 import {CodeTaskResults, buildTreeRows} from './CodeTaskResults';
 import CodeRun from './CodeRun';
 
-jest.mock('@uiw/react-md-editor', () => ({Markdown: () => null}));
+jest.mock('@uiw/react-md-editor', () => ({Markdown: ({source}) => <span data-testid="md">{source}</span>}));
 jest.mock('../LazyEditor/LazyEditor', () => (props) =>
     <div data-testid="editor" data-language={props.language} data-readonly={String(!!(props.options || {}).readOnly)}
          data-value={props.defaultValue}/>);
@@ -34,6 +34,13 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(getEditorLanguage('Makefile', 'code', 'go')).toBe('go');
         expect(getEditorLanguage('a.ts', 'js')).toBe('typescript');
         expect(getEditorLanguage('', 'sql')).toBe('sql');
+    });
+
+    test('условие code-задачи: заголовок (name) и описание (title) оба видны', () => {
+        render(<CodeRun question={{_id: 7, name: 'React + Redux: список дел', title: 'Допишите слайс'}}
+                        jsDetails={DETAILS} history={{}} isExam/>);
+        expect(screen.getByTestId('code-condition-text').textContent).toBe('Допишите слайс');
+        expect(screen.getAllByTestId('md').map(el => el.textContent)).toContain('React + Redux: список дел');
     });
 
     test('дерево с папками: редактируемые и тесты только чтение', () => {
