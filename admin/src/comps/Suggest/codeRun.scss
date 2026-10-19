@@ -55,9 +55,10 @@
 }
 .codeFullBtn {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: -2px;
+    right: -30px;
     z-index: 3;
+    padding: 0;
 }
 .codeEditorCol .btn-reset { right: 34px; }
 .codeTreeLock { margin-left: 6px; font-size: 12px; opacity: .6; vertical-align: -1px; }
