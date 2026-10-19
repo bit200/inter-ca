@@ -51,7 +51,14 @@
     height: 100vh;
     background: var(--bs-body-bg, #fff);
 }
-.codeFullBtn { margin-left: 5px; }
+.codeFullBtn {
+    position: sticky;
+    top: 0;
+    float: right;
+    margin: 0 6px 0 4px;
+    z-index: 1;
+}
+.codeTreeLock { margin-left: 6px; font-size: 12px; opacity: .6; vertical-align: -1px; }
 .codeTreeResize {
     flex-shrink: 0;
     width: 6px;

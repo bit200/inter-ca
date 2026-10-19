@@ -48,6 +48,8 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(screen.getAllByTestId('code-file').map(el => [el.getAttribute('data-path'), el.getAttribute('data-readonly')]))
             .toEqual([['src/app.py', 'false'], ['src/util.py', 'false'], ['tests/test_app.py', 'true']]);
         expect(screen.getByTestId('editor').getAttribute('data-language')).toBe('python');
+        expect(screen.getAllByTestId('code-readonly-icon').length).toBe(1);
+        expect(screen.getAllByTestId('code-file')[2].textContent).not.toMatch(/только чтение/);
         fireEvent.click(screen.getAllByTestId('code-file')[2]);
         expect(screen.getByTestId('editor').getAttribute('data-readonly')).toBe('true');
         expect(buildTreeRows([{name: 'a/b/c.py'}]).map(r => r.type)).toEqual(['dir', 'dir', 'file']);
@@ -73,6 +75,7 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         let scss = require('fs').readFileSync(require('path').join(__dirname, 'codeRun.scss'), 'utf8');
         expect(scss).toMatch(/\.codeTreeCol \{[^}]*padding: 6px 0 6px 10px/);
         let split = container.querySelector('.codeSplit');
+        expect(screen.getByTestId('code-tree-col').contains(screen.getByTestId('code-full-btn'))).toBe(true);
         expect(split.classList.contains('codeSplitFull')).toBe(false);
         fireEvent.click(screen.getByTestId('code-full-btn'));
         expect(split.classList.contains('codeSplitFull')).toBe(true);
