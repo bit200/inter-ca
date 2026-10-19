@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from "react";
 import _ from "underscore";
 
-import {Link, Outlet, useSearchParams} from "react-router-dom";
+import {Link, Outlet, useNavigate, useSearchParams} from "react-router-dom";
+import {handleCourseLoadError} from "./courseLoadError";
 import {findTopicPosition, topicParamFor, CHECK_TOPIC} from "./courseTopicUrl";
 import CustomStorage from "./CustomStorage";
 import PreviewCourseModule from "./PreviewCourseModule";
@@ -29,6 +30,7 @@ function CourseDetails(props) {
 
     let [activeInd, setActiveInd] = useState(0);
     let [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     let isAdmin = false;
 
     function getActiveInd(course, mHistory) {
@@ -55,8 +57,8 @@ function CourseDetails(props) {
 
                 setLoading(false)
                 setParentLoading(false)
-                if (r.error) {
-                    return alert(r.msg);
+                if (handleCourseLoadError(r, {notify: window.notify, go: path => navigate(path)})) {
+                    return;
                 }
                 let {courseUser, course, dbQuestions} = r;
                 let {mHistory, qHistory} = courseUser || {};
