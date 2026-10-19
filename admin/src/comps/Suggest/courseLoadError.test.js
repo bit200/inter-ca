@@ -1,4 +1,5 @@
 import {handleCourseLoadError} from './courseLoadError';
+import lngs from '../i18/lngs';
 
 describe('ошибка загрузки курса', () => {
     test('курс не найден: notify вместо alert и переход на /courses', () => {
@@ -24,5 +25,9 @@ describe('ошибка загрузки курса', () => {
         const notify = {error: jest.fn()}, go = jest.fn();
         expect(handleCourseLoadError({courseUser: {}}, {notify, go})).toBe(false);
         expect(go).not.toHaveBeenCalled();
+    });
+    test('есть русский перевод для текста ошибки сервера и ключа по умолчанию', () => {
+        expect(lngs['Course not found'].ru).toBe('Курс не найден');
+        expect(lngs.courseNotFound.ru).toBe('Курс не найден');
     });
 });
