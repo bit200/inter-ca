@@ -1,0 +1,14 @@
+// Задачи по языкам (CodeTaskResults.js): цвета — из переменных темы.
+.codeTaskResults { display: flex; flex-direction: column; gap: 8px; }
+.codeCompileError { color: var(--c404); pre { white-space: pre-wrap; margin: 4px 0 0; } }
+.codeTest { font-size: 13px; line-height: 1.4;
+    .codeTestHead { display: flex; align-items: baseline; gap: 8px; small { opacity: .6; } }
+    &[status='error'] .codeTestHead > span:nth-child(2) { color: var(--c404); }
+    pre { white-space: pre-wrap; margin: 4px 0 0 20px; font-size: 12px; }
+}
+.codeFilesTree { display: block; padding-bottom: 4px;
+    .codeTreeDir { font-size: 12px; opacity: .7; padding-top: 2px; padding-bottom: 2px; }
+    .codeTreeFile { cursor: pointer; font-size: 13px; padding-top: 2px; padding-bottom: 2px; padding-right: 8px;
+        &.selectedFile { font-weight: 600; }
+        small { opacity: .6; } }
+}

@@ -4300,6 +4300,34 @@ export default {
     en: "Showing the first 200 rows: the query returned more",
     fr: "Les 200 premières lignes sont affichées : la requête en a renvoyé plus"
 },
+"codeCompileError": {
+    ru: "Ошибка компиляции",
+    es: "Compilation error",
+    de: "Compilation error",
+    en: "Compilation error",
+    fr: "Compilation error"
+},
+"codeTestHidden": {
+    ru: "Скрытый тест",
+    es: "Hidden test",
+    de: "Hidden test",
+    en: "Hidden test",
+    fr: "Hidden test"
+},
+"codeTestsList": {
+    ru: "Тесты",
+    es: "Tests",
+    de: "Tests",
+    en: "Tests",
+    fr: "Tests"
+},
+"codeFileReadonly": {
+    ru: "только чтение",
+    es: "read-only",
+    de: "read-only",
+    en: "read-only",
+    fr: "read-only"
+},
 "sqlPublicCase": {
     ru: "Открытые данные",
     es: "Datos públicos",
