@@ -68,6 +68,18 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(col.style.width).toBe('300px');
     });
 
+    test('колонка дерева с отступом слева 10px; кнопка разворачивает блок на весь экран', () => {
+        let {container} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
+        let scss = require('fs').readFileSync(require('path').join(__dirname, 'codeRun.scss'), 'utf8');
+        expect(scss).toMatch(/\.codeTreeCol \{[^}]*padding: 6px 0 6px 10px/);
+        let split = container.querySelector('.codeSplit');
+        expect(split.classList.contains('codeSplitFull')).toBe(false);
+        fireEvent.click(screen.getByTestId('code-full-btn'));
+        expect(split.classList.contains('codeSplitFull')).toBe(true);
+        fireEvent.keyDown(window, {key: 'Escape'});
+        expect(split.classList.contains('codeSplitFull')).toBe(false);
+    });
+
     test('«Запустить» шлёт все редактируемые файлы, без тестов', async () => {
         render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{files: {'src/util.py': 'x = 2'}}} isExam/>);
         fireEvent.click(screen.getByTestId('code-run-run'));

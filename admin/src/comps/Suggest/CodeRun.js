@@ -87,6 +87,15 @@ function CodeRunComponent(props) {
         return w >= 120 ? w : 200;
     });
 
+    // Развернуть блок «дерево + редактор» поверх страницы; Esc сворачивает обратно.
+    let [codeFull, setCodeFull] = useState(false);
+    useEffect(() => {
+        if (!codeFull) return;
+        let onKey = (ev) => { if (ev.key === 'Escape') setCodeFull(false); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [codeFull]);
+
     function startTreeResize(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -342,7 +351,7 @@ function CodeRunComponent(props) {
             <div className="resizeV" id={'drag2'}></div>
         </div>
         <div className={'crRight' + (isCode ? ' crRightTree' : '')} ref={rightRef}>
-            <div className={isCode ? 'codeSplit' : 'codeSplitFlat'}>
+            <div className={(isCode ? 'codeSplit' : 'codeSplitFlat') + (isCode && codeFull ? ' codeSplitFull' : '')}>
                 {isCode && <>
                     <div className="codeTreeCol" style={{width: treeWidth}} data-testid="code-tree-col">
                         <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
@@ -363,6 +372,11 @@ function CodeRunComponent(props) {
                                 {t('resetCode')}
                             </button>
                         </div>
+                        {isCode && <button className={'btn btn-xs btn-light codeFullBtn'}
+                                           data-testid="code-full-btn"
+                                           onClick={() => setCodeFull(!codeFull)}>
+                            {codeFull ? 'Свернуть' : 'На весь экран'}
+                        </button>}
                         {!isCode && files && files.length > 1 && files.map((it, ind) => (
                             <div key={ind}
                                  onClick={() => {
