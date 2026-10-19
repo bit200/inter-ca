@@ -6,8 +6,12 @@ import LazyEditor from "../LazyEditor/LazyEditor";
 import { Editor } from "@monaco-editor/react";
 import { getEditorLanguage } from "./useCodeRun";
 import { SqlReferenceResults } from "./SqlRunResults";
+import CodeTaskEditor from "./CodeTaskEditor";
+import { CODE_LANGS, applyLang } from "./codeTask";
 
 const isSql = (obj) => (obj || {}).codeType === 'sql';
+const isCode = (obj) => (obj || {}).codeType === 'code';
+const isLegacyJs = (obj) => !isSql(obj) && !isCode(obj);
 
 const SmartMemo = React.memo(function (props) {
     return <Smart {...props}></Smart>
@@ -22,6 +26,7 @@ function JSDetails(props) {
     let question = (localItem || {})._id || props.questionId;
     let isCustom = Boolean(customData.onChangeDetails);
     let keyId = (customData || {}).keyId;
+    const prevLang = React.useRef((data.details || {}).lang);
 
     window.setJsDetailsData = (data) => {
         setData(data);
@@ -34,6 +39,7 @@ function JSDetails(props) {
                 .then(it => {
                     setLoading(false)
                     it.details = it.details || {};
+                    prevLang.current = it.details.lang;
                     setData({ ...it })
     
                 })
@@ -73,6 +79,12 @@ function JSDetails(props) {
         <Smart
             onChange={(v) => {
                 data.details = { ...data.details, v };
+                const d = data.details;
+                // Смена codeType на 'code' / lang пустой задачи подставляет шаблон под язык
+                if (d.codeType === 'code' && (!d.lang || d.lang !== prevLang.current)) {
+                    data.details = applyLang(d, d.lang || 'python');
+                }
+                prevLang.current = data.details.lang;
                 setData({ ...data })
                 autoSave(data);
             }}
@@ -84,7 +96,15 @@ function JSDetails(props) {
                     type: 'select',
                     key: 'codeType',
                     name: 'CodeType',
-                    items: ['', 'js', 'promise', 'async', 'react', 'html', 'logreader', 'sql']
+                    items: ['', 'js', 'promise', 'async', 'react', 'html', 'logreader', 'sql', 'code']
+                },
+                {
+                    size: 2,
+                    type: 'select',
+                    key: 'lang',
+                    name: 'Язык',
+                    items: CODE_LANGS,
+                    isVisible: isCode
                 },
                 {
                     size: 2,
@@ -234,7 +254,7 @@ function JSDetails(props) {
                     ]
                 },
                 {
-                    size: 6, isVisible: (obj) => !isSql(obj), childs: [
+                    size: 6, isVisible: isLegacyJs, childs: [
 
 
                         {
@@ -390,7 +410,14 @@ function JSDetails(props) {
 
 
                 {
-                    size: 6, Component: ({ item }) => {
+                    size: 12, isVisible: isCode, Component: (pp) => <CodeTaskEditor
+                        item={pp.item}
+                        questionId={question}
+                        onChange={(details) => { window.setJsDetailsData({ ...data, details }) }}
+                    />
+                },
+                {
+                    size: 6, isVisible: isLegacyJs, Component: ({ item }) => {
                         return <>
                             <div className={'title-use-case'}></div>
                         </>
@@ -399,7 +426,7 @@ function JSDetails(props) {
                 },
                 // ]},
                 {
-                    size: 6,
+                    size: 6, isVisible: isLegacyJs,
                     // memoKey: 'editor',
                     // path: 'Suggest/EditorViewJsDetails'
                     Component: EditorView
