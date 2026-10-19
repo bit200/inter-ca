@@ -217,6 +217,10 @@ function CodeRunComponent(props) {
                         {topTab === 'condition' &&
                             <div className={'conditionWrap'}>
                                 <MDEditor.Markdown data-color-mode="light" source={question.name}/>
+                                {isCode && question.title && question.title !== question.name &&
+                                    <div data-testid={'code-condition-text'}>
+                                        <MDEditor.Markdown data-color-mode="light" source={question.title}/>
+                                    </div>}
                                 {isLogsReader && <>
                                     <hr/>
                                     Поле для ввода логов
