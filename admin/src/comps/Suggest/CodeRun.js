@@ -44,6 +44,8 @@ function CodeRunComponent(props) {
     let isSql = isSqlDetails(jsDetails);
     // codeType 'code': дерево файлов, тесты списком, без iframe-превью и тест-кейсов по полям.
     let isCode = isCodeTaskDetails(jsDetails);
+    // codeType 'code' + lang 'react': превью из esbuild-бандла api (без unpkg/Babel).
+    let hasPreview = isCode && isReactPreview(jsDetails);
 
     const parentTopRef = useRef(null);
     const parentRightRef = useRef(null);
@@ -183,6 +185,7 @@ function CodeRunComponent(props) {
                                     {name: 'conditionMsg', type: 'condition'},
                                     {name: 'results', type: 'results'},
                                     !isLogsReader && !isSql && !isCode ? {name: 'logs', type: 'logs'} : null,
+                                    hasPreview ? {name: 'previewTab', type: 'preview'} : null,
                                 ].map((it, ind) => {
                                     if (!it) return <React.Fragment key={ind}/>
                                     return (
@@ -208,6 +211,9 @@ function CodeRunComponent(props) {
                                 forceRenderLogs={forceRenderLogs}
                             />
                         </>}
+                        {topTab === 'preview' && hasPreview &&
+                            <ReactPreview isNewExam={isNewExam} question={question} examId={props.examId}
+                                          reloadKey={runResults}/>}
                         {topTab === 'condition' &&
                             <div className={'conditionWrap'}>
                                 <MDEditor.Markdown data-color-mode="light" source={question.name}/>
@@ -412,6 +418,38 @@ function HintsContent(props) {
             <button className={'btn btn-sm btn-light'}
                     onClick={() => setHintInd((hints.length + hintInd - 1) % hints.length)}>Предыдущая</button>
         </>}
+    </div>
+}
+
+
+export function isReactPreview(details) {
+    return (details || {}).codeType === 'code' && (details || {}).lang === 'react';
+}
+
+// iframe не шлёт Authorization: превью api отдаёт по ?token= (+cookie).
+export function buildPreviewUrl({isNewExam, examId, userId, questionId, token, cd}) {
+    let query = '?cd=' + cd + '&token=' + encodeURIComponent(token || '');
+    return isNewExam
+        ? global.env.domain + '/admin_preview/' + examId + '/' + questionId + query
+        : global.env.domain + '/preview/' + userId + '/' + questionId + query;
+}
+
+// Обновляется по кнопке и после запуска/сдачи (reloadKey). Ошибку сборки api отдаёт HTML-страницей (422) — iframe её покажет.
+export function ReactPreview({isNewExam, question, examId, reloadKey}) {
+    let [cd, setCd] = useState(new Date().getTime());
+    useEffect(() => { setCd(new Date().getTime()); }, [reloadKey]);
+    let url = buildPreviewUrl({
+        isNewExam, examId: examId || CustomStorage.getId(), userId: user.get_id(),
+        questionId: question._id, token: user.get_token && user.get_token(), cd,
+    });
+    return <div className='logsRunWraps' data-testid={'react-preview'}>
+        <a className={'btn btn-light btn-sm pull-right'}
+           style={{marginLeft: '10px', position: 'absolute', right: 0}}
+           data-testid={'react-preview-reload'}
+           onClick={() => setCd(new Date().getTime())}>
+            <small>{t('reloadPreview')}</small>
+        </a>
+        <iframe title={'preview'} style={{width: '100%', background: 'white'}} src={url}/>
     </div>
 }
 

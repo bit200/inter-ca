@@ -371,6 +371,20 @@ export default {
         en: 'Tests Passed',
         fr: `Tests réussis`
     },
+    previewTab: {
+        ru: 'Превью',
+        es: 'Vista previa',
+        de: 'Vorschau',
+        en: 'Preview',
+        fr: `Aperçu`
+    },
+    reloadPreview: {
+        ru: 'Обновить превью',
+        es: 'Actualizar vista previa',
+        de: 'Vorschau aktualisieren',
+        en: 'Refresh preview',
+        fr: `Actualiser l'aperçu`
+    },
     reloadLogs: {
         ru: 'Перезапустить логи',
         es: 'Reiniciar registros',
