@@ -1,0 +1,19 @@
+// Редактор code-задачи (CodeTaskEditor.js): цвета из bootstrap-переменных темы, левых полос нет.
+.codeTaskEditor { display: flex; flex-direction: column; gap: 14px; }
+.codeTaskCheck {
+    border: 1px solid var(--bs-border-color, #ccc);
+    border-radius: 6px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+}
+.codeTaskCheck[data-status='ok'] { background: var(--bs-success-bg-subtle, #e6f6ec); }
+.codeTaskCheck[data-status='failed'] { background: var(--bs-danger-bg-subtle, #fdecec); }
+.codeTaskCheck[data-status='stale'], .codeTaskCheck[data-status='none'] { background: var(--bs-warning-bg-subtle, #fff6df); }
+.codeTaskCheckHead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.codeTaskCheckList { margin: 0; padding-left: 18px; font-size: 13px; }
+.codeTaskCheckError { color: var(--bs-danger-text-emphasis, #b3261e); font-size: 13px; }
+.codeTaskCheckWarn { font-size: 13px; font-weight: 600; }
+.codeTaskCheckMuted, .codeTaskMuted { color: var(--bs-secondary-color, #777); font-size: 12px; }
+.codeTaskSet { display: flex; flex-direction: column; gap: 6px; }
+.codeTaskTabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.codeTaskEditable { margin: 0 0 0 8px; font-weight: 400; font-size: 11px; }
+.codeTaskEditable input { margin-right: 3px; vertical-align: middle; }
