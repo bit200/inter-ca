@@ -354,6 +354,12 @@ function CodeRunComponent(props) {
             <div className={(isCode ? 'codeSplit' : 'codeSplitFlat') + (isCode && codeFull ? ' codeSplitFull' : '')}>
                 {isCode && <>
                     <div className="codeTreeCol" style={{width: treeWidth}} data-testid="code-tree-col">
+                        <button className={'btn btn-xs btn-light codeFullBtn'}
+                                data-testid="code-full-btn"
+                                title={codeFull ? 'Свернуть' : 'На весь экран'}
+                                onClick={() => setCodeFull(!codeFull)}>
+                            <i className={codeFull ? 'iconoir-collapse' : 'iconoir-expand'}></i>
+                        </button>
                         <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
                             setSelectedFileInd(ind);
                             updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
@@ -372,11 +378,6 @@ function CodeRunComponent(props) {
                                 {t('resetCode')}
                             </button>
                         </div>
-                        {isCode && <button className={'btn btn-xs btn-light codeFullBtn'}
-                                           data-testid="code-full-btn"
-                                           onClick={() => setCodeFull(!codeFull)}>
-                            {codeFull ? 'Свернуть' : 'На весь экран'}
-                        </button>}
                         {!isCode && files && files.length > 1 && files.map((it, ind) => (
                             <div key={ind}
                                  onClick={() => {

@@ -81,7 +81,7 @@ export function CodeFilesTree({files, selectedInd, onSelect}) {
                    style={{paddingLeft: 8 + row.depth * 12}}
                    title={row.readOnly ? t('codeFileReadonly') : ''}
                    onClick={() => onSelect(row.ind)}>
-                {row.name}{row.readOnly && <small> · {t('codeFileReadonly')}</small>}
+                {row.name}{row.readOnly && <i className="iconoir-lock codeTreeLock" data-testid="code-readonly-icon"></i>}
             </div>)}
     </div>
 }
