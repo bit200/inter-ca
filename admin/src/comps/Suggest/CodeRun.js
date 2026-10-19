@@ -318,8 +318,8 @@ function CodeRunComponent(props) {
             </div>
             <div className="resizeV" id={'drag2'}></div>
         </div>
-        <div className="crRight" ref={rightRef}>
-            <div className="filesWrap">
+        <div className={'crRight' + (isCode ? ' crRightTree' : '')} ref={rightRef}>
+            <div className={'filesWrap' + (isCode ? ' filesWrapTree' : '')}>
                 <div className="btn-reset">
                     <button className={'btn btn-xs btn-light'} onClick={() => {
                         onConfirm({name: t('areYouSure')}, () => {
