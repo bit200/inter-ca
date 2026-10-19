@@ -41,9 +41,17 @@
 .codeTreeCol {
     flex-shrink: 0;
     overflow: auto;
-    padding: 6px 0;
+    padding: 6px 0 6px 10px;
     border-right: 1px solid var(--bs-border-color);
 }
+.codeSplitFull {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    height: 100vh;
+    background: var(--bs-body-bg, #fff);
+}
+.codeFullBtn { margin-left: 5px; }
 .codeTreeResize {
     flex-shrink: 0;
     width: 6px;
