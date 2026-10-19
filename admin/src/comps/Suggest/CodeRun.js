@@ -119,7 +119,7 @@ function CodeRunComponent(props) {
     let isNewExam = props.isNewExam;
 
     return <div
-        className={'codeRunWrap ' + (dragOpts.drag1 || dragOpts.drag2 ? 'dragging' + (dragOpts.drag1 ? '1' : 2) : '')}
+        className={'codeRunWrap ' + (isCode && codeFull ? 'codeRunFull ' : '') + (dragOpts.drag1 || dragOpts.drag2 ? 'dragging' + (dragOpts.drag1 ? '1' : 2) : '')}
         ref={parentRightRef}
         onMouseDown={(e) => {
             let dragKey = e.target.getAttribute('id');
@@ -351,15 +351,9 @@ function CodeRunComponent(props) {
             <div className="resizeV" id={'drag2'}></div>
         </div>
         <div className={'crRight' + (isCode ? ' crRightTree' : '')} ref={rightRef}>
-            <div className={(isCode ? 'codeSplit' : 'codeSplitFlat') + (isCode && codeFull ? ' codeSplitFull' : '')}>
+            <div className={isCode ? 'codeSplit' : 'codeSplitFlat'}>
                 {isCode && <>
                     <div className="codeTreeCol" style={{width: treeWidth}} data-testid="code-tree-col">
-                        <button className={'btn btn-xs btn-light codeFullBtn'}
-                                data-testid="code-full-btn"
-                                title={codeFull ? 'Свернуть' : 'На весь экран'}
-                                onClick={() => setCodeFull(!codeFull)}>
-                            <i className={codeFull ? 'iconoir-collapse' : 'iconoir-expand'}></i>
-                        </button>
                         <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
                             setSelectedFileInd(ind);
                             updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
@@ -369,6 +363,12 @@ function CodeRunComponent(props) {
                 </>}
                 <div className={isCode ? 'codeEditorCol' : 'codeEditorFlat'}>
                     <div className="filesWrap">
+                        {isCode && <button className={'btn btn-xs btn-light codeFullBtn'}
+                                data-testid="code-full-btn"
+                                title={codeFull ? 'Свернуть' : 'На весь экран'}
+                                onClick={() => setCodeFull(!codeFull)}>
+                            <i className={codeFull ? 'iconoir-collapse' : 'iconoir-expand'}></i>
+                        </button>}
                         <div className="btn-reset">
                             <button className={'btn btn-xs btn-light'} onClick={() => {
                                 onConfirm({name: t('areYouSure')}, () => {
