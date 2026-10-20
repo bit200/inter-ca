@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import _ from 'underscore';
 import MDEditor from "@uiw/react-md-editor";
 import MyModal from 'libs/MyModal';
@@ -118,7 +119,10 @@ function CodeRunComponent(props) {
 
     let isNewExam = props.isNewExam;
 
-    return <div
+    // В модалке предок с transform/overflow превращает position:fixed в «fixed внутри модалки»,
+    // поэтому в полноэкранном режиме блок выносится порталом в body.
+    let wrap = (isCode && codeFull) ? (el) => createPortal(el, document.body) : (el) => el;
+    return wrap(<div
         className={'codeRunWrap ' + (isCode && codeFull ? 'codeRunFull ' : '') + (dragOpts.drag1 || dragOpts.drag2 ? 'dragging' + (dragOpts.drag1 ? '1' : 2) : '')}
         ref={parentRightRef}
         onMouseDown={(e) => {
@@ -401,7 +405,7 @@ function CodeRunComponent(props) {
                 </div>
             </div>
         </div>
-    </div>
+    </div>)
 }
 
 

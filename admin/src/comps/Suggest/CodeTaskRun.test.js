@@ -74,14 +74,18 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         let {container} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
         let scss = require('fs').readFileSync(require('path').join(__dirname, 'codeRun.scss'), 'utf8');
         expect(scss).toMatch(/\.codeTreeCol \{[^}]*padding: 6px 0 6px 10px/);
-        let split = container.querySelector('.codeRunWrap');
+        let split = () => document.body.querySelector('.codeRunWrap');
         expect(screen.getByTestId('code-tree-col').contains(screen.getByTestId('code-full-btn'))).toBe(false);
         expect(container.querySelector('.codeEditorCol').contains(screen.getByTestId('code-full-btn'))).toBe(true);
-        expect(split.classList.contains('codeRunFull')).toBe(false);
+        expect(split().classList.contains('codeRunFull')).toBe(false);
+        expect(split().parentNode).not.toBe(document.body);
         fireEvent.click(screen.getByTestId('code-full-btn'));
-        expect(split.classList.contains('codeRunFull')).toBe(true);
+        expect(split().classList.contains('codeRunFull')).toBe(true);
+        // вынесен в body, иначе предок модалки с transform ограничивает fixed своими границами
+        expect(split().parentNode).toBe(document.body);
         fireEvent.keyDown(window, {key: 'Escape'});
-        expect(split.classList.contains('codeRunFull')).toBe(false);
+        expect(split().classList.contains('codeRunFull')).toBe(false);
+        expect(split().parentNode).not.toBe(document.body);
     });
 
     test('«Запустить» шлёт все редактируемые файлы, без тестов', async () => {
