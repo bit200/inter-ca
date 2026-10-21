@@ -33,7 +33,8 @@ class MyModal extends React.Component {
   }
 
   onClose() {
-    // console.log('*........ ## on closeeeeeeeeee');
+    // beforeClose вернул false - закрытие отменено (например, ждём подтверждения)
+    if (this.props.beforeClose && this.props.beforeClose() === false) return
     this.setState({isOpen: false})
     this.props.onClose && this.props.onClose()
 

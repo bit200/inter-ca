@@ -32,6 +32,7 @@ function CourseQuiz(props, ref) {
     let [loading, setLoading] = useState(false);
     let [loadError, setLoadError] = useState(false);
     let [open, setOpen] = useState(false);
+    let [confirmClose, setConfirmClose] = useState(false);
     let [opts, setOpts] = useState({});
     let [quizResults, setQuizResults] = useState(false);
     let [quizes, setQuizes] = useState([]);
@@ -255,6 +256,14 @@ function CourseQuiz(props, ref) {
 
     function hideModal() {
         setOpen(false)
+        setConfirmClose(false)
+    }
+
+    // Закрытие модалки посреди проверочного квиза (Esc, клик мимо) - только после подтверждения
+    function beforeQuizClose() {
+        if (quizResults || !_quizes.length) return true
+        setConfirmClose(true)
+        return false
     }
 
 
@@ -336,6 +345,7 @@ function CourseQuiz(props, ref) {
             size={'lg'}
             isOpen={open}
             onClose={onClose}
+            beforeClose={beforeQuizClose}
         >
             <>
 
@@ -418,6 +428,26 @@ function CourseQuiz(props, ref) {
             </>
 
 
+        </MyModal>
+
+        <MyModal
+            woClose={true}
+            size={1}
+            isOpen={confirmClose}
+            onClose={() => setConfirmClose(false)}
+        >
+            <div data-testid={'course-quiz-confirm-close'}>
+                <strong>Прервать проверку знаний?</strong>
+                <div style={{margin: '10px 0 16px'}}>Прогресс этой попытки не сохранится.</div>
+                <Button color={4} id={'course-quiz-confirm-stay'} onClick={(scb) => {
+                    setConfirmClose(false)
+                    scb && scb()
+                }}>Продолжить квиз</Button>
+                <Button color={0} id={'course-quiz-confirm-leave'} onClick={(scb) => {
+                    hideModal()
+                    scb && scb()
+                }}>Закрыть и выйти</Button>
+            </div>
         </MyModal>
 
         {interviewActive && <MockInterviewIframe
