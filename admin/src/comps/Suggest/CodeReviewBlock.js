@@ -89,9 +89,10 @@ export function CodeReviewDone({result}) {
 }
 
 // isExam: в экзамене разбор не показываем (подгонка под модель, подсказки) — только факт отправки.
-export function CodeReviewBlock({submissionId, isExam}) {
-    let aiReview = useCodeReview(isExam ? null : submissionId);
-    if (!submissionId) return null;
+// hidden: режим квизов (проверка знаний курса) — плашки разбора нет вовсе, запросов тоже.
+export function CodeReviewBlock({submissionId, isExam, hidden}) {
+    let aiReview = useCodeReview(isExam || hidden ? null : submissionId);
+    if (!submissionId || hidden) return null;
     if (isExam) {
         return <div className={'codeReview'} data-testid={'code-review'} data-state={'exam'}>
             <div className={'codeReviewWait'}>Решение отправлено</div>
