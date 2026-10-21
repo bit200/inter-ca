@@ -283,7 +283,7 @@ function CodeRunComponent(props) {
                                     <div data-testid={'code-run-results'} data-kind={'submit'}>
                                         <RunResults runResults={runSubmitResults} fields={data.fields} isSql={isSql} isCode={isCode}/>
                                     </div>
-                                    <CodeReviewBlock submissionId={submissionId}
+                                    <CodeReviewBlock submissionId={submissionId} hidden={!!props.courseCheck}
                                                      isExam={!!props.isExam && !props.courseCheck}/>
                                 </>}
                             </div>

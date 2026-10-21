@@ -84,6 +84,15 @@ describe('Разбор решения (CodeReviewBlock)', () => {
         expect(screen.queryByText('Разбор решения')).toBeNull();
     });
 
+    test('квиз (hidden): блок не рисуется, запросов и подписки нет', async () => {
+        mockSubmission(DONE);
+        const {container} = render(<CodeReviewBlock submissionId={7} hidden={true}/>);
+        await act(async () => {});
+        expect(container.textContent).toBe('');
+        expect(global.http.get).not.toHaveBeenCalled();
+        expect(sse.subscribe).not.toHaveBeenCalled();
+    });
+
     test('без submissionId ничего не рисуется', () => {
         const {container} = render(<CodeReviewBlock submissionId={null}/>);
         expect(container.textContent).toBe('');
