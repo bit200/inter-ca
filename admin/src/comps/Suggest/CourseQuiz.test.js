@@ -21,7 +21,11 @@ jest.mock('react-router-dom', () => ({
 jest.mock('../../libs/Button', () => ({ onClick, children }) => (
     <button onClick={() => onClick(() => {})}>{children}</button>
 ));
-jest.mock('../../libs/MyModal', () => ({ isOpen, children }) => (isOpen ? <div>{children}</div> : null));
+// Esc/клик мимо модалки: как настоящий MyModal, сначала спрашиваем beforeClose
+jest.mock('../../libs/MyModal', () => ({ isOpen, children, onClose, beforeClose }) => (isOpen ? <div>
+    {children}
+    <button onClick={() => { if (!beforeClose || beforeClose() !== false) onClose(); }}>esc</button>
+</div> : null));
 jest.mock('../MockInterview/components/MockInterviewIframe', () => ({ interview, onComplete }) => (
     <div>
         <span>iframe: {interview.embedUrl}</span>
@@ -180,5 +184,49 @@ describe('CourseQuiz - финальная проверка знаний чере
         await act(async () => { fireEvent.click(screen.getByText(/Повторить/)); });
         expect(screen.getByText('checkKnowledge')).toBeTruthy();
         expect(screen.queryByText(/Повторить/)).toBeNull();
+    });
+});
+
+describe('CourseQuiz - закрытие модалки посреди проверочного квиза', () => {
+    beforeEach(() => {
+        global.t = (key) => key;
+        global.http = {
+            get: jest.fn(() => Promise.resolve({ quizes: [{ _id: 1 }], pubQuizes: [{ _id: 1 }] })),
+            put: jest.fn(() => Promise.resolve({})),
+            post: jest.fn(() => Promise.resolve({})),
+        };
+    });
+
+    async function openQuiz() {
+        render(<CourseQuiz moduleId={500} onAction={jest.fn()} onSuccess={jest.fn()} />);
+        await act(async () => {});
+        await act(async () => { fireEvent.click(screen.getByText('checkKnowledge')); });
+        await waitFor(() => screen.getByText('квиз'));
+    }
+
+    it('по Esc не закрывает квиз сразу, а просит подтверждение', async () => {
+        await openQuiz();
+        fireEvent.click(screen.getAllByText('esc')[0]);
+
+        expect(screen.getByTestId('course-quiz-confirm-close')).toBeInTheDocument();
+        expect(screen.getByText('квиз')).toBeInTheDocument();
+    });
+
+    it('"Продолжить квиз" оставляет квиз открытым', async () => {
+        await openQuiz();
+        fireEvent.click(screen.getAllByText('esc')[0]);
+        await act(async () => { fireEvent.click(screen.getByText('Продолжить квиз')); });
+
+        expect(screen.queryByTestId('course-quiz-confirm-close')).toBeNull();
+        expect(screen.getByText('квиз')).toBeInTheDocument();
+    });
+
+    it('"Закрыть и выйти" закрывает квиз', async () => {
+        await openQuiz();
+        fireEvent.click(screen.getAllByText('esc')[0]);
+        await act(async () => { fireEvent.click(screen.getByText('Закрыть и выйти')); });
+
+        expect(screen.queryByText('квиз')).toBeNull();
+        expect(screen.queryByTestId('course-quiz-confirm-close')).toBeNull();
     });
 });
