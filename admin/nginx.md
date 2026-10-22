@@ -28,6 +28,13 @@ server_name app.itkedu.com;
         expires 1h;
     }
 
+    # version.json кладёт prod-deploy.sh: {revision: <полный SHA>, builtAt}. Без кэша —
+    # по нему выпуск в claude-tasks проверяет, какой SHA отдаёт production.
+    location = /version.json {
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        expires -1;
+    }
+
     location /static {
         #try_files /static/$uri /124/index.html;
         expires 1h;
