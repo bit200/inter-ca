@@ -561,6 +561,10 @@ const router = createBrowserRouter([
                 element: Loader("EvaluationList/EvaluationList")(),
             },
             {
+                path: "evaluations/task/:id",
+                element: Loader("EvaluationDetail/TaskEvaluationDetail")(),
+            },
+            {
                 path: "evaluations/:id",
                 element: Loader("EvaluationDetail/EvaluationDetail")(),
             },

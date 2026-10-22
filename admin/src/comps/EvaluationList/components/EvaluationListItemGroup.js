@@ -3,7 +3,6 @@ import {Link} from "react-router-dom";
 import s from '../evaluationList.module.scss';
 import { STATUS_LABEL, STATUS_COLOR } from '../../EvaluationDetail/evaluationStatus';
 import { sortItemsByScore } from '../evaluate-list.utils';
-import ExamTaskAiReview from '../../RunExam/ExamTaskAiReview';
 
 // Дата ответа - короткая ("14 мая"), год только у прошлых лет: в списке она
 // нужна как ориентир при сортировке, а не как точный штамп. Полная дата - в
@@ -24,19 +23,6 @@ function getQuestionTitle(item) {
     return ti.title || ti.smallTitle || ti.desc || `Вопрос #${item.question}`;
 }
 
-
-// Задача модуля без экзамена: открыть разбор можно только здесь же, раскрыв строку.
-const ExpandableTitle = ({ item }) => {
-    const [open, setOpen] = useState(false);
-    return <>
-        <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
-                data-testid="evaluation-group-item" data-item-id={item._id}
-                className={`btn btn-link p-0 text-start text-truncate ${s.groupItemLink}`}>
-            {getQuestionTitle(item)}
-        </button>
-        {open && <div className="w-100" data-testid="evaluation-task-details"><ExamTaskAiReview review={item.review}/></div>}
-    </>
-};
 
 const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
     const [collapsed, setCollapsed] = useState(false);
@@ -81,13 +67,12 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                             return (
                                 <div key={item._id} className={s.groupItem}>
-                                    {item.review ? <ExpandableTitle item={item}/> : (
-                                    <Link to={item.href || `/evaluations/${item._id}`}
+                                    <Link to={item.href || (item.review ? `/evaluations/task/${item._id}` : `/evaluations/${item._id}`)}
                                           state={{ groupMode }}
                                           data-testid="evaluation-group-item" data-item-id={item._id}
                                           className={`text-truncate ${s.groupItemLink}`}>
                                         {getQuestionTitle(item)}
-                                    </Link>)}
+                                    </Link>
                                     {/* Слово "Оценено" рядом с баллом ничего не добавляет:
                                         балл сам по себе и есть признак готовности.
                                         Подпись оставлена только для незавершённых статусов. */}

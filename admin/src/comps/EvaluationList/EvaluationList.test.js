@@ -168,7 +168,7 @@ describe('EvaluationList: фильтр «Задачи»', () => {
         expect(utils.getByTestId('evaluation-group-header').dataset.groupLabel).toBe('Задачи модулей');
     });
 
-    it('строка задачи модуля раскрывает детали оценки', async () => {
+    it('строка задачи модуля ведёт на страницу оценки', async () => {
         global.t = (key) => key;
         global.http = { get: jest.fn(() => Promise.resolve({ items: [
             { _id: 'm', question: 5, status: 'done', title: 'Фибоначчи', score: 8, courseModule: 'x',
@@ -178,9 +178,8 @@ describe('EvaluationList: фильтр «Задачи»', () => {
             <MemoryRouter initialEntries={['/evaluations?mode=tasks']}><EvaluationList/></MemoryRouter>
         );
 
-        fireEvent.click(await utils.findByTestId('evaluation-group-item'));
-
-        expect((await utils.findByTestId('evaluation-task-details')).textContent).toContain('Решение верное');
+        const row = await utils.findByTestId('evaluation-group-item');
+        expect(row.getAttribute('href')).toBe('/evaluations/task/m');
     });
 
     it('кнопка «Задачи» переключает фильтр', async () => {
