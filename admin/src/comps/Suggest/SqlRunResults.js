@@ -1,5 +1,6 @@
 import React from 'react';
 import './sqlRun.scss';
+import {CheckErrorNotice, isCheckError} from './CheckErrorNotice';
 
 // Быстрые SQL-задания (codeType 'sql'): запрос пишется в Monaco, /run-question гоняет его
 // на эфемерной БД рядом с эталоном и отдаёт обе выборки — здесь они показываются таблицами.
@@ -53,6 +54,7 @@ function SqlCase({item, showTitle}) {
 }
 
 export function SqlRunResults({runResults}) {
+    if (isCheckError(runResults)) return <CheckErrorNotice/>;
     let {sqlResults = [], totalCount, passCount, firstError} = runResults || {};
     if (!totalCount) return <div>{t('notStartedTests')}</div>;
     // Сбой запроса до раннера (сеть, 500) приходит без sqlResults — только текст ошибки.

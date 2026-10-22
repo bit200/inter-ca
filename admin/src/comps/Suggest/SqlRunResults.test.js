@@ -120,3 +120,18 @@ describe('SQL-задание в CodeRun', () => {
         expect(screen.getByText('Ошибка схемы или seed задачи: syntax error')).toBeInTheDocument();
     });
 });
+
+describe('SqlRunResults: сбой проверки', () => {
+    test('checkError — сообщение, без счётчика «пройдено»', () => {
+        render(<SqlRunResults runResults={{checkError: {code: 'SQL_RUNNER_UNAVAILABLE'}}}/>);
+        expect(screen.getByTestId('check-error-notice')).toBeInTheDocument();
+        expect(screen.queryByTestId('sql-run-results')).toBeNull();
+    });
+
+    test('обычный fail показывается как раньше', () => {
+        render(<SqlRunResults runResults={{totalCount: 2, passCount: 1, wrongCount: 1, sqlResults: [{ok: false, message: 'мимо'}]}}/>);
+        expect(screen.getByTestId('sql-run-results')).toBeInTheDocument();
+        expect(screen.queryByTestId('check-error-notice')).toBeNull();
+    });
+});
+

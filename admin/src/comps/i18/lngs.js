@@ -448,6 +448,41 @@ export default {
         en: 'Logs Response',
         fr: `Réponse des logs`
     },
+    checkErrorTitle: {
+        ru: 'Проверка не выполнена',
+        es: 'Verificación no realizada',
+        de: 'Prüfung nicht durchgeführt',
+        en: 'Check not completed',
+        fr: `Vérification non effectuée`
+    },
+    checkErrorRun: {
+        ru: 'Проверка временно недоступна, попробуйте ещё раз',
+        es: 'La verificación no está disponible temporalmente, inténtelo de nuevo',
+        de: 'Die Prüfung ist vorübergehend nicht verfügbar, bitte versuchen Sie es erneut',
+        en: 'The check is temporarily unavailable, please try again',
+        fr: `La vérification est temporairement indisponible, réessayez`
+    },
+    checkErrorCandidate: {
+        ru: 'Задача не проверена, ментор перепроверит. Балл за неё не выставлен.',
+        es: 'La tarea no fue verificada, el mentor la revisará de nuevo. No se asignó puntuación.',
+        de: 'Die Aufgabe wurde nicht geprüft, der Mentor prüft sie erneut. Keine Punkte vergeben.',
+        en: 'The task was not checked, the mentor will re-check it. No score is given.',
+        fr: `La tâche n'a pas été vérifiée, le mentor la revérifiera. Aucune note attribuée.`
+    },
+    checkErrorMentor: {
+        ru: 'Задача не проверена из-за сбоя проверки, балл не выставлен. Нажмите «Submit Full Test» для повторной проверки.',
+        es: 'La tarea no se verificó por un fallo, sin puntuación. Pulse «Submit Full Test» para volver a verificar.',
+        de: 'Die Aufgabe wurde wegen eines Prüffehlers nicht geprüft, keine Punkte. «Submit Full Test» startet die erneute Prüfung.',
+        en: 'The task was not checked due to a check failure, no score. Press “Submit Full Test” to re-check.',
+        fr: `La tâche n'a pas été vérifiée suite à une panne, aucune note. Appuyez sur « Submit Full Test » pour revérifier.`
+    },
+    checkErrorExamMentor: {
+        ru: 'Экзамен проверен не полностью: часть задач не проверена, итоговый балл неполный. Нажмите «Submit Full Test» для повторной проверки.',
+        es: 'El examen no está verificado por completo; la puntuación es parcial. Pulse «Submit Full Test» para volver a verificar.',
+        de: 'Die Prüfung ist unvollständig; die Gesamtpunktzahl ist unvollständig. «Submit Full Test» startet die erneute Prüfung.',
+        en: 'The exam is not fully checked: some tasks were not checked, the total score is partial. Press “Submit Full Test” to re-check.',
+        fr: `L'examen n'est pas entièrement vérifié, la note est partielle. Appuyez sur « Submit Full Test » pour revérifier.`
+    },
     notStartedTests: {
         ru: 'Тесты еще не запускались',
         es: 'Pruebas no iniciadas',
