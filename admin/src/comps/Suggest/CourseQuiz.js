@@ -290,8 +290,8 @@ function CourseQuiz(props, ref) {
 
     return <div>
         {isModuleDone && <div data-testid={'course-module-passed'} style={{marginBottom: '16px'}}>
-            <strong>{isLastModule ? 'Курс пройден!' : 'Финальный тест сдан'}</strong>
-            {moduleResult.quizPerc != null && <div style={{margin: '6px 0 10px'}}>
+            <strong style={{display: 'block', marginBottom: '10px'}}>{isLastModule ? 'Курс пройден!' : 'Финальный тест сдан'}</strong>
+            {moduleResult.quizPerc != null && <div style={{margin: '0 0 10px'}}>
                 {t('yourPoints')}: {moduleResult.quizPerc}%
             </div>}
             {isLastModule && <Link to='/evaluations' className={'btn btn-sm btn-light'}>
