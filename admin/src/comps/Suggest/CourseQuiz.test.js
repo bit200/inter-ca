@@ -245,3 +245,32 @@ describe('CourseQuiz - закрытие модалки посреди прове
         expect(screen.queryByTestId('course-quiz-confirm-close')).toBeNull();
     });
 });
+
+describe('CourseQuiz: уже пройденный итоговый тест', () => {
+    beforeEach(() => {
+        global.http = {
+            get: jest.fn(() => Promise.resolve({ quizes: [{ _id: 1 }], pubQuizes: [{ _id: 1 }] })),
+            put: jest.fn(() => Promise.resolve({})),
+            post: jest.fn(() => Promise.resolve({})),
+        };
+    });
+
+    it('показывает, что курс пройден, и результат при повторном открытии', async () => {
+        render(<CourseQuiz moduleId={500} isLastModule={true} moduleResult={{ status: 'ok', quizPerc: 92 }}
+                           onAction={jest.fn()} onSuccess={jest.fn()} />);
+        await act(async () => {});
+
+        const block = screen.getByTestId('course-module-passed');
+        expect(block).toHaveTextContent('Курс пройден!');
+        expect(block).toHaveTextContent('92%');
+        expect(screen.getByText('Смотреть ИИ оценку')).toBeInTheDocument();
+    });
+
+    it('не показывает «пройден» для не сданного модуля', async () => {
+        render(<CourseQuiz moduleId={500} isLastModule={true} moduleResult={{ status: 'error', quizPerc: 40 }}
+                           onAction={jest.fn()} onSuccess={jest.fn()} />);
+        await act(async () => {});
+
+        expect(screen.queryByTestId('course-module-passed')).toBeNull();
+    });
+});

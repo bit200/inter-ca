@@ -269,6 +269,7 @@ function PreviewCourseModule(props) {
                             title={t('checkKnowledge')}
                             moduleId={moduleId}
                             isLastModule={isLastModule}
+                            moduleResult={(mHistory || {})[moduleId]}
                             interviewId={isLastModule ? interviewId : null}
                             courseUserId={courseUserId}
                             onSuccess={(r, cb) => {
