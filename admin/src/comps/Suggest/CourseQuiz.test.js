@@ -11,7 +11,10 @@ jest.mock('./RunQuiz', () => () => null);
 jest.mock('./SuggestionItem', () => ({ generateSuggestion: () => null }));
 jest.mock('./CustomStorage', () => ({ getId: () => 1 }));
 jest.mock('../TrainMethods/Train', () => () => null);
-jest.mock('../TrainMethods/TrainPageCourse', () => () => <div>квиз</div>);
+jest.mock('../TrainMethods/TrainPageCourse', () => ({ onChange, onResult }) => <div>квиз
+    <button onClick={() => { onChange({ history: [] }); onResult(); }}>сдать квиз на 100</button>
+</div>);
+jest.mock('../VsTask/vsTask', () => ({ calcQuizPerc: () => ({ quizPerc: 100, total: 1 }), countVsQuizes: () => 0 }));
 jest.mock('../Quiz', () => () => null);
 jest.mock('../RunExam', () => ({ getDefaultQuizTime: () => 0, getStartTimers: () => [] }));
 jest.mock('react-router-dom', () => ({
@@ -161,6 +164,18 @@ describe('CourseQuiz - финальная проверка знаний чере
         await act(async () => { fireEvent.click(screen.getByText('завершить интервью')); });
 
         expect(onSuccess).toHaveBeenCalledWith({ status: 'ok' });
+    });
+
+    it('после сданного квиза последнего модуля пишет "Курс пройден" и даёт ссылку на ИИ оценку', async () => {
+        render(<CourseQuiz isLastModule={true} moduleId={500} courseUserId={42}
+                           onAction={jest.fn()} onSuccess={onSuccess} />);
+        await act(async () => {});
+        await clickCheck();
+        await waitFor(() => screen.getByText('квиз'));
+        await act(async () => { fireEvent.click(screen.getByText('сдать квиз на 100')); });
+
+        expect(screen.getByTestId('course-completed')).toHaveTextContent('Курс пройден');
+        expect(screen.getByText('Смотреть ИИ оценку')).toBeInTheDocument();
     });
 
     it('при сбое загрузки заданий показывает "Повторить", а не "Далее" и не засчитывает главу', async () => {

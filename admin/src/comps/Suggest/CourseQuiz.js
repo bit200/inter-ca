@@ -422,6 +422,15 @@ function CourseQuiz(props, ref) {
                         scb && scb()
                     }
                     }>Отлично, ты прошел курс! Молодец!</Button>}
+                    {isQuizOk && isLastModule && <div data-testid={'course-completed'} style={{marginTop: '16px'}}>
+                        <strong>Курс пройден!</strong>
+                        <div style={{margin: '6px 0 10px'}}>
+                            ИИ оценка ваших ответов и решений доступна в разделе «Оценки».
+                        </div>
+                        <Link to='/evaluations' className={'btn btn-sm btn-light'} onClick={() => onClose()}>
+                            Смотреть ИИ оценку
+                        </Link>
+                    </div>}
 
 
                 </div>}
