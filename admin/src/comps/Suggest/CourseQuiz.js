@@ -26,7 +26,9 @@ let quizIteration = 0;
 const UNFINISHED_INTERVIEW_STATUSES = ['draft', 'active', 'started'];
 
 function CourseQuiz(props, ref) {
-    let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId} = props;
+    let {onAction, isLastModule, title, onSuccess, questionId, moduleId, interviewId, moduleResult} = props;
+    // Итог уже сданного модуля из истории курса: без него открытый заново пройденный курс не показывает, сдан ли финальный тест
+    let isModuleDone = !questionId && (moduleResult || {}).status === 'ok';
     let navigate = useNavigate();
 
     let [loading, setLoading] = useState(false);
@@ -287,6 +289,15 @@ function CourseQuiz(props, ref) {
     }));
 
     return <div>
+        {isModuleDone && <div data-testid={'course-module-passed'} style={{marginBottom: '16px'}}>
+            <strong>{isLastModule ? 'Курс пройден!' : 'Финальный тест сдан'}</strong>
+            {moduleResult.quizPerc != null && <div style={{margin: '6px 0 10px'}}>
+                {t('yourPoints')}: {moduleResult.quizPerc}%
+            </div>}
+            {isLastModule && <Link to='/evaluations' className={'btn btn-sm btn-light'}>
+                Смотреть ИИ оценку
+            </Link>}
+        </div>}
         {!!loading &&
             <button className={'btn btn-sm btn-primary'} style={{opacity: 1}} disabled={true}>
                 {t('loadingResultsTesting')}

@@ -189,6 +189,7 @@ function CourseDetails(props) {
                             }
                             return (
                                 <div
+                                    key={ind}
                                     className={
                                         " " +
                                         (isOk && open ? "isOk " : "isNotOk ") +
@@ -198,7 +199,6 @@ function CourseDetails(props) {
 
                                 >
                                     <a
-                                        key={ind}
                                         data-testid={'course-module'}
                                         data-module-id={module.module}
                                         data-done={(mHistory[module.module] || {}).status === 'ok' ? 'true' : 'false'}
