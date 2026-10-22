@@ -44,13 +44,7 @@ const SubmittedExamPreview = (props) => {
     return <>
         {noticeVariant === 'mentor' && examCheckErrors > 0 &&
             <div data-testid={'exam-check-error-banner'}>
-                <div role="alert" style={{
-                    padding: '10px 14px', margin: '0 0 10px', background: '#fff7e6', color: '#7a4b00',
-                    borderLeft: '4px solid #f0a000', borderRadius: 0
-                }}>
-                    <b>{t('checkErrorTitle')}: {examCheckErrors}</b>
-                    <div>{t('checkErrorExamMentor')}</div>
-                </div>
+                <CheckErrorNotice variant={'exam'} count={examCheckErrors}/>
             </div>}
         <div data-testid={'submitted-exam-preview'} className={'mainCont2 row ' + (submitLoading ? 'o4' : '')}>
 
@@ -84,8 +78,7 @@ const SubmittedExamPreview = (props) => {
                                          className={'menuList ' + (selectedType === 'task' && selectedTaskInd === ind ? 'activeList' : '')}
                                          onClick={() => { setSelectedType('task'); setSelectedTaskInd(ind) }}>
                                         <b>{t('task')} #{ind + 1}</b>
-                                        {checkErr && <div data-testid={'task-check-error-mark'}
-                                                          style={{fontSize: 12, color: '#b36b00'}}
+                                        {checkErr && <div data-testid={'task-check-error-mark'} className={'checkErrorMark'}
                                                           title={t('checkErrorTitle')}>
                                             <i className="iconoir-warning-triangle"></i> {t('checkErrorTitle')}
                                         </div>}
