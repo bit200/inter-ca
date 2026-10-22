@@ -59,6 +59,20 @@ sudo chmod 440 /etc/sudoers.d/deploy-inter-ca
 sudo visudo -c
 ```
 
+### Выпуск по ssh (кнопка Deploy в claude-tasks)
+
+Ту же строку sudoers использует и запуск по ssh без tty (`sudo -n`, пароль не нужен;
+`requiretty` в sudoers быть не должно). Скрипт выпуска заходит как `deploy` и вызывает:
+
+```bash
+flock /var/lock/itk-deploy.lock env APPLY_BUILD=1 /var/www/inter-ca/deploy/prod-deploy.sh <полный SHA>
+```
+
+`APPLY_BUILD=1` добавляет шаг `sudo -n /usr/local/sbin/inter-ca-apply-build.sh` (логика
+apply не менялась). В stdout — маркеры `::stage …` и `::version <sha>`. Production
+называет SHA в `https://app.itkedu.com/version.json`; в nginx для него нужен
+`location = /version.json` без кэша (см. `admin/nginx.md`, конфиг лежит вне репозитория).
+
 Рабочие копии должны принадлежать `deploy` — иначе `git pull` / `git reset --hard`
 в скриптах упадут по правам:
 

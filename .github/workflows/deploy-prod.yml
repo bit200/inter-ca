@@ -7,7 +7,14 @@ name: Deploy prod
 on:
   push:
     branches: [master]
+  # Триггер push на master убирают при переходе на выпуск кнопкой в claude-tasks
+  # (строки `push:` / `branches: [master]` выше) — отдельным коммитом.
   workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Полный SHA для выката (пусто — текущий master)'
+        required: false
+        default: ''
 
 # На этом же ВПС и через этот же nginx деплоится itk-platform-en. concurrency
 # защищает от параллельных запусков внутри репозитория, flock в шаге ниже — от
@@ -33,8 +40,9 @@ jobs:
         # Скрипт берётся из рабочей копии на сервере, а не из checkout'а runner'а:
         # prod-deploy.sh сам делает git fetch/reset в этой копии и собирает build-new
         # с health-check на диске.
-        run: flock /var/lock/itk-deploy.lock "${APP_DIR}/deploy/prod-deploy.sh"
+        run: flock /var/lock/itk-deploy.lock "${APP_DIR}/deploy/prod-deploy.sh" "${DEPLOY_SHA}"
         env:
+          DEPLOY_SHA: ${{ github.event.inputs.sha }}
           APP_DIR: ${{ vars.PROD_APP_DIR || '/var/www/inter-ca' }}
       - name: Apply build (root)
         # sudo -n: разрешён без пароля только этот фиксированный путь вне
