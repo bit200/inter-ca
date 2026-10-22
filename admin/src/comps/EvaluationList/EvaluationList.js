@@ -9,8 +9,10 @@ import {groupItems, sortByDictationDate, SORT_MODES} from "./evaluate-list.utils
 const GROUPS_PAGE_SIZE = 25;
 const ITEMS_PER_PAGE = 100;
 
-const getGroupLabel = (groupMode, key) => groupMode === 'exam' ? `Экзамен #${key}` : key
-const getExamId = (groupMode, key) => groupMode === 'exam' ? key : null;
+// «Задачи» - ИИ-проверки решений live-coding задач, сгруппированные по экзаменам.
+const isExamGrouped = (groupMode) => groupMode === 'exam' || groupMode === 'tasks';
+const getGroupLabel = (groupMode, key) => isExamGrouped(groupMode) ? `Экзамен #${key}` : key
+const getExamId = (groupMode, key) => isExamGrouped(groupMode) ? key : null;
 
 // visibleCount only resets on a real tab switch (groupMode) - NOT on groups.length
 // changing, which now also happens whenever loadMore() below appends another page.
@@ -90,15 +92,26 @@ const ScoreSort = ({ sort, setSort }) => {
 
 const GroupModeSwitch = ({ groupMode,  setGroupMode}) => {
     return <div>
-        {['exam', 'module'].map(mode => (
+        {['exam', 'module', 'tasks'].map(mode => (
             <button key={mode} onClick={() => setGroupMode(mode)}
                     data-testid={`evaluation-group-mode-${mode}`}
                     className={'btn btn-sm ' + (groupMode === mode ? 'btn-primary' : 'btn-light')}>
-                {t(mode === 'exam' ? 'by_exam' : 'by_module')}
+                {t(`by_${mode}`)}
             </button>
         ))}
     </div>
 }
+
+// Проверка задачи -> строка списка в том же виде, что и ответ: дальше её
+// рисует та же группа. Ссылка ведёт на экзамен: отдельной страницы разбора у задачи нет.
+const toTaskItem = (review) => ({
+    _id: review._id,
+    exam: review.exam,
+    question: review.question,
+    titleInfo: { title: review.title || `Задача #${review.question}` },
+    evaluate: { status: review.status, result: review.score != null ? { score: review.score } : undefined },
+    href: `/quiz/${review.exam}`,
+});
 
 function EvaluationList() {
     const [items, setItems] = useState([]);
@@ -115,7 +128,8 @@ function EvaluationList() {
     // so both the in-app back link and the real browser back button land on the tab the
     // person was actually looking at, instead of always resetting to 'module'.
     const [searchParams, setSearchParams] = useSearchParams();
-    const groupMode = searchParams.get('mode') === 'exam' ? 'exam' : 'module';
+    const modeParam = searchParams.get('mode');
+    const groupMode = ['exam', 'tasks'].includes(modeParam) ? modeParam : 'module';
     const sortParam = searchParams.get('sort');
     const sort = SORT_MODES.includes(sortParam) ? sortParam : 'none';
     // Оба параметра пишем вместе: сортировка не должна слетать при смене вкладки,
@@ -135,8 +149,8 @@ function EvaluationList() {
     // поверх и переставляет строки уже внутри группы, оставляя дату главной
     // для порядка групп и для строк с одинаковым баллом.
     const [sortOrder, setSortOrder] = useState('new');
-    const groups = groupItems(sortByDictationDate(items, sortOrder), groupMode);
-    const hasMore = items.length < stats.total;
+    const groups = groupItems(sortByDictationDate(items, sortOrder), isExamGrouped(groupMode) ? 'exam' : groupMode);
+    const hasMore = groupMode !== 'tasks' && items.length < stats.total;
 
     // groupMode is a server-side filter now (?mode=exam|module - QuizHistory.exam is only
     // ever set on exam answers, never on module ones, so it's an exact split) - switching
@@ -145,6 +159,18 @@ function EvaluationList() {
         setLoading(true);
         setItems([]);
         setPage(1);
+        if (groupMode === 'tasks') {
+            // Задачи приходят целиком одним списком (их немного) - без страниц.
+            global.http.get('/my-code-reviews')
+                .then(data => {
+                    const tasks = (data?.items || []).map(toTaskItem);
+                    const done = tasks.filter(it => it.evaluate.status === 'done').length;
+                    setItems(tasks);
+                    setStats({ total: tasks.length, done });
+                })
+                .finally(() => setLoading(false));
+            return;
+        }
         global.http.get('/evaluate-list', { mode: groupMode, page: 1, per_page: ITEMS_PER_PAGE })
             .then(data => {
                 const { items: pageItems = [], total = 0, done = 0 } = data || {};
