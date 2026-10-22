@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
+import {isCheckError} from './CheckErrorNotice';
 import {collectEditableFiles, getCodeTaskContent, getCodeTaskFiles, getCodeTaskLanguage, isCodeTaskDetails} from './CodeTaskResults';
 
 // Язык Monaco по имени файла; SQL-задание (codeType 'sql') — всегда sql, файлов у него нет.
@@ -147,6 +148,8 @@ export function useCodeRun(props) {
         })
             .then(r => {
                 setRunLoading(false);
+                // Сбой проверки пришёл в теле 200: не засчитываем ни успех, ни провал, статус не трогаем.
+                if (isCheckError(r)) return showCheckError(params && params.isSubmit, r.checkError);
                 let {wrongCount} = r;
 
                 function trySet(key, keys) {
@@ -171,6 +174,8 @@ export function useCodeRun(props) {
             .catch(e => {
                 console.error(e);
                 setRunLoading(false);
+                // 503 от api: «проверка временно недоступна» — это не fail решения.
+                if (isCheckError(e)) return showCheckError(params && params.isSubmit, e.checkError);
                 const result = {
                     wrongCount: 1, passCount: 0, totalCount: 1,
                     firstError: {ind: 0, res1: {errMsg: e.message ?? e.msg ?? e.error?.message ?? e}, res2: {}},
@@ -180,6 +185,16 @@ export function useCodeRun(props) {
                 props?.onChangeRunResults?.(result);
                 setActiveCaseInd(0);
             });
+    }
+
+    function showCheckError(isSubmit, checkError) {
+        let result = {checkError};
+        if (isSubmit) {
+            setRunSubmitResults(result);
+            setSubmissionId(null);
+        } else {
+            setRunResults(result);
+        }
     }
 
     function submit() {
@@ -203,7 +218,7 @@ export function useCodeRun(props) {
     }
 
     let caseItem = (cases || [])[activeCaseInd];
-    let firstErrorInd = !runResults ? -1 : runResults.firstError ? runResults.firstError.ind : 99999;
+    let firstErrorInd = !runResults || runResults.checkError ? -1 : runResults.firstError ? runResults.firstError.ind : 99999;
     let isLogsReader = isLogsRaederFn(jsDetails);
 
     return {

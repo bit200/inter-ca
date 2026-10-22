@@ -147,3 +147,55 @@ describe('Превью React-задачи (codeType code, lang react)', () => {
             .toMatch(/^http:\/\/api\/admin_preview\/9\/7\?/);
     });
 });
+
+describe('Сбой проверки (checkError) в CodeRun', () => {
+    const CHECK_ERR = {error: 'x', message: 'Проверка временно недоступна, попробуйте ещё раз', checkError: {code: 'RUNNER_UNAVAILABLE'}};
+    const KINDS = {
+        code: DETAILS,
+        js: {codeType: 'js', fields: [], starter: 'abc'},
+        logreader: {codeType: 'logreader', fields: [], starter: 'abc'},
+        sql: {codeType: 'sql', dialect: 'postgres', starter: 'select 1'},
+    };
+
+    Object.entries(KINDS).forEach(([kind, details]) => {
+        test(kind + ': «Запустить» при 503 — сообщение вместо тестов, статус не меняется', async () => {
+            global.http.post = jest.fn(() => Promise.reject(CHECK_ERR));
+            global.Storage.changeStatus = jest.fn();
+            render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={details} history={{}} isExam/>);
+            fireEvent.click(screen.getByTestId('code-run-run'));
+            await waitFor(() => expect(screen.getAllByTestId('check-error-notice').length).toBe(1));
+            expect(screen.queryByTestId('code-task-results')).toBeNull();
+            expect(screen.queryByText(/testPasses/)).toBeNull();
+            expect(global.Storage.changeStatus).not.toHaveBeenCalled();
+        });
+    });
+
+    test('«Сдать» при 503: onSubmitResults не зовётся, статус very_good не ставится', async () => {
+        global.http.post = jest.fn(() => Promise.reject(CHECK_ERR));
+        global.Storage.changeStatus = jest.fn();
+        let onSubmitResults = jest.fn();
+        render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} onSubmitResults={onSubmitResults}/>);
+        fireEvent.click(screen.getByTestId('code-run-submit'));
+        await waitFor(() => expect(screen.getByTestId('check-error-notice')).toBeInTheDocument());
+        expect(onSubmitResults).not.toHaveBeenCalled();
+        expect(global.Storage.changeStatus).not.toHaveBeenCalled();
+    });
+
+    test('checkError в теле 200 — тоже сообщение, без статуса', async () => {
+        global.http.post = jest.fn(() => Promise.resolve({checkError: {code: 'SANDBOX_FAILED'}}));
+        global.Storage.changeStatus = jest.fn();
+        render(<CodeRun question={{_id: 6, name: 'x'}} jsDetails={KINDS.js} history={{}} isExam/>);
+        fireEvent.click(screen.getByTestId('code-run-run'));
+        await waitFor(() => expect(screen.getByTestId('check-error-notice')).toBeInTheDocument());
+        expect(global.Storage.changeStatus).not.toHaveBeenCalled();
+    });
+
+    test('обычный fail (ошибка сети без checkError) показывается как раньше', async () => {
+        global.http.post = jest.fn(() => Promise.reject(new Error('boom')));
+        render(<CodeRun question={{_id: 6, name: 'x'}} jsDetails={KINDS.js} history={{}} isExam/>);
+        fireEvent.click(screen.getByTestId('code-run-run'));
+        await waitFor(() => expect(screen.getAllByTestId('code-run-results')[0].textContent).toContain('boom'));
+        expect(screen.queryByTestId('check-error-notice')).toBeNull();
+    });
+});
+

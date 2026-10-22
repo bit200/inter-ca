@@ -1,5 +1,6 @@
 import React from 'react';
 import './codeTask.scss';
+import {CheckErrorNotice, isCheckError} from './CheckErrorNotice';
 
 // Задачи по языкам (codeType 'code'): файлы с папками, редактируются только editablePaths,
 // результат прогона — список тестов, ошибка компиляции отдельным блоком.
@@ -87,6 +88,7 @@ export function CodeFilesTree({files, selectedInd, onSelect}) {
 }
 
 export function CodeTaskResults({runResults}) {
+    if (isCheckError(runResults)) return <CheckErrorNotice/>;
     let {tests = [], totalCount, passCount, compileError, firstError} = runResults || {};
     if (!totalCount && !compileError && !firstError) return <div>{t('notStartedTests')}</div>;
     let requestError = !tests.length && !compileError && firstError

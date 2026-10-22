@@ -12,6 +12,7 @@ import LazyEditor from "../LazyEditor/LazyEditor";
 import Check from "../StarRating";
 import ColorTheme from "../ColorTheme";
 import {useCodeRun} from './useCodeRun';
+import {CheckErrorNotice, isCheckError} from './CheckErrorNotice';
 import VsTaskRun from "../VsTask/VsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
 import {CodeReviewBlock} from "./CodeReviewBlock";
@@ -546,6 +547,7 @@ function IframeToRunLocal2(props) {
 
 
 function RunResults(props) {
+    if (isCheckError(props.runResults)) return <CheckErrorNotice/>;
     if (props.isCode || (props.runResults || {}).tests) {
         return <CodeTaskResults runResults={props.runResults}/>
     }
