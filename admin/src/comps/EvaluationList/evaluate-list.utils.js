@@ -1,3 +1,5 @@
+export const MODULE_TASKS_KEY = 'module-tasks';
+
 export const groupItems = (items, mode) => {
     const order = [];
     const map = {};
@@ -13,9 +15,13 @@ export const groupItems = (items, mode) => {
             return
         }
 
+        // «Задачи»: проверки задач модулей курса идут без экзамена - складываем их
+        // в одну группу, а не теряем (раньше счётчик был 11/11, а список пуст).
         const key = mode === 'module'
             ? (item.titleInfo?.moduleInfo?.name || 'Без модуля')
-            : String(item.exam ?? 'unknown');
+            : mode === 'tasks' && !item.exam
+                ? MODULE_TASKS_KEY
+                : String(item.exam ?? 'unknown');
         if (!map[key]) {
             map[key] = [];
             order.push(key);

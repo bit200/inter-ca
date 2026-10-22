@@ -153,6 +153,21 @@ describe('EvaluationList: фильтр «Задачи»', () => {
         expect(get).not.toHaveBeenCalledWith('/evaluate-list', expect.anything());
     });
 
+    it('показывает задачи модулей (без экзамена) отдельной группой', async () => {
+        global.t = (key) => key;
+        const get = jest.fn(() => Promise.resolve({ items: [
+            { _id: 'm', question: 5, status: 'done', title: 'Фибоначчи', score: 8, courseModule: 'x' },
+        ] }));
+        global.http = { get };
+        const utils = render(
+            <MemoryRouter initialEntries={['/evaluations?mode=tasks']}><EvaluationList/></MemoryRouter>
+        );
+
+        const rows = await utils.findAllByTestId('evaluation-group-item');
+        expect(rows.map(r => r.textContent)).toEqual(['Фибоначчи']);
+        expect(utils.getByTestId('evaluation-group-header').dataset.groupLabel).toBe('Задачи модулей');
+    });
+
     it('кнопка «Задачи» переключает фильтр', async () => {
         const { findByTestId } = renderList();
 

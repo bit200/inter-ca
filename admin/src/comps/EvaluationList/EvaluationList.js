@@ -4,15 +4,15 @@ import UseLocalStorage from '../../libs/UseLocalStorage';
 import styles from './evaluationList.module.scss'
 import EvaluationListItemGroup from "./components/EvaluationListItemGroup";
 import EvaluationListEmpty from "./components/EvaluationListEmpty";
-import {groupItems, sortByDictationDate, SORT_MODES} from "./evaluate-list.utils";
+import {groupItems, sortByDictationDate, SORT_MODES, MODULE_TASKS_KEY} from "./evaluate-list.utils";
 
 const GROUPS_PAGE_SIZE = 25;
 const ITEMS_PER_PAGE = 100;
 
 // «Задачи» - ИИ-проверки решений live-coding задач, сгруппированные по экзаменам.
 const isExamGrouped = (groupMode) => groupMode === 'exam' || groupMode === 'tasks';
-const getGroupLabel = (groupMode, key) => isExamGrouped(groupMode) ? `Экзамен #${key}` : key
-const getExamId = (groupMode, key) => isExamGrouped(groupMode) ? key : null;
+const getGroupLabel = (groupMode, key) => key === MODULE_TASKS_KEY ? 'Задачи модулей' : isExamGrouped(groupMode) ? `Экзамен #${key}` : key
+const getExamId = (groupMode, key) => isExamGrouped(groupMode) && key !== MODULE_TASKS_KEY ? key : null;
 
 // visibleCount only resets on a real tab switch (groupMode) - NOT on groups.length
 // changing, which now also happens whenever loadMore() below appends another page.
@@ -107,10 +107,11 @@ const GroupModeSwitch = ({ groupMode,  setGroupMode}) => {
 const toTaskItem = (review) => ({
     _id: review._id,
     exam: review.exam,
+    cd: review.cd,
     question: review.question,
     titleInfo: { title: review.title || `Задача #${review.question}` },
     evaluate: { status: review.status, result: review.score != null ? { score: review.score } : undefined },
-    href: `/quiz/${review.exam}`,
+    href: review.exam ? `/quiz/${review.exam}` : '/evaluations?mode=tasks',
 });
 
 function EvaluationList() {
@@ -149,7 +150,7 @@ function EvaluationList() {
     // поверх и переставляет строки уже внутри группы, оставляя дату главной
     // для порядка групп и для строк с одинаковым баллом.
     const [sortOrder, setSortOrder] = useState('new');
-    const groups = groupItems(sortByDictationDate(items, sortOrder), isExamGrouped(groupMode) ? 'exam' : groupMode);
+    const groups = groupItems(sortByDictationDate(items, sortOrder), groupMode);
     const hasMore = groupMode !== 'tasks' && items.length < stats.total;
 
     // groupMode is a server-side filter now (?mode=exam|module - QuizHistory.exam is only
