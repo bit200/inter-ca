@@ -11,12 +11,19 @@ function EvaluationWidget() {
     useEffect(() => {
         // count_only: this widget only ever needs the two numbers, not every item -
         // see itk-platform-en's getEvaluateList (controllers/evaluate.js)
-        global.http.get('/evaluate-list', { count_only: 1 })
-            .then(stats => {
-                const { done = 0, total = 0 } = stats || {};
+        // + оценки решений live-coding задач (itk-platform-en /my-code-review-stats):
+        // падение любого из двух запросов не должно прятать цифры второго.
+        const quiet = { wo_notify: true };
+        Promise.all([
+            global.http.get('/evaluate-list', { count_only: 1 }).catch(() => null),
+            global.http.get('/my-code-review-stats', {}, quiet).catch(() => null),
+        ])
+            .then(([answers, tasks]) => {
+                if (!answers && !tasks) return;
+                const done = (answers?.done || 0) + (tasks?.done || 0);
+                const total = (answers?.total || 0) + (tasks?.total || 0);
                 setStats({ done, total, newCount: Math.max(0, done - lastSeenDone) });
             })
-            .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
 
