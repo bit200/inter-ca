@@ -96,6 +96,10 @@ function CourseDetails(props) {
                 } else if (topicParam === CHECK_TOPIC) {
                     setSelectedBlockInd(-1);
                     setSelectedModuleInd(Math.min(activeInd, course.modules.length - 1));
+                } else if (courseUser.modules.length && courseUser.modules.every(m => (mHistory[m.module] || {}).status === "ok")) {
+                    // пройденный курс открываем сразу на последнем шаге - "Курс пройден!"
+                    setSelectedBlockInd(-1);
+                    setSelectedModuleInd(courseUser.modules.length - 1);
                 } else {
                     setSelectedModuleInd(Math.min(activeInd, course.modules.length - 1));
                 }

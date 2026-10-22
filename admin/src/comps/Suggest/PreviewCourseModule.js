@@ -258,7 +258,7 @@ function PreviewCourseModule(props) {
 
             {selectedBlockInd === -1 && <div className="card animChild" id={'examStart'}>
                 <div className="card-body">
-                    <h2 className={''}>{t('doubleRepeatInforamtion')}</h2>
+                    <h2 className={''}>{t('doubleRepeatInformation')}</h2>
 
                     <hr/>
                     <div style={{padding: '10px 0 30px 0'}}>{isLastModule ? t('successCourse') : t('successModule')}!
