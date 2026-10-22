@@ -67,7 +67,7 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
                             return (
                                 <div key={item._id} className={s.groupItem}>
-                                    <Link to={`/evaluations/${item._id}`}
+                                    <Link to={item.href || `/evaluations/${item._id}`}
                                           state={{ groupMode }}
                                           data-testid="evaluation-group-item" data-item-id={item._id}
                                           className={`text-truncate ${s.groupItemLink}`}>

@@ -128,3 +128,37 @@ describe('EvaluationList: переключатель сортировки по �
         await waitFor(() => expect(ids()).toEqual(['3', '1', '2']));
     });
 });
+
+describe('EvaluationList: фильтр «Задачи»', () => {
+    // Список показывал только ответы на вопросы - проверки live-coding задач
+    // (они уже входят в счётчик виджета) нигде не просматривались.
+    const reviews = [
+        { _id: 'a', exam: 7, question: 11, status: 'done', title: 'Две суммы', score: 7 },
+        { _id: 'b', exam: 7, question: 12, status: 'pending', title: 'Палиндром', score: null },
+    ];
+
+    it('показывает задачи экзамена из /my-code-reviews, а не ответы', async () => {
+        global.t = (key) => key;
+        const get = jest.fn(url => Promise.resolve(url === '/my-code-reviews' ? { items: reviews } : { items: [], total: 0, done: 0 }));
+        global.http = { get };
+        const utils = render(
+            <MemoryRouter initialEntries={['/evaluations?mode=tasks']}><EvaluationList/></MemoryRouter>
+        );
+
+        const rows = await utils.findAllByTestId('evaluation-group-item');
+        expect(rows.map(r => r.textContent)).toEqual(['Две суммы', 'Палиндром']);
+        expect(rows[0]).toHaveAttribute('href', '/quiz/7');
+        expect(utils.getByTestId('evaluation-group-header').dataset.groupLabel).toBe('Экзамен #7');
+        expect(utils.getByText('1/2 оценено')).toBeTruthy();
+        expect(get).not.toHaveBeenCalledWith('/evaluate-list', expect.anything());
+    });
+
+    it('кнопка «Задачи» переключает фильтр', async () => {
+        const { findByTestId } = renderList();
+
+        fireEvent.click(await findByTestId('evaluation-group-mode-tasks'));
+
+        const empty = await findByTestId('evaluation-list-empty');
+        expect(empty.textContent).toContain('Проверок задач пока нет');
+    });
+});

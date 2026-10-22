@@ -4428,6 +4428,7 @@ export default {
 },
 "by_exam": {ru: 'По экзамену'},
 "by_module": {ru: 'По модулю'},
+"by_tasks": {ru: 'Задачи'},
 "xx": {ru: ''},
 "": {ru: ''},
 
