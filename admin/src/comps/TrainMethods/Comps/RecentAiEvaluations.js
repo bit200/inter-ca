@@ -13,6 +13,20 @@ function getQuestionTitle(item) {
     return ti.title || ti.smallTitle || ti.desc || `Вопрос #${item.question}`;
 }
 
+// Строка /my-code-reviews (задача модуля) в форме элемента /evaluate-list. Отдельного
+// экрана разбора задачи у студента нет - ведём на список «Задачи» в /evaluations.
+export function toModuleTaskItem(review) {
+    return {
+        _id: 'task-' + review._id,
+        question: review.question,
+        cd: review.cd,
+        isTask: true,
+        href: '/evaluations?mode=tasks',
+        titleInfo: { title: review.title || `Задача #${review.question}` },
+        evaluate: { status: review.status, result: review.score != null ? { score: review.score } : undefined },
+    };
+}
+
 // Небольшая витрина последних оценок ИИ прямо на вкладке "Фидбеки" (не отдельная
 // вкладка - продуктовое решение) - полный список с группировкой по экзамену/модулю
 // живёт на /evaluations (EvaluationList.js), сюда просто последние 10 ответов.
@@ -28,9 +42,19 @@ function RecentAiEvaluations() {
         // видно на /evaluations; сортируем ещё и на клиенте по cd на случай, если это
         // не так. wo_notify + catch - виджет должен молча не показаться, а не уронить
         // страницу, если эндпоинт недоступен.
-        global.http.get('/evaluate-list', { page: 1, per_page: RECENT_COUNT }, { wo_notify: true })
-            .then(data => setItems(data?.items || []))
-            .catch(() => setItems(null))
+        // К ответам подмешиваются ИИ-оценки live-coding задач модулей курса
+        // (/my-code-reviews, записи с courseModule): сданная в модуле задача уходит в
+        // ИИ-проверку и должна быть видна здесь же. Задачи экзаменов не берём - они
+        // живут на экране экзамена. Сбой одного источника не прячет другой.
+        const quiet = { wo_notify: true };
+        Promise.all([
+            global.http.get('/evaluate-list', { page: 1, per_page: RECENT_COUNT }, quiet).catch(() => null),
+            global.http.get('/my-code-reviews', {}, quiet).catch(() => null),
+        ])
+            .then(([answers, tasks]) => setItems([
+                ...(answers?.items || []),
+                ...(tasks?.items || []).filter(it => it.courseModule).map(toModuleTaskItem),
+            ]))
             .finally(() => setLoading(false));
     }, []);
 
@@ -58,7 +82,9 @@ function RecentAiEvaluations() {
                     return (
                         <div key={item._id} className="d-flex align-items-center justify-content-between border-dashed-bottom pb-2 mb-2"
                              data-testid="recent-ai-evaluation-item" data-item-id={item._id}>
-                            <Link to={`/evaluations/${item._id}`} className="text-truncate" style={{ flex: 1, marginRight: 10 }}>
+                            <Link to={item.href || `/evaluations/${item._id}`} className="text-truncate" style={{ flex: 1, marginRight: 10 }}>
+                                {item.isTask && <i className="iconoir-code o5 mr-5" title="Задача из модуля курса"
+                                                   data-testid="recent-ai-evaluation-task"></i>}
                                 {getQuestionTitle(item)}
                             </Link>
                             {/* Готовая оценка говорит сама за собой: подпись "Оценено"

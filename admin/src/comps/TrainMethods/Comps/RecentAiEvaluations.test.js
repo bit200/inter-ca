@@ -41,4 +41,22 @@ describe('RecentAiEvaluations', () => {
         expect(screen.getByText('5.7/10')).toHaveStyle({ color: STATUS_COLOR.processing });
         expect(screen.getByText('9/10')).toHaveStyle({ color: STATUS_COLOR.done });
     });
+
+    it('подмешивает ИИ-оценки задач модулей курса по дате, задачи экзаменов не берёт', async () => {
+        global.http = {
+            get: url => Promise.resolve(url === '/my-code-reviews'
+                ? { items: [
+                    { _id: 's1', exam: null, courseModule: 5, question: 21, cd: '2026-10-22T12:00:00Z', status: 'done', title: 'Debounce', score: 8 },
+                    { _id: 'r1', exam: 7, courseModule: null, question: 11, cd: '2026-10-22T13:00:00Z', status: 'done', title: 'Две суммы', score: 6 },
+                ] }
+                : { items: [{ ...item('a', 4), cd: '2026-10-22T11:00:00Z' }] }),
+        };
+        renderWidget();
+        await waitFor(() => expect(screen.getByText('Debounce')).toBeInTheDocument());
+        expect(screen.queryByText('Две суммы')).not.toBeInTheDocument();
+        const rows = screen.getAllByTestId('recent-ai-evaluation-item');
+        expect(rows.map(r => r.textContent)).toEqual(['Debounce8/10', 'Вопрос a4/10']);
+        expect(rows[0].querySelector('a')).toHaveAttribute('href', '/evaluations?mode=tasks');
+        expect(screen.getAllByTestId('recent-ai-evaluation-task')).toHaveLength(1);
+    });
 });
