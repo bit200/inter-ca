@@ -13,13 +13,25 @@ export default function TaskEvaluationDetail() {
     const [review, setReview] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const load = () => global.http.get('/my-code-reviews', {}, { wo_notify: true })
+        .then(r => setReview((r.items || []).find(it => String(it._id) === String(id)) || null));
+
     useEffect(() => {
         setLoading(true);
-        global.http.get('/my-code-reviews', {}, { wo_notify: true })
-            .then(r => setReview((r.items || []).find(it => String(it._id) === String(id)) || null))
-            .catch(() => setReview(null))
-            .finally(() => setLoading(false));
+        load().catch(() => setReview(null)).finally(() => setLoading(false));
     }, [id]);
+
+    // пока оценка идёт, опрашиваем список
+    const busy = review && (review.status === 'pending' || review.status === 'processing');
+    useEffect(() => {
+        if (!busy) return;
+        const timer = setTimeout(() => load().catch(() => {}), 5000);
+        return () => clearTimeout(timer);
+    }, [busy, review]);
+
+    const startReview = () => global.http.post('/my-code-review-start', { submissionId: Number(id) }, { wo_notify: true })
+        .then(() => setReview(r => ({ ...r, status: 'pending' })))
+        .catch(() => {});
 
     if (loading) return <div className={styles.page}>Загрузка...</div>;
     if (!review) return <div className={styles.page}>Не найдено</div>;
@@ -49,7 +61,7 @@ export default function TaskEvaluationDetail() {
 
             <div className="card">
                 <div className="card-body">
-                    <ExamTaskAiReview review={review}/>
+                    <ExamTaskAiReview review={review} onStart={review.exam ? undefined : startReview}/>
                 </div>
             </div>
         </div>

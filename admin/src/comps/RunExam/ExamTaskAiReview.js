@@ -46,7 +46,13 @@ export function useExamAiReviews(examId) {
     return reviews;
 }
 
-export default function ExamTaskAiReview({review}) {
+export function hasAiScores(review) {
+    let scores = ((review || {}).result || {}).scores || {};
+    return Object.values(scores).some(v => typeof v === 'number');
+}
+
+// onStart - необязательный запуск оценки по кнопке (когда баллов ещё нет).
+export default function ExamTaskAiReview({review, onStart}) {
     if (!review) return null;
     let result = review.result || {};
     let tests = result.tests || {};
@@ -74,5 +80,9 @@ export default function ExamTaskAiReview({review}) {
             </div>
             <div className="examAiReview-summary">{result.summary}</div>
         </>}
+        {onStart && !BUSY.includes(review.status) && !hasAiScores(review) &&
+            <button type="button" className="btn btn-primary examAiReview-start" data-testid="exam-ai-review-start" onClick={onStart}>
+                <i className="iconoir-brain"></i> {t('aiReviewStart')}
+            </button>}
     </div>
 }
