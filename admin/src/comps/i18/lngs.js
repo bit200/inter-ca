@@ -4272,6 +4272,13 @@ export default {
     en: "No tests – a mentor will review the solution",
     fr: "Pas de tests – un mentor examinera la solution"
 },
+"aiReviewStart": {
+    ru: "Получить ИИ-оценку",
+    es: "Obtener evaluación de IA",
+    de: "KI-Bewertung erhalten",
+    en: "Get AI evaluation",
+    fr: "Obtenir l'évaluation IA"
+},
 "aiReviewCorrectness": {
     ru: "Корректность",
     es: "Corrección",
