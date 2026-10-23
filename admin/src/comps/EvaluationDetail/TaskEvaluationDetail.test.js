@@ -119,6 +119,14 @@ describe('TaskEvaluationDetail: решение ученика', () => {
         expect(!!(utils.getByTestId('exam-ai-review').compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     });
 
+    it('пустое решение: баллы и разбор не показываются, только «проверять нечего»', async () => {
+        const utils = await open({ _id: 'm', question: 5, status: 'done', title: 'X', score: 5, files: { '': '  ' },
+            result: { scores: { correctness: 5 }, reasons: { correctness: 'Код отсутствует' }, summary: 'Нет кода' } });
+        expect(utils.getByTestId('exam-ai-review-empty-code')).toBeInTheDocument();
+        expect(utils.queryByTestId('evaluation-strip-card')).toBeNull();
+        expect(utils.queryByText('Код отсутствует')).toBeNull();
+    });
+
     it('без кода блока нет', async () => {
         const utils = await open({ _id: 'm', question: 5, status: 'done', title: 'X', score: 8, result: { scores: {} } });
         expect(utils.queryByTestId('student-solution')).toBeNull();
