@@ -38,6 +38,23 @@ describe('TaskEvaluationDetail: страница оценки задачи мо�
         await waitFor(() => expect(utils.queryByTestId('exam-ai-review-start')).toBeNull());
     });
 
+    it('если запуск оценки вернул ошибку (409), показывает её пользователю', async () => {
+        global.t = (key) => key;
+        global.http = {
+            get: jest.fn(() => Promise.resolve({ items: [
+                { _id: '1078', question: 5, status: 'done', title: 'X', score: null, result: { scores: {} } },
+            ] })),
+            post: jest.fn(() => Promise.reject({ msg: 'Оценка уже запущена' })),
+        };
+        const utils = render(
+            <MemoryRouter initialEntries={['/evaluations/task/1078']}>
+                <Routes><Route path="/evaluations/task/:id" element={<TaskEvaluationDetail/>}/></Routes>
+            </MemoryRouter>
+        );
+        fireEvent.click(await utils.findByTestId('exam-ai-review-start'));
+        expect((await utils.findByTestId('ai-review-start-error')).textContent).toBe('Оценка уже запущена');
+    });
+
     it('при готовой оценке кнопки нет', async () => {
         global.t = (key) => key;
         global.http = { get: jest.fn(() => Promise.resolve({ items: [

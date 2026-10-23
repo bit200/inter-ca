@@ -22,6 +22,7 @@ export default function TaskEvaluationDetail() {
     const { id } = useParams();
     const [review, setReview] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [startError, setStartError] = useState('');
 
     const load = () => global.http.get('/my-code-reviews', {}, { wo_notify: true })
         .then(r => setReview((r.items || []).find(it => String(it._id) === String(id)) || null));
@@ -39,9 +40,14 @@ export default function TaskEvaluationDetail() {
         return () => clearTimeout(timer);
     }, [busy, review]);
 
-    const startReview = () => global.http.post('/my-code-review-start', { submissionId: Number(id) }, { wo_notify: true })
-        .then(() => setReview(r => ({ ...r, status: 'pending' })))
-        .catch(() => {});
+    const startReview = () => {
+        setStartError('');
+        return global.http.post('/my-code-review-start', { submissionId: Number(id) }, { wo_notify: true })
+            .then(() => setReview(r => ({ ...r, status: 'pending' })))
+            .catch(e => setStartError(
+                (e && (e.msg || e.error || e.message || e.errmsg)) || 'Не удалось запустить ИИ-оценку. Попробуйте позже.'
+            ));
+    };
 
     if (loading) return <div className={styles.page}>Загрузка...</div>;
     if (!review) return <div className={styles.page}>Не найдено</div>;
@@ -92,6 +98,9 @@ export default function TaskEvaluationDetail() {
 
             <div className="card">
                 <div className="card-body">
+                    {startError && (
+                        <div className="alert alert-danger" role="alert" data-testid="ai-review-start-error">{startError}</div>
+                    )}
                     <ExamTaskAiReview review={review} onStart={review.exam ? undefined : startReview}/>
                 </div>
             </div>
