@@ -194,12 +194,16 @@ function CodeRunComponent(props) {
                                         <button className={'btn btn-sm btn-light'} disabled={runLoading}
                                                 data-testid={'code-run-run'}
                                                 onClick={() => run()}>
-                                            <i className="iconoir-terminal"></i>
+                                            {runLoading === 'run'
+                                                ? <span className="spinner-border spinner-border-sm" role="status" data-testid={'code-run-loader'}></span>
+                                                : <i className="iconoir-terminal"></i>}
                                             {t('runMsg')}
                                         </button>
                                         {!props.isNewExam &&
-                                            <button className={'btn btn-sm btn-primary'} data-testid={'code-run-submit'} onClick={() => submit()}>
-                                                <i className="iconoir-arcade"></i>
+                                            <button className={'btn btn-sm btn-primary'} data-testid={'code-run-submit'} disabled={!!runLoading} onClick={() => submit()}>
+                                                {runLoading === 'submit'
+                                                    ? <span className="spinner-border spinner-border-sm" role="status" data-testid={'code-submit-loader'}></span>
+                                                    : <i className="iconoir-arcade"></i>}
                                                 {t('submitMsg')}
                                             </button>}
                                     </div>

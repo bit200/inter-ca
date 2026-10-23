@@ -133,7 +133,7 @@ export function useCodeRun(props) {
 
     function run(params) {
         setTopTab('results');
-        setRunLoading(true);
+        setRunLoading(params && params.isSubmit ? 'submit' : 'run');
         global.http.post('/run-question', {
             curCasesStr,
             // Проверка знаний курса (courseCheck) встроена как isExam, но не экзамен: сдача уходит в ИИ-проверку.

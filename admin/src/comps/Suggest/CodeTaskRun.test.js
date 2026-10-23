@@ -199,3 +199,30 @@ describe('Сбой проверки (checkError) в CodeRun', () => {
     });
 });
 
+
+describe('Лоадер на кнопках «Запуск» и «Сабмит»', () => {
+    test('во время запуска спиннер на «Запуск», обе кнопки заблокированы', async () => {
+        let resolve;
+        global.http.post = jest.fn(() => new Promise(r => { resolve = r; }));
+        render(<CodeRun question={{_id: 6, name: 'x'}} jsDetails={DETAILS} history={{}}/>);
+        fireEvent.click(screen.getByTestId('code-run-run'));
+        expect(screen.getByTestId('code-run-loader')).toBeInTheDocument();
+        expect(screen.queryByTestId('code-submit-loader')).toBeNull();
+        expect(screen.getByTestId('code-run-run')).toBeDisabled();
+        expect(screen.getByTestId('code-run-submit')).toBeDisabled();
+        resolve({wrongCount: 0});
+        await waitFor(() => expect(screen.queryByTestId('code-run-loader')).toBeNull());
+        expect(screen.getByTestId('code-run-submit')).not.toBeDisabled();
+    });
+
+    test('во время сабмита спиннер на «Сабмит»', async () => {
+        let resolve;
+        global.http.post = jest.fn(() => new Promise(r => { resolve = r; }));
+        render(<CodeRun question={{_id: 6, name: 'x'}} jsDetails={DETAILS} history={{}}/>);
+        fireEvent.click(screen.getByTestId('code-run-submit'));
+        expect(screen.getByTestId('code-submit-loader')).toBeInTheDocument();
+        expect(screen.queryByTestId('code-run-loader')).toBeNull();
+        resolve({wrongCount: 0});
+        await waitFor(() => expect(screen.queryByTestId('code-submit-loader')).toBeNull());
+    });
+});
