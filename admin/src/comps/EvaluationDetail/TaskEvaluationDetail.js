@@ -4,10 +4,20 @@ import { Link, useParams } from 'react-router-dom';
 import styles from './evaluationDetail.module.scss';
 import ExamTaskAiReview from '../RunExam/ExamTaskAiReview';
 import { scoreVerdict } from './components/scoreVerdict';
+import MentorReviewSection from './components/MentorReviewSection';
+import MetricChip from './components/MetricChip';
+import { formatScore } from './components/formatScore';
+
+const CRITERIA = [
+    { key: 'correctness', name: 'aiReviewCorrectness' },
+    { key: 'optimality', name: 'aiReviewOptimality' },
+    { key: 'readability', name: 'aiReviewReadability' },
+];
 
 // Страница разбора ИИ-проверки задачи модуля (без экзамена): /evaluations/task/:id.
 // Оформление - то же, что у разбора ответа (/evaluations/:id): шапка-карточка с
-// названием, чипами и вердиктом, ниже сам разбор.
+// названием, описанием, чипами и вердиктом, под ней оценка куратора, затем блок
+// метрик, и в конце решение с деталями разбора.
 export default function TaskEvaluationDetail() {
     const { id } = useParams();
     const [review, setReview] = useState(null);
@@ -37,6 +47,10 @@ export default function TaskEvaluationDetail() {
     if (!review) return <div className={styles.page}>Не найдено</div>;
 
     const score = review.score;
+    const scores = (review.result || {}).scores || {};
+    const metrics = CRITERIA
+        .map(({ key, name }) => ({ key, name, value: scores[key] }))
+        .filter(m => typeof m.value === 'number');
     return (
         <div className={styles.page}>
             <Link to="/evaluations?mode=tasks" style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
@@ -55,9 +69,26 @@ export default function TaskEvaluationDetail() {
                                 </span>
                             )}
                         </div>
+                        {review.description && <p className={styles.mentorComment} data-testid="task-description">{review.description}</p>}
                     </div>
                 </div>
+                <MentorReviewSection review={review.mentorReview} autoScore={score}/>
             </div>
+
+            {metrics.length > 0 && (
+                <div className={`card ${styles.stripCard}`} data-testid="evaluation-strip-card">
+                    <div className={`card-body ${styles.strip}`} data-testid="evaluation-strip">
+                        {score != null && (
+                            <MetricChip lead label="Общая оценка" value={formatScore(score)} suffix="/10"
+                                        pct={score} max={10} data-testid="evaluate-score" data-score={score}/>
+                        )}
+                        {metrics.map(({ key, name, value }) => (
+                            <MetricChip key={key} label={t(name)} value={formatScore(value)} suffix="/10"
+                                        pct={value} max={10} data-testid="metric-breakdown-row"/>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="card">
                 <div className="card-body">
