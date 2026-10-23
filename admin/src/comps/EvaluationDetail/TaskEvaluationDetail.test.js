@@ -115,7 +115,7 @@ describe('TaskEvaluationDetail: решение ученика', () => {
             files: { '': 'const uniq = a => [...new Set(a)];' }, result: { scores: { correctness: 9 } } });
         const block = utils.getByTestId('student-solution');
         expect(utils.getByTestId('student-solution-code').textContent).toBe('const uniq = a => [...new Set(a)];');
-        expect(block.textContent).toContain('Решение ученика');
+        expect(block.querySelector('[class*=title]').textContent).toBe('Решение');
         expect(!!(utils.getByTestId('exam-ai-review').compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     });
 
