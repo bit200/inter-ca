@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import ExamTaskAiReview, {useExamAiReviews} from './ExamTaskAiReview';
 
 let done = {
@@ -61,5 +61,16 @@ describe('ИИ-проверка решения на экране сданног�
     test('задача без проверки (logreader, старый экзамен) - блока нет', () => {
         render(<ExamTaskAiReview review={undefined}/>);
         expect(screen.queryByTestId('exam-ai-review')).toBeNull();
+    });
+
+    test('рекомендации по критериям, вкладки и пометка про ИИ', () => {
+        let review = {...done, result: {...done.result, suggestions: {optimality: 'Используйте Map вместо двойного цикла'}}};
+        render(<ExamTaskAiReview review={review}/>);
+        expect(screen.getByText('Используйте Map вместо двойного цикла')).toBeInTheDocument();
+        expect(screen.getAllByTestId('exam-ai-review-suggestion')).toHaveLength(1);
+        expect(screen.getByTestId('exam-ai-review-note')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('tab', {name: 'aiReviewReadability'}));
+        expect(screen.queryByTestId('exam-ai-review-suggestion')).toBeNull();
+        expect(screen.getByText('Понятно')).toBeInTheDocument();
     });
 });
