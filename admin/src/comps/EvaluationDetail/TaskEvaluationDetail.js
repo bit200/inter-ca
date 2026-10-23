@@ -12,6 +12,7 @@ const CRITERIA = [
     { key: 'correctness', name: 'aiReviewCorrectness' },
     { key: 'optimality', name: 'aiReviewOptimality' },
     { key: 'readability', name: 'aiReviewReadability' },
+    { key: 'process', name: 'aiReviewProcess' },
 ];
 
 // Страница разбора ИИ-проверки задачи модуля (без экзамена): /evaluations/task/:id.
