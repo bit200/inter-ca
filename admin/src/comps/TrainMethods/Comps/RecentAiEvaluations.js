@@ -13,15 +13,15 @@ function getQuestionTitle(item) {
     return ti.title || ti.smallTitle || ti.desc || `Вопрос #${item.question}`;
 }
 
-// Строка /my-code-reviews (задача модуля) в форме элемента /evaluate-list. Отдельного
-// экрана разбора задачи у студента нет - ведём на список «Задачи» в /evaluations.
+// Строка /my-code-reviews (задача модуля) в форме элемента /evaluate-list. Ведёт на
+// страницу деталей оценки этой задачи (TaskEvaluationDetail).
 export function toModuleTaskItem(review) {
     return {
         _id: 'task-' + review._id,
         question: review.question,
         cd: review.cd,
         isTask: true,
-        href: '/evaluations?mode=tasks',
+        href: `/evaluations/task/${review._id}`,
         titleInfo: { title: review.title || `Задача #${review.question}` },
         evaluate: { status: review.status, result: review.score != null ? { score: review.score } : undefined },
     };

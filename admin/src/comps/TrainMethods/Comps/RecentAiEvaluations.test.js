@@ -56,7 +56,7 @@ describe('RecentAiEvaluations', () => {
         expect(screen.queryByText('Две суммы')).not.toBeInTheDocument();
         const rows = screen.getAllByTestId('recent-ai-evaluation-item');
         expect(rows.map(r => r.textContent)).toEqual(['Debounce8/10', 'Вопрос a4/10']);
-        expect(rows[0].querySelector('a')).toHaveAttribute('href', '/evaluations?mode=tasks');
+        expect(rows[0].querySelector('a')).toHaveAttribute('href', '/evaluations/task/s1');
         expect(screen.getAllByTestId('recent-ai-evaluation-task')).toHaveLength(1);
     });
 });
