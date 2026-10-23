@@ -896,3 +896,29 @@
     }
   }
 }
+
+// Решение ученика: код в моноширинном блоке; на узком экране прокручивается, а не ломает вёрстку.
+.solutionFile{
+  margin-top: 12px;
+}
+
+.solutionFileName{
+  font-size: 12px;
+  color: var(--bs-text-muted);
+  margin-bottom: 4px;
+}
+
+.solutionCode{
+  margin: 0;
+  padding: 12px 14px;
+  max-height: 480px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+  color: var(--bs-body-color);
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, .08));
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+}

@@ -96,3 +96,31 @@ describe('TaskEvaluationDetail: порядок блоков', () => {
         expect(before(strip, review)).toBe(true);
     });
 });
+
+describe('TaskEvaluationDetail: решение ученика', () => {
+    const open = async (item) => {
+        global.t = (key) => key;
+        global.http = { get: jest.fn(() => Promise.resolve({ items: [item] })) };
+        const utils = render(
+            <MemoryRouter initialEntries={['/evaluations/task/m']}>
+                <Routes><Route path="/evaluations/task/:id" element={<TaskEvaluationDetail/>}/></Routes>
+            </MemoryRouter>
+        );
+        await utils.findByTestId('exam-ai-review');
+        return utils;
+    };
+
+    it('внизу страницы показывает код, который сдал ученик', async () => {
+        const utils = await open({ _id: 'm', question: 5, status: 'done', title: 'X', score: 8,
+            files: { '': 'const uniq = a => [...new Set(a)];' }, result: { scores: { correctness: 9 } } });
+        const block = utils.getByTestId('student-solution');
+        expect(utils.getByTestId('student-solution-code').textContent).toBe('const uniq = a => [...new Set(a)];');
+        expect(block.textContent).toContain('Решение ученика');
+        expect(!!(utils.getByTestId('exam-ai-review').compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    });
+
+    it('без кода блока нет', async () => {
+        const utils = await open({ _id: 'm', question: 5, status: 'done', title: 'X', score: 8, result: { scores: {} } });
+        expect(utils.queryByTestId('student-solution')).toBeNull();
+    });
+});

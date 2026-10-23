@@ -57,6 +57,7 @@ export default function TaskEvaluationDetail() {
     const metrics = CRITERIA
         .map(({ key, name }) => ({ key, name, value: scores[key] }))
         .filter(m => typeof m.value === 'number');
+    const solutionFiles = Object.entries(review.files || {}).filter(([, code]) => typeof code === 'string' && code.trim());
     return (
         <div className={styles.page}>
             <Link to="/evaluations?mode=tasks" style={{ fontSize: 13, color: 'var(--bs-text-muted)' }}>← Все оценки</Link>
@@ -104,6 +105,20 @@ export default function TaskEvaluationDetail() {
                     <ExamTaskAiReview review={review} onStart={review.exam ? undefined : startReview}/>
                 </div>
             </div>
+
+            {solutionFiles.length > 0 && (
+                <div className={`card ${styles.infoCardSpacing}`} data-testid="student-solution">
+                    <div className="card-body">
+                        <div className={styles.title}>Решение ученика</div>
+                        {solutionFiles.map(([path, code]) => (
+                            <div key={path} className={styles.solutionFile}>
+                                {path && <div className={styles.solutionFileName}>{path}</div>}
+                                <pre className={styles.solutionCode} data-testid="student-solution-code">{code}</pre>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
