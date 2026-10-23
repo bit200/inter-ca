@@ -109,7 +109,7 @@ export default function TaskEvaluationDetail() {
             {solutionFiles.length > 0 && (
                 <div className={`card ${styles.infoCardSpacing}`} data-testid="student-solution">
                     <div className="card-body">
-                        <div className={styles.title}>Решение ученика</div>
+                        <div className={styles.title}>Решение</div>
                         {solutionFiles.map(([path, code]) => (
                             <div key={path} className={styles.solutionFile}>
                                 {path && <div className={styles.solutionFileName}>{path}</div>}
