@@ -82,3 +82,13 @@ describe('ИИ-проверка решения на экране сданног�
         expect(screen.getByText('Понятно')).toBeInTheDocument();
     });
 });
+
+describe('вёрстка блока ИИ-проверки', () => {
+    test('у корневого блока нет рамки и внутренних отступов', () => {
+        const fs = require('fs');
+        const scss = fs.readFileSync(require('path').join(__dirname, 'examTaskAiReview.scss'), 'utf8');
+        const root = scss.slice(0, scss.indexOf('&-title'));
+        expect(root).not.toMatch(/border/);
+        expect(root).not.toMatch(/padding/);
+    });
+});
