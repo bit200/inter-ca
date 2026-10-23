@@ -52,3 +52,30 @@ describe('TaskEvaluationDetail: страница оценки задачи мо�
         expect(utils.queryByTestId('exam-ai-review-start')).toBeNull();
     });
 });
+
+describe('TaskEvaluationDetail: порядок блоков', () => {
+    it('сверху описание и оценка куратора, затем метрики, затем решение', async () => {
+        global.t = (key) => key;
+        global.http = { get: jest.fn(() => Promise.resolve({ items: [
+            { _id: 'm', question: 5, status: 'done', title: 'Фибоначчи', description: 'Верните n-е число', score: 8,
+              mentorReview: { score: 6, comment: 'Добавь тесты', mentorName: 'sup_admin' },
+              result: { verdict: 'pass', summary: 'Ок', scores: { correctness: 9, optimality: 7 }, reasons: {} } },
+        ] })) };
+        const utils = render(
+            <MemoryRouter initialEntries={['/evaluations/task/m']}>
+                <Routes><Route path="/evaluations/task/:id" element={<TaskEvaluationDetail/>}/></Routes>
+            </MemoryRouter>
+        );
+        const hero = await utils.findByTestId('evaluation-hero');
+        const mentor = utils.getByTestId('mentor-review');
+        const strip = utils.getByTestId('evaluation-strip');
+        const review = utils.getByTestId('exam-ai-review');
+        expect(hero.textContent).toContain('Верните n-е число');
+        expect(mentor.textContent).toContain('Добавь тесты');
+        expect(utils.getAllByTestId('metric-breakdown-row')).toHaveLength(2);
+        const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+        expect(before(hero, mentor)).toBe(true);
+        expect(before(mentor, strip)).toBe(true);
+        expect(before(strip, review)).toBe(true);
+    });
+});
