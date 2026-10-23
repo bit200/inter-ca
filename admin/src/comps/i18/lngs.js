@@ -4314,6 +4314,13 @@ export default {
     en: "Readability",
     fr: "Lisibilité"
 },
+"aiReviewProcess": {
+    ru: "Процесс решения",
+    es: "Proceso de resolución",
+    de: "Lösungsprozess",
+    en: "Solution process",
+    fr: "Processus de résolution"
+},
 "aiReviewEmptyCode": {
     ru: "Решение не отправлено — проверять нечего",
     es: "No se envió ninguna solución",

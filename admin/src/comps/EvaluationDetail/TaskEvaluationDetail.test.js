@@ -124,3 +124,21 @@ describe('TaskEvaluationDetail: решение ученика', () => {
         expect(utils.queryByTestId('student-solution')).toBeNull();
     });
 });
+
+describe('TaskEvaluationDetail: критерии в общей оценке', () => {
+    it('показывает все критерии, из которых посчитана общая оценка, включая «процесс»', async () => {
+        global.t = (key) => key;
+        global.http = { get: jest.fn(() => Promise.resolve({ items: [
+            { _id: 'p', question: 5, status: 'done', title: 'X', score: 8.8,
+              result: { verdict: 'pass', scores: { correctness: 10, optimality: 10, readability: 10, process: 5 }, reasons: {} } },
+        ] })) };
+        const utils = render(
+            <MemoryRouter initialEntries={['/evaluations/task/p']}>
+                <Routes><Route path="/evaluations/task/:id" element={<TaskEvaluationDetail/>}/></Routes>
+            </MemoryRouter>
+        );
+        await utils.findByTestId('evaluation-strip');
+        expect(utils.getAllByTestId('metric-breakdown-row')).toHaveLength(4);
+        expect(utils.getByTestId('evaluation-strip').textContent).toContain('aiReviewProcess');
+    });
+});
