@@ -51,6 +51,39 @@ export function hasAiScores(review) {
     return Object.values(scores).some(v => typeof v === 'number');
 }
 
+// Критерии: вкладки «Все» + по критерию, у каждого балл, разбор и (если модель дала) рекомендация.
+function ScoresList({result}) {
+    let [active, setActive] = useState(null);
+    let visible = active === null ? CRITERIA : CRITERIA.filter(c => c.key === active);
+    return <>
+        <ul className="nav nav-tabs examAiReview-tabs" role="tablist" data-testid="exam-ai-review-tabs">
+            {[{key: null, label: t('aiReviewAll')}, ...CRITERIA.map(c => ({key: c.key, label: t(c.name)}))].map(tab =>
+                <li className="nav-item" role="presentation" key={tab.key || 'all'}>
+                    <button type="button" role="tab" aria-selected={active === tab.key}
+                            className={`nav-link fw-medium ${active === tab.key ? 'active' : ''}`}
+                            onClick={() => setActive(tab.key)}>{tab.label}</button>
+                </li>)}
+        </ul>
+        <div className="examAiReview-scores">
+            {visible.map(({key, name}) => {
+                let score = (result.scores || {})[key];
+                let suggestion = (result.suggestions || {})[key];
+                return <div className="examAiReview-score" key={key}>
+                    <div className="examAiReview-scoreHead">
+                        {active === null && <span className="examAiReview-scoreName">{t(name)}</span>}
+                        <span className="examAiReview-scoreValue">{score === null || score === undefined ? '—' : score}<small>/10</small></span>
+                    </div>
+                    <div className="examAiReview-reason">{(result.reasons || {})[key]}</div>
+                    {suggestion && <div className="examAiReview-suggestion" data-testid="exam-ai-review-suggestion">
+                        <i className="iconoir-light-bulb-on"></i>
+                        <span>{suggestion}</span>
+                    </div>}
+                </div>
+            })}
+        </div>
+    </>
+}
+
 // onStart - необязательный запуск оценки по кнопке (когда баллов ещё нет).
 export default function ExamTaskAiReview({review, onStart}) {
     if (!review) return null;
@@ -68,17 +101,12 @@ export default function ExamTaskAiReview({review, onStart}) {
                 {t(VERDICTS[result.verdict] || 'aiReviewNoTests')}
                 {tests.total ? ` (${tests.passed} / ${tests.total})` : ''}
             </div>
-            <div className="examAiReview-scores">
-                {CRITERIA.map(({key, name}) => {
-                    let score = (result.scores || {})[key];
-                    return <div className="examAiReview-score" key={key}>
-                        <div className="examAiReview-scoreName">{t(name)}</div>
-                        <div className="examAiReview-scoreValue">{score === null || score === undefined ? '—' : score}<small>/10</small></div>
-                        <div className="examAiReview-reason">{(result.reasons || {})[key]}</div>
-                    </div>
-                })}
-            </div>
+            <ScoresList result={result}/>
             <div className="examAiReview-summary">{result.summary}</div>
+            <div className="examAiReview-note" data-testid="exam-ai-review-note">
+                <i className="iconoir-sparks"></i>
+                <span>{t('aiReviewNote')}</span>
+            </div>
         </>}
         {onStart && !BUSY.includes(review.status) && !hasAiScores(review) &&
             <button type="button" className="btn btn-primary examAiReview-start" data-testid="exam-ai-review-start" onClick={onStart}>

@@ -4237,6 +4237,20 @@ export default {
     en: "Solve the task in the VS Code editor right on this page. Progress is saved automatically.",
     fr: "La tâche se résout dans l'éditeur VS Code sur la page. La progression est enregistrée automatiquement."
 },
+"aiReviewAll": {
+    ru: "Все",
+    es: "Todos",
+    de: "Alle",
+    en: "All",
+    fr: "Tous"
+},
+"aiReviewNote": {
+    ru: "Разбор и рекомендации составил ИИ — относитесь к ним как к подсказке",
+    es: "El análisis y las recomendaciones los ha redactado una IA: tómelos como una sugerencia",
+    de: "Analyse und Empfehlungen stammen von einer KI – verstehen Sie sie als Hinweis",
+    en: "The review and recommendations were written by AI — treat them as a hint",
+    fr: "L'analyse et les recommandations sont rédigées par une IA — voyez-y une suggestion"
+},
 "aiReviewTitle": {
     ru: "ИИ-проверка решения",
     es: "Revisión del código por IA",
