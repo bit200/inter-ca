@@ -14,11 +14,6 @@ const CRITERIA = [
     {key: 'readability', name: 'aiReviewReadability'},
     {key: 'process', name: 'aiReviewProcess'},
 ];
-const VERDICTS = {
-    pass: 'aiReviewTestsPassed',
-    fail: 'aiReviewTestsFailed',
-    needs_review: 'aiReviewNoTests',
-};
 const ERRORS = {
     empty_code: 'aiReviewEmptyCode',
     input_too_large: 'aiReviewTooLarge',
@@ -101,10 +96,6 @@ export default function ExamTaskAiReview({review, onStart}) {
         {BUSY.includes(review.status) && <div className="examAiReview-hint">{t('aiReviewPending')}</div>}
         {review.status === 'error' && <div className="examAiReview-hint">{t(ERRORS[review.errorCode] || 'aiReviewFailed')}</div>}
         {review.status === 'done' && <>
-            <div className="examAiReview-verdict" data-verdict={result.verdict}>
-                {t(VERDICTS[result.verdict] || 'aiReviewNoTests')}
-                {tests.total ? ` (${tests.passed} / ${tests.total})` : ''}
-            </div>
             <ScoresList result={result}/>
             <div className="examAiReview-summary">{result.summary}</div>
             <div className="examAiReview-note" data-testid="exam-ai-review-note">
