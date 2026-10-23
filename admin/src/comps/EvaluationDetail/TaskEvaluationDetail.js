@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import styles from './evaluationDetail.module.scss';
-import ExamTaskAiReview from '../RunExam/ExamTaskAiReview';
+import ExamTaskAiReview, { hasNoSolution } from '../RunExam/ExamTaskAiReview';
 import { scoreVerdict } from './components/scoreVerdict';
 import MentorReviewSection from './components/MentorReviewSection';
 import MetricChip from './components/MetricChip';
@@ -55,7 +55,8 @@ export default function TaskEvaluationDetail() {
 
     const score = review.score;
     const scores = (review.result || {}).scores || {};
-    const metrics = CRITERIA
+    const noSolution = hasNoSolution(review);
+    const metrics = noSolution ? [] : CRITERIA
         .map(({ key, name }) => ({ key, name, value: scores[key] }))
         .filter(m => typeof m.value === 'number');
     const solutionFiles = Object.entries(review.files || {}).filter(([, code]) => typeof code === 'string' && code.trim());
@@ -71,7 +72,7 @@ export default function TaskEvaluationDetail() {
                         <div className={styles.chips}>
                             <span className={styles.chip}>Решение задачи</span>
                             {review.cd && <span className={styles.chip}>{new Date(review.cd).toLocaleString('ru')}</span>}
-                            {score != null && (
+                            {score != null && !noSolution && (
                                 <span className={`${styles.chip} ${styles.chipVerdict}`} data-testid="evaluate-verdict">
                                     {scoreVerdict(score)}
                                 </span>

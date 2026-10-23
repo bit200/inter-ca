@@ -47,6 +47,13 @@ export function hasAiScores(review) {
     return Object.values(scores).some(v => typeof v === 'number');
 }
 
+// Решение без кода (files пришли, но все пустые): баллы модели тут ничего не значат.
+export function hasNoSolution(review) {
+    let files = (review || {}).files;
+    if (!files || typeof files !== 'object') return false;
+    return !Object.values(files).some(code => typeof code === 'string' && code.trim());
+}
+
 // Критерии: вкладки «Все» + по критерию, у каждого балл, разбор и (если модель дала) рекомендация.
 function ScoresList({result}) {
     let [active, setActive] = useState(null);
@@ -88,6 +95,7 @@ export default function ExamTaskAiReview({review, onStart}) {
     if (!review) return null;
     let result = review.result || {};
     let tests = result.tests || {};
+    let noSolution = hasNoSolution(review);
 
     return <div className="examAiReview" data-testid="exam-ai-review">
         <div className="examAiReview-title">
@@ -95,7 +103,9 @@ export default function ExamTaskAiReview({review, onStart}) {
         </div>
         {BUSY.includes(review.status) && <div className="examAiReview-hint">{t('aiReviewPending')}</div>}
         {review.status === 'error' && <div className="examAiReview-hint">{t(ERRORS[review.errorCode] || 'aiReviewFailed')}</div>}
-        {review.status === 'done' && <>
+        {review.status === 'done' && noSolution &&
+            <div className="examAiReview-hint" data-testid="exam-ai-review-empty-code">{t('aiReviewEmptyCode')}</div>}
+        {review.status === 'done' && !noSolution && <>
             <ScoresList result={result}/>
             <div className="examAiReview-summary">{result.summary}</div>
             <div className="examAiReview-note" data-testid="exam-ai-review-note">
