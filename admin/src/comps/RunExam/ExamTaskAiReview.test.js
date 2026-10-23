@@ -22,13 +22,13 @@ describe('ИИ-проверка решения на экране сданног�
         global.t = (key) => key;
     });
 
-    test('показывает итог автотестов, оценки и разбор своей задачи', async () => {
+    test('показывает оценки и разбор своей задачи, без строки про автотесты', async () => {
         global.http = {get: jest.fn(() => Promise.resolve({reviews: [done, {question: 12, status: 'pending'}]}))};
         await act(async () => {
             render(<Screen examId={7} question={11}/>);
         });
         expect(global.http.get).toHaveBeenCalledWith('/my-exam-code-reviews', {examId: 7});
-        expect(screen.getByText('aiReviewTestsPassed (2 / 2)')).toBeInTheDocument();
+        expect(screen.queryByText(/aiReviewTests/)).not.toBeInTheDocument();
         expect(screen.getByText('O(n²), можно за O(n)')).toBeInTheDocument();
         expect(screen.getByText('Решение верное, но медленное.')).toBeInTheDocument();
     });
