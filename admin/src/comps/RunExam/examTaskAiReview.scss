@@ -76,6 +76,13 @@
     line-height: 1.5;
   }
 
+  &-processNote {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--bs-text-muted, #6c757d);
+  }
+
   &-suggestion {
     display: flex;
     gap: 8px;

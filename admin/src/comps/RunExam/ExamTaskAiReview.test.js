@@ -33,6 +33,14 @@ describe('ИИ-проверка решения на экране сданног�
         expect(screen.getByText('Решение верное, но медленное.')).toBeInTheDocument();
     });
 
+    test('у критерия «Процесс решения» есть пояснение, как он оценивается', async () => {
+        global.http = {get: jest.fn(() => Promise.resolve({reviews: [{...done, result: {...done.result, scores: {...done.result.scores, process: 5}, reasons: {process: 'История набора отсутствует.'}}}]}))};
+        await act(async () => {
+            render(<Screen examId={7} question={11}/>);
+        });
+        expect(screen.getByTestId('exam-ai-review-process-note')).toHaveTextContent('aiReviewProcessNote');
+    });
+
     test('пока проверка идёт - сообщение и опрос, затем результат', async () => {
         jest.useFakeTimers();
         global.http = {

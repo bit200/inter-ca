@@ -75,6 +75,9 @@ function ScoresList({result}) {
                         <span className="examAiReview-scoreValue">{score === null || score === undefined ? '—' : score}<small>/10</small></span>
                     </div>
                     <div className="examAiReview-reason">{(result.reasons || {})[key]}</div>
+                    {key === 'process' && <div className="examAiReview-processNote" data-testid="exam-ai-review-process-note">
+                        {t('aiReviewProcessNote')}
+                    </div>}
                     {suggestion && <div className="examAiReview-suggestion" data-testid="exam-ai-review-suggestion">
                         <i className="iconoir-light-bulb-on"></i>
                         <span>{suggestion}</span>
