@@ -10,6 +10,11 @@
     max-width: 1000px!important;
     margin-top: 20px!important;
 }
+/* lg + 20% — окно задач курса */
+.modal-size-xl {
+    max-width: 1200px!important;
+    margin-top: 20px!important;
+}
 .ReactModal__Body--open .hide-with-modal{
     display: none;
 }
