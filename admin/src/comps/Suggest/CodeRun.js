@@ -122,9 +122,9 @@ function CodeRunComponent(props) {
 
     // В модалке предок с transform/overflow превращает position:fixed в «fixed внутри модалки»,
     // поэтому в полноэкранном режиме блок выносится порталом в body.
-    let wrap = (isCode && codeFull) ? (el) => createPortal(el, document.body) : (el) => el;
+    let wrap = codeFull ? (el) => createPortal(el, document.body) : (el) => el;
     return wrap(<div
-        className={'codeRunWrap ' + (isCode && codeFull ? 'codeRunFull ' : '') + (dragOpts.drag1 || dragOpts.drag2 ? 'dragging' + (dragOpts.drag1 ? '1' : 2) : '')}
+        className={'codeRunWrap ' + (codeFull ? 'codeRunFull ' : '') + (dragOpts.drag1 || dragOpts.drag2 ? 'dragging' + (dragOpts.drag1 ? '1' : 2) : '')}
         ref={parentRightRef}
         onMouseDown={(e) => {
             let dragKey = e.target.getAttribute('id');
@@ -372,12 +372,12 @@ function CodeRunComponent(props) {
                 </>}
                 <div className={isCode ? 'codeEditorCol' : 'codeEditorFlat'}>
                     <div className="filesWrap">
-                        {isCode && <button className={'btn btn-xs btn-light codeFullBtn'}
+                        <button className={'btn btn-xs btn-light codeFullBtn'}
                                 data-testid="code-full-btn"
                                 title={codeFull ? 'Свернуть' : 'На весь экран'}
                                 onClick={() => setCodeFull(!codeFull)}>
                             <i className={codeFull ? 'iconoir-collapse' : 'iconoir-expand'}></i>
-                        </button>}
+                        </button>
                         <div className="btn-reset">
                             <button className={'btn btn-xs btn-light'} onClick={() => {
                                 onConfirm({name: t('areYouSure')}, () => {

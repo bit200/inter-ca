@@ -60,7 +60,7 @@
     z-index: 3;
     padding: 0;
 }
-.codeEditorCol .btn-reset { right: 34px; }
+.codeEditorCol .btn-reset, .codeEditorFlat .btn-reset { right: 34px; }
 .codeTreeLock { margin-left: 6px; font-size: 12px; opacity: .6; vertical-align: -1px; }
 .codeTreeResize {
     flex-shrink: 0;
