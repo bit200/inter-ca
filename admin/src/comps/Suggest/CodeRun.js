@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import _ from 'underscore';
 import MDEditor from "@uiw/react-md-editor";
@@ -96,6 +96,16 @@ function CodeRunComponent(props) {
         let onKey = (ev) => { if (ev.key === 'Escape') setCodeFull(false); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
+    }, [codeFull]);
+
+    // Вход/выход из полного экрана пересоздаёт DOM (портал), и размеры колонок, выставленные
+    // через style, теряются — возвращаем их, иначе редактор остаётся сжатым.
+    useLayoutEffect(() => {
+        if (!topRef.current || !rightRef.current) return;
+        topRef.current.style.height = Storage.get('codeResizeTop') || '70%';
+        rightRef.current.style.width = Storage.get('codeResizeLeft') || '50%';
+        setBotRef();
+        setLeftRef();
     }, [codeFull]);
 
     function startTreeResize(e) {
