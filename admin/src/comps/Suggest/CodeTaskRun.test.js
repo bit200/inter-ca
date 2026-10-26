@@ -88,6 +88,16 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(split().parentNode).not.toBe(document.body);
     });
 
+    test('в обычной (не code) задаче тоже есть кнопка «на весь экран»', () => {
+        render(<CodeRun question={{_id: 8, name: 'x'}} jsDetails={{codeType: 'js', starter: 'var a;'}} history={{}} isExam/>);
+        let split = () => document.body.querySelector('.codeRunWrap');
+        fireEvent.click(screen.getByTestId('code-full-btn'));
+        expect(split().classList.contains('codeRunFull')).toBe(true);
+        expect(split().parentNode).toBe(document.body);
+        fireEvent.keyDown(window, {key: 'Escape'});
+        expect(split().classList.contains('codeRunFull')).toBe(false);
+    });
+
     test('«Запустить» шлёт все редактируемые файлы, без тестов', async () => {
         render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{files: {'src/util.py': 'x = 2'}}} isExam/>);
         fireEvent.click(screen.getByTestId('code-run-run'));
