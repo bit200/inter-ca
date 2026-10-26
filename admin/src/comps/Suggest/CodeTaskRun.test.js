@@ -98,6 +98,18 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(split().classList.contains('codeRunFull')).toBe(false);
     });
 
+    test('после выхода из полного экрана колонки сохраняют ширину, а не сжимаются', () => {
+        render(<CodeRun question={{_id: 8, name: 'x'}} jsDetails={{codeType: 'js', starter: 'var a;'}} history={{}} isExam/>);
+        let wrap = () => document.body.querySelector('.codeRunWrap');
+        let widths = () => [wrap().querySelector('.crRight').style.width, wrap().querySelector('.crLeft').style.width];
+        let before = widths();
+        expect(before[0]).not.toBe('');
+        fireEvent.click(screen.getByTestId('code-full-btn'));
+        expect(widths()).toEqual(before);
+        fireEvent.keyDown(window, {key: 'Escape'});
+        expect(widths()).toEqual(before);
+    });
+
     test('«Запустить» шлёт все редактируемые файлы, без тестов', async () => {
         render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{files: {'src/util.py': 'x = 2'}}} isExam/>);
         fireEvent.click(screen.getByTestId('code-run-run'));
