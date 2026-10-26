@@ -353,7 +353,7 @@ function CourseQuiz(props, ref) {
 
         <MyModal
             woClose={true}
-            size={'lg'}
+            size={'xl'}
             isOpen={open}
             onClose={onClose}
             beforeClose={beforeQuizClose}
