@@ -17,6 +17,7 @@ import fixWebmDuration from 'fix-webm-duration';
 import {createSilenceWatcher, isEmptyRecording} from "./silenceCheck";
 import {questionSpeechText} from "../questionAudio";
 import Button from "../../../libs/Button";
+import {uploadFetch} from '../../../libs/http/uploadFetch';
 
 let VIDEO_DOMAIN = global.env.VIDEO_DOMAIN;
 let interimTranscript = '';
@@ -198,7 +199,7 @@ let AudioShort = forwardRef((props, ref) => {
             return;
         }
         formData.append('text', finalTranscript || '--');
-        fetch(VIDEO_DOMAIN + (opts.uploadAudioUrl || '/api/upload-audio'), {
+        uploadFetch(VIDEO_DOMAIN + (opts.uploadAudioUrl || '/api/upload-audio'), {
             method: 'POST',
             body: formData
         }).then(() => {

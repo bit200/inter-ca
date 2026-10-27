@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 import _ from 'underscore';
 import './AudioShorts.css'
 import {
+import {uploadFetch} from '../../../libs/http/uploadFetch';
     Link, Outlet
 } from "react-router-dom";
 
@@ -29,7 +30,7 @@ function Layout2(props) {
     })
 
     let uploadToServerAudio = (formData) => {
-        fetch(VIDEO_DOMAIN + '/api/upload-audio', {
+        uploadFetch(VIDEO_DOMAIN + '/api/upload-audio', {
             method: 'POST',
             body: formData,
         });
