@@ -3,6 +3,7 @@ import Perc from "./Suggest/Perc";
 import Input from "../libs/Input";
 import Textarea from "../libs/Textarea";
 import MyModal from "../libs/MyModal";
+import {uploadFetch} from '../libs/http/uploadFetch';
 
 function Layout2(props) {
     //console.log('*........ ## ROOT RENDER', props);
@@ -91,7 +92,7 @@ function Layout2(props) {
                 formData.append('user', user.get_id());
                 formData.append('chunk', chunk, fileName);
 
-                let t = await fetch(url, {
+                let t = await uploadFetch(url, {
                     method: 'POST',
                     body: formData
                 });
