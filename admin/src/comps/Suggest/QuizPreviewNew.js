@@ -5,6 +5,7 @@ import {Link, Outlet} from "react-router-dom";
 import MDEditor from "@uiw/react-md-editor";
 import "./QuizPreview.css";
 import {CountDownSecs} from "./../TrainMethods/CoundDownSec";
+import {checkQuizOnServer, isCorrectVariant, quizAnswerPayload} from "./quizServerCheck";
 
 let onNextTimer;
 global._setAdminMode = (v) => {
@@ -17,6 +18,8 @@ let QuizPreviewNew = forwardRef((props, ref) => {
     let [_isSubmit, setIsSubmit] = useState(false);
     let [isCorrect, setIsCorrect] = useState(false);
     let [titleInfo, setTitleInfo] = useState({});
+    let [correctIdx, setCorrectIdx] = useState(null); // правильные индексы с сервера
+    let [isChecking, setIsChecking] = useState(false);
     let {skipBottomOpenText, hist, onSubmit, isExam, item, opts = {}, history, getItemNameAndDesc} = props;
 
     let quiz = item;
@@ -30,6 +33,8 @@ let QuizPreviewNew = forwardRef((props, ref) => {
         setChosen({...chosen || {}})
         setIsSubmit(false)
         setIsCorrect(false)
+        setCorrectIdx(null)
+        setIsChecking(false)
         console.log("qqqqq qqq ON LOCAL STARTTTTTTTTTTTTTTTTTT", props.activeInd, isSubmit, chosen);
 
         if (chosen || isSubmit) {
@@ -45,7 +50,8 @@ let QuizPreviewNew = forwardRef((props, ref) => {
     function _onSubmit(chosen, _opts) {
         console.log("qqqqq onNextTimer onSubmit", );
         let {variations = []} = quiz || {};
-        _opts.correctAnswer = pubName(variations.find(it => it.isCorrect))
+        let correctIndexes = _opts.correctIndexes;
+        _opts.correctAnswer = pubName(variations.find((it, ind) => isCorrectVariant(it, ind, correctIndexes)))
         _opts.selectedAnswer = pubName(variations[Object.keys(chosen).filter(it => chosen[it])[0]])
 
         let isCorrect = _opts?.isCorrect;
@@ -72,13 +78,20 @@ let QuizPreviewNew = forwardRef((props, ref) => {
         }
     }
 
-    function onClickVariant(ind) {
-        let it = (quiz?.variations || [])[ind] || {}
-        chosen = chosen || {}
+    async function onClickVariant(ind) {
         chosen = {[ind]: true};
         setChosen({...chosen});
         setIsSubmit(true);
-        _onSubmit && _onSubmit(chosen, {isCorrect: it.isCorrect});
+        setIsChecking(true);
+        // верность ответа решает сервер, в данных квиза её может не быть
+        let res = await checkQuizOnServer(quiz, [ind]);
+        setIsChecking(false);
+        setCorrectIdx(res.correctIndexes);
+        _onSubmit && _onSubmit(chosen, {
+            isCorrect: res.isCorrect,
+            correctIndexes: res.correctIndexes,
+            checkAnswer: quizAnswerPayload(quiz, [ind]),
+        });
     }
 
     function onTimeOut() {
@@ -87,8 +100,11 @@ let QuizPreviewNew = forwardRef((props, ref) => {
         chosen = {[ind]: true};
         setChosen({...chosen});
         setIsSubmit(true);
-        _onSubmit && _onSubmit(chosen, {
-            isCorrect: false, isTimeout: true
+        checkQuizOnServer(quiz, []).then(res => {
+            setCorrectIdx(res.correctIndexes);
+            _onSubmit && _onSubmit(chosen, {
+                isCorrect: false, isTimeout: true, correctIndexes: res.correctIndexes
+            });
         });
     }
 
@@ -100,6 +116,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
     let isAdminMode = !isExam && localStorage.getItem("adminMode") == "1";
     let {preventOnNext} = opts || {};
     let isTimeout = hist?.data?.isTimeout;
+    let correctIndexes = correctIdx || hist?.data?.correctIndexes || null;
     // console.log("qqqqq IS SUBMIT", hist, isSubmit, opts.canResubmitQuiz);
     return (<div
             className={
@@ -129,9 +146,9 @@ let QuizPreviewNew = forwardRef((props, ref) => {
             {(item.variations || []).map((it, ind) => {
                 let clName;
                 if (chosen[ind]) {
-                    clName = isExam ? "unknown" : it.isCorrect ? "correct" : "incorrect";
+                    clName = isExam ? "unknown" : isCorrectVariant(it, ind, correctIndexes) ? "correct" : "incorrect";
                 }
-                if (!isExam && isSubmit && it.isCorrect) {
+                if (!isExam && isSubmit && isCorrectVariant(it, ind, correctIndexes)) {
                     clName = props.isGreyForCorrect ? "unknown" : "correct";
                 }
                 return (
@@ -141,7 +158,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
                         data-testid={'quiz-answer'}
                         onClick={() => {
 
-                            if (isSubmit && !opts.canResubmitQuiz) {
+                            if (isChecking || (isSubmit && !opts.canResubmitQuiz)) {
                                 return;
                             }
                             onClickVariant(ind)
@@ -150,7 +167,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
                     >
                         <div className="quiz-answer-it-radio"></div>
                         <MDEditor.Markdown
-                            source={(isAdminMode && it.isCorrect ? "** " : " ") + it.name}
+                            source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
                         />
                     </div>
                 );

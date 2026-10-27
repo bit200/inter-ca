@@ -41,8 +41,8 @@ let CodeReview = forwardRef((props, ref) => {
         return _plainValue;
     }
 
-    function extendCompare(data) {
-        let compare = compareResultsCodePreview(props.item, data)
+    async function extendCompare(data) {
+        let compare = await compareResultsOnServer(props.item, data)
         console.log("qqqqq compare3333", compare);
         // compareResults(, v.data)
         data.isCompare = compare.isCompare
@@ -51,16 +51,17 @@ let CodeReview = forwardRef((props, ref) => {
             data.compareRate = compare.isCorrect ? 5 : 1
         }
         data.copmareObj = compare;
+        data.checkAnswer = compare.checkAnswer
     }
 
 
-    function onChange(v) {
+    async function onChange(v) {
         v.data = v.data || {};
         v.data.files = getCodeInformation();
         v.data.plainValue = getPlainValue();
         v.data.audioRate = v.data.rate;
 
-        extendCompare(v.data)
+        await extendCompare(v.data)
         v.data.rate = Math.min(v.data.audioRate, v.data.codeRate)
 
         props.onChange && props.onChange(v)
@@ -257,8 +258,29 @@ function FileEditWithInd(props) {
 }
 
 
+// Сравнение с эталоном — на сервере (#4594): correctAnswers в данных вопроса может не быть.
+async function compareResultsOnServer(item, data) {
+    let payload = {files: (data.files || []).map(it => ({code: it?.code}))}
+    try {
+        let res = await global.http.post('/check-quiz-answer', {quiz: item?._id, answer: payload})
+        if (res && typeof res.isCorrect === 'boolean') {
+            return {
+                // ручка не говорит, есть ли эталон; верный ответ означает, что он есть
+                isCompare: typeof res.isCompare === 'boolean' ? res.isCompare : res.isCorrect,
+                isCorrect: res.isCorrect,
+                correctIndexes: res.correctIndexes || [],
+                checkAnswer: payload,
+            }
+        }
+    } catch (e) {
+        console.error('check-quiz-answer failed', e)
+    }
+    // сервер недоступен: старое локальное сравнение, если эталон ещё есть в данных
+    return {...compareResultsCodePreview(item, data), checkAnswer: payload}
+}
+
 //compare Files ADMIN & API intergraiton
-function compareResultsCodePreview(item, data) {
+export function compareResultsCodePreview(item, data) {
     let {files = [], correctAnswers = []} = item || {};
     let dataFiles = data.files || []
     console.log("qqqqq compare results item", {correctAnswers, files, dataFiles});

@@ -5,6 +5,7 @@ import {Link, Outlet} from "react-router-dom";
 import MDEditor from "@uiw/react-md-editor";
 import "./QuizPreview.css";
 import {CountDownSecs} from "./../TrainMethods/CoundDownSec";
+import {checkQuizOnServer, isCorrectVariant, quizAnswerPayload} from "./quizServerCheck";
 
 let onNextTimer;
 global._setAdminMode = (v) => {
@@ -16,6 +17,7 @@ let Layout2 = forwardRef((props, ref) => {
     let [disabledMs, setDisabled] = useState({});
     let [chosen, setChosen] = useState({});
     let [isSubmit, setIsSubmit] = useState(false);
+    let [correctIdx, setCorrectIdx] = useState(null); // правильные индексы с сервера
     let {quiz, onSubmit, isExam, onClick} = props;
     quiz ??= {};
 
@@ -23,6 +25,7 @@ let Layout2 = forwardRef((props, ref) => {
         let hist = props.history || {};
         setChosen({...(hist.chosen || {})});
         setIsSubmit(hist.isSubmit);
+        setCorrectIdx(hist.data?.correctIndexes || null);
         !hist.isSubmit && props.onStart && props.onStart()
     }, [quiz._id]);
 
@@ -41,7 +44,7 @@ let Layout2 = forwardRef((props, ref) => {
 
     function _onSubmit(chosen, opts) {
         let {variations = []} = quiz || {};
-        opts.correctAnswer = pubName(variations.find(it => it.isCorrect))
+        opts.correctAnswer = pubName(variations.find((it, ind) => isCorrectVariant(it, ind, opts.correctIndexes)))
         opts.selectedAnswer = pubName(variations[Object.keys(chosen).filter(it => chosen[it])[0]])
         onSubmit && onSubmit(chosen, opts);
        //console.log("qqqqq SUBMITTTTT CLICK VARIANT3", quiz, opts, chosen);
@@ -62,14 +65,20 @@ let Layout2 = forwardRef((props, ref) => {
 
     }
 
-    function onClickVariant(ind) {
-        let it = (quiz?.variations || [])[ind] || {}
+    async function onClickVariant(ind) {
         //  chosen[ind] = !chosen[ind];
        //console.log("qqqqq SUBMITTTTT CLICK VARIANT", ind);
         chosen = {[ind]: true};
         setChosen({...chosen});
         setIsSubmit(true);
-        _onSubmit && _onSubmit(chosen, {isCorrect: it.isCorrect});
+        // верность ответа решает сервер, в данных квиза её может не быть
+        let res = await checkQuizOnServer(quiz, [ind]);
+        setCorrectIdx(res.correctIndexes);
+        _onSubmit && _onSubmit(chosen, {
+            isCorrect: res.isCorrect,
+            correctIndexes: res.correctIndexes,
+            checkAnswer: quizAnswerPayload(quiz, [ind]),
+        });
 
     }
 
@@ -79,8 +88,11 @@ let Layout2 = forwardRef((props, ref) => {
         chosen = {[ind]: true};
         setChosen({...chosen});
         setIsSubmit(true);
-        _onSubmit && _onSubmit(chosen, {
-            isCorrect: false, isTimeout: true
+        checkQuizOnServer(quiz, []).then(res => {
+            setCorrectIdx(res.correctIndexes);
+            _onSubmit && _onSubmit(chosen, {
+                isCorrect: false, isTimeout: true, correctIndexes: res.correctIndexes
+            });
         });
     }
 
@@ -89,6 +101,7 @@ let Layout2 = forwardRef((props, ref) => {
     }));
 
     let {skipBottomOpenText} = props || {};
+    let correctIndexes = correctIdx;
     let isAdminMode = !isExam && localStorage.getItem("adminMode") == "1";
     // let timer = props.timer || 3;
     // let v = useActionData();
@@ -113,9 +126,9 @@ let Layout2 = forwardRef((props, ref) => {
             {(quiz.variations || []).map((it, ind) => {
                 let clName;
                 if (chosen[ind]) {
-                    clName = isExam ? "unknown" : it.isCorrect ? "correct" : "incorrect";
+                    clName = isExam ? "unknown" : isCorrectVariant(it, ind, correctIndexes) ? "correct" : "incorrect";
                 }
-                if (!isExam && isSubmit && it.isCorrect) {
+                if (!isExam && isSubmit && isCorrectVariant(it, ind, correctIndexes)) {
                     clName = props.isGreyForCorrect ? "unknown" : "correct";
                 }
                 return (
@@ -132,7 +145,7 @@ let Layout2 = forwardRef((props, ref) => {
                     >
                         <div className="quiz-answer-it-radio"></div>
                         <MDEditor.Markdown
-                            source={(isAdminMode && it.isCorrect ? "** " : " ") + it.name}
+                            source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
                         />
                     </div>
                 );
