@@ -1,6 +1,11 @@
 let socket = null;
 let completeResolve = null;
 let completePromise = null;
+// Сокет открывается дольше 250 мс (TLS + upgrade), а MediaRecorder отдаёт первый
+// чанк с заголовком webm уже через 250 мс. Всё, что пришло до onopen, копим тут
+// и шлём сразу после 'start', иначе в S3 уходит файл без заголовка.
+let pendingChunks = [];
+let stopRequested = false;
 
 function getWsUrl() {
     const base = global.env.WS_DOMAIN || global.env.VIDEO_DOMAIN || window.location.origin;
@@ -9,10 +14,17 @@ function getWsUrl() {
 
 export function startAudioStream({ audioHash, userId, token }) {
     completePromise = new Promise(resolve => { completeResolve = resolve; });
+    pendingChunks = [];
+    stopRequested = false;
     socket = new WebSocket(getWsUrl());
 
     socket.onopen = () => {
         socket.send(JSON.stringify({ type: 'start', audioHash, userId, token }));
+        pendingChunks.forEach(chunk => socket.send(chunk));
+        pendingChunks = [];
+        if (stopRequested) {
+            socket.send(JSON.stringify({ type: 'stop' }));
+        }
     };
 
     socket.onmessage = (event) => {
@@ -39,6 +51,10 @@ export function startAudioStream({ audioHash, userId, token }) {
 export function sendAudioChunk(chunk) {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(chunk);
+        return;
+    }
+    if (socket && socket.readyState === WebSocket.CONNECTING) {
+        pendingChunks = [...pendingChunks, chunk];
     }
 }
 
@@ -46,6 +62,9 @@ export function stopAudioStream() {
     console.log('stopAudioStream readyState', socket?.readyState, WebSocket.OPEN);
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'stop' }));
+    }
+    if (socket && socket.readyState === WebSocket.CONNECTING) {
+        stopRequested = true;
     }
 }
 
