@@ -24,6 +24,8 @@ function getQuestionTitle(item) {
 }
 
 
+const MENTOR_COLOR = '#6c5ce7';
+
 const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
     const [collapsed, setCollapsed] = useState(false);
     // error-записи молча ретраятся сами (см. EvaluationDetail.js/бэкенд) и нигде
@@ -65,6 +67,7 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
                             const score = ev.result?.score;
                             const dictatedAt = formatDictationDate(item.cd);
                             const scoreColor = score >= 7 ? STATUS_COLOR.done : score >= 4 ? STATUS_COLOR.processing : STATUS_COLOR.error;
+                            const hasMentor = typeof item.mentorScore === 'number';
                             return (
                                 <div key={item._id} className={s.groupItem}>
                                     <Link to={item.href || (item.review ? `/evaluations/task/${item._id}` : `/evaluations/${item._id}`)}
@@ -88,16 +91,16 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
                                             {dictatedAt.short}
                                         </span>
                                     )}
-                                    {typeof item.mentorScore === 'number' && (
-                                        <span className={s.groupItemMentor} title="Оценка ментора"
-                                              data-testid="evaluation-group-item-mentor">
-                                            Ментор {+item.mentorScore.toFixed(1)}/10
+                                    {(hasMentor || score != null) && (
+                                        <span className={s.groupItemScore} tabIndex={0}
+                                              style={{ color: hasMentor ? MENTOR_COLOR : scoreColor }}
+                                              data-testid={hasMentor ? 'evaluation-group-item-mentor' : 'evaluation-group-item-ai'}>
+                                            {hasMentor ? +item.mentorScore.toFixed(1) : score}/10
+                                            <span className={s.scoreHint} role="tooltip"
+                                                  data-testid="evaluation-group-item-hint">
+                                                {hasMentor ? 'Оценка ментора' : 'Оценка ИИ'}
+                                            </span>
                                         </span>
-                                    )}
-                                    {score != null && (
-                                        <span className={s.groupItemScore} style={{ color: scoreColor }}>
-                                        {score}/10
-                                    </span>
                                     )}
                                 </div>
                             );

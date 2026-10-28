@@ -23,12 +23,19 @@ describe('EvaluationListItemGroup: строки группы', () => {
         expect(screen.queryByText('Оценено')).not.toBeInTheDocument();
     });
 
-    it('показывает оценку ментора, если она есть, и не рисует её без неё', () => {
+    it('оценка ментора выводится вместо оценки ИИ, с попапом-подсказкой об источнике', () => {
         renderGroup([{ ...doneItem, mentorScore: 7.5 }, { ...doneItem, _id: 9 }]);
 
-        const badges = screen.getAllByTestId('evaluation-group-item-mentor');
-        expect(badges).toHaveLength(1);
-        expect(badges[0]).toHaveTextContent('Ментор 7.5/10');
+        const mentor = screen.getAllByTestId('evaluation-group-item-mentor');
+        expect(mentor).toHaveLength(1);
+        expect(mentor[0]).toHaveTextContent('7.5/10');
+        expect(mentor[0]).not.toHaveTextContent('5.7/10');
+        expect(mentor[0]).toHaveTextContent('Оценка ментора');
+
+        const ai = screen.getAllByTestId('evaluation-group-item-ai');
+        expect(ai).toHaveLength(1);
+        expect(ai[0]).toHaveTextContent('5.7/10');
+        expect(ai[0]).toHaveTextContent('Оценка ИИ');
     });
 
     it('у незавершённой оценки подпись статуса остаётся', () => {
