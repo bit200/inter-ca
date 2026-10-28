@@ -10,6 +10,14 @@ const ruleOf = (selector) => {
 };
 
 describe('пилюля плеера записи', () => {
+    it('лежит поверх модалок: z-index в пределах int32 и строго выше оверлея', () => {
+        const player = +ruleOf('.player').match(/z-index:\s*(\d+)/)[1];
+        const modalCss = fs.readFileSync(path.join(__dirname, '../../../libs/MyModal/myModal.css'), 'utf8');
+        const modal = +modalCss.match(/\.ReactModal__Overlay \{[^}]*z-index:\s*(\d+)/)[1];
+        expect(player).toBeLessThanOrEqual(2147483647);
+        expect(modal).toBeLessThan(player);
+    });
+
     it('стоит по центру нижнего края, а не прижата к левому', () => {
         const player = ruleOf('.player');
         expect(player).toMatch(/left:\s*0;/);

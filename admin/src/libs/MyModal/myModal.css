@@ -37,7 +37,7 @@
 .ReactModal__Overlay {
     overflow-y: auto;
     padding: 40px 0;
-    z-index: 10000000000;
+    z-index: 2147483000; /* ниже плеера записи (2147483647), выше календаря .dp_pop */
     background-color: rgba(55, 55, 55, 0.75) !important;
 }
 
