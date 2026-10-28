@@ -88,6 +88,12 @@ const EvaluationListItemGroup = ({ examId, label, items, groupMode, sort }) => {
                                             {dictatedAt.short}
                                         </span>
                                     )}
+                                    {typeof item.mentorScore === 'number' && (
+                                        <span className={s.groupItemMentor} title="Оценка ментора"
+                                              data-testid="evaluation-group-item-mentor">
+                                            Ментор {+item.mentorScore.toFixed(1)}/10
+                                        </span>
+                                    )}
                                     {score != null && (
                                         <span className={s.groupItemScore} style={{ color: scoreColor }}>
                                         {score}/10

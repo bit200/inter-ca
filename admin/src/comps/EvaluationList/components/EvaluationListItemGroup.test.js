@@ -23,6 +23,14 @@ describe('EvaluationListItemGroup: строки группы', () => {
         expect(screen.queryByText('Оценено')).not.toBeInTheDocument();
     });
 
+    it('показывает оценку ментора, если она есть, и не рисует её без неё', () => {
+        renderGroup([{ ...doneItem, mentorScore: 7.5 }, { ...doneItem, _id: 9 }]);
+
+        const badges = screen.getAllByTestId('evaluation-group-item-mentor');
+        expect(badges).toHaveLength(1);
+        expect(badges[0]).toHaveTextContent('Ментор 7.5/10');
+    });
+
     it('у незавершённой оценки подпись статуса остаётся', () => {
         renderGroup([{ _id: 2, titleInfo: { title: 'Вопрос' }, evaluate: { status: 'pending' } }]);
 

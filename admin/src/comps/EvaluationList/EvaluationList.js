@@ -111,6 +111,7 @@ const toTaskItem = (review) => ({
     question: review.question,
     titleInfo: { title: review.title || `Задача #${review.question}` },
     evaluate: { status: review.status, result: review.score != null ? { score: review.score } : undefined },
+    mentorScore: typeof review.mentorReview?.score === 'number' ? review.mentorReview.score : undefined,
     // Задача модуля без экзамена: страницы разбора нет, строка раскрывается на месте.
     ...(review.exam ? { href: `/quiz/${review.exam}` } : { review }),
 });
