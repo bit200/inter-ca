@@ -160,17 +160,6 @@
   white-space: nowrap;
 }
 
-.groupItemMentor {
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: #6c5ce7;
-  background: rgba(108, 92, 231, 0.1);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-variant-numeric: tabular-nums;
-}
-
 .groupItemScore {
   font-weight: 700;
   font-size: 14px;
@@ -178,6 +167,32 @@
   font-variant-numeric: tabular-nums;
   min-width: 52px;
   text-align: right;
+  position: relative;
+  cursor: default;
+
+  &:hover .scoreHint,
+  &:focus .scoreHint {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.scoreHint {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #2d3436;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 5;
 }
 
 .showMore {
