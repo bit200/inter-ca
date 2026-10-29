@@ -4,15 +4,23 @@ export const CHECK_TOPIC = "check";
 
 // Находит модуль и индекс топика по значению ?topic. Недоступные (maxModuleInd) и
 // неизвестные топики игнорируются; minModuleInd - модули левее не учитываются (курс открывается на последнем доступном) - тогда вернётся null и сработает выбор по умолчанию.
-export function findTopicPosition(modules, topicParam, maxModuleInd = Infinity, minModuleInd = 0) {
+// isDone(id) - пройденные топики из ?topic тоже игнорируются: курс открывается на первом непройденном.
+export function findTopicPosition(modules, topicParam, maxModuleInd = Infinity, minModuleInd = 0, isDone = null) {
     if (!topicParam) return null;
     for (let m = minModuleInd; m < (modules || []).length && m <= maxModuleInd; m++) {
         let questions = modules[m].questions || [];
         if (topicParam === CHECK_TOPIC) continue;
         let q = questions.findIndex((id) => String(id) === String(topicParam));
+        if (q !== -1 && isDone && isDone(questions[q])) continue;
         if (q !== -1) return {moduleInd: m, blockInd: q};
     }
     return null;
+}
+
+// Индекс первого непройденного топика модуля (0, если все пройдены).
+export function firstUnpassedBlock(module, qHistory) {
+    let ind = ((module || {}).questions || []).findIndex((id) => ((qHistory || {})[id] || {}).status !== "ok");
+    return ind === -1 ? 0 : ind;
 }
 
 export function topicParamFor(module, blockInd) {
