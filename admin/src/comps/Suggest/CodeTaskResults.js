@@ -79,7 +79,7 @@ export function CodeFilesTabs({files, selectedInd, onSelect}) {
             let label = names.indexOf(short) !== names.lastIndexOf(short) ? file.name : short;
             return <div key={file.name}
                    data-testid="code-file" data-path={file.name} data-readonly={String(!!file.readOnly)}
-                   className={'codeFileTab ' + (ind === selectedInd ? 'selectedFile' : '')}
+                   className={'codeFileTab ' + (ind === 0 ? 'codeFileTabFirst ' : '') + (ind === selectedInd ? 'selectedFile' : '')}
                    title={file.name + (file.readOnly ? ' — ' + t('codeFileReadonly') : '')}
                    onClick={() => onSelect(ind)}>
                 {label}{file.readOnly && <i className="iconoir-lock codeTreeLock" data-testid="code-readonly-icon"></i>}
