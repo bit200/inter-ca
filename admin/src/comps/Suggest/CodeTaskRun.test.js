@@ -244,3 +244,13 @@ describe('Лоадер на кнопках «Запуск» и «Сабмит»'
         await waitFor(() => expect(screen.queryByTestId('code-submit-loader')).toBeNull());
     });
 });
+
+describe('редактор под табами файлов', () => {
+    test('в колонке с табами редактор не absolute — иначе он перекрывает табы', () => {
+        const scss = require('fs').readFileSync(require('path').join(__dirname, 'codeRun.scss'), 'utf8');
+        const block = scss.match(/\.codeEditorCol \.myEditorWrap\s*\{([^}]*)\}/);
+        expect(block).not.toBeNull();
+        expect(block[1]).toMatch(/position:\s*relative/);
+        expect(block[1]).toMatch(/height:\s*auto\s*!important/);
+    });
+});

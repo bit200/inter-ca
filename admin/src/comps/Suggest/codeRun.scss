@@ -55,6 +55,14 @@
     padding: 0;
 }
 .codeEditorCol .btn-reset, .codeEditorFlat .btn-reset { right: 34px; }
+// Редактор в колонке под табами файлов: absolute в flex-колонке встаёт в её начало и перекрывает табы,
+// поэтому здесь он обычный flex-элемент.
+.codeEditorCol .myEditorWrap {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto !important;
+}
 .codeTreeLock { margin-left: 6px; font-size: 12px; opacity: .6; vertical-align: -1px; }
 
 .filesItem {
