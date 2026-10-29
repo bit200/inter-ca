@@ -16,7 +16,7 @@ import {CheckErrorNotice, isCheckError} from './CheckErrorNotice';
 import VsTaskRun from "../VsTask/VsTaskRun";
 import {isVsTask} from "../VsTask/vsTask";
 import {CodeReviewBlock} from "./CodeReviewBlock";
-import {CodeFilesTree, CodeTaskResults, getCodeTaskContent, isCodeTaskDetails} from './CodeTaskResults';
+import {CodeFilesTabs, CodeTaskResults, getCodeTaskContent, isCodeTaskDetails} from './CodeTaskResults';
 import {isSqlDetails, SqlRunResults, SqlSchemaPanel} from "./SqlRunResults";
 
 let renderCount = 1;
@@ -83,12 +83,6 @@ function CodeRunComponent(props) {
         leftRef.current.style.width = perc + '%';
     }
 
-    // Колонка дерева файлов code-задачи: ширина в px, тянется за ручку между деревом и редактором.
-    let [treeWidth, setTreeWidth] = useState(() => {
-        let w = +Storage.get('codeTreeWidth');
-        return w >= 120 ? w : 200;
-    });
-
     // Развернуть блок «дерево + редактор» поверх страницы; Esc сворачивает обратно.
     let [codeFull, setCodeFull] = useState(false);
     useEffect(() => {
@@ -107,23 +101,6 @@ function CodeRunComponent(props) {
         setBotRef();
         setLeftRef();
     }, [codeFull]);
-
-    function startTreeResize(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        let startX = e.clientX, startW = treeWidth, last = startW;
-        let move = (ev) => {
-            last = Math.min(500, Math.max(120, startW + ev.clientX - startX));
-            setTreeWidth(last);
-        };
-        let up = () => {
-            window.removeEventListener('mousemove', move);
-            window.removeEventListener('mouseup', up);
-            Storage.set('codeTreeWidth', last);
-        };
-        window.addEventListener('mousemove', move);
-        window.addEventListener('mouseup', up);
-    }
 
     function getHeight(el) { return el.clientHeight; }
     function getWidth(el) { return el.clientWidth; }
@@ -371,24 +348,19 @@ function CodeRunComponent(props) {
         </div>
         <div className={'crRight' + (isCode ? ' crRightTree' : '')} ref={rightRef}>
             <div className={isCode ? 'codeSplit' : 'codeSplitFlat'}>
-                {isCode && <>
-                    <div className="codeTreeCol" style={{width: treeWidth}} data-testid="code-tree-col">
-                        <CodeFilesTree files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
-                            setSelectedFileInd(ind);
-                            updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
-                        }}/>
-                    </div>
-                    <div className="codeTreeResize" data-testid="code-tree-resize" onMouseDown={startTreeResize}></div>
-                </>}
                 <div className={isCode ? 'codeEditorCol' : 'codeEditorFlat'}>
+                    {isCode && <CodeFilesTabs files={files} selectedInd={selectedFileInd} onSelect={(ind) => {
+                        setSelectedFileInd(ind);
+                        updateCode(getCodeTaskContent(jsDetails, history, (files[ind] || {}).name));
+                    }}/>}
                     <div className="filesWrap">
-                        <button className={'btn btn-xs btn-light codeFullBtn'}
+                        <button className={'btn btn-xs btn-light codeFullBtn' + (isCode ? ' codeFullBtnTabs' : '')}
                                 data-testid="code-full-btn"
                                 title={codeFull ? 'Свернуть' : 'На весь экран'}
                                 onClick={() => setCodeFull(!codeFull)}>
                             <i className={codeFull ? 'iconoir-collapse' : 'iconoir-expand'}></i>
                         </button>
-                        <div className="btn-reset">
+                        <div className={'btn-reset' + (isCode ? ' btn-reset-tabs' : '')}>
                             <button className={'btn btn-xs btn-light'} onClick={() => {
                                 onConfirm({name: t('areYouSure')}, () => {
                                     onChangeCodeLocal(getStarter(jsDetails, selectedFileInd))

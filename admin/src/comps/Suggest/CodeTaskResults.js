@@ -70,20 +70,21 @@ export function buildTreeRows(files) {
     return rows;
 }
 
-export function CodeFilesTree({files, selectedInd, onSelect}) {
-    return <div className="codeFilesTree" data-testid="code-files-tree">
-        {buildTreeRows(files).map(row => row.type === 'dir'
-            ? <div key={'d' + row.path} className="codeTreeDir" style={{paddingLeft: 8 + row.depth * 12}}>
-                <i className="iconoir-folder"></i> {row.name}
-            </div>
-            : <div key={'f' + row.path}
-                   data-testid="code-file" data-path={row.path} data-readonly={String(!!row.readOnly)}
-                   className={'codeTreeFile ' + (row.ind === selectedInd ? 'selectedFile' : '')}
-                   style={{paddingLeft: 8 + row.depth * 12}}
-                   title={row.readOnly ? t('codeFileReadonly') : ''}
-                   onClick={() => onSelect(row.ind)}>
-                {row.name}{row.readOnly && <i className="iconoir-lock codeTreeLock" data-testid="code-readonly-icon"></i>}
-            </div>)}
+// Файлы code-задачи — табами над редактором; папки видны в подсказке и в имени при совпадении имён.
+export function CodeFilesTabs({files, selectedInd, onSelect}) {
+    let names = (files || []).map(f => f.name.split('/').pop());
+    return <div className="codeFilesTabs" data-testid="code-files-tabs">
+        {(files || []).map((file, ind) => {
+            let short = names[ind];
+            let label = names.indexOf(short) !== names.lastIndexOf(short) ? file.name : short;
+            return <div key={file.name}
+                   data-testid="code-file" data-path={file.name} data-readonly={String(!!file.readOnly)}
+                   className={'codeFileTab ' + (ind === selectedInd ? 'selectedFile' : '')}
+                   title={file.name + (file.readOnly ? ' — ' + t('codeFileReadonly') : '')}
+                   onClick={() => onSelect(ind)}>
+                {label}{file.readOnly && <i className="iconoir-lock codeTreeLock" data-testid="code-readonly-icon"></i>}
+            </div>;
+        })}
     </div>
 }
 
