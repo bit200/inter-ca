@@ -1,4 +1,4 @@
-import {findTopicPosition, topicParamFor, CHECK_TOPIC} from "./courseTopicUrl";
+import {findTopicPosition, firstUnpassedBlock, topicParamFor, CHECK_TOPIC} from "./courseTopicUrl";
 
 const modules = [{module: "m1", questions: ["a", "b"]}, {module: "m2", questions: ["c", "d"]}];
 
@@ -15,6 +15,14 @@ describe("courseTopicUrl", () => {
     test("топик из более раннего модуля игнорируется - открывается последний доступный", () => {
         expect(findTopicPosition(modules, "b", 1, 1)).toBeNull();
         expect(findTopicPosition(modules, "d", 1, 1)).toEqual({moduleInd: 1, blockInd: 1});
+    });
+    test("пройденный топик из ?topic игнорируется, открывается первый непройденный", () => {
+        const done = (id) => id === "c";
+        expect(findTopicPosition(modules, "c", 1, 1, done)).toBeNull();
+        expect(findTopicPosition(modules, "d", 1, 1, done)).toEqual({moduleInd: 1, blockInd: 1});
+        expect(firstUnpassedBlock(modules[1], {c: {status: "ok"}})).toBe(1);
+        expect(firstUnpassedBlock(modules[1], {})).toBe(0);
+        expect(firstUnpassedBlock(modules[1], {c: {status: "ok"}, d: {status: "ok"}})).toBe(0);
     });
     test("параметр для топика и для проверки модуля", () => {
         expect(topicParamFor(modules[1], 0)).toBe("c");

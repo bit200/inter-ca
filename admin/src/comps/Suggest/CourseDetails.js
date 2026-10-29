@@ -3,7 +3,7 @@ import _ from "underscore";
 
 import {Link, Outlet, useNavigate, useSearchParams} from "react-router-dom";
 import {handleCourseLoadError} from "./courseLoadError";
-import {findTopicPosition, topicParamFor, CHECK_TOPIC} from "./courseTopicUrl";
+import {findTopicPosition, firstUnpassedBlock, topicParamFor, CHECK_TOPIC} from "./courseTopicUrl";
 import CustomStorage from "./CustomStorage";
 import PreviewCourseModule from "./PreviewCourseModule";
 import Loader from "../Loader";
@@ -89,7 +89,7 @@ function CourseDetails(props) {
                 // );
                 setActiveInd(activeInd);
                 let topicParam = searchParams.get("topic");
-                let pos = findTopicPosition(courseUser.modules, topicParam, activeInd, activeInd);
+                let pos = findTopicPosition(courseUser.modules, topicParam, activeInd, activeInd, (id) => (qHistory[id] || {}).status === "ok");
                 if (pos) {
                     setSelectedModuleInd(pos.moduleInd);
                     setSelectedBlockInd(pos.blockInd);
@@ -101,7 +101,9 @@ function CourseDetails(props) {
                     setSelectedBlockInd(-1);
                     setSelectedModuleInd(courseUser.modules.length - 1);
                 } else {
-                    setSelectedModuleInd(Math.min(activeInd, course.modules.length - 1));
+                    let ind = Math.min(activeInd, course.modules.length - 1);
+                    setSelectedModuleInd(ind);
+                    setSelectedBlockInd(firstUnpassedBlock(courseUser.modules[ind], qHistory));
                 }
             });
     }, []);
