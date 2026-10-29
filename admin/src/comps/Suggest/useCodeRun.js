@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
+import {createTypingTracker} from './typingTracker';
 import {isCheckError} from './CheckErrorNotice';
 import {collectEditableFiles, getCodeTaskContent, getCodeTaskFiles, getCodeTaskLanguage, isCodeTaskDetails} from './CodeTaskResults';
 
@@ -32,6 +33,10 @@ export function useCodeRun(props) {
     let [data, setData] = useState({});
     const codeRef = useRef('');
     const startTimeRef = useRef(0);
+    const typingRef = useRef(null);
+    if (!typingRef.current) {
+        typingRef.current = createTypingTracker({post: body => global.http.post('/code-typing', body, {wo_notify: true})});
+    }
 
     let question = props.question || (data || {}).question || {};
 
@@ -142,6 +147,7 @@ export function useCodeRun(props) {
                 ? collectEditableFiles(jsDetails, history, getFileName(), codeRef.current)
                 : {'': codeRef.current},
             logsReader,
+            typingHash: typingRef.current.getHash(),
             question: question._id || getQuestionId(),
             courseModule: props.courseModule,
             ...params
@@ -206,6 +212,7 @@ export function useCodeRun(props) {
         let fileName = getFileName();
         history.files[fileName] = newCode;
         updateCode(newCode);
+        typingRef.current.change(newCode, selectedFileInd);
         setHistory(history);
         if (isExam) {
             onChangeCode && onChangeCode(newCode, fileName, getTestCase());
