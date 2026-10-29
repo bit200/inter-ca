@@ -66,6 +66,9 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
             .toEqual(['src/app.py', 'src/util.py', 'tests/test_app.py']);
         fireEvent.click(screen.getAllByTestId('code-file')[1]);
         expect(screen.getAllByTestId('code-file')[1].className).toMatch(/selectedFile/);
+        // у первого таба отступ слева 15px (codeFileTabFirst в codeTask.scss)
+        let cls = screen.getAllByTestId('code-file').map(f => /codeFileTabFirst/.test(f.className));
+        expect(cls).toEqual([true, false, false]);
     });
 
     test('кнопка разворачивает блок на весь экран', () => {
