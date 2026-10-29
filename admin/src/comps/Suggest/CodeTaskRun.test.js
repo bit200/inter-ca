@@ -1,6 +1,6 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {getEditorLanguage} from './useCodeRun';
-import {CodeTaskResults, buildTreeRows} from './CodeTaskResults';
+import {CodeTaskResults} from './CodeTaskResults';
 import CodeRun from './CodeRun';
 
 jest.mock('@uiw/react-md-editor', () => ({Markdown: ({source}) => <span data-testid="md">{source}</span>}));
@@ -43,7 +43,7 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(screen.getAllByTestId('md').map(el => el.textContent)).toContain('React + Redux: список дел');
     });
 
-    test('дерево с папками: редактируемые и тесты только чтение', () => {
+    test('файлы табами: редактируемые и тесты только чтение', () => {
         render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
         expect(screen.getAllByTestId('code-file').map(el => [el.getAttribute('data-path'), el.getAttribute('data-readonly')]))
             .toEqual([['src/app.py', 'false'], ['src/util.py', 'false'], ['tests/test_app.py', 'true']]);
@@ -52,30 +52,26 @@ describe('Задача по языку (codeType code) в CodeRun', () => {
         expect(screen.getAllByTestId('code-file')[2].textContent).not.toMatch(/только чтение/);
         fireEvent.click(screen.getAllByTestId('code-file')[2]);
         expect(screen.getByTestId('editor').getAttribute('data-readonly')).toBe('true');
-        expect(buildTreeRows([{name: 'a/b/c.py'}]).map(r => r.type)).toEqual(['dir', 'dir', 'file']);
+        expect(screen.getAllByTestId('code-file').map(el => el.textContent)).toEqual(['app.py', 'util.py', 'test_app.py']);
     });
 
-    test('дерево файлов — отдельная колонка слева от редактора, ширину можно тянуть', () => {
+    test('файлы — табы над редактором, внутри колонки редактора, без левой колонки', () => {
         let {container} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
-        let col = screen.getByTestId('code-tree-col');
-        expect(col.parentNode.querySelector('.codeEditorCol')).not.toBeNull();
-        expect(col.contains(screen.getByTestId('code-files-tree'))).toBe(true);
-        expect(container.querySelector('.codeEditorCol').contains(screen.getByTestId('code-files-tree'))).toBe(false);
+        let tabs = screen.getByTestId('code-files-tabs');
+        let col = container.querySelector('.codeEditorCol');
+        expect(col.contains(tabs)).toBe(true);
+        expect(tabs.compareDocumentPosition(screen.getByTestId('editor')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(container.querySelector('.codeTreeCol')).toBeNull();
         expect(screen.getAllByTestId('code-file').map(f => f.getAttribute('data-path')))
             .toEqual(['src/app.py', 'src/util.py', 'tests/test_app.py']);
-        expect(col.style.width).toBe('200px');
-        fireEvent.mouseDown(screen.getByTestId('code-tree-resize'), {clientX: 200});
-        fireEvent.mouseMove(window, {clientX: 300});
-        fireEvent.mouseUp(window);
-        expect(col.style.width).toBe('300px');
+        fireEvent.click(screen.getAllByTestId('code-file')[1]);
+        expect(screen.getAllByTestId('code-file')[1].className).toMatch(/selectedFile/);
     });
 
-    test('колонка дерева с отступом слева 10px; кнопка разворачивает блок на весь экран', () => {
+    test('кнопка разворачивает блок на весь экран', () => {
         let {container} = render(<CodeRun question={{_id: 7, name: 'x'}} jsDetails={DETAILS} history={{}} isExam/>);
-        let scss = require('fs').readFileSync(require('path').join(__dirname, 'codeRun.scss'), 'utf8');
-        expect(scss).toMatch(/\.codeTreeCol \{[^}]*padding: 6px 0 6px 10px/);
         let split = () => document.body.querySelector('.codeRunWrap');
-        expect(screen.getByTestId('code-tree-col').contains(screen.getByTestId('code-full-btn'))).toBe(false);
+        expect(screen.getByTestId('code-files-tabs').contains(screen.getByTestId('code-full-btn'))).toBe(false);
         expect(container.querySelector('.codeEditorCol').contains(screen.getByTestId('code-full-btn'))).toBe(true);
         expect(split().classList.contains('codeRunFull')).toBe(false);
         expect(split().parentNode).not.toBe(document.body);
