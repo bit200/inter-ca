@@ -3,10 +3,10 @@
 export const CHECK_TOPIC = "check";
 
 // Находит модуль и индекс топика по значению ?topic. Недоступные (maxModuleInd) и
-// неизвестные топики игнорируются - тогда вернётся null и сработает выбор по умолчанию.
-export function findTopicPosition(modules, topicParam, maxModuleInd = Infinity) {
+// неизвестные топики игнорируются; minModuleInd - модули левее не учитываются (курс открывается на последнем доступном) - тогда вернётся null и сработает выбор по умолчанию.
+export function findTopicPosition(modules, topicParam, maxModuleInd = Infinity, minModuleInd = 0) {
     if (!topicParam) return null;
-    for (let m = 0; m < (modules || []).length && m <= maxModuleInd; m++) {
+    for (let m = minModuleInd; m < (modules || []).length && m <= maxModuleInd; m++) {
         let questions = modules[m].questions || [];
         if (topicParam === CHECK_TOPIC) continue;
         let q = questions.findIndex((id) => String(id) === String(topicParam));

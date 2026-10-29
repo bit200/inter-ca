@@ -12,6 +12,10 @@ describe("courseTopicUrl", () => {
         expect(findTopicPosition(modules, "zzz")).toBeNull();
         expect(findTopicPosition(modules, null)).toBeNull();
     });
+    test("топик из более раннего модуля игнорируется - открывается последний доступный", () => {
+        expect(findTopicPosition(modules, "b", 1, 1)).toBeNull();
+        expect(findTopicPosition(modules, "d", 1, 1)).toEqual({moduleInd: 1, blockInd: 1});
+    });
     test("параметр для топика и для проверки модуля", () => {
         expect(topicParamFor(modules[1], 0)).toBe("c");
         expect(topicParamFor(modules[1], -1)).toBe(CHECK_TOPIC);

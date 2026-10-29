@@ -89,7 +89,7 @@ function CourseDetails(props) {
                 // );
                 setActiveInd(activeInd);
                 let topicParam = searchParams.get("topic");
-                let pos = findTopicPosition(courseUser.modules, topicParam, activeInd);
+                let pos = findTopicPosition(courseUser.modules, topicParam, activeInd, activeInd);
                 if (pos) {
                     setSelectedModuleInd(pos.moduleInd);
                     setSelectedBlockInd(pos.blockInd);
