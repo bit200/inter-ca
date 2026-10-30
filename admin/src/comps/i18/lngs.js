@@ -4322,11 +4322,55 @@ export default {
     fr: "Processus de résolution"
 },
 "aiReviewProcessNote": {
-    ru: "Процесс оценивается по истории набора кода: как решение появлялось по шагам — правки, запуски, исправление ошибок. Если история не сохранилась (например, код вставлен целиком) или её нет, оценить процесс нечем — ставится нейтральный балл 5/10, и он входит в общую оценку.",
-    es: "El proceso se evalúa por el historial de escritura del código: cómo fue apareciendo la solución paso a paso. Si no hay historial (por ejemplo, el código se pegó completo), no hay base para evaluarlo y se pone una nota neutral de 5/10, que entra en la nota general.",
-    de: "Der Prozess wird anhand des Eingabeverlaufs bewertet: wie die Lösung Schritt für Schritt entstanden ist. Fehlt der Verlauf (z. B. Code als Ganzes eingefügt), gibt es nichts zu bewerten – es wird eine neutrale Note 5/10 vergeben, die in die Gesamtnote einfließt.",
-    en: "The process is scored from the typing history: how the solution came together step by step. If there is no history (for example, the code was pasted in whole), there is nothing to judge, so a neutral 5/10 is given and it counts toward the overall score.",
-    fr: "Le processus est évalué d'après l'historique de saisie : comment la solution s'est construite pas à pas. Sans historique (code collé d'un bloc, par exemple), il n'y a rien à évaluer : une note neutre de 5/10 est attribuée et comptée dans la note globale."
+    ru: "Процесс оценивается по истории набора: доле кода, набранного руками, вставкам и запускам тестов. Без истории набора или при вставке кода целиком балла нет — вместо него «—».",
+    es: "El proceso se evalúa por el historial de escritura: la parte del código escrita a mano, los pegados y las ejecuciones de pruebas. Sin historial o si el código se pegó completo, no hay nota («—»).",
+    de: "Der Prozess wird anhand des Eingabeverlaufs bewertet: Anteil des selbst getippten Codes, Einfügungen und Testläufe. Ohne Verlauf oder bei komplett eingefügtem Code gibt es keine Note („—“).",
+    en: "The process is scored from the typing history: the share of code typed by hand, pastes and test runs. With no history, or when the code was pasted in whole, there is no score (“—”).",
+    fr: "Le processus est évalué d'après l'historique de saisie : part du code tapée à la main, collages et exécutions de tests. Sans historique ou si le code a été collé d'un bloc, il n'y a pas de note (« — »)."
+},
+"aiReviewProcessNone": {
+    ru: "История набора не велась — процесс не оценивается",
+    en: "No typing history was kept — the process is not scored"
+},
+"aiReviewProcessPastedWhole": {
+    ru: "Код вставлен целиком, процесс не наблюдался",
+    en: "The code was pasted in whole, the process was not observed"
+},
+"aiReviewProcessManual": {
+    ru: "нужна ручная проверка",
+    en: "manual review needed"
+},
+"aiReviewProcessReplaced": {
+    ru: "Код заменялся целиком после запусков тестов ({count} раз)",
+    en: "The code was replaced in whole after test runs ({count} times)"
+},
+"aiReviewProcessPartial": {
+    ru: "Вставлено ~{percent}% кода.",
+    en: "~{percent}% of the code was pasted."
+},
+"aiReviewProcessBiggest": {
+    ru: "Крупнейшая вставка: +{added} симв. на {time} с",
+    en: "Largest paste: +{added} chars at {time} s"
+},
+"aiReviewTimelineRun": {
+    ru: "Запуск на {time} с: прошло {passed} из {total}",
+    en: "Run at {time} s: {passed} of {total} passed"
+},
+"aiReviewTimelinePaste": {
+    ru: "+{added} симв.",
+    en: "+{added} chars"
+},
+"aiReviewTimelineReplaced": {
+    ru: "заменено {percent}% файла",
+    en: "{percent}% of the file replaced"
+},
+"aiReviewTimelinePasteAt": {
+    ru: "вставка на {time} с, +{added} симв.",
+    en: "paste at {time} s, +{added} chars"
+},
+"aiReviewSecShort": {
+    ru: "с",
+    en: "s"
 },
 "aiReviewEmptyCode": {
     ru: "Решение не отправлено — проверять нечего",

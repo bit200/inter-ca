@@ -118,3 +118,95 @@
 .examAiReview-start {
   margin-top: 12px;
 }
+
+.examAiReview {
+  &-badge {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    align-items: baseline;
+    margin-top: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-left: 3px solid var(--bs-secondary, #6c757d);
+    border-radius: 0;
+    background: rgba(108, 117, 125, 0.1);
+
+    strong {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.4px;
+    }
+
+    &.is-pasted_whole {
+      border-left-color: var(--bs-warning, #ff9f43);
+      background: rgba(var(--bs-warning-rgb, 255, 159, 67), 0.18);
+      font-weight: 600;
+    }
+
+    &.is-replaced_after_tests {
+      border-left-color: var(--bs-danger, #ef4d56);
+      background: rgba(var(--bs-danger-rgb, 239, 77, 86), 0.12);
+    }
+
+    &.is-partial_paste {
+      border-left-color: #f5c400;
+      background: rgba(245, 196, 0, 0.14);
+    }
+  }
+
+  &-timeline {
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  &-timelineTrack {
+    position: relative;
+    height: 22px;
+    margin: 0 6px;
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 10px;
+      height: 2px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &-timelineRun,
+  &-timelinePaste {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+
+  &-timelineRun {
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bs-success, #22c5ad);
+    border: 2px solid #fff;
+
+    &.fail {
+      background: var(--bs-danger, #ef4d56);
+    }
+  }
+
+  &-timelinePaste {
+    top: 0;
+    width: 4px;
+    height: 22px;
+    background: var(--bs-warning, #ff9f43);
+  }
+
+  &-timelineAxis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.7;
+  }
+}

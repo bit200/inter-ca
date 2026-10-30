@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, act, fireEvent} from '@testing-library/react';
-import ExamTaskAiReview, {useExamAiReviews} from './ExamTaskAiReview';
+import ExamTaskAiReview, {useExamAiReviews, buildTimeline} from './ExamTaskAiReview';
 
 let done = {
     question: 11, status: 'done',
@@ -80,6 +80,49 @@ describe('ИИ-проверка решения на экране сданног�
         fireEvent.click(screen.getByRole('tab', {name: 'aiReviewReadability'}));
         expect(screen.queryByTestId('exam-ai-review-suggestion')).toBeNull();
         expect(screen.getByText('Понятно')).toBeInTheDocument();
+    });
+});
+
+describe('процесс решения: плашки и таймлайн', () => {
+    beforeEach(() => {
+        global.t = (key) => key;
+    });
+    function withTyping(typing, process = null) {
+        return {...done, result: {...done.result, scores: {...done.result.scores, process}, typing}};
+    }
+
+    test.each([
+        ['none', 'aiReviewProcessNone'],
+        ['pasted_whole', 'aiReviewProcessPastedWhole'],
+        ['replaced_after_tests', 'aiReviewProcessReplaced'],
+        ['partial_paste', 'aiReviewProcessPartial'],
+    ])('плашка для режима %s', (mode, text) => {
+        render(<ExamTaskAiReview review={withTyping({mode, typedShare: 0.6, pastes: [{time: 362, added: 1240, replacedShare: 0.9}], runs: []})}/>);
+        let badge = screen.getByTestId('exam-ai-review-process-badge');
+        expect(badge).toHaveAttribute('data-mode', mode);
+        expect(badge).toHaveTextContent(text);
+        if (mode === 'pasted_whole') expect(badge).toHaveTextContent('aiReviewProcessManual');
+    });
+
+    test('режим own - плашки нет, null-оценка - «—»', () => {
+        render(<ExamTaskAiReview review={withTyping({mode: 'own', typedShare: 1, pastes: [], runs: []})}/>);
+        expect(screen.queryByTestId('exam-ai-review-process-badge')).toBeNull();
+        expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+        expect(screen.queryByText('5')).toBeNull();
+    });
+
+    test('таймлайн рисует прогоны и вставки', () => {
+        let typing = {mode: 'partial_paste', typedShare: 0.5, pastes: [{time: 100, added: 300, replacedShare: 0}, {time: 200, added: 900, replacedShare: 0.9}],
+            runs: [{time: 50, passed: 1, total: 3}, {time: 400, passed: 3, total: 3}]};
+        render(<ExamTaskAiReview review={withTyping(typing)}/>);
+        expect(screen.getAllByTestId('exam-ai-review-timeline-run')).toHaveLength(2);
+        expect(screen.getAllByTestId('exam-ai-review-timeline-run')[0]).toHaveClass('fail');
+        expect(screen.getAllByTestId('exam-ai-review-timeline-run')[1]).toHaveClass('ok');
+        expect(screen.getAllByTestId('exam-ai-review-timeline-paste')).toHaveLength(2);
+        let tl = buildTimeline(typing);
+        expect(tl.max).toBe(400);
+        expect(tl.pastes[1].label).toBe('aiReviewTimelineReplaced');
+        expect(tl.pastes[0].label).toBe('aiReviewTimelinePaste');
     });
 });
 

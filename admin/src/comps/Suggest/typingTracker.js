@@ -1,6 +1,6 @@
 // История набора кода для ИИ-проверки (критерий «Процесс решения»): снимки кода уходят на
 // /code-typing под одним hash, а hash — в /run-question как typingHash. Без этого сервер
-// не находит историю и ставит нейтральные 5/10 («история набора не сохранялась»).
+// не находит историю и не оценивает процесс (режим «история набора не велась»).
 const SEND_DELAY_MS = 1500;
 
 export function createTypingTracker({post, now = () => Date.now(), delay = SEND_DELAY_MS, setTimer = setTimeout, clearTimer = clearTimeout} = {}) {
