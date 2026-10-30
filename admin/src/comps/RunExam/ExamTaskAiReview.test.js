@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, act, fireEvent} from '@testing-library/react';
-import ExamTaskAiReview, {useExamAiReviews, buildTimeline} from './ExamTaskAiReview';
+import ExamTaskAiReview, {useExamAiReviews, buildTypingTimeline} from './ExamTaskAiReview';
 
 let done = {
     question: 11, status: 'done',
@@ -119,7 +119,7 @@ describe('процесс решения: плашки и таймлайн', () =
         expect(screen.getAllByTestId('exam-ai-review-timeline-run')[0]).toHaveClass('fail');
         expect(screen.getAllByTestId('exam-ai-review-timeline-run')[1]).toHaveClass('ok');
         expect(screen.getAllByTestId('exam-ai-review-timeline-paste')).toHaveLength(2);
-        let tl = buildTimeline(typing);
+        let tl = buildTypingTimeline(typing);
         expect(tl.max).toBe(400);
         expect(tl.pastes[1].label).toBe('aiReviewTimelineReplaced');
         expect(tl.pastes[0].label).toBe('aiReviewTimelinePaste');
