@@ -54,6 +54,70 @@ export function hasNoSolution(review) {
     return !Object.values(files).some(code => typeof code === 'string' && code.trim());
 }
 
+// t() без подстановок: {name} заменяем сами.
+function tf(key, vars) {
+    return String(t(key)).replace(/\{(\w+)\}/g, (m, k) => vars[k] === undefined ? m : vars[k]);
+}
+
+// Таймлайн набора: ось от 0 до последнего события, прогоны - точки, внешние вставки - отметки.
+export function buildTimeline(typing) {
+    let runs = (typing || {}).runs || [];
+    let pastes = (typing || {}).pastes || [];
+    let max = Math.max(1, ...runs.map(r => r.time || 0), ...pastes.map(p => p.time || 0));
+    let pos = time => Math.min(100, Math.max(0, 100 * (time || 0) / max));
+    return {
+        max,
+        runs: runs.map(r => ({
+            left: pos(r.time), ok: r.total > 0 && r.passed === r.total,
+            title: tf('aiReviewTimelineRun', {time: r.time, passed: r.passed, total: r.total}),
+        })),
+        pastes: pastes.map(p => ({
+            left: pos(p.time),
+            label: p.replacedShare >= 0.5
+                ? tf('aiReviewTimelineReplaced', {percent: Math.round(p.replacedShare * 100)})
+                : tf('aiReviewTimelinePaste', {added: p.added}),
+            title: tf('aiReviewTimelinePasteAt', {time: p.time, added: p.added}),
+        })),
+    };
+}
+
+function ProcessTimeline({typing}) {
+    let tl = buildTimeline(typing);
+    if (!tl.runs.length && !tl.pastes.length) return null;
+    return <div className="examAiReview-timeline" data-testid="exam-ai-review-timeline">
+        <div className="examAiReview-timelineTrack">
+            {tl.pastes.map((p, i) => <span className="examAiReview-timelinePaste" data-testid="exam-ai-review-timeline-paste"
+                                           key={'p' + i} style={{left: p.left + '%'}} title={`${p.label} (${p.title})`}></span>)}
+            {tl.runs.map((r, i) => <span className={`examAiReview-timelineRun ${r.ok ? 'ok' : 'fail'}`} data-testid="exam-ai-review-timeline-run"
+                                         key={'r' + i} style={{left: r.left + '%'}} title={r.title}></span>)}
+        </div>
+        <div className="examAiReview-timelineAxis"><span>0</span><span>{tl.max} {t('aiReviewSecShort')}</span></div>
+    </div>
+}
+
+// Плашка под критерием «Процесс» по режиму оценки процесса (typing.mode).
+export function ProcessBadge({typing}) {
+    let mode = (typing || {}).mode;
+    if (!mode || mode === 'own') return null;
+    let pastes = typing.pastes || [];
+    let text;
+    if (mode === 'none') text = t('aiReviewProcessNone');
+    else if (mode === 'pasted_whole') text = t('aiReviewProcessPastedWhole');
+    else if (mode === 'replaced_after_tests') {
+        let n = pastes.filter(p => p.replacedShare >= 0.5).length;
+        text = tf('aiReviewProcessReplaced', {count: n || 1});
+    } else if (mode === 'partial_paste') {
+        let share = typing.typedShare === null || typing.typedShare === undefined ? null : Math.round((1 - typing.typedShare) * 100);
+        let biggest = pastes.reduce((a, p) => !a || p.added > a.added ? p : a, null);
+        text = tf('aiReviewProcessPartial', {percent: share === null ? '?' : share})
+            + (biggest ? ' ' + tf('aiReviewProcessBiggest', {added: biggest.added, time: biggest.time}) : '');
+    } else return null;
+    return <div className={`examAiReview-badge is-${mode}`} data-testid="exam-ai-review-process-badge" data-mode={mode}>
+        <span>{text}</span>
+        {mode === 'pasted_whole' && <strong>{t('aiReviewProcessManual')}</strong>}
+    </div>
+}
+
 // Критерии: вкладки «Все» + по критерию, у каждого балл, разбор и (если модель дала) рекомендация.
 function ScoresList({result}) {
     let [active, setActive] = useState(null);
@@ -80,6 +144,8 @@ function ScoresList({result}) {
                     {key === 'process' && <div className="examAiReview-processNote" data-testid="exam-ai-review-process-note">
                         {t('aiReviewProcessNote')}
                     </div>}
+                    {key === 'process' && <ProcessBadge typing={result.typing}/>}
+                    {key === 'process' && <ProcessTimeline typing={result.typing}/>}
                     {suggestion && <div className="examAiReview-suggestion" data-testid="exam-ai-review-suggestion">
                         <i className="iconoir-light-bulb-on"></i>
                         <span>{suggestion}</span>
