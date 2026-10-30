@@ -55,63 +55,105 @@ export function hasNoSolution(review) {
 }
 
 // t() без подстановок: {name} заменяем сами.
-function tf(key, vars) {
-    return String(t(key)).replace(/\{(\w+)\}/g, (m, k) => vars[k] === undefined ? m : vars[k]);
+function translateWithVars(key, vars) {
+    return String(t(key)).replace(/\{(\w+)\}/g, (match, name) => vars[name] === undefined ? match : vars[name]);
 }
 
 // Таймлайн набора: ось от 0 до последнего события, прогоны - точки, внешние вставки - отметки.
-export function buildTimeline(typing) {
+export function buildTypingTimeline(typing) {
     let runs = (typing || {}).runs || [];
     let pastes = (typing || {}).pastes || [];
-    let max = Math.max(1, ...runs.map(r => r.time || 0), ...pastes.map(p => p.time || 0));
-    let pos = time => Math.min(100, Math.max(0, 100 * (time || 0) / max));
+
+    let lastEventTime = Math.max(1, ...runs.map(run => run.time || 0), ...pastes.map(paste => paste.time || 0));
+    let toPercentOfAxis = time => Math.min(100, Math.max(0, 100 * (time || 0) / lastEventTime));
+
     return {
-        max,
-        runs: runs.map(r => ({
-            left: pos(r.time), ok: r.total > 0 && r.passed === r.total,
-            title: tf('aiReviewTimelineRun', {time: r.time, passed: r.passed, total: r.total}),
+        max: lastEventTime,
+
+        runs: runs.map(run => ({
+            left: toPercentOfAxis(run.time),
+            ok: run.total > 0 && run.passed === run.total,
+            title: translateWithVars('aiReviewTimelineRun', {time: run.time, passed: run.passed, total: run.total}),
         })),
-        pastes: pastes.map(p => ({
-            left: pos(p.time),
-            label: p.replacedShare >= 0.5
-                ? tf('aiReviewTimelineReplaced', {percent: Math.round(p.replacedShare * 100)})
-                : tf('aiReviewTimelinePaste', {added: p.added}),
-            title: tf('aiReviewTimelinePasteAt', {time: p.time, added: p.added}),
+
+        pastes: pastes.map(paste => ({
+            left: toPercentOfAxis(paste.time),
+            label: paste.replacedShare >= 0.5
+                ? translateWithVars('aiReviewTimelineReplaced', {percent: Math.round(paste.replacedShare * 100)})
+                : translateWithVars('aiReviewTimelinePaste', {added: paste.added}),
+            title: translateWithVars('aiReviewTimelinePasteAt', {time: paste.time, added: paste.added}),
         })),
     };
 }
 
 function ProcessTimeline({typing}) {
-    let tl = buildTimeline(typing);
-    if (!tl.runs.length && !tl.pastes.length) return null;
+    let timeline = buildTypingTimeline(typing);
+    if (!timeline.runs.length && !timeline.pastes.length) return null;
     return <div className="examAiReview-timeline" data-testid="exam-ai-review-timeline">
         <div className="examAiReview-timelineTrack">
-            {tl.pastes.map((p, i) => <span className="examAiReview-timelinePaste" data-testid="exam-ai-review-timeline-paste"
+            {timeline.pastes.map((p, i) => <span className="examAiReview-timelinePaste" data-testid="exam-ai-review-timeline-paste"
                                            key={'p' + i} style={{left: p.left + '%'}} title={`${p.label} (${p.title})`}></span>)}
-            {tl.runs.map((r, i) => <span className={`examAiReview-timelineRun ${r.ok ? 'ok' : 'fail'}`} data-testid="exam-ai-review-timeline-run"
+            {timeline.runs.map((r, i) => <span className={`examAiReview-timelineRun ${r.ok ? 'ok' : 'fail'}`} data-testid="exam-ai-review-timeline-run"
                                          key={'r' + i} style={{left: r.left + '%'}} title={r.title}></span>)}
         </div>
-        <div className="examAiReview-timelineAxis"><span>0</span><span>{tl.max} {t('aiReviewSecShort')}</span></div>
+        <div className="examAiReview-timelineAxis"><span>0</span><span>{timeline.max} {t('aiReviewSecShort')}</span></div>
     </div>
+}
+
+// Сколько раз код целиком заменяли (вставка с replacedShare >= 0.5); минимум 1, раз режим уже replaced_after_tests.
+function countWholeReplacements(pastes) {
+    let replacedCount = pastes.filter(paste => paste.replacedShare >= 0.5).length;
+
+    return replacedCount || 1;
+}
+
+// Доля вставленного кода в процентах или null, если доля набранного руками неизвестна.
+function getPastedPercent(typedShare) {
+    if (typedShare === null || typedShare === undefined) return null;
+
+    return Math.round((1 - typedShare) * 100);
+}
+
+function findBiggestPaste(pastes) {
+    return pastes.reduce((biggest, paste) => !biggest || paste.added > biggest.added ? paste : biggest, null);
+}
+
+function getPartialPasteText(typing, pastes) {
+    let pastedPercent = getPastedPercent(typing.typedShare);
+    let biggestPaste = findBiggestPaste(pastes);
+
+    let text = translateWithVars('aiReviewProcessPartial', {percent: pastedPercent === null ? '?' : pastedPercent});
+    if (!biggestPaste) return text;
+
+    return text + ' ' + translateWithVars('aiReviewProcessBiggest', {added: biggestPaste.added, time: biggestPaste.time});
+}
+
+// Текст плашки по режиму; null - для режимов, где плашки нет.
+function getProcessBadgeText(typing) {
+    let pastes = typing.pastes || [];
+
+    switch (typing.mode) {
+        case 'none':
+            return t('aiReviewProcessNone');
+        case 'pasted_whole':
+            return t('aiReviewProcessPastedWhole');
+        case 'replaced_after_tests':
+            return translateWithVars('aiReviewProcessReplaced', {count: countWholeReplacements(pastes)});
+        case 'partial_paste':
+            return getPartialPasteText(typing, pastes);
+        default:
+            return null;
+    }
 }
 
 // Плашка под критерием «Процесс» по режиму оценки процесса (typing.mode).
 export function ProcessBadge({typing}) {
     let mode = (typing || {}).mode;
     if (!mode || mode === 'own') return null;
-    let pastes = typing.pastes || [];
-    let text;
-    if (mode === 'none') text = t('aiReviewProcessNone');
-    else if (mode === 'pasted_whole') text = t('aiReviewProcessPastedWhole');
-    else if (mode === 'replaced_after_tests') {
-        let n = pastes.filter(p => p.replacedShare >= 0.5).length;
-        text = tf('aiReviewProcessReplaced', {count: n || 1});
-    } else if (mode === 'partial_paste') {
-        let share = typing.typedShare === null || typing.typedShare === undefined ? null : Math.round((1 - typing.typedShare) * 100);
-        let biggest = pastes.reduce((a, p) => !a || p.added > a.added ? p : a, null);
-        text = tf('aiReviewProcessPartial', {percent: share === null ? '?' : share})
-            + (biggest ? ' ' + tf('aiReviewProcessBiggest', {added: biggest.added, time: biggest.time}) : '');
-    } else return null;
+
+    let text = getProcessBadgeText(typing);
+    if (text === null) return null;
+
     return <div className={`examAiReview-badge is-${mode}`} data-testid="exam-ai-review-process-badge" data-mode={mode}>
         <span>{text}</span>
         {mode === 'pasted_whole' && <strong>{t('aiReviewProcessManual')}</strong>}
