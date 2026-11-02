@@ -1,8 +1,7 @@
-import {safeMarkdownProps} from '../../libs/sanitize';
+import SafeMarkdown from '../../libs/SafeMarkdown';
 import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import _ from 'underscore';
-import MDEditor from "@uiw/react-md-editor";
 import MyModal from 'libs/MyModal';
 import QuestionDetails from "./QuestionDetails";
 import Textarea from 'libs/Textarea';
@@ -245,10 +244,10 @@ function CodeRunComponent(props) {
                                           reloadKey={runResults}/>}
                         {topTab === 'condition' &&
                             <div className={'conditionWrap'}>
-                                <MDEditor.Markdown {...safeMarkdownProps} data-color-mode="light" source={question.name}/>
+                                <SafeMarkdown data-color-mode="light" source={question.name}/>
                                 {isCode && question.title && question.title !== question.name &&
                                     <div data-testid={'code-condition-text'}>
-                                        <MDEditor.Markdown {...safeMarkdownProps} data-color-mode="light" source={question.title}/>
+                                        <SafeMarkdown data-color-mode="light" source={question.title}/>
                                     </div>}
                                 {isLogsReader && <>
                                     <hr/>

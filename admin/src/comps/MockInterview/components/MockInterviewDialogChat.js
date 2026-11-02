@@ -1,6 +1,5 @@
-import {safeMarkdownProps} from '../../../libs/sanitize';
+import SafeMarkdown from '../../../libs/SafeMarkdown';
 import React, {useState} from 'react';
-import MDEditor from '@uiw/react-md-editor';
 import styles from '../mockInterview.module.scss';
 import MyModal from '../../../libs/MyModal';
 
@@ -34,7 +33,7 @@ const MockInterviewDialogMsg = ({
     return (
         <div key={index}
              className={`${styles.chatBubble} ${isQuestion ? styles.chatBubbleQuestion : styles.chatBubbleAnswer}`}>
-            <MDEditor.Markdown {...safeMarkdownProps} source={msg.text || '—'}/>
+            <SafeMarkdown source={msg.text || '—'}/>
             {hasAdvice && (
                 <div
                     className={styles.chatAdviceBadge}

@@ -1,11 +1,10 @@
-import {safeMarkdownProps} from '../../libs/sanitize';
+import SafeMarkdown from '../../libs/SafeMarkdown';
 import React, {useState} from 'react';
 import _ from 'underscore';
 
 import {
     Link, Outlet
 } from "react-router-dom";
-import MDEditor from "@uiw/react-md-editor";
 
 
 function Layout2(props) {
@@ -14,7 +13,7 @@ function Layout2(props) {
     //console.log("qqqqq sourcesourcesource !!!! ", source);
     // let v = useActionData();
     return <ErrorBoundary source={source}>
-    <MDEditor.Markdown {...safeMarkdownProps} source={source}/>
+    <SafeMarkdown source={source}/>
     </ErrorBoundary>
 }
 

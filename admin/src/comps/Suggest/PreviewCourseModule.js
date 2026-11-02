@@ -1,10 +1,9 @@
-import {safeMarkdownProps} from '../../libs/sanitize';
+import SafeMarkdown from '../../libs/SafeMarkdown';
 import React, {useEffect, useRef, useState} from 'react';
 import _ from 'underscore';
 import './PreviewCourseModule.css'
 import QuestionDetails from "./QuestionDetails";
 import MdPreview from "./MdPreview";
-import MDEditor from "@uiw/react-md-editor";
 import Button from "../../libs/Button";
 import QuizTraining from "./QuizTraining";
 import RunQuiz from "./RunQuiz";
@@ -380,15 +379,14 @@ export function QuestionDetailsNew(props) {
                     animationDelay: getDelay(),
                     marginBottom: '10px'
                 }}>{selectedBlock.name}</h2> :
-                <MDEditor.Markdown {...safeMarkdownProps}
-                    source={selectedBlock.name}></MDEditor.Markdown>}
+                <SafeMarkdown source={selectedBlock.name}></SafeMarkdown>}
             <Videos items={selectedBlock.videos}/>
-            {selectedBlock.answer && <MDEditor.Markdown {...safeMarkdownProps} source={selectedBlock.answer}/>}
+            {selectedBlock.answer && <SafeMarkdown source={selectedBlock.answer}/>}
             {selectedBlock.useCases && <div className=''>
                 {(selectedBlock.useCases || []).map((it, ind) => {
                     return (<div key={ind} className='animChild'>
                         <h3 className={'h3Title'}>{it.name}</h3>
-                        {it.desc && <MDEditor.Markdown {...safeMarkdownProps} source={it.desc}/>}
+                        {it.desc && <SafeMarkdown source={it.desc}/>}
                     </div>)
                 })}
             </div>}
@@ -397,7 +395,7 @@ export function QuestionDetailsNew(props) {
                     return (<div key={ind} className='animChild'>
                         <h3 className={'h3Title'}>{it.name}</h3>
 
-                        {it.desc && <MDEditor.Markdown {...safeMarkdownProps} source={it.desc}/>}
+                        {it.desc && <SafeMarkdown source={it.desc}/>}
                     </div>)
                 })}
             </div>}</div>
