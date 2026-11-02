@@ -1,9 +1,8 @@
-import {safeMarkdownProps} from '../../libs/sanitize';
+import SafeMarkdown from '../../libs/SafeMarkdown';
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from "react";
 import _ from "underscore";
 
 import {Link, Outlet} from "react-router-dom";
-import MDEditor from "@uiw/react-md-editor";
 import "./QuizPreview.css";
 import {CountDownSecs} from "./../TrainMethods/CoundDownSec";
 import {checkQuizOnServer, isCorrectVariant, quizAnswerPayload} from "./quizServerCheck";
@@ -114,7 +113,7 @@ let Layout2 = forwardRef((props, ref) => {
             {/*Quiz Preview*/}
 
             <div className="quiz-submit-title no-select">
-                <MDEditor.Markdown {...safeMarkdownProps} source={quiz.name}/>
+                <SafeMarkdown source={quiz.name}/>
             </div>
             <div
                 style={{
@@ -145,8 +144,7 @@ let Layout2 = forwardRef((props, ref) => {
                         }}
                     >
                         <div className="quiz-answer-it-radio"></div>
-                        <MDEditor.Markdown {...safeMarkdownProps}
-                            source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
+                        <SafeMarkdown source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
                         />
                     </div>
                 );

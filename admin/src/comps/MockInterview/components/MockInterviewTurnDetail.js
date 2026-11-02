@@ -1,9 +1,8 @@
-import {safeMarkdownProps} from '../../../libs/sanitize';
+import SafeMarkdown from '../../../libs/SafeMarkdown';
 import React from 'react';
 import styles from '../mockInterview.module.scss';
 import MockInterviewEvaluationBlock from './MockInterviewEvaluationBlock';
 import MockInterviewDialogChat from './MockInterviewDialogChat';
-import MDEditor from "@uiw/react-md-editor";
 
 const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId, onRetryEvaluate, retrying }) => {
     if (!turn) {
@@ -19,14 +18,13 @@ const MockInterviewTurnDetail = ({ turn, adviceRules, metricSchemas, interviewId
                     <div className="quiz-preview animChilds">
                         <div className={styles.questionItemRow}>
                             <div className="quiz-submit-title no-select">
-                                <MDEditor.Markdown {...safeMarkdownProps} source={turn.question}/>
+                                <SafeMarkdown source={turn.question}/>
                             </div>
                         </div>
                     </div>
                     {true && <hr/>}
                     {!hasDialog && <div className={`quiz-answer-it no-select`}>
-                        <MDEditor.Markdown {...safeMarkdownProps}
-                            source={turn.transcript || '—'}
+                        <SafeMarkdown source={turn.transcript || '—'}
                         />
                     </div>}
                     {hasDialog && <MockInterviewDialogChat dialog={turn.dialog} mainQuestion={turn.question}/>}

@@ -1,7 +1,7 @@
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import MDEditor from '@uiw/react-md-editor';
-import {sanitizeHtml, safeMarkdownProps} from './sanitize';
+import SafeMarkdown from './SafeMarkdown';
+import {sanitizeHtml} from './sanitize';
 
 
 const PAYLOAD = [
@@ -16,7 +16,7 @@ const PAYLOAD = [
 
 describe('sanitize: markdown', () => {
   test('XSS-пэйлоад рендерится без обработчиков событий и javascript:', () => {
-    const html = renderToStaticMarkup(<MDEditor.Markdown {...safeMarkdownProps} source={PAYLOAD}/>);
+    const html = renderToStaticMarkup(<SafeMarkdown source={PAYLOAD}/>);
 
     expect(html).not.toMatch(/\son\w+=/i);
     expect(html).not.toMatch(/javascript:/i);
@@ -24,7 +24,7 @@ describe('sanitize: markdown', () => {
   });
 
   test('блок кода остаётся с классами подсветки', () => {
-    const html = renderToStaticMarkup(<MDEditor.Markdown {...safeMarkdownProps} source={'```js\nconst a = 1;\n```'}/>);
+    const html = renderToStaticMarkup(<SafeMarkdown source={'```js\nconst a = 1;\n```'}/>);
 
     expect(html).toMatch(/<code[^>]*class="[^"]*language-js/);
   });

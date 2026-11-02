@@ -1,9 +1,8 @@
-import {safeMarkdownProps} from '../../libs/sanitize';
+import SafeMarkdown from '../../libs/SafeMarkdown';
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from "react";
 import _ from "underscore";
 
 import {Link, Outlet} from "react-router-dom";
-import MDEditor from "@uiw/react-md-editor";
 import "./QuizPreview.css";
 import {CountDownSecs} from "./../TrainMethods/CoundDownSec";
 import {checkQuizOnServer, isCorrectVariant, quizAnswerPayload} from "./quizServerCheck";
@@ -129,8 +128,8 @@ let QuizPreviewNew = forwardRef((props, ref) => {
 
             <div className="quiz-submit-title no-select">
                 <small>{smallTitle}</small>
-                <MDEditor.Markdown {...safeMarkdownProps} source={title}/>
-                <MDEditor.Markdown {...safeMarkdownProps} source={desc}/>
+                <SafeMarkdown source={title}/>
+                <SafeMarkdown source={desc}/>
             </div>
             {isTimeout && <div className="alert alert-danger shadow-sm" style={{marginTop: '20px'}}>
                 Вышло время, ответ не будет засчитан
@@ -167,8 +166,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
                         }}
                     >
                         <div className="quiz-answer-it-radio"></div>
-                        <MDEditor.Markdown {...safeMarkdownProps}
-                            source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
+                        <SafeMarkdown source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
                         />
                     </div>
                 );
