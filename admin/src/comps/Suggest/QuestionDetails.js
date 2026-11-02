@@ -1,3 +1,4 @@
+import {safeMarkdownProps} from '../../libs/sanitize';
 import React, { useState, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import "./QuestionDetails.css";
@@ -142,7 +143,7 @@ function QuestionDetails(props) {
     <div className={"detailedAnswer fadeIn"} data-color-mode="light">
       {props.showName && (
         <div className={""}>
-          <MDEditor.Markdown source={name} />
+          <MDEditor.Markdown {...safeMarkdownProps} source={name} />
           <hr />
           {false && (
             <h2 style={{ padding: "15px 0 30px 0", fontSize: "30px" }}>
@@ -384,7 +385,7 @@ function ListUseCases(props) {
         return (
           <div key={ind}>
             <div className={"list-md-title"}>{it.name || "-"}</div>
-            <MDEditor.Markdown data-color-mode="light" source={it.desc} />
+            <MDEditor.Markdown {...safeMarkdownProps} data-color-mode="light" source={it.desc} />
             <Videos items={it.videos}></Videos>
           </div>
         );

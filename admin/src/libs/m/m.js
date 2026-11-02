@@ -375,15 +375,6 @@ const m = {
   }
   ,
 
-  parse_eval(str, def) {
-    try {
-      window.eval('window.temp_tree = ' + str)
-      return window.temp_tree || def;
-    } catch (e) {
-      return def;
-    }
-  }
-  ,
   parse(str, def) {
     try {
       return JSON.parse(str) || def;

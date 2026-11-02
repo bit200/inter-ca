@@ -1,3 +1,4 @@
+import {safeMarkdownProps} from '../../libs/sanitize';
 import React, {useState} from 'react';
 import IncorrectExamView from "./IncorrectExamView";
 import RenderQuizResults from "../Suggest/RenderQuizResults";
@@ -115,7 +116,7 @@ const SubmittedExamPreview = (props) => {
                             <div className="row">
                                 <div className="col-sm-6">
                                     {isCheckErr(qId) && <CheckErrorNotice variant={noticeVariant}/>}
-                                    <MDEditor.Markdown source={it.name}></MDEditor.Markdown>
+                                    <MDEditor.Markdown {...safeMarkdownProps} source={it.name}></MDEditor.Markdown>
                                     {isLogsReader && <div>
                                         <LogsStarterPreview _id={it._id}></LogsStarterPreview>
                                     </div>}

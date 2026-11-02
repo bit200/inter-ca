@@ -1,3 +1,4 @@
+import {safeMarkdownProps} from '../../libs/sanitize';
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from "react";
 import _ from "underscore";
 
@@ -113,7 +114,7 @@ let Layout2 = forwardRef((props, ref) => {
             {/*Quiz Preview*/}
 
             <div className="quiz-submit-title no-select">
-                <MDEditor.Markdown source={quiz.name}/>
+                <MDEditor.Markdown {...safeMarkdownProps} source={quiz.name}/>
             </div>
             <div
                 style={{
@@ -144,7 +145,7 @@ let Layout2 = forwardRef((props, ref) => {
                         }}
                     >
                         <div className="quiz-answer-it-radio"></div>
-                        <MDEditor.Markdown
+                        <MDEditor.Markdown {...safeMarkdownProps}
                             source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
                         />
                     </div>

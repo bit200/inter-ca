@@ -1,3 +1,4 @@
+import {safeMarkdownProps} from '../../libs/sanitize';
 import Button from "../../libs/Button";
 import React, { useState } from "react";
 import IsFavorite from "../IsFavorite";
@@ -77,7 +78,7 @@ function QuizQuestion(props) {
           {/*</div>*/}
 
           <div className={"quiz-title"} data-color-mode="light">
-            <MDEditor.Markdown source={question.name} />
+            <MDEditor.Markdown {...safeMarkdownProps} source={question.name} />
           </div>
         </>
       )}
