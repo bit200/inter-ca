@@ -1,3 +1,4 @@
+import {sanitizeHtml} from '../sanitize';
 import React from 'react'
 import Checkbox from "./../Checkbox/Checkbox";
 import Textarea from "./../Textarea/Textarea";
@@ -95,12 +96,12 @@ class BlogItem extends ReactExtender {
         <small>Paragraph Preview</small>
         {item.title && <h3>{item.title}</h3>}
         <div className={"mt-10"}>
-          {_type === 'Text' && <div className={"whtie_space_pre"} dangerouslySetInnerHTML={{__html: item.text}}>
+          {_type === 'Text' && <div className={"whtie_space_pre"} dangerouslySetInnerHTML={{__html: sanitizeHtml(item.text)}}>
 
           </div>}
-          {_type === 'Header' && <h2 className={"whtie_space_pre"} dangerouslySetInnerHTML={{__html: item.text}}>
+          {_type === 'Header' && <h2 className={"whtie_space_pre"} dangerouslySetInnerHTML={{__html: sanitizeHtml(item.text)}}>
 
-          </h2>} {_type === 'Header2' && <h4 className={"whtie_space_pre"} dangerouslySetInnerHTML={{__html: item.text}}>
+          </h2>} {_type === 'Header2' && <h4 className={"whtie_space_pre"} dangerouslySetInnerHTML={{__html: sanitizeHtml(item.text)}}>
 
         </h4>}
           {_type === 'Video' && <iframe width="420" height="315"

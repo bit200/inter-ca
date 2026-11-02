@@ -1,3 +1,4 @@
+import {sanitizeHtml} from '../../libs/sanitize';
 import React, {useEffect, useState} from "react";
 import _ from "underscore";
 import "./CoursesList.css";
@@ -68,8 +69,8 @@ function Layout2(props) {
                     <div className="row">
                         <div className="col">
                             <h6 className="mb-2 mt-1 fw-medium text-dark fs-18">{activeEl.title}</h6>
-                            <p className="text-body fs-14 " style={{maxWidth: '500px'}} dangerouslySetInnerHTML={{__html: activeEl.desc}}></p>
-                            {activeEl.footer && <p className="text-body fs-14 " style={{maxWidth: '500px'}} dangerouslySetInnerHTML={{__html: activeEl.footer}}></p>}
+                            <p className="text-body fs-14 " style={{maxWidth: '500px'}} dangerouslySetInnerHTML={{__html: sanitizeHtml(activeEl.desc)}}></p>
+                            {activeEl.footer && <p className="text-body fs-14 " style={{maxWidth: '500px'}} dangerouslySetInnerHTML={{__html: sanitizeHtml(activeEl.footer)}}></p>}
                             <button type="button" className="btn btn-warning btn-sm px-2"
                                     onClick={() => {setActiveInd(++activeInd)}}
                             >{t('nextTopic')}</button>

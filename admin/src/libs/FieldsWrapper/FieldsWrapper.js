@@ -1,3 +1,4 @@
+import {sanitizeHtml} from '../sanitize';
 import React from 'react'
 import ReactExtender from './../ReactExtender/ReactExtender';
 //let {ReactExtender} = window.my;
@@ -226,7 +227,7 @@ class FieldsWrapper extends ReactExtender {
                    }}></input>}
             {type === 'html' && <div>
               {/*<small>{key}</small>*/}
-              <div dangerouslySetInnerHTML={{__html: date ? global.m.date_time(value) : value}}></div>
+              <div dangerouslySetInnerHTML={{__html: date ? global.m.date_time(value) : sanitizeHtml(value)}}></div>
             </div>}
             {type === 'href' && <div>
               {/*<small>{key}</small>*/}

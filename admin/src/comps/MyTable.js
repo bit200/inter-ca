@@ -1,3 +1,4 @@
+import {sanitizeHtml} from '../libs/sanitize';
 import React, {useState, useEffect} from 'react';
 import _ from 'underscore';
 
@@ -72,7 +73,7 @@ function Searchify(props) {
   value = (value || '').replace(reg, it => {
     return `<strong class="hover-search">${it}</strong>`
   })
-  return <div dangerouslySetInnerHTML={{__html: value}}></div>
+  return <div dangerouslySetInnerHTML={{__html: sanitizeHtml(value)}}></div>
 }
 function BodyComp(props) {
   let {ind, item, search} = props;

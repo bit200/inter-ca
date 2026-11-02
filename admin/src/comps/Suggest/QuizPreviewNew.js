@@ -1,3 +1,4 @@
+import {safeMarkdownProps} from '../../libs/sanitize';
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from "react";
 import _ from "underscore";
 
@@ -128,8 +129,8 @@ let QuizPreviewNew = forwardRef((props, ref) => {
 
             <div className="quiz-submit-title no-select">
                 <small>{smallTitle}</small>
-                <MDEditor.Markdown source={title}/>
-                <MDEditor.Markdown source={desc}/>
+                <MDEditor.Markdown {...safeMarkdownProps} source={title}/>
+                <MDEditor.Markdown {...safeMarkdownProps} source={desc}/>
             </div>
             {isTimeout && <div className="alert alert-danger shadow-sm" style={{marginTop: '20px'}}>
                 Вышло время, ответ не будет засчитан
@@ -166,7 +167,7 @@ let QuizPreviewNew = forwardRef((props, ref) => {
                         }}
                     >
                         <div className="quiz-answer-it-radio"></div>
-                        <MDEditor.Markdown
+                        <MDEditor.Markdown {...safeMarkdownProps}
                             source={(isAdminMode && isCorrectVariant(it, ind, correctIndexes) ? "** " : " ") + it.name}
                         />
                     </div>

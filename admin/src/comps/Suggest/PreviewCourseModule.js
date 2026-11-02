@@ -1,3 +1,4 @@
+import {safeMarkdownProps} from '../../libs/sanitize';
 import React, {useEffect, useRef, useState} from 'react';
 import _ from 'underscore';
 import './PreviewCourseModule.css'
@@ -379,15 +380,15 @@ export function QuestionDetailsNew(props) {
                     animationDelay: getDelay(),
                     marginBottom: '10px'
                 }}>{selectedBlock.name}</h2> :
-                <MDEditor.Markdown
+                <MDEditor.Markdown {...safeMarkdownProps}
                     source={selectedBlock.name}></MDEditor.Markdown>}
             <Videos items={selectedBlock.videos}/>
-            {selectedBlock.answer && <MDEditor.Markdown source={selectedBlock.answer}/>}
+            {selectedBlock.answer && <MDEditor.Markdown {...safeMarkdownProps} source={selectedBlock.answer}/>}
             {selectedBlock.useCases && <div className=''>
                 {(selectedBlock.useCases || []).map((it, ind) => {
                     return (<div key={ind} className='animChild'>
                         <h3 className={'h3Title'}>{it.name}</h3>
-                        {it.desc && <MDEditor.Markdown source={it.desc}/>}
+                        {it.desc && <MDEditor.Markdown {...safeMarkdownProps} source={it.desc}/>}
                     </div>)
                 })}
             </div>}
@@ -396,7 +397,7 @@ export function QuestionDetailsNew(props) {
                     return (<div key={ind} className='animChild'>
                         <h3 className={'h3Title'}>{it.name}</h3>
 
-                        {it.desc && <MDEditor.Markdown source={it.desc}/>}
+                        {it.desc && <MDEditor.Markdown {...safeMarkdownProps} source={it.desc}/>}
                     </div>)
                 })}
             </div>}</div>

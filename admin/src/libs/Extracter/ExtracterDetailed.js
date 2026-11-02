@@ -1,3 +1,4 @@
+import {sanitizeHtml} from '../sanitize';
 import React from 'react'
 import {Link} from 'react-router-dom'
 import ReactExtender from './../ReactExtender/ReactExtender';
@@ -251,7 +252,7 @@ class ExtracterDetailed extends ReactExtender {
               </td>
               {(['contact_name', 'company_name', 'crm_link', 'site', 'tg_phone_number', 'tg_username', 'email'] || []).map((it, ind) => {
                 return (<td key={ind}>
-                  <div dangerouslySetInnerHTML={{__html: pub_color(item[it], it)}}>
+                  <div dangerouslySetInnerHTML={{__html: sanitizeHtml(pub_color(item[it], it))}}>
                   </div>
                 </td>)
               })}
