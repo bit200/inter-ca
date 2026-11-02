@@ -9,6 +9,7 @@ import "./comps/i18/NameFn";
 
 import Skeleton from "./libs/Skeleton";
 import Login from "./libs/Login/Login";
+import SsoCallback from "./libs/sso/SsoCallback";
 import DefOne from "./libs/DefOne";
 import DefList from "./libs/DefList";
 import Fetcher from "./comps/methods/Fetcher";
@@ -587,6 +588,10 @@ const router = createBrowserRouter([
         path: "login",
         element: <Login/>,
     },
+    {
+        path: "auth/sso/callback",
+        element: <SsoCallback/>,
+    },
     // {
     //     // path: 'test/:id',
     //     // element: <RunExam/>
@@ -683,7 +688,8 @@ function Root() {
     useEffect(() => {
         let token = user.get_token();
         if (!token) {
-            navigate('/login')
+            const next = window.location.pathname + window.location.search;
+            navigate(next && next !== '/' ? '/login?next=' + encodeURIComponent(next) : '/login')
         }
     }, [])
     useEffect(() => {

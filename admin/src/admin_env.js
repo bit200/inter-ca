@@ -84,6 +84,11 @@ window.env = {
     VIDEO_UPLOAD_DOMAIN: 'https://uploader.itconsult-web.ru',
     VIDEO_STATIC_DOMAIN: 'https://static.itconsult-web.ru',
     VIDEO_DOMAIN: videoUploaders[serverKey] || videoUploaders.def,
+    // itk-sso: адрес и client_id берутся из runtime env сборки (REACT_APP_SSO_*), как и остальные настройки.
+    sso: {
+        url: process.env.REACT_APP_SSO_URL || (global.is_local ? 'http://localhost:7545' : ''),
+        clientId: process.env.REACT_APP_SSO_CLIENT_ID || 'itk-platform-admin',
+    },
     title: 'Портал развития',
     login_title: 'Портал развития',
     // login_title: 'Interview Portal',

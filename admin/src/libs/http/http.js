@@ -117,10 +117,10 @@ const http = {
             // if (params.progress) {
             //   NProgress.done();
             // }
-            if (code === 401) {
+            if (code === 401 && !params.no_logout) {
               // console.log('........ ## urlrlrlrlrlrlr', url);
               return user.logout();
-            } else if ((code === 402 || code === 403) && !params.no_refresh) {
+            } else if ((code === 402 || code === 403) && !params.no_refresh && !params.no_logout) {
       
               console.log("qqqqq error 403", code);
               if (iter_count < 5) {

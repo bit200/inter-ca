@@ -2,6 +2,7 @@ import http from './../http/http'
 import notify from '../Notify/Notify';
 import websocket from './../websocket/websocket';
 import {revokeSessionOnLogout} from './logoutRevoke';
+import {getLogoutRedirectUrl} from '../sso/sso';
 
 let refresh_cbs = [];
 
@@ -9,7 +10,7 @@ let _ = window._;
 let pageOpenTime = new Date().getTime();
 const user = {
     token: null,
-    public_routes: ['/login', '/register', '/forgot-password'],
+    public_routes: ['/login', '/register', '/forgot-password', '/auth/sso/callback'],
     get_info: () => {
         const info = localStorage.getItem('user');
         try {
@@ -24,6 +25,12 @@ const user = {
     handle_login_response(r) {
         user.set_token(r.token, r.refresh_token);
         user.set_info(r.user);
+        // id_token нужен при выходе (id_token_hint); у входа паролем его нет.
+        if (r.id_token) {
+            localStorage.setItem('id_token', r.id_token);
+        } else {
+            localStorage.removeItem('id_token');
+        }
         // websocket.reconnect()
     },
     get_refresh_token() {
@@ -170,6 +177,7 @@ const user = {
             name: t('areYouSureLogout')}, () => {
 
             let token = user.get_token();
+            const idToken = localStorage.getItem('id_token');
             if (token) {
                 // Просим itk-sso отозвать refresh token до того, как забудем его
                 // сами: без этого внешние системы продолжали бы обновлять сессию.
@@ -177,9 +185,18 @@ const user = {
                 localStorage.removeItem('refresh_token');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                localStorage.removeItem('id_token');
                 user.token = null;
                 user.refresh_token = null;
             }
+
+            // Вошли через ITK — гасим и сессию в itk-sso, иначе следующий вход пройдёт молча.
+            const ssoLogoutUrl = getLogoutRedirectUrl({idToken});
+            if (ssoLogoutUrl) {
+                window.location.href = ssoLogoutUrl;
+                return;
+            }
+
             return redirectLogin()
 
         })
