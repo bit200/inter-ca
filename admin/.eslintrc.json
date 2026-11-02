@@ -1,0 +1,35 @@
+{
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "JSXMemberExpression[object.name='MDEditor'][property.name='Markdown']",
+        "message": "Не используйте <MDEditor.Markdown> напрямую — берите <SafeMarkdown/> из libs/SafeMarkdown (санитайзер подключён там)."
+      },
+      {
+        "selector": "MemberExpression[object.name='MDEditor'][property.name='Markdown']",
+        "message": "Не используйте MDEditor.Markdown напрямую — берите SafeMarkdown из libs/SafeMarkdown (санитайзер подключён там)."
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@uiw/react-markdown-preview",
+            "message": "Рендер markdown — только через libs/SafeMarkdown (санитайзер)."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/libs/SafeMarkdown.js"],
+      "rules": {
+        "no-restricted-syntax": "off",
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}
