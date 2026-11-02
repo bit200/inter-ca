@@ -5,6 +5,8 @@ import http from './../http/http';
 import user from './../user/user';
 import websocket from './../websocket/websocket';
 import styles from './login.css';
+import {startSsoLogin, isSsoConfigured} from '../sso/sso';
+import {SSO_ERROR_KEY} from '../sso/SsoCallback';
 import {LogoImgRuEn} from "../../comps/Header/Header1";
 
 class Login extends React.Component {
@@ -12,7 +14,15 @@ class Login extends React.Component {
   constructor(props) {
     super(props);
     this.env = window.env;
-    this.state = {username: '', password: '', checked: true};
+    // Ошибку SSO кладёт страница callback; форма пароля остаётся доступной.
+    let ssoError = null;
+    try {
+      ssoError = sessionStorage.getItem(SSO_ERROR_KEY);
+      sessionStorage.removeItem(SSO_ERROR_KEY);
+    } catch (e) {}
+    this.ssoEnabled = isSsoConfigured(this.env);
+    this.state = {username: '', password: '', checked: true, error: ssoError, showPassword: !this.ssoEnabled || !!ssoError};
+    this.handleSso = this.handleSso.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
   }
@@ -21,6 +31,16 @@ class Login extends React.Component {
     let obj = {};
     obj[event.target.getAttribute('id')] = event.target.value;
     this.setState(obj);
+  }
+
+  async handleSso() {
+    this.setState({error: null, loading: true});
+    try {
+      const returnTo = new URLSearchParams(window.location.search).get('next') || '/';
+      window.location.href = await startSsoLogin({returnTo: returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/'});
+    } catch (e) {
+      this.setState({loading: false, showPassword: true, error: e.message || 'Не удалось начать вход через ITK'});
+    }
   }
 
   handleSubmit(event) {
@@ -56,7 +76,22 @@ class Login extends React.Component {
                   {/*<h1 className="text-center w100">*/}
                   {/*  /!*{global?.env?.logoImg?.login || this.env.login_title || '-'}*!/*/}
                   {/*</h1>*/}
-                  <div className="mt20">
+                  {this.ssoEnabled && <div className="mt20 tc">
+                    <Button type="button"
+                            id="login-sso"
+                            icon={'iconoir-log-in'}
+                            onClick={this.handleSso}
+                            disabled={this.state.loading}>
+                      Войти через ITK
+                    </Button>
+                    {!this.state.showPassword && <div style={{marginTop: '15px', fontSize: '14px'}}>
+                      <a href="#" id="login-show-password"
+                         onClick={e => { e.preventDefault(); this.setState({showPassword: true}); }}>
+                        Войти по паролю
+                      </a>
+                    </div>}
+                  </div>}
+                  {this.state.showPassword && <div className="mt20">
                     <div className="form-group"><label className="c2 r pr5">{t('login')}</label>
                       <div className="c10 l"><input className="form-control w100"
                                                     value={this.state.username}
@@ -108,7 +143,8 @@ class Login extends React.Component {
                       </div>
 
                     </div>
-                  </div>
+                  </div>}
+                  {!this.state.showPassword && <div className="c12 tc">{Error}</div>}
                 </div>
               </form>
             </div>
